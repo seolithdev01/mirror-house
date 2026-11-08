@@ -94,12 +94,13 @@ export const TIER_ONE_PALETTE: TierPalette = {
   entrance: 0x2ec4b6, exit: 0xd9a441,
 };
 
-/** Deterministic per-cell floor accent on a 6x6 lattice (pure twin of the canvas atlas). */
+/** Deterministic per-cell floor accent on a 6x6 lattice (pure twin of the canvas atlas).
+ *  Gold lines fall on NONZERO global 6-multiples (so (0,0) is checker, not gold). */
 export function floorAccent(gx: number, gy: number): number {
   const m6 = ((gx % 6) + 6) % 6;
   const n6 = ((gy % 6) + 6) % 6;
   if (m6 === 3 && n6 === 3) return TIER_ONE_PALETTE.rose;
-  if (m6 === 0 || n6 === 0) return TIER_ONE_PALETTE.gold;
+  if ((m6 === 0 && gx !== 0) || (n6 === 0 && gy !== 0)) return TIER_ONE_PALETTE.gold;
   return m6 % 2 === n6 % 2 ? TIER_ONE_PALETTE.floorLines : TIER_ONE_PALETTE.floorBase;
 }
 ```
