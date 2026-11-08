@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dev-dist/
+.vite/
+
+# cloudflare
+.wrangler/
+
+# tests & coverage
+coverage/
+
+# env & secrets
+.env
+.env.*
+*.pem
+
+# logs
+*.log
+debug.log
+
+# os junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# editor
+.idea/
+.vscode/
+*.swp
