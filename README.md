@@ -13,7 +13,7 @@ Work proceeds in numbered steps (`#stepNNN`) — one brief per step, archived wi
 
 ## License
 
-- Code: MIT (see [LICENSE](LICENSE))
+- Code: Apache-2.0 (see [LICENSE](LICENSE))
 - Art, music, docs: CC-BY 4.0 (assets are original/procedural; provenance tracked in `PROVENANCE.md` once assets exist)
 
-Both choices are step001 defaults recorded in the blueprint's decisions log and may be revised before the repository goes public.
+Both confirmed by the project owner on 2026-11-08 and recorded in the blueprint's decisions log (§0).
