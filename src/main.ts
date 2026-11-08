@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as THREE from 'three';
 import { EYE_HEIGHT, FIXED_STEP } from './engine/constants';
-import { InputCollector, keysToMoveInput } from './engine/input';
+import { InputCollector, keysToMoveInput, mouseOnlyInput, type InputMode } from './engine/input';
 import { createAvatar, updateAvatar } from './game/avatar';
 import { buildFloorScene } from './game/floorScene';
 import { parseLook } from './game/look';
@@ -9,6 +9,7 @@ import { generateFloor, TIER_ONE } from './game/maze';
 import { HeroMirror, mirrorSpots } from './game/mirror';
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
+import { createHud } from './ui/hud';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const diagnostics = document.querySelector<HTMLElement>('#diagnostics')!;
@@ -35,9 +36,23 @@ const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
 
 const input = new InputCollector();
 input.attach(window);
+let mode: InputMode = 'hybrid';
+const hud = createHud({
+  mode,
+  onMode: (m) => {
+    mode = m;
+    hud.setMode(m);
+  },
+  onFaq: () => {},
+  onDaily: () => {},
+});
 canvas.addEventListener('click', () => {
-  const lock = canvas.requestPointerLock() as unknown as { catch?: (cb: () => void) => void };
-  lock?.catch?.(() => {});
+  if (mode === 'hybrid') {
+    const lock = canvas.requestPointerLock() as unknown as
+      | { catch?: (cb: () => void) => void }
+      | undefined;
+    lock?.catch?.(() => {});
+  }
 });
 
 function resize(): void {
@@ -60,7 +75,8 @@ function frame(now: number): void {
   last = now;
   accumulator += elapsed;
   while (accumulator >= FIXED_STEP) {
-    const inputFrame = keysToMoveInput(input.snapshotAndReset());
+    const inputFrame =
+      mode === 'mouse' ? mouseOnlyInput(input.mouseState()) : keysToMoveInput(input.snapshotAndReset(), mode);
     player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
     const inputActive = inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
     updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);

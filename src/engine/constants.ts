@@ -8,4 +8,6 @@ export const WALK_SPEED = 3.5; // m/s
 export const SPRINT_SPEED = 6; // m/s
 export const MAX_STEP_DT = 1 / 30; // seconds — clamps tunneling
 export const TURN_SENSITIVITY = 0.003; // radians per mouse pixel
+export const KEY_TURN_PER_STEP = 0.045; // radians per fixed step in keyboard mode
+export const MOUSE_TURN_PER_STEP = 0.06; // radians per fixed step in mouse-only mode
 export const FIXED_STEP = 1 / 120; // seconds
