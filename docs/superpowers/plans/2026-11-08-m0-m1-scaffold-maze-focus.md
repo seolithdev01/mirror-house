@@ -506,12 +506,14 @@ describe('FloorGrid', () => {
     expect(g.cellAt(-8, 0)).toEqual({ x: 0, y: 2 });
   });
 
-  it('deadEndCount counts cells with exactly 3 walls', () => {
+  it('deadEndCount counts cells with exactly one open direction', () => {
     const g = new FloorGrid(3, 3);
     g.setOpen(1, 1, Dir.North);
-    expect(g.deadEndCount()).toBe(9); // all cells still have >=3 walls
+    // (1,1) has 1 open (north); (1,0) has 1 open (south — shared wall) — both dead ends
+    expect(g.deadEndCount()).toBe(2);
     g.setOpen(1, 1, Dir.South);
-    expect(g.deadEndCount()).toBe(7); // (1,1) has 2 walls now; others unchanged
+    // (1,1) now has 2 open (not a dead end); (1,0) and (1,2) each still have 1
+    expect(g.deadEndCount()).toBe(2);
   });
 });
 ```
