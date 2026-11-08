@@ -30,6 +30,7 @@ You wake on the roof garden of a 100-year-old, 100-storey palace of mirrors. The
 3. The four Sentinels each think differently; learning their minds is the skill.
 4. Ten floors at a time I feel smarter; every ten floors the house changes the rules.
 5. The guide in my lantern talks back, but knowledge costs shards — I choose what to ask.
+6. *I can see myself in the glass* — my reflection is mine and configurable; the house can't fake it yet. *(confirmed step003)*
 
 ---
 
@@ -174,7 +175,13 @@ One key cycles FOCUS→QUAD→OVERHEAD (V / gamepad select / mobile triple-tap).
 - Every Dwaar is a checkpoint; saves are automatic.
 
 ### 5.5 Accessibility (beta table stakes)
-Reduced-flash mode (mirror glints are core aesthetic — this mode is mandatory, not optional) · colorblind-safe Sentinel identity (silhouette + audio motif) · full captions/subtitles · remappable inputs · text scale · one-handed desktop scheme · TACTICAL pause mode doubles as a cognitive-accessibility mode · no timed QTEs ever.
+Reduced-flash mode (mirror glints are core aesthetic — this mode is mandatory, not optional) · colorblind-safe Sentinel identity (silhouette + audio motif) · full captions/subtitles · remappable inputs · text scale · one-handed desktop scheme · TACTICAL pause mode doubles as a cognitive-accessibility mode · no timed QTEs ever · **three input modes — keyboard-only, mouse-only, hybrid — each fully playable alone, with on-screen mode buttons** *(confirmed step003)*.
+
+### 5.6 Art direction (step003)
+Tier 1 palette: deep indigo void/fog, warm ivory-plaster walls, a patterned floor in teal/ivory/gold/rose (procedural canvas textures — zero external assets), teal entrance marker, gold exit marker, warm lantern light. The M1 gray-box look was a placeholder, not the identity.
+
+### 5.7 Meta layer, device-local (step003 lite; full dashboard in M4)
+FAQ screen (rule-based; later doubles as Aaina's knowledge base) · best time per seed (local) · daily-play streak · date-derived daily-challenge seed button · run timer with floor-cleared overlay. Retention is measured **on-device only** — no telemetry, ever; the privacy promise outranks growth metrics.
 
 ---
 
@@ -231,7 +238,8 @@ docs/          specs, plans, prompts-history
 Geometry stays Wolfenstein-constrained — uniform wall height, axis-aligned walls on the grid — so draw calls are tiny and the QUAD viewport budget holds even on low-end mobile.
 
 Mirror techniques (the expensive fantasy, made cheap):
-- **Hero mirrors** (True Mirrors, 1–2/floor): render-to-texture portal, 512px.
+- **Avatar & self-reflection (step003):** a low-poly Surveyor avatar (configurable coat + lantern glass colors) on a dedicated render layer — invisible to the first-person camera, visible to mirror cameras — so the player sees *themselves* in glass. The signature shot of the game.
+- **Hero mirrors** (True Mirrors, 1–2/floor): planar render-to-texture portals @ 512px, wall-mounted at deterministic spots (entrance/exit cells), global clip plane at the mirror surface during the RT pass.
 - **Standing mirrors:** cheap SSR-lite pass on high preset; baked cubemap on low; **fogged = swap to matte material — near-zero cost** (the core mechanic is a performance *win*: fogging makes the scene cheaper).
 - Instanced meshes for walls/mirrors; vertex-baked AO; one dynamic light (your lantern) + emissives.
 - QUAD side-panes half-res on alternate frames; OVERHEAD is a 2D canvas overlay, never a 3D render.
