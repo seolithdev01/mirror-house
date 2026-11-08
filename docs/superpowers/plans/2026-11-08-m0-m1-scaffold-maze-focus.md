@@ -1552,7 +1552,7 @@ git commit -m "test(m1): playwright smoke — load, walk, determinism, no errors
 **Files:**
 - Modify: `README.md` (quickstart), this plan (tick boxes)
 
-- [ ] **Step 1: README quickstart section** — add under "How this repo works":
+- [x] **Step 1: README quickstart section** — add under "How this repo works":
 
 ```markdown
 ## Run it
@@ -1565,16 +1565,16 @@ npm run e2e          # playwright smoke (first run: npx playwright install chrom
 ```
 ```
 
-- [ ] **Step 2: Acceptance checklist (verify + fix before tagging)**
+- [x] **Step 2: Acceptance checklist (verify + fix before tagging)**
 
-- [ ] CI green on `main` (check + e2e + deploy jobs)
-- [ ] `https://mirror-house.pages.dev` (or project URL) serves latest with CSP header
-- [ ] `npm test` — 30+ unit tests green
-- [ ] Determinism proven twice: two runs of `?seed=PLAYTEST` show identical spawn pos and maze
-- [ ] Diagnostics overlay ≥ 60 fps while sprinting on a mid desktop (spec §7.4 budget)
-- [ ] `dist/` bundle under 3 MB gzipped (`npm run build && du -sh dist` as a rough check)
+- [ ] CI green on `main` (check + e2e + deploy jobs) *(deferred: no remote/credentials yet — verify after merge, before tagging)*
+- [ ] `https://mirror-house.pages.dev` (or project URL) serves latest with CSP header *(deferred: no deployment yet — verify after first CF Pages deploy)*
+- [x] `npm test` — 30+ unit tests green *(34/34, 2026-11-08)*
+- [x] Determinism proven twice: two runs of `?seed=PLAYTEST` show identical spawn pos and maze *(e2e test 2: `?seed=SAMESAME` load + reload → identical spawn; maze determinism per seed covered by maze/rng unit tests)*
+- [ ] Diagnostics overlay ≥ 60 fps while sprinting on a mid desktop (spec §7.4 budget) *(deferred: needs manual playtest on real GPU — overlay in `src/main.ts` displays fps; headless e2e fps is not representative)*
+- [x] `dist/` bundle under 3 MB gzipped (`npm run build && du -sh dist` as a rough check) *(raw 543 KB, gzipped ≈ 132 KB — `find dist -type f | xargs gzip -c | wc -c` → 134,995 bytes)*
 
-- [ ] **Step 3: Tag + commit**
+- [x] **Step 3: Tag + commit** *(commit done; `git tag m1` + push deferred to post-merge per controller decision)*
 
 ```bash
 git add README.md && git commit -m "docs(m1): quickstart + acceptance verified"
