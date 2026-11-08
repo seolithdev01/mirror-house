@@ -11,6 +11,8 @@ dev-dist/
 
 # tests & coverage
 coverage/
+playwright-report/
+test-results/
 
 # env & secrets
 .env
