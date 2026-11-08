@@ -1004,21 +1004,22 @@ describe('movePlayer', () => {
   });
 
   it('is blocked by a wall and stops at PLAYER_RADIUS from it', () => {
-    // all-walls grid: north wall of cell (7,7) sits at y = -2; start 1.9m away heading north
-    const start: PlayerState = { x: 0, y: -0.1, heading: 0 };
+    // all-walls grid: north wall of cell (7,7) sits at y = -2; start 0.5m away heading north.
+    // dt clamps to 1/30, so the 0.2m sprint step crosses the stop plane at -2 + PLAYER_RADIUS.
+    const start: PlayerState = { x: 0, y: -1.5, heading: 0 };
     const p = movePlayer(start, { forward: 1, strafe: 0, sprint: true, turn: 0 }, grid, 1);
     expect(p.y).toBeCloseTo(-2 + PLAYER_RADIUS); // clamped against the wall
   });
 
   it('slides along a wall on the perpendicular axis', () => {
-    const start: PlayerState = { x: 0, y: -1.9, heading: 0 }; // hugging north wall
+    const start: PlayerState = { x: 0, y: -2 + PLAYER_RADIUS, heading: 0 }; // hugging north wall
     const p = movePlayer(start, { forward: 1, strafe: 1, sprint: true, turn: 0 }, grid, 1 / 120);
     expect(p.x).toBeCloseTo(SPRINT_SPEED / 120); // east slide happened
-    expect(p.y).toBeCloseTo(-1.9); // no north penetration
+    expect(p.y).toBeCloseTo(-2 + PLAYER_RADIUS); // no north penetration
   });
 
   it('never tunnels: giant dt still clamps to a legal position', () => {
-    const start: PlayerState = { x: 0, y: -0.1, heading: 0 };
+    const start: PlayerState = { x: 0, y: -1.5, heading: 0 };
     const p = movePlayer(start, { forward: 1, strafe: 0, sprint: true, turn: 0 }, grid, 1000);
     expect(p.y).toBeCloseTo(-2 + PLAYER_RADIUS);
   });
