@@ -987,10 +987,7 @@ import { movePlayer, spawnPlayer, type PlayerState } from '../../src/game/player
 import { generateFloor, TIER_ONE } from '../../src/game/maze';
 
 const grid = new FloorGrid(15, 15);
-const atCenter = (): PlayerState => {
-  const g2 = new FloorGrid(15, 15);
-  return { x: 0, y: 0, heading: 0 }; // center of cell (7,7) in a 15x15 grid
-};
+const atCenter = (): PlayerState => ({ x: 0, y: 0, heading: 0 }); // center of cell (7,7) in a 15x15 grid
 
 describe('movePlayer', () => {
   it('walks north at WALK_SPEED for the clamped dt', () => {
@@ -1038,10 +1035,11 @@ describe('spawnPlayer', () => {
     expect(p.x).toBeCloseTo(cx);
     expect(p.y).toBeCloseTo(cy);
     const dirs = [Dir.North, Dir.East, Dir.South, Dir.West] as const;
-    const open = dirs.filter((d) => floor.grid.canWalk(floor.entrance.x, floor.entrance.y, d));
-    expect(open.map((d) => d as number)).toContain(
-      Math.round(((p.heading % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / (Math.PI / 2)) % 4,
+    const cardinals = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2]; // index = Dir value
+    const openHeadings = cardinals.filter((_c, d) =>
+      floor.grid.canWalk(floor.entrance.x, floor.entrance.y, dirs[d]!),
     );
+    expect(openHeadings.some((c) => Math.abs(p.heading - c) < 1e-9)).toBe(true);
   });
 });
 ```
@@ -1112,7 +1110,7 @@ export function movePlayer(
 }
 ```
 
-- [ ] **Step 4: Run — expect PASS** (`npm test -- player`). If the spawn-facing test is brittle, replace the heading-rounding assertion with: `expect([0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2]).toContainCloseTo(p.heading)` implemented as four `toBeCloseTo` checks — the property that matters is "heading is one of the four cardinal open-direction angles".
+- [ ] **Step 4: Run — expect PASS** (`npm test -- player`)
 
 - [ ] **Step 5: Commit**
 
