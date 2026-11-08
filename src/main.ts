@@ -29,7 +29,7 @@ const input = new InputCollector();
 input.attach(window);
 canvas.addEventListener('click', () => {
   const lock = canvas.requestPointerLock() as unknown as { catch?: (cb: () => void) => void };
-  lock.catch?.(() => {});
+  lock?.catch?.(() => {});
 });
 
 function resize(): void {
