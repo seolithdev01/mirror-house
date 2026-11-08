@@ -24,13 +24,21 @@ export class InputCollector {
     const move = (e: MouseEvent) => {
       if (document.pointerLockElement) this.mouseDx += e.movementX;
     };
+    const clearKeys = () => this.keys.clear();
+    const onPointerLockChange = () => {
+      if (!document.pointerLockElement) this.keys.clear();
+    };
     win.addEventListener('keydown', down);
     win.addEventListener('keyup', up);
     win.addEventListener('mousemove', move);
+    win.addEventListener('blur', clearKeys);
+    document.addEventListener('pointerlockchange', onPointerLockChange);
     return () => {
       win.removeEventListener('keydown', down);
       win.removeEventListener('keyup', up);
       win.removeEventListener('mousemove', move);
+      win.removeEventListener('blur', clearKeys);
+      document.removeEventListener('pointerlockchange', onPointerLockChange);
     };
   }
 

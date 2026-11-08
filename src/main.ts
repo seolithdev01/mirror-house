@@ -27,7 +27,10 @@ const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
 
 const input = new InputCollector();
 input.attach(window);
-canvas.addEventListener('click', () => canvas.requestPointerLock());
+canvas.addEventListener('click', () => {
+  const lock = canvas.requestPointerLock() as unknown as { catch?: (cb: () => void) => void };
+  lock.catch?.(() => {});
+});
 
 function resize(): void {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
