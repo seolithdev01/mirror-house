@@ -3,9 +3,11 @@ import * as THREE from 'three';
 import { EYE_HEIGHT, FIXED_STEP } from './engine/constants';
 import { InputCollector, keysToMoveInput, mouseOnlyInput, type InputMode } from './engine/input';
 import { createAvatar, updateAvatar } from './game/avatar';
+import { createFloorRun, isAtExit, runElapsedMs } from './game/floorRun';
 import { buildFloorScene } from './game/floorScene';
 import { parseLook } from './game/look';
 import { generateFloor, TIER_ONE } from './game/maze';
+import { dailySeed, loadMeta, recordRun, saveMeta, todayStamp } from './game/meta';
 import { HeroMirror, mirrorSpots } from './game/mirror';
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
@@ -18,6 +20,9 @@ const urlSeed = normalizeSeed(new URLSearchParams(window.location.search).get('s
 const seed = isValidSeed(urlSeed) ? urlSeed : randomSeed();
 const floor = generateFloor({ ...TIER_ONE, seed });
 let player: PlayerState = spawnPlayer(floor);
+let meta = loadMeta();
+const run = createFloorRun(seed);
+const exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -36,21 +41,25 @@ const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
 
 const input = new InputCollector();
 input.attach(window);
-let mode: InputMode = 'hybrid';
+let mode: InputMode = meta.mode;
 const hud = createHud({
   mode,
   onMode: (m) => {
     mode = m;
     hud.setMode(m);
+    meta = { ...meta, mode: m };
+    saveMeta(meta);
   },
   onFaq: () => {},
-  onDaily: () => {},
+  onDaily: () => {
+    const d = dailySeed(todayStamp());
+    window.location.search = `?seed=${d}`;
+  },
 });
 canvas.addEventListener('click', () => {
   if (mode === 'hybrid') {
     const lock = canvas.requestPointerLock() as unknown as
-      | { catch?: (cb: () => void) => void }
-      | undefined;
+      { catch?: (cb: () => void) => void } | undefined;
     lock?.catch?.(() => {});
   }
 });
@@ -76,11 +85,32 @@ function frame(now: number): void {
   accumulator += elapsed;
   while (accumulator >= FIXED_STEP) {
     const inputFrame =
-      mode === 'mouse' ? mouseOnlyInput(input.mouseState()) : keysToMoveInput(input.snapshotAndReset(), mode);
+      mode === 'mouse'
+        ? mouseOnlyInput(input.mouseState())
+        : keysToMoveInput(input.snapshotAndReset(), mode);
     player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
-    const inputActive = inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
+    const inputActive =
+      inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
+    if (run.startedAt === null && inputActive) run.startedAt = now;
     updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);
     accumulator -= FIXED_STEP;
+  }
+  hud.setChips({
+    timerMs: runElapsedMs(run, now),
+    streak: meta.streak.count,
+    bestMs: meta.best[seed] ?? null,
+  });
+  if (
+    run.clearedAt === null &&
+    run.startedAt !== null &&
+    isAtExit(player.x, player.y, exitCenter.cx, exitCenter.cy)
+  ) {
+    run.clearedAt = now;
+    const ms = runElapsedMs(run, now);
+    const wasBest = meta.best[seed];
+    meta = recordRun(meta, seed, ms, todayStamp());
+    saveMeta(meta);
+    hud.showCleared(ms, meta.best[seed] ?? null, wasBest === undefined || ms < wasBest);
   }
   camera.position.set(player.x, EYE_HEIGHT, player.y);
   camera.rotation.y = -player.heading;
@@ -97,7 +127,8 @@ function frame(now: number): void {
     fps = Math.round((frames * 1000) / (now - fpsClock));
     frames = 0;
     fpsClock = now;
-    diagnostics.textContent = `seed ${seed}  fps ${fps}\n` +
+    diagnostics.textContent =
+      `seed ${seed}  fps ${fps}\n` +
       `pos ${player.x.toFixed(1)}, ${player.y.toFixed(1)}  heading ${player.heading.toFixed(2)}`;
   }
   requestAnimationFrame(frame);
