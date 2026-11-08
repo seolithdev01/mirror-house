@@ -6,6 +6,7 @@ import { createAvatar, updateAvatar } from './game/avatar';
 import { buildFloorScene } from './game/floorScene';
 import { parseLook } from './game/look';
 import { generateFloor, TIER_ONE } from './game/maze';
+import { HeroMirror, mirrorSpots } from './game/mirror';
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
 
@@ -26,6 +27,8 @@ scene.add(buildFloorScene(floor).group);
 const look = parseLook(new URLSearchParams(window.location.search).get('look'));
 const avatar = createAvatar(look);
 scene.add(avatar);
+const mirrors = mirrorSpots(floor).map((s) => new HeroMirror(s));
+mirrors.forEach((m) => scene.add(m.mesh));
 const lantern = new THREE.PointLight(0xffd9a0, 22, 18, 1.8);
 scene.add(lantern, new THREE.AmbientLight(0x3a3f55, 0.7));
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
@@ -50,6 +53,7 @@ let last = performance.now();
 let frames = 0;
 let fpsClock = last;
 let fps = 0;
+let frameIndex = 0;
 
 function frame(now: number): void {
   const elapsed = Math.min(now - last, 250) / 1000;
@@ -65,6 +69,11 @@ function frame(now: number): void {
   camera.position.set(player.x, EYE_HEIGHT, player.y);
   camera.rotation.y = -player.heading;
   lantern.position.set(player.x, EYE_HEIGHT, player.y);
+  // mirrors update on alternate frames — perf budget (each costs one extra scene render)
+  mirrors.forEach((m, i) => {
+    if (frameIndex % 2 === i % 2) m.update(renderer, scene, camera);
+  });
+  frameIndex++;
   renderer.render(scene, camera);
 
   frames++;
@@ -84,5 +93,6 @@ if (import.meta.env.DEV) {
     getPlayer: () => ({ ...player }),
     seed,
     look: look.name,
+    mirrors: mirrors.length,
   };
 }
