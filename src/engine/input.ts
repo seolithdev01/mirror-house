@@ -34,7 +34,7 @@ export class InputCollector {
   private leftDown = false;
   private rightDown = false;
   private cursorX = 0;
-  private viewWidth = 0;
+  private win: Window | null = null;
 
   attach(win: Window): () => void {
     const down = (e: KeyboardEvent) => this.keys.add(e.code);
@@ -56,7 +56,7 @@ export class InputCollector {
     const onPointerLockChange = () => {
       if (!document.pointerLockElement) this.keys.clear();
     };
-    this.viewWidth = win.innerWidth;
+    this.win = win;
     win.addEventListener('keydown', down);
     win.addEventListener('keyup', up);
     win.addEventListener('mousemove', move);
@@ -88,6 +88,7 @@ export class InputCollector {
   }
 
   private cursorNorm(): number {
-    return this.viewWidth > 0 ? (this.cursorX / this.viewWidth) * 2 - 1 : 0;
+    const w = this.win?.innerWidth ?? 0;
+    return w > 0 ? (this.cursorX / w) * 2 - 1 : 0;
   }
 }

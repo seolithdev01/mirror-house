@@ -11,13 +11,15 @@ describe('palette', () => {
     expect(TIER_ONE_PALETTE.rose).toBe(0xc2548a);
     expect(TIER_ONE_PALETTE.lantern).toBe(0xffd9a0);
   });
-  it('floorAccent: rose diamond on the 6-lattice, gold lines on 6-multiples, else two-tone checker', () => {
+  it('floorAccent: gold grid lines on every 6th row/column, rose diamond at (3,3), else two-tone checker', () => {
     expect(floorAccent(3, 3)).toBe(TIER_ONE_PALETTE.rose);
     expect(floorAccent(9, 3)).toBe(TIER_ONE_PALETTE.rose);
     expect(floorAccent(6, 2)).toBe(TIER_ONE_PALETTE.gold);
     expect(floorAccent(2, 12)).toBe(TIER_ONE_PALETTE.gold);
-    expect(floorAccent(0, 0)).toBe(TIER_ONE_PALETTE.floorLines);
-    expect(floorAccent(1, 0)).toBe(TIER_ONE_PALETTE.floorBase);
+    // the full 0-lattice is gold (column 0 and row 0 included) so tiles seam every 6 cells
+    expect(floorAccent(0, 0)).toBe(TIER_ONE_PALETTE.gold);
+    expect(floorAccent(1, 0)).toBe(TIER_ONE_PALETTE.gold); // row 0
+    expect(floorAccent(1, 1)).toBe(TIER_ONE_PALETTE.floorLines);
   });
   it('textures degrade to null in node (browser guard)', () => {
     expect(makeFloorTexture()).toBeNull();

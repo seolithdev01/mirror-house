@@ -12,9 +12,9 @@ interface DebugHook {
   bestFor(seed: string): number | null;
 }
 // page.evaluate results cannot carry functions across the process boundary,
-// so the closure-backed members (look/mode/streak) are invoked in the browser
-// and returned as a snapshot; `mode` is re-read per call, so a snapshot taken
-// after a click reflects the current input mode.
+// so the closure-backed members (look/mode/streak/best) are invoked in the
+// browser and returned as a snapshot; `mode` is re-read per call, so a snapshot
+// taken after a click reflects the current input mode.
 const hook = (page: import('@playwright/test').Page) =>
   page.evaluate(() => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
@@ -25,6 +25,7 @@ const hook = (page: import('@playwright/test').Page) =>
       mirrors: h.mirrors,
       avatarPresent: h.avatarPresent,
       streak: h.streak(),
+      best: h.bestFor(h.seed),
     };
   });
 
@@ -92,4 +93,13 @@ test('step003: FAQ opens with 12 entries and H toggles', async ({ page }) => {
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens
   await expect(page.locator('#mh-faq-overlay')).toBeVisible();
+});
+
+test('step003: meta starts fresh on a clean device', async ({ page }) => {
+  // Playwright contexts are isolated, so localStorage starts empty
+  await page.goto('/?seed=FRESH');
+  await page.waitForFunction(() => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__);
+  const snap = await hook(page);
+  expect(snap.streak).toBe(0);
+  expect(snap.best).toBeNull();
 });
