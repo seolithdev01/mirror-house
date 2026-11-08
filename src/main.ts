@@ -11,6 +11,7 @@ import { dailySeed, loadMeta, recordRun, saveMeta, todayStamp } from './game/met
 import { HeroMirror, mirrorSpots } from './game/mirror';
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
+import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
@@ -42,6 +43,7 @@ const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
 const input = new InputCollector();
 input.attach(window);
 let mode: InputMode = meta.mode;
+const faq = buildFaqOverlay();
 const hud = createHud({
   mode,
   onMode: (m) => {
@@ -50,7 +52,7 @@ const hud = createHud({
     meta = { ...meta, mode: m };
     saveMeta(meta);
   },
-  onFaq: () => {},
+  onFaq: () => faq.toggle(),
   onDaily: () => {
     const d = dailySeed(todayStamp());
     window.location.search = `?seed=${d}`;
@@ -63,6 +65,7 @@ canvas.addEventListener('click', () => {
     lock?.catch?.(() => {});
   }
 });
+window.addEventListener('keydown', (e) => { if (e.code === 'KeyH' && !e.repeat) faq.toggle(); });
 
 function resize(): void {
   renderer.setSize(window.innerWidth, window.innerHeight, false);

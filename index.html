@@ -21,6 +21,16 @@
       #mh-chips { display: flex; gap: 8px; background: rgba(11,16,38,.7); border-radius: 6px; padding: 4px 10px; }
       #mh-cleared { background: rgba(11,16,38,.92); border: 1px solid #d9a441; color: #f2e9d8;
         border-radius: 8px; padding: 10px 16px; font-size: 15px; pointer-events: none; }
+      #mh-faq-overlay { position: fixed; inset: 0; z-index: 20; background: rgba(5,8,20,.82);
+        display: grid; place-items: center; }
+      #mh-faq-overlay[hidden] { display: none; }
+      #mh-faq-box { max-width: 640px; max-height: 82vh; overflow: auto; background: #0b1026;
+        border: 1px solid #2a3560; border-radius: 10px; padding: 20px 26px; color: #f2e9d8; font: 14px/1.6 system-ui; }
+      #mh-faq-box h2 { margin: 0 0 12px; color: #d9a441; font-size: 18px; }
+      #mh-faq-box details { border-bottom: 1px solid #1d2440; padding: 8px 0; }
+      #mh-faq-box summary { cursor: pointer; color: #2ec4b6; }
+      #mh-faq-box button { margin-top: 14px; background: #1d2440; color: #f2e9d8;
+        border: 1px solid #2a3560; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
     </style>
   </head>
   <body>
