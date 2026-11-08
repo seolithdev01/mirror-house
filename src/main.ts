@@ -18,11 +18,11 @@ let player: PlayerState = spawnPlayer(floor);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x05060a);
-scene.fog = new THREE.Fog(0x05060a, 2, 26);
+scene.background = new THREE.Color(0x0b1026);
+scene.fog = new THREE.Fog(0x0b1026, 2, 26);
 scene.add(buildFloorScene(floor).group);
-const lantern = new THREE.PointLight(0xffe6c0, 18, 18, 1.8);
-scene.add(lantern, new THREE.AmbientLight(0x30343d, 0.7));
+const lantern = new THREE.PointLight(0xffd9a0, 22, 18, 1.8);
+scene.add(lantern, new THREE.AmbientLight(0x3a3f55, 0.7));
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
 
 const input = new InputCollector();
