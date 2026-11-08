@@ -42,7 +42,7 @@ export function makeWallTexture(): HTMLCanvasElement | null;  // vertical gradie
 export function buildFloorScene(floor: Floor, palette?: TierPalette): FloorSceneResult; // palette defaults to TIER_ONE_PALETTE
 ```
 
-- [ ] **Step 1: Failing tests** (`tests/unit/palette.test.ts`)
+- [x] **Step 1: Failing tests** (`tests/unit/palette.test.ts`)
 
 ```ts
 // SPDX-License-Identifier: Apache-2.0
@@ -73,9 +73,9 @@ describe('palette', () => {
 });
 ```
 
-- [ ] **Step 2: RED** — `npm test -- palette` fails (module missing).
+- [x] **Step 2: RED** — `npm test -- palette` fails (module missing).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/game/palette.ts`:
 
@@ -94,13 +94,13 @@ export const TIER_ONE_PALETTE: TierPalette = {
   entrance: 0x2ec4b6, exit: 0xd9a441,
 };
 
-/** Deterministic per-cell floor accent on a 6x6 lattice (pure twin of the canvas atlas).
- *  Gold lines fall on NONZERO global 6-multiples (so (0,0) is checker, not gold). */
+/** Deterministic per-cell floor accent on a 6x6 lattice: gold grid lines on every 6th
+ *  row/column, a rose diamond at (3,3), two-tone checker elsewhere. Pure twin of the atlas. */
 export function floorAccent(gx: number, gy: number): number {
   const m6 = ((gx % 6) + 6) % 6;
   const n6 = ((gy % 6) + 6) % 6;
   if (m6 === 3 && n6 === 3) return TIER_ONE_PALETTE.rose;
-  if ((m6 === 0 && gx !== 0) || (n6 === 0 && gy !== 0)) return TIER_ONE_PALETTE.gold;
+  if (m6 === 0 || n6 === 0) return TIER_ONE_PALETTE.gold;
   return m6 % 2 === n6 % 2 ? TIER_ONE_PALETTE.floorLines : TIER_ONE_PALETTE.floorBase;
 }
 ```
@@ -176,9 +176,9 @@ Modify `src/game/floorScene.ts`:
 
 Modify `src/main.ts` (three lines): `scene.background`/`scene.fog` color → `0x0b1026`; `PointLight` color `0xffd9a0`, intensity `22`; ambient `0x3a3f55`.
 
-- [ ] **Step 4: GREEN + gates** — `npm run lint && npm run typecheck && npm test` (M1 floorscene tests still pass — group child count is unchanged: textures swap materials in place).
+- [x] **Step 4: GREEN + gates** — `npm run lint && npm run typecheck && npm test` (M1 floorscene tests still pass — group child count is unchanged: textures swap materials in place).
 
-- [ ] **Step 5: Commit** — `feat(step003): tier-one art direction — palette, procedural floor/wall textures`
+- [x] **Step 5: Commit** — `feat(step003): tier-one art direction — palette, procedural floor/wall textures`
 
 ---
 
@@ -205,7 +205,7 @@ export function createAvatar(look: AvatarLook): THREE.Group; // model faces -z a
 export function updateAvatar(avatar: THREE.Group, x: number, y: number, heading: number, moving: boolean, t: number): void;
 ```
 
-- [ ] **Step 1: Failing tests** (`tests/unit/look.test.ts`)
+- [x] **Step 1: Failing tests** (`tests/unit/look.test.ts`)
 
 ```ts
 // SPDX-License-Identifier: Apache-2.0
@@ -225,9 +225,9 @@ describe('parseLook', () => {
 });
 ```
 
-- [ ] **Step 2: RED** — `npm test -- look`.
+- [x] **Step 2: RED** — `npm test -- look`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/game/look.ts`:
 
@@ -312,9 +312,9 @@ scene.add(avatar);
 - in the fixed-step block, after `player = movePlayer(...)`: `updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);` where `inputActive` is the input's forward/strafe/turn non-zero (capture from the MoveInput you just built — restructure: `const inputFrame = keysToMoveInput(...); player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP); const inputActive = inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0; updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);`
 - debug hook: add `look: look.name`.
 
-- [ ] **Step 4: GREEN + gates.**
+- [x] **Step 4: GREEN + gates.**
 
-- [ ] **Step 5: Commit** — `feat(step003): configurable surveyor avatar on mirror-only render layer`
+- [x] **Step 5: Commit** — `feat(step003): configurable surveyor avatar on mirror-only render layer`
 
 ---
 
@@ -340,7 +340,7 @@ export class HeroMirror {
 }
 ```
 
-- [ ] **Step 1: Failing tests** (`tests/unit/mirror.test.ts`)
+- [x] **Step 1: Failing tests** (`tests/unit/mirror.test.ts`)
 
 ```ts
 // SPDX-License-Identifier: Apache-2.0
@@ -371,9 +371,9 @@ describe('mirrorSpots', () => {
 });
 ```
 
-- [ ] **Step 2: RED** — `npm test -- mirror`.
+- [x] **Step 2: RED** — `npm test -- mirror`.
 
-- [ ] **Step 3: Implement** (`src/game/mirror.ts`)
+- [x] **Step 3: Implement** (`src/game/mirror.ts`)
 
 ```ts
 // SPDX-License-Identifier: Apache-2.0
@@ -463,9 +463,9 @@ Modify `src/main.ts`:
 - debug hook: add `mirrors: mirrors.length`.
 - **Important:** the avatar's `PointLight` (the lantern in `main.ts`) stays on layer 0 — lights must affect both cameras. Only meshes were moved to layer 1 in Task 2.
 
-- [ ] **Step 4: GREEN + gates + quick visual sanity** — `npm run dev`, load `/?seed=MIRROR&look=teal-white`, walk forward/turn: your reflection must appear in the wall mirror at spawn (coat teal, lantern white). You cannot verify visually headlessly — instead add nothing to unit tests; Task 7's e2e asserts `mirrors >= 2` via the hook, and you record "visual check: deferred to user/e2e" in the report.
+- [x] **Step 4: GREEN + gates + quick visual sanity** — `npm run dev`, load `/?seed=MIRROR&look=teal-white`, walk forward/turn: your reflection must appear in the wall mirror at spawn (coat teal, lantern white). You cannot verify visually headlessly — instead add nothing to unit tests; Task 7's e2e asserts `mirrors >= 2` via the hook, and you record "visual check: deferred to user/e2e" in the report.
 
-- [ ] **Step 5: Commit** — `feat(step003): hero mirrors — planar RT reflections, self-reflection at spawn`
+- [x] **Step 5: Commit** — `feat(step003): hero mirrors — planar RT reflections, self-reflection at spawn`
 
 ---
 
@@ -501,7 +501,7 @@ export interface Hud {
 export function createHud(init: HudInit): Hud;
 ```
 
-- [ ] **Step 1: Extend failing tests** (`tests/unit/input.test.ts` — add)
+- [x] **Step 1: Extend failing tests** (`tests/unit/input.test.ts` — add)
 
 ```ts
 import { keysToMoveInput as map, mouseOnlyInput } from '../../src/engine/input';
@@ -535,9 +535,9 @@ describe('input modes', () => {
 
 Add both constants to `src/engine/constants.ts` (`KEY_TURN_PER_STEP = 0.045`, `MOUSE_TURN_PER_STEP = 0.06`) — update the import line above accordingly (`TURN_SENSITIVITY` already imported).
 
-- [ ] **Step 2: RED** — `npm test -- input`.
+- [x] **Step 2: RED** — `npm test -- input`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/engine/input.ts` — replace `keysToMoveInput` body and extend `InputCollector`:
 
@@ -669,9 +669,9 @@ export function createHud(init: HudInit): Hud {
 - pointer lock only in hybrid: wrap the existing click listener → `canvas.addEventListener('click', () => { if (mode === 'hybrid') { const lock = canvas.requestPointerLock() as unknown as { catch?: (cb: () => void) => void } | undefined; lock?.catch?.(() => {}); } });` (move the guard from Task M1's fix into the mode check)
 - in the fixed-step block: `const inputFrame = mode === 'mouse' ? mouseOnlyInput(input.mouseState()) : keysToMoveInput(input.snapshotAndReset(), mode);` — careful: in mouse mode don't drain mouseDx (unused); call `input.snapshotAndReset()` only for keyboard/hybrid exactly as before.
 
-- [ ] **Step 4: GREEN + gates + `npm run e2e`** (M1 smoke must still pass — hybrid default unchanged).
+- [x] **Step 4: GREEN + gates + `npm run e2e`** (M1 smoke must still pass — hybrid default unchanged).
 
-- [ ] **Step 5: Commit** — `feat(step003): three input modes with on-screen HUD switcher`
+- [x] **Step 5: Commit** — `feat(step003): three input modes with on-screen HUD switcher`
 
 ---
 
@@ -705,7 +705,7 @@ export function dailySeed(stamp: string): string;     // 6 chars from SEED_ALPHA
 export function recordRun(m: MetaSave, seed: string, ms: number, today: string): MetaSave; // min best + streak tick
 ```
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `tests/unit/floorrun.test.ts`:
 
@@ -767,9 +767,9 @@ describe('meta', () => {
 });
 ```
 
-- [ ] **Step 2: RED** — both files.
+- [x] **Step 2: RED** — both files.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/game/floorRun.ts`:
 
@@ -880,9 +880,9 @@ export function recordRun(m: MetaSave, seed: string, ms: number, today: string):
 - exit check (once per frame, when `run.clearedAt === null && run.startedAt !== null`): `if (isAtExit(player.x, player.y, exitCenter.cx, exitCenter.cy)) { run.clearedAt = now; const ms = runElapsedMs(run, now); const wasBest = meta.best[seed]; meta = recordRun(meta, seed, ms, todayStamp()); saveMeta(meta); hud.showCleared(ms, meta.best[seed] ?? null, wasBest === undefined || ms < wasBest); }`
 - `?seed=` daily flows through the normal seed path (6-char code is valid).
 
-- [ ] **Step 4: GREEN + gates + e2e still 2/2.**
+- [x] **Step 4: GREEN + gates + e2e still 2/2.**
 
-- [ ] **Step 5: Commit** — `feat(step003): floor timer, local best times, daily streak, daily seed`
+- [x] **Step 5: Commit** — `feat(step003): floor timer, local best times, daily streak, daily seed`
 
 ---
 
@@ -895,7 +895,7 @@ export function recordRun(m: MetaSave, seed: string, ms: number, today: string):
 **Interfaces:**
 - Produces: `export function buildFaqOverlay(): { root: HTMLElement; toggle(): void; }` — `<details>` list, built with `document.createElement` (no innerHTML).
 
-- [ ] **Step 1: Implement** (`src/ui/faq.ts`)
+- [x] **Step 1: Implement** (`src/ui/faq.ts`)
 
 ```ts
 // SPDX-License-Identifier: Apache-2.0
@@ -963,9 +963,9 @@ export function buildFaqOverlay(): { root: HTMLElement; toggle(): void } {
 
 `src/main.ts`: `const faq = buildFaqOverlay();` → hud init `onFaq: () => faq.toggle()`; keydown listener: `window.addEventListener('keydown', (e) => { if (e.code === 'KeyH' && !e.repeat) faq.toggle(); });`
 
-- [ ] **Step 2: Gates + e2e** (`npm run lint && npm run typecheck && npm test && npm run build && npm run e2e`).
+- [x] **Step 2: Gates + e2e** (`npm run lint && npm run typecheck && npm test && npm run build && npm run e2e`).
 
-- [ ] **Step 3: Commit** — `feat(step003): in-game FAQ screen (12 Q/A, doubles as future Aaina knowledge base)`
+- [x] **Step 3: Commit** — `feat(step003): in-game FAQ screen (12 Q/A, doubles as future Aaina knowledge base)`
 
 ---
 
@@ -990,7 +990,7 @@ window.__MIRROR_HOUSE_DEBUG__ = {
 };
 ```
 
-- [ ] **Step 1: Extend `src/main.ts` hook** (inside the existing `if (import.meta.env.DEV)` block; `mode` and `meta` are `let` bindings so closures read current values):
+- [x] **Step 1: Extend `src/main.ts` hook** (inside the existing `if (import.meta.env.DEV)` block; `mode` and `meta` are `let` bindings so closures read current values):
 
 ```ts
 (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__ = {
@@ -1005,7 +1005,7 @@ window.__MIRROR_HOUSE_DEBUG__ = {
 };
 ```
 
-- [ ] **Step 2: Add e2e tests** (`tests/e2e/smoke.spec.ts`)
+- [x] **Step 2: Add e2e tests** (`tests/e2e/smoke.spec.ts`)
 
 ```ts
 interface DebugHook {
@@ -1053,9 +1053,9 @@ test('step003: FAQ opens with 12 entries and H toggles', async ({ page }) => {
 
 Note: the M1 hook exposed `seed` as a plain field and `getPlayer` — keep those exact; the new `look`/`mode` are **functions** (closures over `let`), asserted with calls in tests.
 
-- [ ] **Step 3: Run** — `npm run e2e` → 5/5 (2 old + 3 new). Fix only genuine regressions; report anything suspicious.
+- [x] **Step 3: Run** — `npm run e2e` → 5/5 (2 old + 3 new). Fix only genuine regressions; report anything suspicious.
 
-- [ ] **Step 4: Commit** — `test(step003): e2e — look/mirrors/avatar, mode buttons, FAQ`
+- [x] **Step 4: Commit** — `test(step003): e2e — look/mirrors/avatar, mode buttons, FAQ`
 
 ---
 
@@ -1064,14 +1064,14 @@ Note: the M1 hook exposed `seed` as a plain field and `getPlayer` — keep those
 **Files:**
 - Modify: `README.md`, this plan (tick boxes), `docs/prompts-history/` (controller does the archive)
 
-- [ ] **Step 1: README updates** — controls section (three modes), `?look=coat-glass` table (4 coats × 3 glasses), Daily/streak/best explanation, FAQ button mention, art-direction screenshot placeholder note. Status line: "step003 — playable mirror-maze walker with self-reflection."
-- [ ] **Step 2: Local acceptance checklist**
+- [x] **Step 1: README updates** — controls section (three modes), `?look=coat-glass` table (4 coats × 3 glasses), Daily/streak/best explanation, FAQ button mention, art-direction screenshot placeholder note. Status line: "step003 — playable mirror-maze walker with self-reflection."
+- [x] **Step 2: Local acceptance checklist**
   - [ ] `npm run lint && npm run typecheck && npm test && npm run build && npm run e2e` all green
   - [ ] `?look=` all 12 valid combos parse (spot-check 3 in dev)
   - [ ] Streak increments only on cleared floor; best keeps min (unit-tested)
   - [ ] localStorage cleared → game still boots (defaultMeta path)
   - [ ] Bundle still < 3 MB gz
-- [ ] **Step 3: Commit** — `docs(step003): controls, looks, daily/streak, README`
+- [x] **Step 3: Commit** — `docs(step003): controls, looks, daily/streak, README`
 
 ## Plan Self-Review (authoring time)
 
