@@ -142,7 +142,11 @@ if (import.meta.env.DEV) {
   (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__ = {
     getPlayer: () => ({ ...player }),
     seed,
-    look: look.name,
+    look: () => look.name,
+    mode: () => mode,
     mirrors: mirrors.length,
+    avatarPresent: true,
+    streak: () => meta.streak.count,
+    bestFor: (s: string) => meta.best[s] ?? null,
   };
 }

@@ -4,7 +4,29 @@ import { expect, test } from '@playwright/test';
 interface DebugHook {
   getPlayer(): { x: number; y: number; heading: number };
   seed: string;
+  look(): string;
+  mode(): string;
+  mirrors: number;
+  avatarPresent: boolean;
+  streak(): number;
+  bestFor(seed: string): number | null;
 }
+// page.evaluate results cannot carry functions across the process boundary,
+// so the closure-backed members (look/mode/streak) are invoked in the browser
+// and returned as a snapshot; `mode` is re-read per call, so a snapshot taken
+// after a click reflects the current input mode.
+const hook = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      seed: h.seed,
+      look: h.look(),
+      mode: h.mode(),
+      mirrors: h.mirrors,
+      avatarPresent: h.avatarPresent,
+      streak: h.streak(),
+    };
+  });
 
 test('loads a seeded floor, moves with W, no page errors', async ({ page }) => {
   const errors: string[] = [];
@@ -41,4 +63,33 @@ test('same seed renders the same spawn', async ({ page }) => {
     () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
   expect(q).toEqual(p);
+});
+
+test('step003: look param, mirrors at spawn, avatar present', async ({ page }) => {
+  await page.goto('/?seed=MIRROR&look=teal-white');
+  await page.waitForFunction(() => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__);
+  const h = await hook(page);
+  expect(h.look).toBe('teal-white');
+  expect(h.mirrors).toBeGreaterThanOrEqual(2);
+  expect(h.avatarPresent).toBe(true);
+});
+
+test('step003: mode buttons switch input mode', async ({ page }) => {
+  await page.goto('/?seed=MODES');
+  await page.waitForFunction(() => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__);
+  await page.locator('#hud button[data-mode="keyboard"]').click();
+  expect((await hook(page)).mode).toBe('keyboard');
+  await page.locator('#hud button[data-mode="mouse"]').click();
+  expect((await hook(page)).mode).toBe('mouse');
+});
+
+test('step003: FAQ opens with 12 entries and H toggles', async ({ page }) => {
+  await page.goto('/?seed=FAQ');
+  await page.waitForFunction(() => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__);
+  await page.locator('#mh-faq').click();
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(12);
+  await page.keyboard.press('KeyH'); // closes
+  await expect(page.locator('#mh-faq-overlay')).toBeHidden();
+  await page.keyboard.press('KeyH'); // reopens
+  await expect(page.locator('#mh-faq-overlay')).toBeVisible();
 });
