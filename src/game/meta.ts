@@ -9,6 +9,8 @@ export interface MetaSave {
   mode: InputMode;
   best: Record<string, number>;
   streak: { count: number; lastDay: string };
+  /** Additive (M2/T6): shards banked from cleared floors. Absent on older saves. */
+  shards?: number;
 }
 
 export const META_KEY = 'mirrorhouse.meta.v1';
@@ -70,4 +72,9 @@ export function recordRun(m: MetaSave, seed: string, ms: number, today: string):
     best: prev === undefined || ms < prev ? { ...m.best, [seed]: ms } : m.best,
     streak: { count: nextStreak(m.streak.count, m.streak.lastDay, today), lastDay: today },
   };
+}
+
+/** Bank cleared-floor shards into the save (additive from an absent count). */
+export function awardShards(m: MetaSave, gained: number): MetaSave {
+  return { ...m, shards: (m.shards ?? 0) + gained };
 }

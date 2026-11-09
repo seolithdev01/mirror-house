@@ -36,3 +36,13 @@ export const CONFUSE_UNFOGGED_R = 8; // m — one unfogged eye this close preven
 export const CHHAYA_DELAY_MS = 6000; // ms behind the player she walks
 export const CHHAYA_PATH_WINDOW_MS = 20_000; // ms of path history retained
 export const CHHAYA_PATH_MAX_SAMPLES = 1200; // hard cap (10s at the 120Hz fixed step)
+
+// House state (M2/T6) — anger, cracks, fail/restart, shards
+export const CRACK_ANGER = 15; // anger per cracked mirror (once per mirror)
+export const ANGER_MAX = 100; // anger at which the house collapses (7 cracks)
+export const CRACK_RANGE = 1.0; // m — sprint-contact distance that cracks a mirror
+export const CRACK_TINT = 0x4a4038; // tint a cracked mirror's glass takes on
+export const SHARD_PERFECT = 25; // clear bonus when no mirror was cracked this run
+export const SHARD_STUCK = 10; // per echo that was confused at least once this run
+export const FAIL_FREEZE_MS = 1200; // ms of frozen input between fail and restart
+export const EXIT_LOCKED_EMISSIVE = 0x5c2a2a; // exit marker while beacons remain

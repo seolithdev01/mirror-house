@@ -19,8 +19,13 @@ export interface Hud {
     shards?: number;
   }): void;
   setBreath(v: number): void;
+  setAnger(v: number): void;
   showCleared(ms: number, bestMs: number | null, isBest: boolean): void;
   hideCleared(): void;
+  showFail(reason: string): void;
+  hideFail(): void;
+  /** One line of in-world guidance; null hides it (T7 passages will drive it). */
+  hint(text: string | null): void;
   root: HTMLElement;
 }
 
@@ -76,13 +81,25 @@ export function createHud(init: HudInit): Hud {
   const breathFill = document.createElement('div');
   breathFill.id = 'mh-breath-fill';
   breath.appendChild(breathFill);
+  const anger = document.createElement('div');
+  anger.id = 'mh-anger';
+  const angerFill = document.createElement('div');
+  angerFill.id = 'mh-anger-fill';
+  anger.appendChild(angerFill);
   const cleared = document.createElement('div');
   cleared.id = 'mh-cleared';
   cleared.hidden = true;
-  root.append(modes, faq, daily, frost, chips, breath, cleared);
+  const fail = document.createElement('div');
+  fail.id = 'mh-fail';
+  fail.hidden = true;
+  const hint = document.createElement('div');
+  hint.id = 'mh-hint';
+  hint.hidden = true;
+  root.append(modes, faq, daily, frost, chips, breath, anger, cleared, fail, hint);
   document.body.appendChild(root);
 
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
+  let hintText: string | null = null; // last shown hint (hint() early-returns on repeats)
   const setMode = (mode: InputMode) => {
     for (const m of Object.keys(buttons)) buttons[m]!.classList.toggle('active', m === mode);
   };
@@ -111,6 +128,10 @@ export function createHud(init: HudInit): Hud {
       breathFill.style.width = `${(clamped * 100).toFixed(1)}%`;
       frost.disabled = clamped < FOG_COST; // no click-spam when there is not enough breath
     },
+    setAnger: (v) => {
+      const clamped = Math.max(0, Math.min(1, v));
+      angerFill.style.width = `${(clamped * 100).toFixed(1)}%`;
+    },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;
       cleared.textContent = isBest
@@ -119,6 +140,19 @@ export function createHud(init: HudInit): Hud {
     },
     hideCleared: () => {
       cleared.hidden = true;
+    },
+    showFail: (reason) => {
+      fail.hidden = false;
+      fail.textContent = reason;
+    },
+    hideFail: () => {
+      fail.hidden = true;
+    },
+    hint: (text) => {
+      if (text === hintText) return; // per-frame calls stay off the DOM when idle
+      hintText = text;
+      hint.hidden = text === null;
+      hint.textContent = text;
     },
     root,
   };

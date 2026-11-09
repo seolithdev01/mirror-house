@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as THREE from 'three';
 import {
+  ANGER_MAX,
   CHHAYA_DELAY_MS,
   CONTACT_RADIUS,
   EYE_HEIGHT,
+  EXIT_LOCKED_EMISSIVE,
+  FAIL_FREEZE_MS,
   FIXED_STEP,
   FOG_COST,
   SHARD_BEACON,
@@ -18,13 +21,23 @@ import { generateFloorObjects, mirrorSpotFor, type MirrorRef } from './game/floo
 import { createFloorRun, isAtExit, runElapsedMs } from './game/floorRun';
 import { buildFloorScene } from './game/floorScene';
 import { applyFog, fogTarget, initMirrorRuntime, isFogged, updateBreath } from './game/frost';
+import {
+  applyCrack,
+  beaconsCaptured,
+  crackTarget,
+  exitUnlocked,
+  initHouseState,
+  isCollapse,
+  shardsForClear,
+} from './game/houseState';
 import { parseLook } from './game/look';
 import { generateFloor, TIER_ONE } from './game/maze';
-import { dailySeed, loadMeta, recordRun, saveMeta, todayStamp } from './game/meta';
+import { awardShards, dailySeed, loadMeta, recordRun, saveMeta, todayStamp } from './game/meta';
 import {
   createMirrorMesh,
   HeroMirror,
   mirrorSpots,
+  type CrackVisual,
   type FogVisual,
   type MirrorFogState,
 } from './game/mirror';
@@ -41,7 +54,7 @@ const seed = isValidSeed(urlSeed) ? urlSeed : randomSeed();
 const floor = generateFloor({ ...TIER_ONE, seed });
 let player: PlayerState = spawnPlayer(floor);
 let meta = loadMeta();
-const run = createFloorRun(seed);
+let run = createFloorRun(seed); // re-armed (fresh) by resetFloor after a fail
 const exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -49,7 +62,17 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b1026);
 scene.fog = new THREE.Fog(0x0b1026, 2, 26);
-scene.add(buildFloorScene(floor).group);
+const sceneBuilt = buildFloorScene(floor);
+scene.add(sceneBuilt.group);
+// Beacon gate: the stair door burns dim red until every beacon is frosted,
+// then returns to its built gold. Tint the material the scene was built with.
+const exitMarkerMat = sceneBuilt.exitMarker.material as THREE.MeshStandardMaterial;
+const exitUnlockedTint = exitMarkerMat.emissive.getHex();
+function setExitLocked(locked: boolean): void {
+  const hex = locked ? EXIT_LOCKED_EMISSIVE : exitUnlockedTint;
+  exitMarkerMat.emissive.setHex(hex);
+  exitMarkerMat.color.setHex(hex);
+}
 const look = parseLook(new URLSearchParams(window.location.search).get('look'));
 const avatar = createAvatar(look);
 scene.add(avatar);
@@ -77,14 +100,14 @@ for (const cell of [floor.entrance, floor.exit]) {
     });
 }
 const allMirrors = [...objs.mirrors, ...heroRefs];
-const mirrorRuntime = initMirrorRuntime(allMirrors);
+let mirrorRuntime = initMirrorRuntime(allMirrors); // re-init by resetFloor after a fail
 
 // Bind every mirror to a visual: HeroMirror when its spot matches by position
 // proximity (same wall-mount convention; a floorObjects mirror can never sit
 // closer than ~0.24m to a hero spot), else a cheap reflective-look mesh.
 const MIRROR_MATCH_EPS = 0.05;
 interface MirrorBinding {
-  bind: FogVisual;
+  bind: FogVisual & CrackVisual;
   hero: HeroMirror | null;
   state: MirrorFogState;
 }
@@ -93,19 +116,18 @@ const visuals: MirrorBinding[] = allMirrors.map((m) => {
     (h) => Math.hypot(h.mesh.position.x - m.x, h.mesh.position.z - m.z) < MIRROR_MATCH_EPS,
   );
   if (hero) return { bind: hero, hero, state: 'clear' as const };
-  const { mesh, setFog } = createMirrorMesh(m.kind);
+  const { mesh, setFog, setCracked } = createMirrorMesh(m.kind);
   mesh.position.set(m.x, 1.35, m.z);
   mesh.rotation.y = m.rotY;
   scene.add(mesh);
-  return { bind: { setFog }, hero: null, state: 'clear' as const };
+  return { bind: { setFog, setCracked }, hero: null, state: 'clear' as const };
 });
 
-// Frost Lantern state (M2): breath meter + beacon capture. `pendingShards`
-// awaits the T6 house state, which awards SHARD_BEACON per capture at clear.
+// House state (M2/T6): anger from sprint-cracked mirrors, attempt count, and
+// the shards pending this attempt (beacon captures bank here — awarded only
+// at clear, forfeited on a fail).
+let house = initHouseState();
 let breath = 1;
-const totalBeacons = allMirrors.filter((m) => m.kind === 'beacon').length;
-let capturedBeacons = 0;
-let pendingShards = 0;
 
 // M2 echoes: hollow reflections hunting through the mirrors above. They see
 // via allMirrors/mirrorRuntime, walk the flow field, and touch-fail the run.
@@ -117,13 +139,47 @@ const echoMeshes = echoes.map(() => {
   return mesh;
 });
 
-// Contact fails the floor. Placeholder no-op until T6's house state lands
-// (shatter + restart + streak break); the check site stays here regardless.
+// Fail + restart (M2/T6). Caught by an echo or Chhaya, or the house collapses
+// at ANGER_MAX: the HUD announces it, input freezes FAIL_FREEZE_MS (the timer
+// pins at the fail moment via run state), then the floor re-arms for the next
+// attempt — mirrors unfrost/un-crack, echoes and Chhaya reset, pending beacon
+// shards are forfeited, and the player returns to the spawn.
 let floorFailed = false;
+let freezeUntil: number | null = null;
+let frozenElapsedMs = 0;
+
 function failFloor(reason: string): void {
-  if (floorFailed) return;
+  if (floorFailed || run.clearedAt !== null) return;
   floorFailed = true;
-  console.warn(`floor failed: ${reason}`);
+  const now = performance.now();
+  freezeUntil = now + FAIL_FREEZE_MS;
+  frozenElapsedMs = runElapsedMs(run, now);
+  hud.showFail(reason === 'collapse' ? 'The mirrors collapsed' : 'Caught by the glass');
+}
+
+function resetFloor(now: number): void {
+  mirrorRuntime = initMirrorRuntime(allMirrors);
+  for (const v of visuals) {
+    v.state = 'clear';
+    v.bind.setFog('clear');
+    v.bind.setCracked(false);
+  }
+  echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, now);
+  path = []; // Chhaya loses the trail; she hides on the next update
+  chhaya.visible = false;
+  house = { ...initHouseState(), attempts: house.attempts + 1 };
+  breath = 1;
+  run = createFloorRun(seed);
+  player = spawnPlayer(floor);
+  floorFailed = false;
+  freezeUntil = null;
+  hud.hideFail();
+  setExitLocked(true);
+  hud.setChips({
+    beacons: beaconsCaptured(allMirrors, mirrorRuntime),
+    shards: house.shards,
+    timerMs: null,
+  });
 }
 
 // M2 Chhaya: the six-second shadow. A pure replay of the player's recorded
@@ -154,6 +210,7 @@ function updateChhaya(now: number): void {
 }
 
 function tryFrost(now: number): void {
+  if (floorFailed || run.clearedAt !== null) return; // no frost while frozen or done
   const target = fogTarget(allMirrors, player);
   if (!target || breath < FOG_COST) return;
   const rt = mirrorRuntime.find((r) => r.id === target.id);
@@ -162,12 +219,10 @@ function tryFrost(now: number): void {
   applyFog(mirrorRuntime, target.id, now);
   breath = updateBreath(breath, 0, true);
   if (!wasCaptured && rt.captured) {
-    capturedBeacons++;
-    pendingShards += SHARD_BEACON;
-    hud.setChips({
-      beacons: { captured: capturedBeacons, total: totalBeacons },
-      shards: pendingShards,
-    });
+    // Beacon shards bank as pending in the house state — awarded at clear.
+    house = { ...house, shards: house.shards + SHARD_BEACON };
+    hud.setChips({ beacons: beaconsCaptured(allMirrors, mirrorRuntime), shards: house.shards });
+    setExitLocked(!exitUnlocked(allMirrors, mirrorRuntime));
   }
 }
 
@@ -204,10 +259,8 @@ const hud = createHud({
   },
   onFrost: () => tryFrost(performance.now()),
 });
-hud.setChips({
-  beacons: { captured: capturedBeacons, total: totalBeacons },
-  shards: pendingShards,
-});
+hud.setChips({ beacons: beaconsCaptured(allMirrors, mirrorRuntime), shards: house.shards });
+setExitLocked(true); // the stair door starts sealed behind its beacons
 canvas.addEventListener('click', () => {
   if (mode === 'hybrid') {
     const lock = canvas.requestPointerLock() as unknown as
@@ -241,42 +294,65 @@ let frameIndex = 0;
 function frame(now: number): void {
   const elapsed = Math.min(now - last, 250) / 1000;
   last = now;
-  accumulator += elapsed;
-  while (accumulator >= FIXED_STEP) {
-    const inputFrame =
-      mode === 'mouse'
-        ? mouseOnlyInput(input.mouseState())
-        : keysToMoveInput(input.snapshotAndReset(), mode);
-    player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
-    const inputActive =
-      inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
-    if (run.startedAt === null && inputActive) run.startedAt = now;
-    updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);
-    breath = updateBreath(breath, FIXED_STEP, false); // recharge per fixed step
-    echoes = echoes.map((e) =>
-      updateEcho(
-        e,
-        player,
-        allMirrors,
-        mirrorRuntime,
-        floor.grid,
-        objs.patrolAnchors,
-        now,
-        FIXED_STEP,
-      ),
-    );
-    // Chhaya walks the player's path, 6s late — record only while the run is
-    // active; after clear/fail she stands wherever the path ended.
-    if (run.startedAt !== null && run.clearedAt === null && !floorFailed)
-      path = recordPath(path, player.x, player.y, now);
-    if (!floorFailed) {
-      for (const e of echoes)
-        if (Math.hypot(e.x - player.x, e.y - player.y) < CONTACT_RADIUS) failFloor('caught');
-      const at = sampleDelayed(path, now);
-      if (at !== null && Math.hypot(at.x - player.x, at.y - player.y) < CONTACT_RADIUS)
-        failFloor('caught');
+  if (freezeUntil !== null) {
+    // Fail freeze: no simulation, inputs ignored, timer pinned at the fail
+    // moment via run state — restarting re-arms it fresh.
+    accumulator = 0;
+    if (run.startedAt !== null) run.startedAt = now - frozenElapsedMs;
+    if (now >= freezeUntil) resetFloor(now);
+  } else {
+    accumulator += elapsed;
+    while (accumulator >= FIXED_STEP && freezeUntil === null) {
+      const inputFrame =
+        mode === 'mouse'
+          ? mouseOnlyInput(input.mouseState())
+          : keysToMoveInput(input.snapshotAndReset(), mode);
+      player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
+      const inputActive =
+        inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
+      if (run.startedAt === null && inputActive) run.startedAt = now;
+      updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);
+      breath = updateBreath(breath, FIXED_STEP, false); // recharge per fixed step
+      echoes = echoes.map((e) => {
+        const next = updateEcho(
+          e,
+          player,
+          allMirrors,
+          mirrorRuntime,
+          floor.grid,
+          objs.patrolAnchors,
+          now,
+          FIXED_STEP,
+        );
+        // Stuck bounty: first confusion banks the award flag for this run.
+        return next.mode === 'confused' && !next.stuckAwarded
+          ? { ...next, stuckAwarded: true }
+          : next;
+      });
+      // Sprint into a mirror and it cracks: the house angers, the glass tints.
+      const sprintMoving =
+        inputFrame.sprint && (inputFrame.forward !== 0 || inputFrame.strafe !== 0);
+      if (sprintMoving && !floorFailed && run.clearedAt === null) {
+        const target = crackTarget(allMirrors, mirrorRuntime, player, true);
+        if (target) {
+          house = applyCrack(house, mirrorRuntime, target.id);
+          visuals.find((_, i) => allMirrors[i]!.id === target.id)?.bind.setCracked(true);
+          if (isCollapse(house)) failFloor('collapse');
+        }
+      }
+      // Chhaya walks the player's path, 6s late — record only while the run is
+      // active; after clear/fail she stands wherever the path ended.
+      if (run.startedAt !== null && run.clearedAt === null && !floorFailed)
+        path = recordPath(path, player.x, player.y, now);
+      if (!floorFailed) {
+        for (const e of echoes)
+          if (Math.hypot(e.x - player.x, e.y - player.y) < CONTACT_RADIUS) failFloor('caught');
+        const at = sampleDelayed(path, now);
+        if (at !== null && Math.hypot(at.x - player.x, at.y - player.y) < CONTACT_RADIUS)
+          failFloor('caught');
+      }
+      accumulator -= FIXED_STEP;
     }
-    accumulator -= FIXED_STEP;
   }
   echoes.forEach((e, i) => syncEchoMesh(echoMeshes[i]!, e));
   updateChhaya(now);
@@ -286,18 +362,37 @@ function frame(now: number): void {
     bestMs: meta.best[seed] ?? null,
   });
   hud.setBreath(breath);
+  hud.setAnger(house.anger / ANGER_MAX);
   syncFogVisuals(now);
+  const unlocked = exitUnlocked(allMirrors, mirrorRuntime);
   if (
     run.clearedAt === null &&
     run.startedAt !== null &&
+    unlocked &&
     isAtExit(player.x, player.y, exitCenter.cx, exitCenter.cy)
   ) {
     run.clearedAt = now;
     const ms = runElapsedMs(run, now);
     const wasBest = meta.best[seed];
     meta = recordRun(meta, seed, ms, todayStamp());
+    meta = awardShards(
+      meta,
+      house.shards + shardsForClear(house, echoes.filter((e) => e.stuckAwarded).length),
+    );
     saveMeta(meta);
     hud.showCleared(ms, meta.best[seed] ?? null, wasBest === undefined || ms < wasBest);
+    hud.setChips({ shards: meta.shards ?? 0 }); // chip flips from pending to banked
+  }
+  // Sealed-door hint: standing at a locked exit explains the beacon gate.
+  if (
+    run.clearedAt === null &&
+    !unlocked &&
+    Math.hypot(player.x - exitCenter.cx, player.y - exitCenter.cy) < 3
+  ) {
+    const bc = beaconsCaptured(allMirrors, mirrorRuntime);
+    hud.hint(`The stair door is sealed — frost the beacons (${bc.captured}/${bc.total})`);
+  } else {
+    hud.hint(null);
   }
   camera.position.set(player.x, EYE_HEIGHT, player.y);
   camera.rotation.y = -player.heading;
@@ -337,7 +432,17 @@ if (import.meta.env.DEV) {
     breath: () => breath,
     echoes: () => echoes.map((e) => ({ id: e.id, x: e.x, y: e.y, mode: e.mode })),
     chhaya: () => sampleDelayed(path, performance.now()),
-    beacons: () => ({ captured: capturedBeacons, total: totalBeacons }),
+    house: () => ({
+      anger: house.anger,
+      attempts: house.attempts,
+      pendingShards: house.shards,
+      crackedAny: house.crackedAny,
+      beacons: beaconsCaptured(allMirrors, mirrorRuntime),
+      exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
+      failed: floorFailed,
+    }),
+    metaShards: () => meta.shards ?? 0,
+    fail: (reason: string) => failFloor(reason),
     fogTarget: () => fogTarget(allMirrors, player)?.id ?? null,
     mirrorRefs: () => allMirrors.map((m) => ({ ...m })),
     mirrorRuntime: () => mirrorRuntime.map((r) => ({ ...r })),

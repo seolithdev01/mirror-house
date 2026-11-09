@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as THREE from 'three';
-import { CELL_SIZE } from '../engine/constants';
+import { CELL_SIZE, CRACK_TINT } from '../engine/constants';
 import { Dir, DIR_VECTOR } from '../engine/grid';
 import type { Floor } from './maze';
 import type { MirrorKind } from './floorObjects';
@@ -14,6 +14,12 @@ export type MirrorFogState = 'clear' | 'fogged' | 'captured';
 /** Anything whose material can be swapped for the frost visual (hero or cheap). */
 export interface FogVisual {
   setFog(state: MirrorFogState): void;
+}
+
+/** A mirror that can show the sprint-crack tint (T6 house anger). Reversible:
+ *  a floor restart un-cracks every mirror, so the original tint is restored. */
+export interface CrackVisual {
+  setCracked(cracked: boolean): void;
 }
 
 // Shared swap targets — fogged glass goes matte (a perf win: fogging removes
@@ -52,13 +58,15 @@ export function mirrorSpots(floor: Floor): MirrorSpot[] {
  * pass). Beacons add the teal emissive so objectives read at a glance. The
  * caller positions/rotates `mesh` from the MirrorRef spot.
  */
-export interface CheapMirror extends FogVisual {
+export interface CheapMirror extends FogVisual, CrackVisual {
   readonly mesh: THREE.Mesh;
 }
 
+const MIRROR_BASE_COLOR = 0x8fb8c8;
+
 export function createMirrorMesh(kind: MirrorKind): CheapMirror {
   const base = new THREE.MeshStandardMaterial({
-    color: 0x8fb8c8,
+    color: MIRROR_BASE_COLOR,
     metalness: 0.9,
     roughness: 0.15,
     ...(kind === 'beacon' ? { emissive: 0x2ec4b6, emissiveIntensity: 0.25 } : {}),
@@ -72,21 +80,28 @@ export function createMirrorMesh(kind: MirrorKind): CheapMirror {
       state = next;
       mesh.material = next === 'captured' ? capturedMaterial : next === 'fogged' ? foggedMaterial : base;
     },
+    // Tint only the per-instance base material — the fogged/captured materials
+    // are shared, and a crack outlives frost anyway (it shows once fog lifts).
+    setCracked(cracked: boolean): void {
+      base.color.setHex(cracked ? CRACK_TINT : MIRROR_BASE_COLOR);
+    },
   };
 }
 
-export class HeroMirror implements FogVisual {
+export class HeroMirror implements FogVisual, CrackVisual {
   readonly mesh: THREE.Mesh;
   private readonly rt: THREE.WebGLRenderTarget;
   private readonly rtMaterial: THREE.MeshBasicMaterial;
   private readonly cam = new THREE.PerspectiveCamera();
   private readonly plane: THREE.Plane;
   private readonly target = new THREE.Vector3();
+  private readonly baseTint: number;
   private fogged = false;
 
   constructor(spot: MirrorSpot, tint = 0xcfe8ea) {
     this.rt = new THREE.WebGLRenderTarget(512, 512);
     this.rtMaterial = new THREE.MeshBasicMaterial({ map: this.rt.texture, color: tint });
+    this.baseTint = tint;
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.4), this.rtMaterial);
     this.mesh.position.set(spot.x, 1.35, spot.z);
     this.mesh.rotation.y = spot.rotY;
@@ -99,6 +114,11 @@ export class HeroMirror implements FogVisual {
   setFog(state: MirrorFogState): void {
     this.fogged = state !== 'clear';
     this.mesh.material = this.fogged ? foggedMaterial : this.rtMaterial;
+  }
+
+  /** Tint the RT material — the reflection itself goes dark, cracks included. */
+  setCracked(cracked: boolean): void {
+    this.rtMaterial.color.setHex(cracked ? CRACK_TINT : this.baseTint);
   }
 
   update(renderer: THREE.WebGLRenderer, scene: THREE.Scene, mainCam: THREE.PerspectiveCamera): void {

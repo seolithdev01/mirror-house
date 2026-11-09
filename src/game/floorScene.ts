@@ -6,7 +6,12 @@ import type { Floor } from './maze';
 import { TIER_ONE_PALETTE, type TierPalette } from './palette';
 import { canvasTexture, makeFloorTexture, makeWallTexture } from './textures';
 
-export interface FloorSceneResult { group: THREE.Group; wallInstanceCount: number }
+export interface FloorSceneResult {
+  group: THREE.Group;
+  wallInstanceCount: number;
+  /** The exit marker mesh, exposed so main.ts can re-tint it for the beacon gate. */
+  exitMarker: THREE.Mesh;
+}
 
 function instancedWalls(segs: WallSegment[], horizontal: boolean, mat: THREE.MeshStandardMaterial): THREE.InstancedMesh {
   const geo = horizontal
@@ -63,7 +68,8 @@ export function buildFloorScene(floor: Floor, palette: TierPalette = TIER_ONE_PA
 
   group.add(floorPlane, ceiling);
   group.add(instancedWalls(horizontal, true, wallMat), instancedWalls(vertical, false, wallMat));
-  group.add(marker(en.cx, en.cy, palette.entrance), marker(ex.cx, ex.cy, palette.exit));
+  const exitMarker = marker(ex.cx, ex.cy, palette.exit);
+  group.add(marker(en.cx, en.cy, palette.entrance), exitMarker);
 
-  return { group, wallInstanceCount: segs.length };
+  return { group, wallInstanceCount: segs.length, exitMarker };
 }
