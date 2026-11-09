@@ -59,3 +59,9 @@ export const DOOR_SLIDE_MS = 400; // ms the slide takes (linear lerp in the fram
 // Procedural audio (M3) — raga-mood theory + WebAudio engine
 export const AUDIO_ROOT_HZ = 110; // A2 — drone root; melody window sits one octave above
 export const AUDIO_GAIN_CEILING = 0.5; // master gain cap (mute = 0)
+
+// Campaign (M4) — Tier-1 floor ladder, Taal's beat
+export const TIER_ONE_FLOORS = 10; // floors 1–9 procedural ramp, 10 = Dwaar I
+export const DWAAR_FLOOR = 10; // tier-complete threshold hall (fixed layout)
+export const TAAL_FLOOR = 5; // the beat-walker's cameo floor
+export const BEAT_TICK_MS = 250; // Taal's lurch clock — 8-tick cycle (2s)
