@@ -77,6 +77,17 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'key.mute': 'Mute',
     'key.tactical': 'Tactical pause',
     'settings.close': '✕ Close',
+    // M6/T1 — the Floors section: the venue side-floor card (demo pack + Play)
+    'settings.floors': 'Floors',
+    'venue.demoName': '☕ Glasshouse Café — DEMO',
+    'venue.play': '▶ Play demo floor',
+    'venue.return': '↩ Return to campaign',
+    'venue.settingsNote': 'Sponsored floors never touch your campaign, shards, or bests.',
+    'venue.banner': '☕ {name} floor (daily seed)',
+    'venue.bannerNote':
+      'Sponsored floor — no shards or bests; your campaign floor restarts when you return.',
+    'overlay.venueCleared': 'Floor cleared — return via ⚙',
+    'toast.venueRejected': 'Venue floor unavailable',
     // chips (emoji + label + live value)
     'chip.streak': 'Streak',
     'chip.best': 'Best',
@@ -195,6 +206,17 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'key.mute': 'मौन',
     'key.tactical': 'रणनीति विराम',
     'settings.close': '✕ बंद करें',
+    // M6/T1 — मंज़िलें अनुभाग: वेन्यू साइड-फ़्लोर कार्ड (डेमो पैक + खेलें)
+    'settings.floors': 'मंज़िलें',
+    'venue.demoName': '☕ ग्लासहाउस कैफ़े — डेमो',
+    'venue.play': '▶ डेमो मंज़िल खेलें',
+    'venue.return': '↩ अभियान पर लौटें',
+    'venue.settingsNote': 'प्रायोजित मंज़िलें आपके अभियान, शार्ड और सर्वश्रेष्ठ समय को नहीं छूतीं।',
+    'venue.banner': '☕ {name} मंज़िल (दैनिक सीड)',
+    'venue.bannerNote':
+      'प्रायोजित मंज़िल — कोई शार्ड या सर्वश्रेष्ठ नहीं; लौटने पर आपकी अभियान मंज़िल फिर शुरू होती है।',
+    'overlay.venueCleared': 'मंज़िल पार — ⚙ से लौटें',
+    'toast.venueRejected': 'वेन्यू मंज़िल उपलब्ध नहीं है',
     // चिपें — छोटे शब्द, एक ही पंक्ति
     'chip.streak': 'लय',
     'chip.best': 'सर्वश्रेष्ठ',

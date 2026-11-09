@@ -37,14 +37,26 @@ export interface CrackVisual {
 
 // Shared swap targets — fogged glass goes matte (a perf win: fogging removes
 // reflective work); a captured beacon additionally carries the teal emissive,
-// pulse-free. Shared instances: never disposed per mirror.
+// pulse-free. Shared instances: never disposed per mirror. M6/T1 — venue
+// floors recolor their beacon emissive with the pack's secondary accent, so
+// the captured swap material is a per-accent cache (one live material per
+// color, still never disposed per mirror).
+const BEACON_TEAL = 0x2ec4b6;
 const foggedMaterial = new THREE.MeshStandardMaterial({ color: 0x39415f, roughness: 1 });
-const capturedMaterial = new THREE.MeshStandardMaterial({
-  color: 0x39415f,
-  roughness: 1,
-  emissive: 0x2ec4b6,
-  emissiveIntensity: 0.6,
-});
+const capturedMaterials = new Map<number, THREE.MeshStandardMaterial>();
+function capturedMaterialFor(accent: number): THREE.MeshStandardMaterial {
+  let m = capturedMaterials.get(accent);
+  if (m === undefined) {
+    m = new THREE.MeshStandardMaterial({
+      color: 0x39415f,
+      roughness: 1,
+      emissive: accent,
+      emissiveIntensity: 0.6,
+    });
+    capturedMaterials.set(accent, m);
+  }
+  return m;
+}
 
 /** Deterministic wall-mounted spots: first walled direction of the entrance and exit cells. */
 export function mirrorSpots(floor: Floor): MirrorSpot[] {
@@ -68,8 +80,9 @@ export function mirrorSpots(floor: Floor): MirrorSpot[] {
 
 /**
  * Cheap standing/beacon/true/silvered mirror: reflective-look material (no RT
- * pass). Beacons add the teal emissive so objectives read at a glance. The
- * caller positions/rotates `mesh` from the MirrorRef spot.
+ * pass). Beacons add the teal emissive so objectives read at a glance; a
+ * venue floor (M6/T1) passes `beaconAccent` to recolor that emissive with the
+ * pack's secondary. The caller positions/rotates `mesh` from the MirrorRef spot.
  */
 export interface CheapMirror extends FogVisual, CrackVisual {
   readonly mesh: THREE.Mesh;
@@ -80,12 +93,15 @@ export interface CheapMirror extends FogVisual, CrackVisual {
 
 const MIRROR_BASE_COLOR = 0x8fb8c8;
 
-export function createMirrorMesh(kind: MirrorKind): CheapMirror {
+export function createMirrorMesh(
+  kind: MirrorKind,
+  beaconAccent: number = BEACON_TEAL,
+): CheapMirror {
   const base = new THREE.MeshStandardMaterial({
     color: MIRROR_BASE_COLOR,
     metalness: 0.9,
     roughness: 0.15,
-    ...(kind === 'beacon' ? { emissive: 0x2ec4b6, emissiveIntensity: 0.25 } : {}),
+    ...(kind === 'beacon' ? { emissive: beaconAccent, emissiveIntensity: 0.25 } : {}),
   });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.4), base);
   let state: MirrorFogState = 'clear';
@@ -95,7 +111,11 @@ export function createMirrorMesh(kind: MirrorKind): CheapMirror {
       if (next === state) return;
       state = next;
       mesh.material =
-        next === 'captured' ? capturedMaterial : next === 'fogged' ? foggedMaterial : base;
+        next === 'captured'
+          ? capturedMaterialFor(beaconAccent)
+          : next === 'fogged'
+            ? foggedMaterial
+            : base;
     },
     // Tint only the per-instance base material — the fogged/captured materials
     // are shared, and a crack outlives frost anyway (it shows once fog lifts).

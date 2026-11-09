@@ -50,6 +50,10 @@ export interface SettingsInit {
   /** M5/T2 — reset every binding to DEFAULT_KEYMAP (the one sanctioned way
    *  back to the default E pair once it has been split). */
   onResetKeys(): void;
+  /** M6/T1 — the Floors section's single button: play the DEMO venue pack's
+   *  side-floor, or — while one is live — return to the campaign. Main owns
+   *  which (it holds the venue state); the button's label follows setVenue. */
+  onVenueFloor(): void;
   /** Fired on every closing path (✕, backdrop, toggle-to-close) — main
    *  flushes the debounced save write here, so a closed tab eats nothing. */
   onClosed(): void;
@@ -61,6 +65,9 @@ export interface SettingsOverlay {
   toggle(): void;
   setValues(v: SettingsValues): void;
   setLang(lang: Lang): void;
+  /** M6/T1 — the Floors section reflects the venue state: the button says
+   *  Play (no venue floor) or Return to campaign (one is live). */
+  setVenue(on: boolean): void;
   /** M5/T2 — the action whose key the overlay is capturing right now, or
    *  null. Main's keydown dispatch stands down while a capture is live, so
    *  the pressed key belongs to the rebind, never to the game. */
@@ -187,6 +194,31 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
   }
   const perfNote = document.createElement('p');
   perfNote.className = 'mh-settings-note';
+
+  // ---- Floors: the venue side-floor card (M6/T1) ----------------------------
+  // One card for the shipped DEMO pack — a clearly-labeled fictional café —
+  // with the one honest note: sponsored floors never touch the campaign. The
+  // button plays the demo floor, or returns once one is live (main owns the
+  // state; setVenue flips this label).
+  const floors = document.createElement('h3');
+  const venueCard = document.createElement('div');
+  venueCard.className = 'mh-venue-card';
+  const venueName = document.createElement('div');
+  venueName.className = 'mh-venue-name';
+  const venuePlay = document.createElement('button');
+  venuePlay.type = 'button';
+  venuePlay.id = 'mh-settings-venue';
+  venuePlay.addEventListener('click', () => init.onVenueFloor());
+  const venueNote = document.createElement('p');
+  venueNote.className = 'mh-settings-note';
+  venueCard.append(venueName, venuePlay, venueNote);
+  /** The Floors button's live meaning — Play (false) or Return (true). */
+  let venueLive = false;
+
+  function renderVenueCard(): void {
+    venuePlay.textContent = t(lang, venueLive ? 'venue.return' : 'venue.play');
+    venuePlay.setAttribute('aria-label', t(lang, venueLive ? 'venue.return' : 'venue.play'));
+  }
 
   // ---- Controls: the 15 rebindable actions (M5/T2) --------------------------
   const controls = document.createElement('h3');
@@ -325,6 +357,8 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     performance,
     perfField,
     perfNote,
+    floors,
+    venueCard,
     controls,
     keyNote,
     keymapList,
@@ -353,6 +387,10 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     perfLegend.textContent = t(lang, 'settings.perf');
     for (const c of PERF_CHOICES) perfTexts[c]!.textContent = t(lang, `settings.perf_${c}`);
     perfNote.textContent = t(lang, 'settings.perfNote');
+    floors.textContent = t(lang, 'settings.floors');
+    venueName.textContent = t(lang, 'venue.demoName');
+    venueNote.textContent = t(lang, 'venue.settingsNote');
+    renderVenueCard();
     controls.textContent = t(lang, 'settings.controls');
     keyNote.textContent = t(lang, 'settings.keyNote');
     resetKeys.textContent = t(lang, 'settings.resetKeys');
@@ -380,6 +418,10 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
       if (next === lang) return;
       lang = next;
       relabel();
+    },
+    setVenue: (on) => {
+      venueLive = on;
+      renderVenueCard();
     },
     capturingAction: () => capturing,
   };

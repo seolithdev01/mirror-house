@@ -13,6 +13,15 @@ Everything in this repository is original work, created for this project, or gen
 
 The mirrors, maze, and everything they reflect are seeded procedural generation: the same seed code always builds the same floors, deterministically, on your machine.
 
+## Venue packs (M6)
+
+`public/venues/*.json` are **venue packs** — optional, versioned side-floors (a sponsored café floor, a shop hall) validated strictly by `src/game/venue.ts` before anything loads them. Two rules keep this table honest:
+
+- **The DEMO pack is fiction.** `public/venues/demo-glasshouse-cafe.json` ("Glasshouse Café — DEMO") names no real business. Its name, taglines, and colors are original to this project and the DEMO label ships in-game (banner + settings card). No venue pack may imply an endorsement that does not exist.
+- **Real venues need permission first.** A pack naming a real business, brand, or trademark may ship only with that venue's **written trademark/usage permission on file** (checked before merge, held by the project owner). Until a grant exists, packs stay fictional or the DEMO. Trademark law, not courtesy: names, logos, and trade dress belong to their owners.
+
+Packs never merge into the core game: they live under `public/venues/`, load only through the strict validator, and a venue floor never touches campaign progress, bests, or shard banking (a side-excursion with its own daily seed — the game says so on the banner).
+
 ## Dependencies
 
 One runtime dependency and a small toolchain. Versions are the pinned ranges from `package.json`; licenses read from the installed packages.

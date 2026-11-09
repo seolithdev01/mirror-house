@@ -125,6 +125,45 @@
         border-radius: 6px;
         padding: 4px 10px;
       }
+      /* M6/T1 — the venue side-floor banner: pack name, its tagline, the
+         no-banking note, and the return button. Rose-edged (the pack's
+         primary accent family) so a sponsored floor reads at a glance; the
+         card rides the pointer-events:none HUD column, its button alone owns
+         clicks. */
+      #mh-venue {
+        max-width: 300px;
+        background: rgba(11, 16, 38, 0.92);
+        border: 1px solid #c2548a;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: calc(13px * var(--mh-text-scale, 1));
+        text-align: right;
+      }
+      #mh-venue[hidden] {
+        display: none;
+      }
+      #mh-venue p {
+        margin: 2px 0;
+        color: #f2e9d8;
+      }
+      #mh-venue .mh-venue-note {
+        color: #9fb4c8;
+        font-size: calc(12px * var(--mh-text-scale, 1));
+      }
+      #mh-venue button {
+        pointer-events: auto;
+        cursor: pointer;
+        margin: 4px 0 0;
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #c2548a;
+        border-radius: 6px;
+        padding: 4px 10px;
+      }
+      #mh-venue button:hover {
+        border-color: #d9a441;
+        color: #d9a441;
+      }
       /* M4/T6 — chips are single-line in every language; long labels move the
          row wider instead of wrapping mid-chip. */
       .mh-chip {
@@ -501,6 +540,20 @@
       #mh-keymap-msg.mh-key-conflict {
         color: #e07a5f;
       }
+      /* M6/T1 — the Floors section's venue card: one bordered card naming the
+         DEMO pack, its Play/Return button, and the never-touches note. */
+      #mh-settings-box .mh-venue-card {
+        border: 1px solid #2a3560;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 4px 0 8px;
+      }
+      #mh-settings-box .mh-venue-card .mh-venue-name {
+        color: #f2e9d8;
+      }
+      #mh-settings-box .mh-venue-card button {
+        margin-top: 6px;
+      }
       /* Reduced-flash (M5/T1): with the body class on (the ⚙ Access toggle),
          every overlay and banner fades in and out over ≥300ms instead of
          appearing at once. A [hidden] overlay keeps its layout box but goes
@@ -519,6 +572,7 @@
       body.mh-reduced-flash #mh-fail,
       body.mh-reduced-flash #mh-hint,
       body.mh-reduced-flash #mh-toast,
+      body.mh-reduced-flash #mh-venue,
       body.mh-reduced-flash #mh-captions {
         transition: opacity 320ms ease;
       }
@@ -547,6 +601,7 @@
       body.mh-reduced-flash #mh-fail[hidden],
       body.mh-reduced-flash #mh-hint[hidden],
       body.mh-reduced-flash #mh-toast[hidden],
+      body.mh-reduced-flash #mh-venue[hidden],
       body.mh-reduced-flash #mh-captions[hidden] {
         display: block;
         opacity: 0;

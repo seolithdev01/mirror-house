@@ -91,6 +91,15 @@ import {
 } from './game/houseState';
 import { parseLook } from './game/look';
 import {
+  DEMO_VENUE_ID,
+  validateVenuePack,
+  venueFloorParams,
+  venueSeed,
+  venueString,
+  VENUE_CHHAYA_DELAY_MS,
+  type VenuePack,
+} from './game/venue';
+import {
   beatGlow,
   initTaal,
   taalTouch,
@@ -100,6 +109,7 @@ import {
   type TaalState,
 } from './game/taal';
 import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
+import { TIER_ONE_PALETTE } from './game/palette';
 import { awardShards, dailySeed, META_KEY, recordRun, spendShards, todayStamp } from './game/meta';
 import {
   DEFAULT_A11Y,
@@ -220,6 +230,16 @@ let campaign: Campaign = isValidSeed(urlSeed)
       floor: save.progress.floor,
       tierComplete: save.progress.tierComplete,
     };
+// M6/T1 — the venue SIDE-FLOOR. `venue` names the pack whose floor is live
+// (null = the campaign floor). The isolation invariant: entering, playing,
+// clearing, failing, or leaving a venue floor never mutates `campaign`, the
+// save's bests/streak/shards, or the phase-of-campaign state — the venue
+// floor reuses the same floor machines (buildFloor/resetFloor/GamePhase) with
+// the pack's parameters and its own daily seed, and every campaign hook in
+// the frame loop (descend, clear-banking, the tier screen) is gated off it.
+// Returning REBUILDS the campaign floor fresh at the same floor number —
+// mid-floor progress is lost, disclosed in the banner's note.
+let venue: VenuePack | null = null;
 let player: PlayerState; // armed by buildFloor — the spawn belongs to the floor
 
 // M4/T4 — the single write-through. Mutate the in-memory save, then persist():
@@ -479,9 +499,11 @@ let chhayaHeading = 0;
 let chhayaAnnounced = false;
 
 /** Chhaya walks closer as the campaign descends (M4/T2): her delay comes from
- *  the floor ramp — 7s on floor 1 down to 4.6s, 4s in the Dwaar. */
+ *  the floor ramp — 7s on floor 1 down to 4.6s, 4s in the Dwaar. On a venue
+ *  floor (M6/T1) she runs at the fixed side-floor delay — never the campaign
+ *  depth underneath (isolation runs both ways). */
 function chhayaDelayMs(): number {
-  return floorParams(campaign.floor).chhayaDelayMs;
+  return venue === null ? floorParams(campaign.floor).chhayaDelayMs : VENUE_CHHAYA_DELAY_MS;
 }
 
 function updateChhaya(now: number): void {
@@ -694,6 +716,8 @@ const settings = buildSettingsOverlay({
     pushA11yValues();
     pushCloseKeys();
   },
+  // M6/T1 — the Floors section: play the DEMO venue side-floor / return.
+  onVenueFloor: () => void toggleDemoVenue(),
   onClosed: () => persist(true), // a closed overlay must not ride a debounce window
 });
 settings.setValues({
@@ -751,8 +775,9 @@ function refreshChrome(): void {
   settings.setLang(lang);
   hud.setMode(mode);
   hud.setView(viewLabel(view));
-  hud.setFloor(floorChipLabel(campaign));
+  hud.setFloor(venue === null ? floorChipLabel(campaign) : `☕ ${venue.name}`);
   hud.setMuted(audio.muted);
+  if (venue !== null) showVenueBanner(venue); // M6/T1 — the banner re-localizes
 }
 
 function cycleLang(): void {
@@ -773,7 +798,9 @@ refreshChrome(); // the boot paint: labels, chips and the 🔊 state in `lang`
  *  mutation (beacon capture, hint buy, clear banking, fail forfeit, floor
  *  rebuild, dev grant) funnels through here; nothing else may write it. */
 function updateShardsChip(): void {
-  const pending = house.shards;
+  // M6/T1 — a venue floor's pending captures never bank, so they never show
+  // as a stake either (the banner's note is the promise; this is the ledger).
+  const pending = venue === null ? house.shards : 0;
   hud.setChips({ shards: pending > 0 ? `${save.shards} (+${pending})` : save.shards });
 }
 
@@ -828,18 +855,36 @@ function floorChipLabel(c: Campaign): string {
  *  also performs the full per-floor reset — fresh mirror runtime, echoes,
  *  Chhaya trail, house (the attempt tally rides along), fog, radar, hints,
  *  breath — and re-arms the phase machine, so the timer starts on this
- *  floor's first input. */
-function buildFloor(c: Campaign): void {
+ *  floor's first input.
+ *
+ *  M6/T1 — `pack` builds a venue SIDE-FLOOR instead: the same machines with
+ *  the pack's maze/object parameters, its accent colors on the exit marker
+ *  (primary) and beacon emissive (secondary), and its own daily seed. The
+ *  campaign object `c` is still passed (its floor number rebuilds on return)
+ *  but nothing campaign-shaped is read for the venue floor's difficulty. */
+function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   teardownFloor();
+  venue = pack; // the side-floor flag every campaign hook below reads
   tierCompleteAtEntry = c.tierComplete; // the re-clear gate reads entry state, never live state
   const fp = floorParams(c.floor);
-  seed = floorSeed(c);
-  floor = isDwaar(c.floor)
-    ? floorFromGrid(dwaarGrid(), seed)
-    : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
+  const vp = pack === null ? null : venueFloorParams(pack);
+  seed = pack === null ? floorSeed(c) : venueSeed(pack, todayStamp());
+  floor =
+    pack !== null
+      ? generateFloor({ ...TIER_ONE, seed, ...vp!.mazeOverrides }) // always procedural, pack-shaped
+      : isDwaar(c.floor)
+        ? floorFromGrid(dwaarGrid(), seed)
+        : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
   exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
-  const stage = buildFloorScene(floor);
+  // The pack's accents dress the stage: primary on the exit marker (the
+  // beacon gate's unlocked tint follows), secondary on the entrance marker.
+  const stage = buildFloorScene(
+    floor,
+    pack === null
+      ? undefined
+      : { ...TIER_ONE_PALETTE, exit: pack.accent.primary, entrance: pack.accent.secondary },
+  );
   sceneBuilt = stage;
   scene.add(stage.group);
   exitMarkerMat = stage.exitMarker.material as THREE.MeshStandardMaterial;
@@ -858,7 +903,10 @@ function buildFloor(c: Campaign): void {
   // fake material, the same fog/crack interface) on low. TRUE mirrors below
   // keep their 256px RT on EVERY preset — their reflection is the
   // gameplay-critical step-through visibility.
-  objs = generateFloorObjects(floor, { ...M2_PARAMS, beacons: fp.beacons, echoes: fp.echoes });
+  objs =
+    pack === null
+      ? generateFloorObjects(floor, { ...M2_PARAMS, beacons: fp.beacons, echoes: fp.echoes })
+      : generateFloorObjects(floor, { ...M2_PARAMS, ...vp!.objectOverrides });
   const qp = PROFILES[preset];
   const heroes: HeroMirror[] = [];
   const heroStandIns: CheapMirror[] = [];
@@ -933,7 +981,7 @@ function buildFloor(c: Campaign): void {
       scene.add(door.group);
       return { bind: door.mirror, hero: null, state: 'clear' as const };
     }
-    const cm = createMirrorMesh(m.kind);
+    const cm = createMirrorMesh(m.kind, pack?.accent.secondary); // M6/T1 — beacon emissive accent
     cm.mesh.position.set(m.x, 1.35, m.z);
     cm.mesh.rotation.y = m.rotY;
     scene.add(cm.mesh);
@@ -974,7 +1022,8 @@ function buildFloor(c: Campaign): void {
   // M4/T3 — Taal's cameo: the beat-walker tests only floor 5. One figure on
   // the stage, one state on the loop; every other floor leaves both null
   // (teardownFloor already cleared them when the previous floor was his).
-  if (c.floor === TAAL_FLOOR) {
+  // M6/T1 — never on a venue floor: the campaign's cameos stay home.
+  if (pack === null && c.floor === TAAL_FLOOR) {
     const fig = createTaal();
     scene.add(fig.group);
     taalFigure = fig;
@@ -1020,12 +1069,67 @@ function buildFloor(c: Campaign): void {
   hud.hideDescend();
   hud.hideTier();
   setExitLocked(true); // the stair door starts sealed behind its beacons
-  hud.setFloor(floorChipLabel(c));
+  hud.setFloor(pack === null ? floorChipLabel(c) : `☕ ${pack.name}`);
   hud.setChips({
     beacons: beaconsCaptured(allMirrors, mirrorRuntime),
     timerMs: null,
   });
   updateShardsChip(); // a fresh floor stakes nothing — the purse alone shows
+  // M6/T1 — the side-floor banner rises with the pack's floor and falls with
+  // every campaign build (the return included). setVenue flips the ⚙ Floors
+  // button between Play and Return.
+  if (pack === null) hud.hideVenue();
+  else showVenueBanner(pack);
+  settings.setVenue(pack !== null);
+}
+
+/** Compose + raise the venue banner from the pack + the live language (the
+ *  🌐 flip re-runs this through refreshChrome, so the banner re-localizes). */
+function showVenueBanner(pack: VenuePack): void {
+  hud.showVenue({
+    title: fill(t(lang, 'venue.banner'), { name: pack.name }),
+    tagline: venueString(pack, lang, 'tagline'),
+    note: t(lang, 'venue.bannerNote'),
+    returnLabel: t(lang, 'venue.return'),
+    onReturn: returnToCampaign,
+  });
+}
+
+/** Fetch + strictly validate a venue pack by id. Null — never a throw — for a
+ *  malformed id, a failed fetch, or an invalid document: the venue floor is
+ *  an opt-in side excursion, never a boot risk. */
+async function loadVenuePack(id: string): Promise<VenuePack | null> {
+  if (!/^[a-z0-9-]{3,24}$/.test(id)) return null; // slugs only — no path games
+  try {
+    const res = await fetch(`/venues/${id}.json`);
+    if (!res.ok) return null;
+    return validateVenuePack(await res.json());
+  } catch {
+    return null;
+  }
+}
+
+/** Leave the venue side-floor. The campaign floor REBUILDS fresh at the same
+ *  floor number — mid-floor progress is lost (the banner said so); the
+ *  campaign, the save, bests, and the purse were never touched to restore. */
+function returnToCampaign(): void {
+  if (venue === null) return;
+  buildFloor(campaign);
+}
+
+/** The ⚙ Floors button: play the DEMO pack's floor, or return once one is
+ *  live. A pack that fails to load says so and changes nothing. */
+async function toggleDemoVenue(): Promise<void> {
+  if (venue !== null) {
+    returnToCampaign();
+    return;
+  }
+  const pack = await loadVenuePack(DEMO_VENUE_ID);
+  if (pack === null) {
+    hud.toast(t(lang, 'toast.venueRejected'));
+    return;
+  }
+  buildFloor(campaign, pack);
 }
 
 /** Tier screen → Stay: the cleared Dwaar stays open as a free walk. The shard
@@ -1049,7 +1153,16 @@ function playAgain(): void {
   buildFloor(campaign);
 }
 
-buildFloor(campaign); // the first floor arms — chip, beacons, sealed door
+// M6/T1 — the venue side-floor boot: `?venue=<pack-id>` fetches + strictly
+// validates the pack and builds ITS floor instead of the campaign's (the
+// campaign object stays exactly as booted above — the return rebuilds it). A
+// malformed id, a failed fetch, or an invalid document falls back to the
+// campaign floor: the param is an opt-in, never a boot risk. The await rides
+// the same top-level-await window the save load owns, so the debug hook below
+// still registers only after the floor exists.
+const bootVenueId = urlParams.get('venue');
+const bootVenuePack = bootVenueId === null ? null : await loadVenuePack(bootVenueId);
+buildFloor(campaign, bootVenuePack); // the first floor arms — chip, beacons, sealed door
 canvas.addEventListener('click', () => {
   if (mode === 'hybrid') {
     const lock = canvas.requestPointerLock() as unknown as
@@ -1674,37 +1787,49 @@ function frame(now: number): void {
     // 1–9 hold 0.8s behind the `descending…` overlay then rebuild one floor
     // deeper; the Dwaar claims the Truth-Shard and raises the tier screen.
     phase = clearRun(phase, now);
-    const ms = runElapsedMs(phase, now);
-    const wasBest = save.best[seed];
-    save = recordRun(save, seed, ms, todayStamp());
-    // M5/T5 — bankOnClear gates the clear bonus on the tier state at floor
-    // ENTRY: a floor-10 resume of an already-complete tier pays only its
-    // re-earned beacons, never a second perfect/stuck bonus.
-    save = awardShards(
-      save,
-      bankOnClear(house, echoes.filter((e) => e.stuckAwarded).length, tierCompleteAtEntry),
-    );
-    // The stake is in the purse now — zero the pending so the unified chip
-    // never counts the same shards as banked AND at stake during the 0.8s hold
-    // (the next floor's buildFloor would reset it anyway; this keeps the
-    // in-between frames honest).
-    house = { ...house, shards: 0 };
-    persist(true); // a cleared floor banks NOW — no debounce window
-    updateShardsChip(); // chip flips from `banked (+pending)` to plain banked
-    if (isDwaar(campaign.floor)) {
-      campaign = completeTier(campaign);
-      save = mergeCampaign(save, campaign); // tier complete is a save event
-      persist(true);
-      hud.showTierComplete({ floors: DWAAR_FLOOR, shards: save.shards });
-      pushCaption('tier', t(lang, 'overlay.tierTitle')); // M5/T3 — the tier line is the overlay's own
+    if (venue !== null) {
+      // M6/T1 — the SIDE-FLOOR clear: the sim halts and NOTHING banks — no
+      // best, no shards, no descend, no tier. The pending stake dies here (it
+      // was never going to the purse — the chip never showed it), the overlay
+      // names the way back, and the floor waits for the return. This branch
+      // is the campaign-isolation invariant: not one save write happens.
+      house = { ...house, shards: 0 };
+      updateShardsChip();
+      hud.showVenueCleared(t(lang, 'overlay.venueCleared'));
+      pushCaption('venue-clear', t(lang, 'overlay.venueCleared'));
     } else {
-      hud.showCleared(ms, save.best[seed] ?? null, wasBest === undefined || ms < wasBest);
-      hud.showDescend();
-      descendAt = now + DESCEND_MS;
-      // M5/T3 — clear + descend land as the bar's two lines (short form; the
-      // banner above keeps the full best-time sentence).
-      pushCaption('clear', fill(t(lang, 'caption.cleared'), { s: `${(ms / 1000).toFixed(1)}s` }));
-      pushCaption('descend', t(lang, 'overlay.descend'));
+      const ms = runElapsedMs(phase, now);
+      const wasBest = save.best[seed];
+      save = recordRun(save, seed, ms, todayStamp());
+      // M5/T5 — bankOnClear gates the clear bonus on the tier state at floor
+      // ENTRY: a floor-10 resume of an already-complete tier pays only its
+      // re-earned beacons, never a second perfect/stuck bonus.
+      save = awardShards(
+        save,
+        bankOnClear(house, echoes.filter((e) => e.stuckAwarded).length, tierCompleteAtEntry),
+      );
+      // The stake is in the purse now — zero the pending so the unified chip
+      // never counts the same shards as banked AND at stake during the 0.8s hold
+      // (the next floor's buildFloor would reset it anyway; this keeps the
+      // in-between frames honest).
+      house = { ...house, shards: 0 };
+      persist(true); // a cleared floor banks NOW — no debounce window
+      updateShardsChip(); // chip flips from `banked (+pending)` to plain banked
+      if (isDwaar(campaign.floor)) {
+        campaign = completeTier(campaign);
+        save = mergeCampaign(save, campaign); // tier complete is a save event
+        persist(true);
+        hud.showTierComplete({ floors: DWAAR_FLOOR, shards: save.shards });
+        pushCaption('tier', t(lang, 'overlay.tierTitle')); // M5/T3 — the tier line is the overlay's own
+      } else {
+        hud.showCleared(ms, save.best[seed] ?? null, wasBest === undefined || ms < wasBest);
+        hud.showDescend();
+        descendAt = now + DESCEND_MS;
+        // M5/T3 — clear + descend land as the bar's two lines (short form; the
+        // banner above keeps the full best-time sentence).
+        pushCaption('clear', fill(t(lang, 'caption.cleared'), { s: `${(ms / 1000).toFixed(1)}s` }));
+        pushCaption('descend', t(lang, 'overlay.descend'));
+      }
     }
   }
   // Stair Door handoff: once the 0.8s hold elapses, the campaign descends and
@@ -1825,6 +1950,13 @@ if (import.meta.env.DEV || import.meta.env.MODE === 'soak') {
       base: campaign.seedBase,
       floor: campaign.floor,
       tierComplete: campaign.tierComplete,
+    }),
+    // M6/T1 — the venue side-floor: which pack is live (null id = the campaign
+    // floor) and its floor's beacon count (the pack's own — the build witness).
+    venue: () => ({
+      active: venue !== null,
+      id: venue === null ? null : venue.id,
+      beacons: venue === null ? 0 : beaconsCaptured(allMirrors, mirrorRuntime).total,
     }),
     look: () => look.name,
     lang: () => lang, // M4/T6 — the live UI language (🌐 cycles it)

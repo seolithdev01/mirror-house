@@ -15,6 +15,7 @@ const PARAM_KEYS = [
   'misc.close',
   'caption.chhaya',
   'caption.cleared',
+  'venue.banner',
 ] as const;
 
 const tokens = (s: string): string => (s.match(/\{\w+\}/g) ?? []).sort().join(',');

@@ -1,0 +1,16 @@
+{
+  "v": 1,
+  "id": "demo-glasshouse-cafe",
+  "name": "Glasshouse Café — DEMO",
+  "tagline": "A quiet café of sugar-glass — the demo of sponsored floors.",
+  "locale": {
+    "en": {
+      "tagline": "A quiet café of sugar-glass — the demo of sponsored floors."
+    },
+    "hi": {
+      "tagline": "चीनी-काँच का एक शांत कैफ़े — प्रायोजित मंज़िलों का डेमो।"
+    }
+  },
+  "accent": { "primary": 12735626, "secondary": 14263361 },
+  "floor": { "width": 15, "height": 15, "braid": 0.18, "beacons": 2, "echoes": 3, "standing": 5 }
+}

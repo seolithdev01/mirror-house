@@ -48,6 +48,20 @@ export interface Hud {
   setFloor(label: string): void;
   showCleared(ms: number, bestMs: number | null, isBest: boolean): void;
   hideCleared(): void;
+  /** M6/T1 — the venue side-floor banner: pack name, its tagline, the
+   *  no-banking note, and the back-to-campaign button. Shown while a venue
+   *  pack's floor is live; hidden by the return. */
+  showVenue(info: {
+    title: string;
+    tagline: string;
+    note: string;
+    returnLabel: string;
+    onReturn(): void;
+  }): void;
+  hideVenue(): void;
+  /** M6/T1 — the venue floor's clear line: no best-time/shards sentence (a
+   *  side-floor banks nothing), just "cleared — return". */
+  showVenueCleared(text: string): void;
   /** M4/T2 — the 0.8s `descending…` banner between floors; hide on rebuild. */
   showDescend(): void;
   hideDescend(): void;
@@ -180,6 +194,25 @@ export function createHud(init: HudInit): Hud {
   const toast = document.createElement('div');
   toast.id = 'mh-toast';
   toast.hidden = true;
+  // M6/T1 — the venue side-floor banner. The whole card rides the HUD column
+  // (pointer-events:none); only its button owns clicks.
+  const venueBanner = document.createElement('div');
+  venueBanner.id = 'mh-venue';
+  venueBanner.hidden = true;
+  const venueTitle = document.createElement('div');
+  venueTitle.id = 'mh-venue-title';
+  const venueTagline = document.createElement('p');
+  venueTagline.id = 'mh-venue-tagline';
+  const venueNoteEl = document.createElement('p');
+  venueNoteEl.id = 'mh-venue-note';
+  venueNoteEl.className = 'mh-venue-note';
+  const venueReturn = document.createElement('button');
+  venueReturn.type = 'button';
+  venueReturn.id = 'mh-venue-return';
+  /** The live onReturn — swapped by every showVenue (one listener, one button). */
+  let venueOnReturn: (() => void) | null = null;
+  venueReturn.addEventListener('click', () => venueOnReturn?.());
+  venueBanner.append(venueTitle, venueTagline, venueNoteEl, venueReturn);
   // M5/T3 — the caption bar: fixed bottom-center (out of the top-right
   // column's flow), role=status so the lines announce themselves. Its text
   // is renderCaptions' output; main owns the feed.
@@ -198,6 +231,7 @@ export function createHud(init: HudInit): Hud {
     exportBtn,
     importBtn,
     chips,
+    venueBanner,
     breath,
     anger,
     cleared,
@@ -366,6 +400,23 @@ export function createHud(init: HudInit): Hud {
     },
     hideCleared: () => {
       cleared.hidden = true;
+    },
+    showVenue: ({ title, tagline, note, returnLabel, onReturn }) => {
+      venueTitle.textContent = title;
+      venueTagline.textContent = tagline;
+      venueNoteEl.textContent = note;
+      venueReturn.textContent = returnLabel;
+      venueReturn.setAttribute('aria-label', returnLabel);
+      venueOnReturn = onReturn;
+      venueBanner.hidden = false;
+    },
+    hideVenue: () => {
+      venueBanner.hidden = true;
+      venueOnReturn = null; // a hidden banner's button owns nothing
+    },
+    showVenueCleared: (text) => {
+      cleared.hidden = false;
+      cleared.textContent = text;
     },
     showDescend: () => {
       descend.textContent = t(lang, 'overlay.descend');

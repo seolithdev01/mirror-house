@@ -66,6 +66,9 @@ interface DebugHook {
   visitedCount(): number;
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
+  // M6/T1 — the venue side-floor: which pack is live (null id = campaign
+  // floor) and its floor's beacon total (the pack's own count).
+  venue(): { active: boolean; id: string | null; beacons: number };
   // M4/T6 — the live UI language (the ?lang=hi e2e reads it)
   lang(): string;
   // M5/T1 — the live a11y block (the ⚙ overlay's writes land here for e2e)
@@ -850,9 +853,7 @@ test('m5: rebind forward to P through the settings overlay', async ({ page }) =>
 // activation keys. Opening ⚙ lands focus on the first control (the trap), Tab
 // walks to the reduced-flash checkbox, and Space must TOGGLE it — the step
 // key's dispatch (and its preventDefault) stands down for the focused control.
-test('m5: Space toggles the focused checkbox in ⚙ (dialog keys stand down)', async ({
-  page,
-}) => {
+test('m5: Space toggles the focused checkbox in ⚙ (dialog keys stand down)', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=KBDTOG');
   await ready(page);
@@ -966,8 +967,20 @@ test('m5: export/import round-trip through a real file', async ({ page }) => {
   // assert the shape and the seed alphabet, not the visit's code.
   expect(exported.v).toBe(2);
   expect(exported.progress).toMatchObject({ floor: 1, tierComplete: false });
-  expect(String((exported.progress as Record<string, unknown>).seedBase)).toMatch(/^[A-Z2-9]{1,16}$/);
-  for (const key of ['lookName', 'mode', 'muted', 'lang', 'shards', 'best', 'streak', 'a11y', 'perf'])
+  expect(String((exported.progress as Record<string, unknown>).seedBase)).toMatch(
+    /^[A-Z2-9]{1,16}$/,
+  );
+  for (const key of [
+    'lookName',
+    'mode',
+    'muted',
+    'lang',
+    'shards',
+    'best',
+    'streak',
+    'a11y',
+    'perf',
+  ])
     expect(exported[key], `save field ${key}`).toBeDefined();
 
   // rewrite: a distinct campaign (base IMPRT2, floor 3) and a distinct purse
@@ -1004,6 +1017,112 @@ test('m5: export/import round-trip through a real file', async ({ page }) => {
 // clock until the player stands back at the spawn with the floor re-armed.
 // The budget is ≤ 2000ms: FAIL_FREEZE_MS holds input 1200ms and the frame
 // loop's failing-phase check re-arms on the first frame past resetAt.
+// M6/T1 — the venue SIDE-FLOOR end to end: `?venue=` boots the DEMO pack's
+// floor (banner names the pack, the hook carries its beacon count, the seed
+// is the pack's daily code), clearing it banks NOTHING (the campaign-
+// isolation invariant), and the return rebuilds the campaign floor at the
+// exact floor it left — campaign(), seed, and chip restored. The ⚙ Floors
+// section's single button then plays the demo floor and returns, both ways.
+test('m6: venue demo floor loads and returns', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=VENUEDMO&venue=demo-glasshouse-cafe');
+  await ready(page); // boot fetches + validates the pack before the hook lands
+
+  // the banner names the pack; the hook carries the pack's shape
+  await expect(page.locator('#mh-venue')).toBeVisible();
+  await expect(page.locator('#mh-venue')).toContainText('Glasshouse Café');
+  const v0 = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { venue: h.venue(), campaign: h.campaign(), seed: h.seed };
+  });
+  expect(v0.venue).toEqual({ active: true, id: 'demo-glasshouse-cafe', beacons: 2 });
+  expect(v0.campaign.floor).toBe(1); // the campaign spine is untouched underneath
+  expect(v0.seed).toMatch(/^[A-Z2-9]{8}$/); // the pack's daily code, charset-valid
+
+  // clear the side-floor the scripted way — start the run, frost the 2
+  // beacons, walk through the now-open door
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(200);
+  await page.keyboard.up('KeyW');
+  const shardsBefore = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.shards();
+  });
+  while (
+    (await page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.beaconsLeft();
+    })) > 0
+  ) {
+    await captureNextBeacon(page);
+  }
+  const exit = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.exitPos();
+  });
+  await page.evaluate((e: { x: number; z: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(e.x, e.z);
+  }, exit);
+  await expect(page.locator('#mh-cleared')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#mh-cleared')).toContainText('return via ⚙');
+
+  // the isolation invariant: a cleared sponsored floor banked nothing — no
+  // shards, no best for the venue seed, no campaign motion
+  const cleared = await page.evaluate((s: string) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { shards: h.shards(), best: h.bestFor(s), campaign: h.campaign() };
+  }, v0.seed);
+  expect(cleared.shards).toBe(shardsBefore);
+  expect(cleared.best).toBeNull();
+  expect(cleared.campaign.floor).toBe(1);
+
+  // the banner's return: the campaign floor REBUILDS at the same floor number
+  await page.locator('#mh-venue-return').click();
+  await expect(page.locator('#mh-venue')).toBeHidden();
+  const back = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { venue: h.venue(), campaign: h.campaign(), seed: h.seed };
+  });
+  expect(back.venue).toEqual({ active: false, id: null, beacons: 0 });
+  expect(back.campaign).toEqual({ base: 'VENUEDMO', floor: 1, tierComplete: false });
+  expect(back.seed).toBe('VENUEDMO:1');
+  await expect(page.locator('#mh-floor')).toHaveText('L01');
+
+  // the ⚙ Floors button plays the demo floor… and returns — both ways
+  await page.locator('#mh-settings').click();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+  await expect(page.locator('#mh-settings-venue')).toContainText(/play/i);
+  await page.locator('#mh-settings-venue').click();
+  await page.locator('#mh-settings-close').click();
+  await expect(page.locator('#mh-venue')).toBeVisible();
+  expect(
+    (
+      await page.evaluate(() => {
+        const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+          .__MIRROR_HOUSE_DEBUG__;
+        return h.venue();
+      })
+    ).active,
+  ).toBe(true);
+  await page.locator('#mh-settings').click();
+  await expect(page.locator('#mh-settings-venue')).toContainText(/return/i);
+  await page.locator('#mh-settings-venue').click();
+  await page.locator('#mh-settings-close').click();
+  await expect(page.locator('#mh-venue')).toBeHidden();
+  expect(
+    await page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.venue().active;
+    }),
+  ).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+// M5/T6 — restart timing: warp onto an Echo (contact), then measure wall
+// clock until the player stands back at the spawn with the floor re-armed.
+// The budget is ≤ 2000ms: FAIL_FREEZE_MS holds input 1200ms and the frame
+// loop's failing-phase check re-arms on the first frame past resetAt.
 test('m5: warp-caught restart returns the player to spawn within 2000ms', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=RESTART');
@@ -1014,8 +1133,9 @@ test('m5: warp-caught restart returns the player to spawn within 2000ms', async 
   });
   await page.waitForFunction(
     () =>
-      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.enemyCount() >
-      0,
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.enemyCount() > 0,
   );
   const echo = await page.evaluate(() => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
