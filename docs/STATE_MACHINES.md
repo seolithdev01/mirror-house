@@ -15,7 +15,7 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 242 unit tests + 19 Playwright tests, and the machine modules' own
+  suite is 316 unit tests + 23 Playwright tests, and the machine modules' own
   suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
@@ -147,7 +147,8 @@ lifecycle:
   clearing held keys on `pointerlockchange`.
 - **Dual-use key claims** (`withoutKey`, claimed per fixed step in `main.ts`):
   a key that also drives a verb yields only its movement share while the verb
-  owns it — Q while Aaina is open (her toggle), E while the push hint shows
+  owns it — the aaina key (`I` by default, whatever her binding is after a
+  remap) while Aaina is open (her toggle), E while the push hint shows
   (the door). The claim drops the key from the snapshot before
   `keysToMoveInput` sees it, so exactly that key's turn contribution
   disappears; mouse and every other key are untouched.
@@ -169,8 +170,8 @@ three terms gate the verbs through `canAct` (frost, step-through, push). This
 is the machine that used to be implicit and unread — the reason you could
 walk the maze while reading the FAQ. Aaina's panel is deliberately outside
 this gate (§9): she is diegetic, so the floor keeps running while she talks —
-but her one dual-use key (`Q`, the toggle) is claimed per fixed step exactly
-as §6 documents for the other shared keys.
+but her one dual-use key (her toggle, `I` by default since m5) is claimed per
+fixed step exactly as §6 documents for the other shared keys.
 
 ---
 
@@ -203,9 +204,10 @@ canvas render with the fog of war, Chhaya pings and your waypoints.
 
 The FAQ overlay's diegetic sister (M3/T2): `closed` or `open{tab}` with
 `tab ∈ ask | hint | lore`, derived from `root.hidden` plus the tab value —
-exactly the FAQ overlay's shape plus one tab axis. `toggle()` ([Q] or the HUD
-💬 button) always reopens at the `ask` tab; the tab buttons, the close button
-and `[Q]` again close her. She is **not** a pause: `canAct` deliberately
+exactly the FAQ overlay's shape plus one tab axis. `toggle()` (her key — `I`
+by default since m5, or the HUD 💬 button) always reopens at the `ask` tab;
+the tab buttons, the close button, `Esc` and her key again close her. She is
+**not** a pause: `canAct` deliberately
 excludes her, so movement, echoes and Chhaya keep running while she talks —
 she reads the floor per frame (`refreshAaina`) and the hint tab prices its
 offer live (§5's shard economy; `hintCost(hintsUsed)` = 5, 10, 15 … per
@@ -286,6 +288,10 @@ chip (`L02` on the ramp; the threshold floor names the tier — `L10 · DWAAR I
 | **Waypoints**         | Tactical-view data: ivory cell marks (max `WAYPOINT_MAX`), click-toggled, first `Esc` cleared. A list with a cap, not a lifecycle.         |
 | **Pointer lock**      | Owned by the browser. We observe; we do not model.                                                                                         |
 | **IDB save `v2`**     | A versioning policy, not a machine (M4/T4, the meta-v1 row grown up): `validateSave` gates `v === 2` strictly — an imported or stored save is untrusted bytes until every field checks out, and a corrupt record reads as absent so boot falls through to defaults; `migrateMeta` maps the localStorage v1 era once (progress fresh, lang `en`); `mergeCampaign` is the campaign write-through; `idbGet`/`idbPut` degrade to null/no-op so storage never kills a boot. |
+| **⚙ Settings & the `a11y` block** (M5/T1) | A versioned configuration document, not a machine: `{ reducedFlash, captions, textScale, keyMap }` rides the IDB save — optional in `validateSave`, defaulted by `normalizeSave`, so an m4 save upgrades in place. The ⚙ overlay (`src/ui/settings.ts`) is pure chrome over the document: toggles apply at once and persist; consumers read flags, nothing transitions. |
+| **KeyMap** (M5/T2)    | A versioned configuration document: action → `KeyboardEvent.code`. `rebind(map, action, code)` is a pure function returning a fresh map plus a `conflict` name (the guard refuses a key another action owns; only the default `turnR`/`push` pair may share `E`, resolved by context — the push hint — not by state). `actionFor(code, map)` is a reverse lookup, not a transition. |
+| **`perf` preset** (M5/T4) | A versioned configuration document: `'auto' \| 'low' \| 'mid' \| 'high'` in the save. `autoPreset(fps, dpr)` is a pure grader with hysteresis fed by a rolling 5 s FPS average; `PROFILES` maps a preset to `{ pixelRatioCap, heroRt, heroRtSize, chhayaBob }` — applied live for pixel ratio, on the next floor build for hero RTs. A derivation feeding a document, not a lifecycle. |
+| **Captions** (M5/T3)  | Derived events, not a state: game moments push immutable `CaptionEvent`s into the pure `captionFeed` (dedupe by id within ttl, trim expired); `renderCaptions` shows the latest two, fading. With captions off nothing about the game differs — the bar observes the machines above, it never joins them. |
 
 ---
 
@@ -300,10 +306,12 @@ chip (`L02` on the ramp; the threshold floor names the tier — `L10 · DWAAR I
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **242/242** unit ·
-**19/19** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
+`npm run typecheck` clean · `npm run lint` clean · **316/316** unit ·
+**23/23** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
 wiring, descend to floor 2, save round-trip resume, Hindi chrome via
-`?lang=hi`).
+`?lang=hi`; 4 new for m5: rebind forward through the settings overlay,
+`?perf=low` low path, export/import round-trip through a real file,
+warp-caught restart within 2000 ms).
 
 ---
 

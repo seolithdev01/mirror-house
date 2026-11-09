@@ -50,14 +50,16 @@ Three fully playable ways to walk — switch anytime with the buttons at the top
 
 ### Accessibility
 
-The house is meant to be survivable by everyone it hunts:
+The house is meant to be survivable by everyone it hunts. The front door is the **⚙ Settings** overlay (next to 🌐): **Display** (text size) · **Access** (reduce flashing, captions) · **Performance** (quality presets) · **Controls** (remap every key) — every change applies at once and is saved on your device.
 
 - **Four ways to see it** — `V` cycles Focus (first person), Quad (all four walls at once), Overhead (a walking 2D map of what you have explored), and `T`'s tactical pause (the floor freezes while you plan; click to mark up to eight waypoints). The map views are first-class play, not minimaps — low-vision players run whole floors from Overhead.
 - **One-handed play** — the 🖐 Mouse mode is complete on its own: left button walks toward the cursor, right button sprints. Keyboard-only (⌨ Keys) is equally complete with no mouse at all.
 - **Remap every key** — ⚙ → Controls: all 15 actions rebind (click a row, press a key); the conflict guard stops double-binding, arrows/Shift stay hardwired as universal alternates, and Reset returns to defaults. Close hints and prompts always name the live key.
 - **Reduce flashing** (⚙ → Access) steadies every pulsing light and fades overlays instead of popping them; **captions** print sound cues as text, bottom-centre; **text size** scales the whole HUD 100/125/150%.
 - Every icon button carries a screen-reader label (English and हिंदी), overlays are real dialogs (Tab cycles inside, `Esc` closes), and the page's `lang` follows the 🌐 button.
-- **Quality presets** (⚙): Auto follows your frame rate; Low/Medium/High are one click, with sharpness applied at once and mirror detail on the next floor.
+- **Quality presets** (⚙ → Performance): Auto follows your frame rate; Low/Medium/High are one click, with sharpness applied at once and mirror detail on the next floor.
+
+The full statement — every mode named with the file that implements it, the who's-who entity identity audit (silhouette + motion + caption, never colour alone), and the reduced-flash audit — is [docs/A11Y.md](docs/A11Y.md).
 
 ### Views — `V` to cycle, `T` to stop and think
 
@@ -106,7 +108,7 @@ The run timer starts on your first input and stops when you reach the stair door
 
 ### FAQ
 
-The **? FAQ** button (top right) or the `H` key opens 21 questions in-game: how to move, the views and the tactical map, how the floors and descending work (Dwaar included, and why Taal only makes you angrier), how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, who Aaina is and what her hints cost, where the music comes from, what seeds are, the Daily, where your data lives and what the export file is, whether it works offline and in which languages, and what's coming next (the deeper Sentinels of the floors below).
+The **? FAQ** button (top right) or the `H` key opens 24 questions in-game: how to move, the views and the tactical map, how the floors and descending work (Dwaar included, and why Taal only makes you angrier), how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, who Aaina is and what her hints cost, where the music comes from, what seeds are, the Daily, where your data lives and what the export file is, whether it works offline and in which languages, what the captions say and where to turn them on, a tour of ⚙ settings and everything you can change there, and the privacy statement in plain words.
 
 ### Your data stays on your device — and can travel
 
@@ -119,7 +121,7 @@ A rejected or corrupt stored save reads as absent: the game boots fresh with sen
 
 ### Install it — it works offline
 
-Mirror House is a PWA. On the production build, use your browser's *Install app* / *Add to Home Screen* action: it gets its own window, its own icon (the gold lantern), and a service worker caches the shell and assets — installed once, it loads and plays with the network cut. The whole game ships as a single ~161 KB (gzipped) bundle, so the first load is quick and the offline copy is small.
+Mirror House is a PWA. On the production build, use your browser's *Install app* / *Add to Home Screen* action: it gets its own window, its own icon (the gold lantern), and a service worker caches the shell and assets — installed once, it loads and plays with the network cut. The whole game ships as a single ~168 KB (gzipped) bundle, so the first load is quick and the offline copy is small.
 
 ### नमस्ते — English and Hindi
 

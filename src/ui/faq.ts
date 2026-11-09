@@ -93,6 +93,14 @@ export const FAQ: readonly FaqEntry[] = [
     a: 'Captions write the house’s sound cues as text, the way subtitles carry speech. The bar at the bottom-centre of the screen shows the latest two lines for a few seconds each: an Echo stirring in the glass, giving chase, or wandering blinded by your frost; your shadow’s first appearance on a floor (and exactly how many seconds behind you she walks — 7 on floor 1, tightening to 4 in the Dwaar); Taal’s lantern flaring when his touch lands; the house’s anger at 60 and at 90; fails, clears, descents and the tier; Aaina’s hints; and the music starting or muting. Turn them on in ⚙ Settings → Access — “Captions for sound cues”. The choice is saved with everything else, the text follows the Text size setting, and in Hindi play the lines are Hindi.',
   },
   {
+    q: 'What can I change in ⚙ Settings?',
+    a: 'Everything personal, in four sections. Display: text size for the whole HUD — 100, 125 or 150%. Access: Reduce flashing (every pulsing light steadies and overlays fade instead of popping) and Captions for sound cues. Performance: Auto follows your frame rate, or lock Low/Medium/High — sharpness applies at once, mirror detail on the next floor. Controls: remap all 15 actions — click a row, press a key; the conflict guard refuses a key another action already owns, arrows and Shift stay hardwired as movement alternates, and Reset restores the defaults. Every change applies immediately and is saved on your device. The full accessibility statement — modes, entity identity, the reduced-flash audit — is docs/A11Y.md in the repository.',
+  },
+  {
+    q: 'What is the privacy policy?',
+    a: 'Short version: there is almost nothing to say — no accounts, no cookies, no analytics, no telemetry, and the game never sends anything anywhere. One IndexedDB record inside your own browser holds your look, your settings, your language, shards, streak, best times and your floor in the campaign. The 💾 export file contains that gameplay data and nothing else, because no personal data exists to export. The long version — storage, the export file’s exact contents, the content security policy — is PRIVACY.md in the repository; PROVENANCE.md lists where every byte of code, art and audio comes from.',
+  },
+  {
     q: 'I found a bug.',
     a: 'Thank you — please file it at github.com/seolithdev01/mirror-house/issues with your seed code; the layout reproduces itself.',
   },
@@ -107,7 +115,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 22
+  // M4/T6 — the heading and the close button are chrome (localized); the 24
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

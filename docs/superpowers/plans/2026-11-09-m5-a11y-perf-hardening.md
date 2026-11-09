@@ -41,7 +41,7 @@ Settings overlay (⚙ next to 🌐): sections Display (text scale 1/1.25/1.5 rad
 
 Reduced-flash effects (this task): Taal lantern + beacon emissive pulses become static values; overlay show/hide uses CSS opacity transition ≥ 300ms; mirror fog/capture material swaps keep transitions. Text scale: `document.body.style.setProperty('--mh-text-scale', s)`; all HUD/overlay font sizes move to `calc(... * var(--mh-text-scale, 1))`.
 
-- [ ] **Step 1: Failing tests** — save: normalizeSave defaults missing a11y; validateSave accepts old-shape v2; DEFAULT_KEYMAP has exactly the 15 actions, unique codes except the sanctioned E-dual (turnR+push share KeyE — `push` is contextual, allow duplicate there only). **Step 2: RED → implement → GREEN.** **Step 3: Wire overlay + CSS var + reducedFlash sites; gates + e2e 19/19 (default experience unchanged; aaina key change → update the ONE e2e that presses KeyQ for aaina + FAQ/README copy).** **Step 4: Commit** — `feat(m5): settings foundation — a11y fields, reduced-flash, text scale, aaina to I`
+- [x] **Step 1: Failing tests** — save: normalizeSave defaults missing a11y; validateSave accepts old-shape v2; DEFAULT_KEYMAP has exactly the 15 actions, unique codes except the sanctioned E-dual (turnR+push share KeyE — `push` is contextual, allow duplicate there only). **Step 2: RED → implement → GREEN.** **Step 3: Wire overlay + CSS var + reducedFlash sites; gates + e2e 19/19 (default experience unchanged; aaina key change → update the ONE e2e that presses KeyQ for aaina + FAQ/README copy).** **Step 4: Commit** — `feat(m5): settings foundation — a11y fields, reduced-flash, text scale, aaina to I`
 
 ---
 
@@ -59,7 +59,7 @@ export function rebind(map: KeyMap, action: string, code: string): { map: KeyMap
 
 Rebind UI: click an action row → "press a key…" → next keydown captures (Escape cancels) → rebind + persist; conflicts show inline warning and refuse (except remapping onto the E pair replaces both? No — refuse with message; keep simple). Reset-to-defaults button.
 
-- [ ] **Step 1: Failing tests** — actionFor lookups incl. E-dual ordering; rebind success/conflict/immutability; keysToMoveInput with a remapped forward key (KeyP behaves as forward). **Step 2: RED → implement → GREEN.** **Step 3: Wire capture UI + all handlers; gates + e2e 19/19.** **Step 4: Commit** — `feat(m5): full key remapping with conflict guard`
+- [x] **Step 1: Failing tests** — actionFor lookups incl. E-dual ordering; rebind success/conflict/immutability; keysToMoveInput with a remapped forward key (KeyP behaves as forward). **Step 2: RED → implement → GREEN.** **Step 3: Wire capture UI + all handlers; gates + e2e 19/19.** **Step 4: Commit** — `feat(m5): full key remapping with conflict guard`
 
 ---
 
@@ -79,7 +79,7 @@ export function renderCaptions(el: HTMLElement, events: readonly CaptionEvent[],
 
 Events wired (when `a11y.captions`): echo sense-success ("The glass sees you — an Echo stirs"), chase start ("An Echo gives chase"), confusion ("An Echo wanders, blinded"), Chhaya appears/sample-expiry ("Your shadow is Xs behind"), Taal contact ("Taal's lantern flares — the house's temper rises"), anger thresholds 60/90, fail/clear/descend/tier, hint purchased, audio started/muted. Entity identity audit → `docs/A11Y.md`: Echoes (translucent glass pane silhouette, teal-white), Chhaya (solid dark coat, rose lantern), Taal (solid obsidian, GOLD lantern + beat lurch) — distinguishable by silhouette + motion + caption, not color alone; document each + the reduced-flash/captions/text-scale/remap modes.
 
-- [ ] **Step 1: Failing tests** — feed dedupe/trim; render shows ≤2. **Step 2: Implement + wire all events.** **Step 3: A11Y.md from shipped code; FAQ entry. Gates + e2e 19/19.** **Step 4: Commit** — `feat(m5): caption events + entity identity audit`
+- [x] **Step 1: Failing tests** — feed dedupe/trim; render shows ≤2. **Step 2: Implement + wire all events.** **Step 3: A11Y.md from shipped code; FAQ entry. Gates + e2e 19/19.** **Step 4: Commit** — `feat(m5): caption events + entity identity audit`
 
 ---
 
@@ -100,7 +100,7 @@ export function autoPreset(fps: number, dpr: number): PerfPreset; // fps < 45 su
 
 Auto mode: FPS monitor (existing diagnostics counter) feeds a rolling average; preset changes apply live (pixelRatio instant; heroRt toggle requires mirror rebuild — apply on next floor build, note in settings UI "applies on next floor"). `perf: 'auto'` default. Manual override persists.
 
-- [ ] **Step 1: Failing tests** — autoPreset hysteresis table; PROFILES values. **Step 2: Implement + wire.** **Step 3: Gates + e2e 19/19 + a low-preset smoke (build with ?perf=low DEV param — mirrors render fake material, no crash).** **Step 4: Commit** — `feat(m5): quality presets — auto-detect, manual override, low-end path`
+- [x] **Step 1: Failing tests** — autoPreset hysteresis table; PROFILES values. **Step 2: Implement + wire.** **Step 3: Gates + e2e 19/19 + a low-preset smoke (build with ?perf=low DEV param — mirrors render fake material, no crash).** **Step 4: Commit** — `feat(m5): quality presets — auto-detect, manual override, low-end path`
 
 ---
 
@@ -109,7 +109,7 @@ Auto mode: FPS monitor (existing diagnostics counter) feeds a rolling average; p
 **Files:**
 - Modify: `src/game/mirror.ts` (dispose materials), `src/main.ts` (import reloads to `location.pathname`; Dwaar re-clear banking gate: on floor-10 clear, bank clear-bonus only when `!save.progress.tierComplete` at entry — beacon pending shards still bank normally), `public/manifest.webmanifest` + `src/game/aaina.ts` + `src/ui/faq.ts` (six-second copy → "your shadow, seconds behind — faster the deeper you go")
 
-- [ ] **Step 1: Tests** — banking gate unit test (tierComplete entry → no perfect/stuck bonus on re-clear; beacons still bank); dispose covered by existing leak note (manual verify via renderer.info in soak T6). **Step 2: Implement all four fixes.** **Step 3: Gates + e2e 19/19.** **Step 4: Commit** — `fix(m5): mirror dispose, import path, dwaar re-clear gate, shadow copy`
+- [x] **Step 1: Tests** — banking gate unit test (tierComplete entry → no perfect/stuck bonus on re-clear; beacons still bank); dispose covered by existing leak note (manual verify via renderer.info in soak T6). **Step 2: Implement all four fixes.** **Step 3: Gates + e2e 19/19.** **Step 4: Commit** — `fix(m5): mirror dispose, import path, dwaar re-clear gate, shadow copy`
 
 ---
 
@@ -121,8 +121,8 @@ Auto mode: FPS monitor (existing diagnostics counter) feeds a rolling average; p
 
 soak.mjs: node script (Playwright lib) — loads preview build, plays a scripted loop (walk/frost/warp-caught cycle) for N minutes (default 10), samples `performance.memory` + hook state every 30s, reports; run once locally in-task, results into the report. (The 2h criterion: script supports `--minutes 120`; recorded as RUNBOOK step for the human/agent to launch pre-beta; 10-min evidence this task.)
 
-- [ ] **Step 1: Write docs** — PRIVACY.md (no accounts/cookies/telemetry; IDB+localStorage on device; export file contains gameplay data only; CSP), PROVENANCE.md (all code/assets original/procedural; deps list w/ licenses: three/vite/vitest/playwright/eslint/prettier MIT), PLAYTEST.md (5-stranger kit: how to run a session, what to watch, feedback form questions, seed-of-the-day).
-- [ ] **Step 2: Aria/lang/focus fixes; two new e2e (19→21).** **Step 3: soak run (10 min) — paste memory trend.** **Step 4: Gates.** **Step 5: Commit** — `feat(m5): beta hardening — privacy/provenance/playtest, a11y aria, round-trip + timing e2e, soak`
+- [x] **Step 1: Write docs** — PRIVACY.md (no accounts/cookies/telemetry; IDB+localStorage on device; export file contains gameplay data only; CSP), PROVENANCE.md (all code/assets original/procedural; deps list w/ licenses: three/vite/vitest/playwright/eslint/prettier MIT), PLAYTEST.md (5-stranger kit: how to run a session, what to watch, feedback form questions, seed-of-the-day).
+- [x] **Step 2: Aria/lang/focus fixes; two new e2e (19→21).** **Step 3: soak run (10 min) — paste memory trend.** **Step 4: Gates.** **Step 5: Commit** — `feat(m5): beta hardening — privacy/provenance/playtest, a11y aria, round-trip + timing e2e, soak`
 
 ---
 
@@ -133,7 +133,9 @@ soak.mjs: node script (Playwright lib) — loads preview build, plays a scripted
 
 **Controller runs Lighthouse** (chrome-devtools MCP `lighthouse_audit`, desktop+mobile) against the local preview of this branch BEFORE merge; findings ≥ Critical/serious fixed in-task; scores recorded in the plan checklist. Target: a11y ≥ 90 (both device modes).
 
-- [ ] **Step 1:** docs + checklist with evidence. **Step 2:** Lighthouse runs + fixes. **Step 3:** Gates + 21/21. **Step 4: Commit** — `docs(m5): exit criteria evidence, registry notes, lighthouse scores`
+- [x] **Step 1:** docs + checklist with evidence. **Step 2:** Lighthouse runs + fixes. **Step 3:** Gates + 21/21. **Step 4: Commit** — `docs(m5): exit criteria evidence, registry notes, lighthouse scores`
+
+> **T7 close-out note (2026-11-09).** Docs, checklist evidence and registry notes landed as `docs(m5): exit criteria evidence, registry notes, how to play for everyone`; gates green (316 unit + 23/23 e2e, bundle 635 kB min / 168 kB gzip). **Lighthouse (desktop + mobile) pending controller audit** — see spec §13.3's open line; record both a11y scores here when run, fix anything ≥ Critical/serious in-task.
 
 ## Plan Self-Review
 
