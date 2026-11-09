@@ -89,7 +89,8 @@ export function applyFog(rt: MirrorRuntime[], id: number, now: number): void {
  *
  * `cracked` is ORTHOGONAL damage, deliberately outside this union: a crack
  * tints the glass but changes neither what it shows nor what can see through
- * it, and a floor reset un-cracks it while captured stays captured.
+ * it. A floor reset clears everything — cracks, fogs, and captures alike
+ * (`resetFloor` re-runs `initMirrorRuntime`).
  */
 export type MirrorVisual = 'clear' | 'fogged' | 'captured';
 

@@ -15,7 +15,8 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 130 unit tests + 11 Playwright tests; the machines own 20 of them.
+  suite is 130 unit tests + 11 Playwright tests, and the machine modules' own
+  suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
 
@@ -64,7 +65,7 @@ Not a stored field: a **derivation** over `(captured, foggedUntil, now)`.
 
 | Condition (in order) | Result |
 |---|---|
-| `captured` | `captured` — permanent for the floor |
+| `captured` | `captured` — never lifts on its own; a floor reset (fail-retry) un-captures beacons and re-seals the exit (`resetFloor` re-inits the runtime) |
 | `foggedUntil !== null && now <= foggedUntil` | `fogged` |
 | otherwise | `clear` |
 
@@ -100,7 +101,7 @@ A pure machine: `updateEcho` returns a new `EchoState` and never mutates.
 
 | From | Condition | To |
 |---|---|---|
-| any | ≥2 fogged eyes within `CONFUSE_FOGGED_R` **and** 0 clear eyes within `CONFUSE_UNFOGGED_R` | `confused` — memory and target are kept but unused; heading spins |
+| any | ≥2 fogged eyes within `CONFUSE_FOGGED_R` **and** 0 clear eyes within `CONFUSE_UNFOGGED_R` | `confused` — chase memory is kept; `target`/`field` caches are dropped; heading spins |
 | `patrol` | a sense check succeeds | `chase` (memory `now + CHASE_MEMORY_MS`) |
 | `chase` | `now >= loseMemoryAt` | `patrol` |
 
@@ -164,6 +165,7 @@ walk the maze while reading the FAQ.
 | **Chhaya visibility** | Derived: visible iff a delayed path sample exists **and** the phase is active. She has no state of her own. |
 | **Cracked glass** | Orthogonal damage flag on the runtime mirror; guarded once-per-mirror by `applyCrack`. |
 | **Pointer lock** | Owned by the browser. We observe; we do not model. |
+| **Meta save `v1`** | A versioning policy, not a machine: `loadMeta` validates `v === 1` and falls back to defaults; migrations arrive with the M4 save chain. |
 
 ---
 
