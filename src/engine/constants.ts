@@ -51,3 +51,7 @@ export const EXIT_LOCKED_EMISSIVE = 0x5c2a2a; // exit marker while beacons remai
 export const PASSAGE_RANGE = 1.4; // m — nearest-mirror range for step-through and push
 export const DOOR_SLIDE_M = 1.2; // m a silvered door slides along its wall
 export const DOOR_SLIDE_MS = 400; // ms the slide takes (linear lerp in the frame loop)
+
+// Procedural audio (M3) — raga-mood theory + WebAudio engine
+export const AUDIO_ROOT_HZ = 110; // A2 — drone root; melody window sits one octave above
+export const AUDIO_GAIN_CEILING = 0.5; // master gain cap (mute = 0)
