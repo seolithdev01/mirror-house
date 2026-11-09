@@ -139,7 +139,7 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
     const line =
       view.revealedText !== null
         ? `“${view.revealedText}”`
-        : `I can tell you about: *${KIND_LABEL[view.kind]}* — cost ◆ ${view.cost}  ·  you hold ◆ ${view.shards}`;
+        : `I can tell you about: ${KIND_LABEL[view.kind]} — cost ◆ ${view.cost}  ·  you hold ◆ ${view.shards}`;
     if (line !== lastLine) {
       lastLine = line;
       hintLine.textContent = line;

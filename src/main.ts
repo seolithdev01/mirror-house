@@ -473,9 +473,10 @@ canvas.addEventListener('click', () => {
     lock?.catch?.(() => {});
   }
 });
-// Audio speaks only after the FIRST user gesture — one keydown or one canvas
-// click, whichever comes first. `{ once: true }` retires each listener after
-// its own firing; the flag makes the loser of that race a no-op.
+// Audio speaks only after the FIRST user gesture — one keydown, one pointer
+// press, or one canvas click, whichever comes first. `{ once: true }` retires
+// each listener after its own firing; the flag makes the loser of that race a
+// no-op.
 let audioGestureDone = false;
 function startAudioOnGesture(): void {
   if (audioGestureDone) return;
@@ -483,6 +484,7 @@ function startAudioOnGesture(): void {
   audio.start();
 }
 window.addEventListener('keydown', startAudioOnGesture, { once: true });
+window.addEventListener('pointerdown', startAudioOnGesture, { once: true });
 canvas.addEventListener('click', startAudioOnGesture, { once: true });
 // [M] and the HUD 🔊 button toggle the mute (M3/T6); the choice persists in
 // meta.muted and the next boot re-applies it before the engine ever starts.

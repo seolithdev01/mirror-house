@@ -163,6 +163,12 @@ export function createAudioEngine(seed: string): AudioEngine {
     intensity += (intensityTarget - intensity) * 0.12;
     padGain.gain.setTargetAtTime(0.02 + 0.12 * intensity, ctx.currentTime, 0.4);
     const horizon = ctx.currentTime + LOOKAHEAD_S;
+    // Background tabs throttle setInterval to >=1s while ctx.currentTime keeps
+    // running; without this clamp the loops below would schedule every missed
+    // tick in the past and they would all fire at once on wake. Skip the missed
+    // interval entirely — never schedule anything with a timestamp in the past.
+    if (nextTickTime < ctx.currentTime) nextTickTime = ctx.currentTime + 0.05;
+    if (nextNoteTime < ctx.currentTime) nextNoteTime = ctx.currentTime + 0.1;
     while (nextTickTime < horizon) {
       const accents = beatAccents(tick, intensity);
       if (accents.low) thump(nextTickTime);
