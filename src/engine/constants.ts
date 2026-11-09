@@ -47,6 +47,10 @@ export const SHARD_STUCK = 10; // per echo that was confused at least once this 
 export const FAIL_FREEZE_MS = 1200; // ms of frozen input between fail and restart
 export const EXIT_LOCKED_EMISSIVE = 0x5c2a2a; // exit marker while beacons remain
 
+// Overhead map (M3/T4) — pings on the tactical map
+export const PING_TTL_MS = 4000; // ms a map ping stays visible before it is dropped
+export const CHHAYA_PING_MS = 2000; // ms between Chhaya's map pings while her sample exists
+
 // Passages (M2/T7) — true-mirror step-through, silvered push-doors
 export const PASSAGE_RANGE = 1.4; // m — nearest-mirror range for step-through and push
 export const DOOR_SLIDE_M = 1.2; // m a silvered door slides along its wall

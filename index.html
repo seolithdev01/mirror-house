@@ -7,6 +7,11 @@
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #05060a; }
       #game { display: block; width: 100vw; height: 100vh; }
+      /* Overhead/tactical map (M3/T4) — a 2D canvas over the paused 3D stage.
+         display:none unless the view mode is overhead/tactical (main.ts owns
+         the toggle); above #game, below the HUD and diagnostics. */
+      #overhead { position: fixed; inset: 0; z-index: 5; width: 100vw; height: 100vh;
+        display: none; background: #05060a; cursor: crosshair; }
       #diagnostics {
         position: fixed; top: 8px; left: 8px; z-index: 10;
         font: 12px/1.5 ui-monospace, monospace; color: #9fb4c8;
@@ -75,6 +80,7 @@
   </head>
   <body>
     <canvas id="game"></canvas>
+    <canvas id="overhead"></canvas>
     <div id="diagnostics"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

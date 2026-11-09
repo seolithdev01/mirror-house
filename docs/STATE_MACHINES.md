@@ -15,7 +15,7 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 130 unit tests + 11 Playwright tests, and the machine modules' own
+  suite is 169 unit tests + 11 Playwright tests, and the machine modules' own
   suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
@@ -32,7 +32,7 @@ a single value with named transitions.
 | 4 | **Echo mode** | `patrol` · `chase` · `confused` | `src/game/echo.ts` | Pure machine, now documented |
 | 5 | **Pending shards** | `pending` → `banked` \| `forfeited` | `src/game/houseState.ts` + `meta.ts` | Lifecycle, documented |
 | 6 | **InputMode** | `keyboard` · `mouse` · `hybrid` | `src/engine/input.ts` + `main.ts` | Configuration, not a lifecycle |
-| 7 | **FAQ overlay** | `closed` · `open` | `src/ui/faq.ts` | Derived from `hidden`; now gates the loop |
+| 7 | **Input gate** | FAQ `closed` · `open`; view `focus` · `quad` · `overhead` · `tactical` | `src/ui/faq.ts` + `src/game/viewMode.ts` | Two pauses gate the loop: the FAQ overlay and the tactical view |
 
 ---
 
@@ -142,14 +142,19 @@ lifecycle:
 
 ---
 
-## 7. FAQ overlay — `src/ui/faq.ts`
+## 7. Input gate — `src/ui/faq.ts` + `src/game/viewMode.ts`
 
-Two states, derived from the element: `open` when `root.hidden === false`,
-`closed` when `true`. Toggled by the HUD button, the `H` key, the close button
-and a backdrop click.
+Two pauses, one gate. The FAQ overlay is two states derived from the element
+(`open` when `root.hidden === false`), toggled by the HUD button, the `H` key,
+the close button and a backdrop click. The tactical view (M3/T4) is a
+`ViewMode` value (`focus` · `quad` · `overhead` · `tactical` — `src/game/viewMode.ts`),
+entered with `T` from overhead and left with `Esc` (after one Esc-clears
+waypoints press) or any `[V]` press.
 
-It is the input gate's second half: `simActive = active(phase) && faqHidden`.
-This is the machine that used to be implicit and unread — the reason you could
+Together they are the input gate's second half:
+`simActive = active(phase) && faqHidden && !isTactical(view)` — and the same
+three terms gate the verbs through `canAct` (frost, step-through, push). This
+is the machine that used to be implicit and unread — the reason you could
 walk the maze while reading the FAQ.
 
 ---
@@ -180,7 +185,7 @@ walk the maze while reading the FAQ.
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **130/130** unit ·
+`npm run typecheck` clean · `npm run lint` clean · **169/169** unit ·
 **11/11** Playwright (10 pre-existing, 1 new for the FAQ pause).
 
 ---

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import {
   ANGER_MAX,
   CHHAYA_DELAY_MS,
+  CHHAYA_PING_MS,
   CONTACT_RADIUS,
   EYE_HEIGHT,
   EXIT_LOCKED_EMISSIVE,
@@ -86,6 +87,7 @@ import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
 import {
   cycleView,
+  exitTactical,
   isTactical,
   QUAD_PIXEL_RATIO,
   showsOverhead,
@@ -95,8 +97,10 @@ import {
 import { buildAainaOverlay } from './ui/aaina';
 import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
+import { createOverhead, pingOpacity } from './ui/overhead';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
+const overheadCanvas = document.querySelector<HTMLCanvasElement>('#overhead')!;
 const diagnostics = document.querySelector<HTMLElement>('#diagnostics')!;
 
 const urlSeed = normalizeSeed(new URLSearchParams(window.location.search).get('seed') ?? '');
@@ -205,6 +209,27 @@ const visuals: MirrorBinding[] = allMirrors.map((m) => {
 let house = initHouseState();
 let breath = 1;
 
+// M3/T4 map state. `visited` is the fog-of-war set — cells the player has
+// occupied, keyed `y * grid.width + x` (the grid's own indexing), written in
+// the fixed step and reset in resetFloor. Pings are map radar: one at an
+// echo's position whenever its sense check succeeds (a success is the only
+// writer of `loseMemoryAt`, so a changed value IS this tick's check), one at
+// Chhaya's position every CHHAYA_PING_MS while her sample exists. Waypoints
+// are the player's tactical marks (max WAYPOINT_MAX, click-toggle, Esc-clear).
+const visited = new Set<number>();
+let pings: Array<{ x: number; y: number; at: number }> = [];
+let lastChhayaPingAt = 0;
+const waypoints: Array<{ x: number; y: number }> = [];
+const WAYPOINT_MAX = 8;
+const overhead = createOverhead(overheadCanvas);
+
+/** Mark the player's current cell explored (fog of war). */
+function markVisited(): void {
+  const c = floor.grid.cellAt(player.x, player.y);
+  visited.add(c.y * floor.grid.width + c.x);
+}
+markVisited(); // the spawn cell is explored from the first breath
+
 // Aaina's hint economy (M3/T2). hintsUsed is a per-floor counter — it resets
 // with the floor, so a new attempt prices hints from ◆ 5 again. purchasedHint
 // is the line she last sold this floor; it clears when the situation changes
@@ -250,6 +275,9 @@ function resetFloor(now: number): void {
   hintsUsed = 0; // a fresh attempt prices Aaina's hints from the base again
   purchasedHint = null;
   player = spawnPlayer(floor);
+  visited.clear(); // the fog closes in — the new attempt starts unexplored
+  pings = []; // the old attempt's radar is spent
+  markVisited();
   input.snapshotAndReset(); // drain mouseDx banked during the freeze — no giant first turn
   hud.hideFail();
   hud.hideCleared(); // a cleared banner never outlives a reset (T6 review fix)
@@ -334,12 +362,12 @@ function buyHint(): void {
 
 /**
  * Verbs (frost, step-through, push) need a live floor AND no overlay in front
- * of it: the FAQ is a pause, and a key pressed while reading it must not act.
- * Aaina is deliberately absent here — she is diegetic, so verbs stay live
- * while she talks.
+ * of it: the FAQ and the tactical view are pauses, and a key pressed while
+ * reading/pausing must not act. Aaina is deliberately absent here — she is
+ * diegetic, so verbs stay live while she talks.
  */
 function canAct(): boolean {
-  return active(phase) && faq.root.hidden === true;
+  return active(phase) && faq.root.hidden === true && !isTactical(view);
 }
 
 function tryFrost(now: number): void {
@@ -386,9 +414,12 @@ const VIEW_LABEL: Record<ViewMode, string> = {
 };
 
 // QUAD side rig: three cameras at the player's eye, yawed by a fixed offset
-// from the heading (left = −π/2, right = +π/2, back = π). Square panes ⇒
-// aspect 1. They stay on layer 0 — the avatar (layer 1) remains visible only
-// inside mirrors, by design. The front pane IS the main camera.
+// from the heading (left = −π/2, right = +π/2, back = π). Each pane is w/2 ×
+// h/2 — halving both dimensions keeps the window's aspect, so the side cams
+// share it and resize() keeps them in step with the main camera (T3 review
+// fix: aspect 1 stretched the side panes ~2× on wide windows). They stay on
+// layer 0 — the avatar (layer 1) remains visible only inside mirrors, by
+// design. The front pane IS the main camera.
 const QUAD_SIDE_YAW: readonly { cam: THREE.PerspectiveCamera; yaw: number }[] = [
   { cam: new THREE.PerspectiveCamera(75, 1, 0.1, 60), yaw: -Math.PI / 2 }, // left
   { cam: new THREE.PerspectiveCamera(75, 1, 0.1, 60), yaw: Math.PI / 2 }, // right
@@ -439,14 +470,50 @@ window.addEventListener('keydown', (e) => {
 });
 // [V] cycles the view (M3/T3), a keydown press like frost. Pixel ratio is part
 // of the mode: quad's four panes render at ratio 1, every other mode restores
-// the full-ratio buffer. The chip names the mode you landed in.
+// the full-ratio buffer. The map modes own the 2D canvas's visibility (shown
+// for overhead/tactical, hidden and cleared otherwise). The chip names the
+// mode you landed in.
 function setViewMode(next: ViewMode): void {
   view = next;
   renderer.setPixelRatio(next === 'quad' ? QUAD_PIXEL_RATIO : FULL_PIXEL_RATIO);
+  const mapShowing = showsOverhead(next);
+  overheadCanvas.style.display = mapShowing ? 'block' : 'none';
+  if (!mapShowing) overhead.clear();
   hud.setView(VIEW_LABEL[next]);
 }
 window.addEventListener('keydown', (e) => {
   if (e.code === VIEW_KEY && !e.repeat) setViewMode(cycleView(view));
+});
+
+// TACTICAL (M3/T4): T enters the pause from the overhead map (the hint chip
+// says so while you walk in overhead). Esc clears the waypoints first — one
+// deliberate un-marking press — and the next Esc leaves for focus, so a
+// planned route survives the exit and shows while you walk it.
+window.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  if (e.code === 'KeyT' && view === 'overhead') setViewMode('tactical');
+  else if (e.code === 'Escape' && isTactical(view)) {
+    if (waypoints.length > 0) waypoints.length = 0;
+    else setViewMode(exitTactical(view));
+  }
+});
+
+// Waypoints (M3/T4): a tactical-only click toggles the ivory dot on the
+// nearest cell (the click's cell — placement is by cell, never sub-cell), max
+// WAYPOINT_MAX marks; a full board ignores new clicks until a dot is removed.
+overheadCanvas.addEventListener('click', (e) => {
+  if (!isTactical(view)) return;
+  const cell = overhead.cellAtEvent(e, floor.grid);
+  if (cell === null) return;
+  const idx = waypoints.findIndex((w) => {
+    const c = floor.grid.cellAt(w.x, w.y);
+    return c.x === cell.x && c.y === cell.y;
+  });
+  if (idx >= 0) waypoints.splice(idx, 1);
+  else if (waypoints.length < WAYPOINT_MAX) {
+    const { cx, cy } = floor.grid.cellCenter(cell.x, cell.y);
+    waypoints.push({ x: cx, y: cy });
+  }
 });
 
 // T7 passages — step-through (Space) and push-doors (E), both keydown presses
@@ -509,8 +576,15 @@ window.addEventListener('keydown', (e) => {
 
 function resize(): void {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const aspect = window.innerWidth / window.innerHeight;
+  camera.aspect = aspect;
   camera.updateProjectionMatrix();
+  // The quad side panes are w/2 × h/2 — same aspect as the window, so they
+  // track it here alongside the main camera (T3 review fix).
+  for (const s of QUAD_SIDE_YAW) {
+    s.cam.aspect = aspect;
+    s.cam.updateProjectionMatrix();
+  }
 }
 window.addEventListener('resize', resize);
 resize();
@@ -521,40 +595,60 @@ resize();
  * The three side panes round-robin one per frame (`frameIndex % 3 ===
  * paneIndex % 3` renders; the others keep their last frame — a few frames of
  * staleness in the sides is the perf budget). Two scene renders per frame
- * total, at pixel ratio 1. Pane origins use `size − floor(size/2)` so odd
- * pixel widths leave no uncleared seam between panes.
+ * total, at pixel ratio 1. Left/top panes take `floor(size/2)` and the
+ * right/bottom panes the remainder, so on odd pixel sizes the four panes tile
+ * the window exactly — no seam column or row belongs to no pane (T3 review
+ * fix).
  */
 function renderQuad(): void {
-  const pw = Math.floor(window.innerWidth / 2);
-  const ph = Math.floor(window.innerHeight / 2);
-  const xHi = window.innerWidth - pw;
-  const yHi = window.innerHeight - ph;
+  const pw = Math.floor(window.innerWidth / 2); // left column width
+  const qw = window.innerWidth - pw; // right column width (the remainder)
+  const th = Math.floor(window.innerHeight / 2); // top row height
+  const bh = window.innerHeight - th; // bottom row height (the remainder)
   const panes = [
-    { cam: camera, x: 0, y: yHi }, // 0 front — top-left, every frame
-    { cam: QUAD_SIDE_YAW[0]!.cam, x: xHi, y: yHi }, // 1 left — top-right
-    { cam: QUAD_SIDE_YAW[1]!.cam, x: 0, y: 0 }, // 2 right — bottom-left
-    { cam: QUAD_SIDE_YAW[2]!.cam, x: xHi, y: 0 }, // 3 back — bottom-right
+    { cam: camera, x: 0, y: bh, w: pw, h: th }, // 0 front — top-left, every frame
+    { cam: QUAD_SIDE_YAW[0]!.cam, x: pw, y: bh, w: qw, h: th }, // 1 left — top-right
+    { cam: QUAD_SIDE_YAW[1]!.cam, x: 0, y: 0, w: pw, h: bh }, // 2 right — bottom-left
+    { cam: QUAD_SIDE_YAW[2]!.cam, x: pw, y: 0, w: qw, h: bh }, // 3 back — bottom-right
   ];
   renderer.setScissorTest(true);
   panes.forEach((p, i) => {
     if (i > 0 && frameIndex % 3 !== i % 3) return; // not this side pane's frame
-    renderer.setViewport(p.x, p.y, pw, ph);
-    renderer.setScissor(p.x, p.y, pw, ph);
+    renderer.setViewport(p.x, p.y, p.w, p.h);
+    renderer.setScissor(p.x, p.y, p.w, p.h);
     renderer.render(scene, p.cam); // autoClear wipes exactly this pane's rect
   });
 }
 
 /**
- * Overhead and tactical are map modes: they render NO 3D stage — T4 draws the
- * 2D canvas map over the canvas. Until that canvas exists, the honest render
- * is a full clear to the void color (the scene background): the screen shows
- * the void, never a stale scene. TODO-T4: replace with the overhead canvas.
+ * The 2D map (M3/T4): overhead and tactical render NO 3D stage — this draws
+ * the fog-of-war map onto the (opaque, full-viewport) 2D canvas instead, so
+ * the untouched WebGL buffer underneath never shows through. Expired pings
+ * are pruned here with the same decay pingOpacity draws with.
  */
-function renderVoid(): void {
-  renderer.setScissorTest(false);
-  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
-  renderer.setClearColor(VOID_COLOR);
-  renderer.clear(true, true, true);
+function drawOverhead(now: number): void {
+  pings = pings.filter((p) => pingOpacity(p.at, now) !== null);
+  overhead.draw({
+    grid: floor.grid,
+    visited,
+    player,
+    mirrors: allMirrors.map((m, i) => ({
+      x: m.x,
+      z: m.z,
+      kind: m.kind,
+      captured: mirrorRuntime[i]?.captured ?? false,
+    })),
+    exit: {
+      cx: exitCenter.cx,
+      cy: exitCenter.cy,
+      unlocked: exitUnlocked(allMirrors, mirrorRuntime),
+    },
+    entrance: floor.grid.cellCenter(floor.entrance.x, floor.entrance.y),
+    pings,
+    chhaya: chhaya.visible ? { x: chhaya.position.x, y: chhaya.position.z } : null,
+    waypoints,
+    now,
+  });
 }
 
 let accumulator = 0;
@@ -595,6 +689,7 @@ function frame(now: number): void {
       const inputFrame =
         mode === 'mouse' ? mouseOnlyInput(input.mouseState()) : keysToMoveInput(snap, mode);
       player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
+      markVisited(); // fog of war: the cell under your feet is explored
       const inputActive =
         inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
       if (inputActive) phase = startRun(phase, now); // first input starts the clock
@@ -611,6 +706,12 @@ function frame(now: number): void {
           now,
           FIXED_STEP,
         );
+        // Map radar (T4): a successful sense check is the only writer of
+        // loseMemoryAt, so a changed value marks this tick's check — ping at
+        // the echo's position. The throttle lives inside updateEcho, so this
+        // never double-fires within its SENSE_INTERVAL_MS cadence.
+        if (next.loseMemoryAt !== e.loseMemoryAt)
+          pings.push({ x: next.x, y: next.y, at: now });
         // Stuck bounty: first confusion banks the award flag for this run.
         return next.mode === 'confused' && !next.stuckAwarded
           ? { ...next, stuckAwarded: true }
@@ -649,6 +750,13 @@ function frame(now: number): void {
   }
   echoes.forEach((e, i) => syncEchoMesh(echoMeshes[i]!, e));
   updateChhaya(now);
+  // Chhaya's map radar (T4): a ping every CHHAYA_PING_MS while her sample
+  // exists on a live, unpaused floor — the same liveness updateChhaya used to
+  // place her this frame.
+  if (simActive && chhaya.visible && now - lastChhayaPingAt >= CHHAYA_PING_MS) {
+    pings.push({ x: chhaya.position.x, y: chhaya.position.z, at: now });
+    lastChhayaPingAt = now;
+  }
   hud.setChips({
     timerMs: runElapsedMs(phase, now),
     streak: meta.streak.count,
@@ -684,9 +792,18 @@ function frame(now: number): void {
     hud.showCleared(ms, meta.best[seed] ?? null, wasBest === undefined || ms < wasBest);
     hud.setChips({ shards: meta.shards ?? 0 }); // chip flips from pending to banked
   }
-  // Passage hints (T7), in precedence order: step-through, push-door, then
-  // the sealed-exit explanation — the prompt always names the key that works.
-  if (active(phase)) {
+  // Tactical pause note (T4) outranks the passage prompts — the verbs are
+  // gated off while paused, so naming their keys would only mislead.
+  if (isTactical(view)) {
+    hud.hint(
+      waypoints.length > 0
+        ? 'Tactical — click toggles waypoints · Esc clears them'
+        : 'Tactical pause — Esc resumes',
+    );
+  } else if (active(phase)) {
+    // Passage hints (T7), in precedence order: step-through, push-door, the
+    // sealed-exit explanation, then the tactical invite — the prompt always
+    // names the key that works.
     if (tryTeleport(allMirrors, player, floor.grid) !== null) {
       hud.hint('Space — step through');
     } else if (tryPushDoor(activeDoorMirrors(), player) !== null) {
@@ -694,6 +811,8 @@ function frame(now: number): void {
     } else if (!unlocked && Math.hypot(player.x - exitCenter.cx, player.y - exitCenter.cy) < 3) {
       const bc = beaconsCaptured(allMirrors, mirrorRuntime);
       hud.hint(`The stair door is sealed — frost the beacons (${bc.captured}/${bc.total})`);
+    } else if (view === 'overhead') {
+      hud.hint('T — tactical pause'); // the chip that names the map's other door
     } else {
       hud.hint(null);
     }
@@ -722,11 +841,12 @@ function frame(now: number): void {
     });
   }
   frameIndex++;
-  // View dispatch: quad scissored panes, map modes' void, else the full focus render.
+  // View dispatch: quad scissored panes, the 2D map for overhead/tactical,
+  // else the full focus render.
   if (view === 'quad') {
     renderQuad();
   } else if (showsOverhead(view)) {
-    renderVoid();
+    drawOverhead(now);
   } else {
     renderer.setScissorTest(false);
     renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
@@ -753,6 +873,13 @@ if (import.meta.env.DEV) {
     look: () => look.name,
     mode: () => mode,
     view: () => view, // M3/T3 — which ViewMode is showing ([V] cycles)
+    // M3/T4 map hooks — fog, radar, and the player's marks
+    visitedCount: () => visited.size,
+    pings: () => pings.length,
+    waypoints: () => waypoints.map((w) => ({ ...w })),
+    // T3 review fix witness: every camera (front + quad sides) tracks the
+    // window aspect — the side panes are w/2 × h/2, not square.
+    camAspects: () => [camera.aspect, ...QUAD_SIDE_YAW.map((s) => s.cam.aspect)],
     avatarPresent: true,
     streak: () => meta.streak.count,
     bestFor: (s: string) => meta.best[s] ?? null,
