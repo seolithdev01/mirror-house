@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
 import { Dir, FloorGrid } from '../../src/engine/grid';
-import { CELL_SIZE } from '../../src/engine/constants';
+import { CELL_SIZE, DOOR_SLIDE_MS } from '../../src/engine/constants';
 import {
+  beginDoorSlide,
+  createDoor,
   PASSAGE_CLEARANCE,
   PASSAGE_RANGE,
   positionIsLegal,
+  stepDoor,
   tryPushDoor,
   tryTeleport,
 } from '../../src/game/passages';
@@ -126,5 +129,32 @@ describe('tryPushDoor', () => {
       wallDir: Dir.North,
     });
     expect(tryPushDoor([standing], near)).toBeNull();
+  });
+});
+
+describe('door machine', () => {
+  it('closed → opening on the first push; a second push is a no-op', () => {
+    const closed = createDoor(7);
+    expect(closed.phase).toBe('closed');
+    const opening = beginDoorSlide(closed);
+    expect(opening.phase).toBe('opening');
+    expect(opening.t).toBe(0);
+    expect(beginDoorSlide(opening)).toBe(opening); // same reference: one push per door
+  });
+
+  it('opening advances with dt and reaches open exactly at the boundary', () => {
+    const half = DOOR_SLIDE_MS / 1000 / 2;
+    let d = beginDoorSlide(createDoor(1));
+    d = stepDoor(d, half);
+    expect(d.phase).toBe('opening');
+    expect(d.t).toBeCloseTo(0.5);
+    d = stepDoor(d, half);
+    expect(d).toEqual({ id: 1, phase: 'open', t: 1 });
+  });
+
+  it('open is terminal, and a closed door does not drift', () => {
+    const open = { id: 2, phase: 'open', t: 1 } as const;
+    expect(stepDoor(open, 10)).toBe(open);
+    expect(stepDoor(createDoor(3), 10).phase).toBe('closed');
   });
 });

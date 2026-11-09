@@ -204,6 +204,40 @@ test('step003: FAQ opens with 16 entries and H toggles', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('sm: movement is paused behind the FAQ and resumes on close', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=PAUSED');
+  await ready(page);
+  const pos = () =>
+    page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.getPlayer();
+    });
+
+  await page.locator('#mh-faq').click(); // open the overlay
+  await expect(page.locator('#mh-faq-overlay')).toBeVisible();
+
+  const beforePause = await pos();
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('KeyW');
+  const duringPause = await pos();
+  const drift = Math.hypot(duringPause.x - beforePause.x, duringPause.y - beforePause.y);
+  expect(drift).toBeLessThan(0.05);
+
+  await page.keyboard.press('KeyH'); // close
+  await expect(page.locator('#mh-faq-overlay')).toBeHidden();
+
+  const beforeResume = await pos();
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('KeyW');
+  const afterResume = await pos();
+  const moved = Math.hypot(afterResume.x - beforeResume.x, afterResume.y - beforeResume.y);
+  expect(moved).toBeGreaterThan(0.5);
+  expect(errors).toEqual([]);
+});
+
 test('step003: meta starts fresh on a clean device', async ({ page }) => {
   const errors = collectErrors(page);
   // Playwright contexts are isolated, so localStorage starts empty

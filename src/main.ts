@@ -4,7 +4,6 @@ import {
   ANGER_MAX,
   CHHAYA_DELAY_MS,
   CONTACT_RADIUS,
-  DOOR_SLIDE_MS,
   EYE_HEIGHT,
   EXIT_LOCKED_EMISSIVE,
   FIXED_STEP,
@@ -30,7 +29,14 @@ import {
   type FailReason,
 } from './game/floorRun';
 import { buildFloorScene } from './game/floorScene';
-import { applyFog, fogTarget, initMirrorRuntime, isFogged, updateBreath } from './game/frost';
+import {
+  applyFog,
+  fogTarget,
+  initMirrorRuntime,
+  isFogged,
+  mirrorVisual,
+  updateBreath,
+} from './game/frost';
 import {
   applyCrack,
   beaconsCaptured,
@@ -53,7 +59,14 @@ import {
   type MirrorFogState,
   type SilveredDoor,
 } from './game/mirror';
-import { tryPushDoor, tryTeleport } from './game/passages';
+import {
+  beginDoorSlide,
+  createDoor,
+  stepDoor,
+  tryPushDoor,
+  tryTeleport,
+  type DoorAnim,
+} from './game/passages';
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
 import { buildFaqOverlay } from './ui/faq';
@@ -221,11 +234,11 @@ let chhayaHeading = 0;
 
 function updateChhaya(now: number): void {
   const at = sampleDelayed(path, now);
-  if (at === null) {
-    chhaya.visible = false;
-    return;
-  }
-  chhaya.visible = true;
+  // She belongs to a live floor: on clear or fail she leaves the stage rather
+  // than lingering beside a run that is over.
+  const visible = at !== null && active(phase);
+  chhaya.visible = visible;
+  if (!visible || at === null) return;
   const br = bracketSamples(path, now - CHHAYA_DELAY_MS);
   if (br !== null) {
     const dx = br.b.x - br.a.x;
@@ -236,8 +249,16 @@ function updateChhaya(now: number): void {
   chhaya.rotation.y = -chhayaHeading; // same convention as the avatar
 }
 
+/**
+ * Verbs (frost, step-through, push) need a live floor AND no overlay in front
+ * of it: the FAQ is a pause, and a key pressed while reading it must not act.
+ */
+function canAct(): boolean {
+  return active(phase) && faq.root.hidden === true;
+}
+
 function tryFrost(now: number): void {
-  if (!active(phase)) return; // no frost while frozen or done
+  if (!canAct()) return; // no frost while frozen, done, or reading the FAQ
   const target = fogTarget(allMirrors, player);
   if (!target || breath < FOG_COST) return;
   const rt = mirrorRuntime.find((r) => r.id === target.id);
@@ -258,7 +279,7 @@ function syncFogVisuals(now: number): void {
   for (let i = 0; i < mirrorRuntime.length; i++) {
     const rt = mirrorRuntime[i]!;
     const v = visuals[i]!;
-    const state: MirrorFogState = rt.captured ? 'captured' : isFogged(rt, now) ? 'fogged' : 'clear';
+    const state: MirrorFogState = mirrorVisual(rt, now);
     if (state === v.state) continue;
     v.state = state;
     v.bind.setFog(state);
@@ -308,15 +329,29 @@ window.addEventListener('keydown', (e) => {
 // like frost. A pushed door is one-time: its id banks here so it never hints
 // or pushes again. The opened wall edge stays open for the rest of the floor
 // (fail/restart included — the house remembers its own secrets).
-const openedDoorIds = new Set<number>();
-const doorAnims: Array<{ door: SilveredDoor; startedAt: number }> = [];
+// Silvered doors are one machine (`closed → opening → open`), owned here:
+// doorStates is the only truth for "still pushable", doorById only binds the
+// mesh that animates. A floor reset does not re-close them.
+const doorStates = new Map<number, DoorAnim>();
+const doorById = new Map<number, SilveredDoor>();
+for (const m of allMirrors) if (m.kind === 'silvered') doorStates.set(m.id, createDoor(m.id));
+for (const { ref, door } of silveredDoors) doorById.set(ref.id, door);
+
+/** The door's machine state; a silvered ref always has one (initialised above). */
+function doorState(id: number): DoorAnim {
+  const st = doorStates.get(id);
+  if (st) return st;
+  const fresh = createDoor(id);
+  doorStates.set(id, fresh);
+  return fresh;
+}
 
 function activeDoorMirrors(): MirrorRef[] {
-  return allMirrors.filter((m) => m.kind !== 'silvered' || !openedDoorIds.has(m.id));
+  return allMirrors.filter((m) => m.kind !== 'silvered' || doorState(m.id).phase === 'closed');
 }
 
 function stepThrough(): void {
-  if (!active(phase)) return;
+  if (!canAct()) return;
   const tp = tryTeleport(allMirrors, player, floor.grid);
   if (!tp) return;
   // Snap position + facing-out heading; the avatar follows immediately so the
@@ -328,17 +363,15 @@ function stepThrough(): void {
 }
 
 function pushDoor(): void {
-  if (!active(phase)) return;
+  if (!canAct()) return;
   const target = tryPushDoor(activeDoorMirrors(), player);
   if (!target || target.wallDir === null) return;
-  openedDoorIds.add(target.id); // one push per door — it goes inert from here
+  doorStates.set(target.id, beginDoorSlide(doorState(target.id))); // one push per door — inert from here
   const neighbor = floor.grid.neighborIndex(target.cellX, target.cellY, target.wallDir);
   if (neighbor) {
     floor.grid.setOpen(target.cellX, target.cellY, target.wallDir);
     sceneBuilt.hideWallEdge(target.cellX, target.cellY, target.wallDir);
   } // no neighbor (degenerate boundary mount): the edge cannot open — the door still slides, and goes inert
-  const bound = silveredDoors.find((d) => d.ref.id === target.id);
-  if (bound) doorAnims.push({ door: bound.door, startedAt: performance.now() });
 }
 
 window.addEventListener('keydown', (e) => {
@@ -371,11 +404,14 @@ function frame(now: number): void {
   // Fail freeze handoff: at resetAt the machine re-arms (ready) and the floor
   // resets for the next attempt. No simulation on the reset frame itself.
   const { phase: reArmed, shouldReset } = tickFail(phase, now);
+  // One gate for the whole simulation: a live floor, and no overlay in front
+  // of it. The FAQ is a pause — movement, verbs and catch-up all respect it.
+  const simActive = active(phase) && faq.root.hidden === true;
   if (shouldReset) {
     phase = reArmed;
     resetFloor(now);
     accumulator = 0;
-  } else if (active(phase)) {
+  } else if (simActive) {
     accumulator += elapsed;
     while (accumulator >= FIXED_STEP && active(phase)) {
       const inputFrame =
@@ -428,9 +464,12 @@ function frame(now: number): void {
       accumulator -= FIXED_STEP;
     }
   } else {
-    // Failing freeze (or the run already over): no simulation, inputs ignored,
-    // the timer pinned at the fail moment via runElapsedMs of the failing phase.
+    // Frozen (failing), finished (cleared), or paused behind the overlay: no
+    // simulation and no catch-up. Drain the collector so a key held during the
+    // pause, or mouse movement banked behind the overlay, cannot fire a burst
+    // on resume.
     accumulator = 0;
+    input.snapshotAndReset();
   }
   echoes.forEach((e, i) => syncEchoMesh(echoMeshes[i]!, e));
   updateChhaya(now);
@@ -442,13 +481,13 @@ function frame(now: number): void {
   hud.setBreath(breath);
   hud.setAnger(house.anger / ANGER_MAX);
   syncFogVisuals(now);
-  // Silvered push-doors slide 1.2m along their wall over 0.4s (simple linear
-  // lerp); once spent the door rests open and inert — no further hints.
-  for (let i = doorAnims.length - 1; i >= 0; i--) {
-    const a = doorAnims[i]!;
-    const t = Math.min(1, (now - a.startedAt) / DOOR_SLIDE_MS);
-    a.door.setSlide(t);
-    if (t >= 1) doorAnims.splice(i, 1);
+  // Door machine: an opening door advances on frame time, then rests open for
+  // the rest of the floor — no further hints, no further pushes.
+  for (const [id, st] of doorStates) {
+    if (st.phase !== 'opening') continue;
+    const next = stepDoor(st, elapsed);
+    doorStates.set(id, next);
+    doorById.get(id)?.setSlide(next.t);
   }
   const unlocked = exitUnlocked(allMirrors, mirrorRuntime);
   if (
@@ -594,7 +633,8 @@ if (import.meta.env.DEV) {
     stepThrough,
     doorTarget: () => tryPushDoor(activeDoorMirrors(), player)?.id ?? null,
     pushDoor,
-    doorsOpened: () => [...openedDoorIds],
+    doorsOpened: () =>
+      [...doorStates.values()].filter((d) => d.phase !== 'closed').map((d) => d.id),
     mirrorRefs: () => allMirrors.map((m) => ({ ...m })),
     mirrorRuntime: () => mirrorRuntime.map((r) => ({ ...r })),
     canWalk: (x: number, y: number, d: number) => floor.grid.canWalk(x, y, d as Dir),

@@ -3,7 +3,7 @@
 // Passages (M2/T7): true-mirror step-through pairs and silvered push-doors.
 // Pure geometry + grid logic — no three.js. main.ts binds these to the HUD
 // hint, the Space teleport, and the E door slide.
-import { FROST_CONE_COS, PASSAGE_RANGE, PLAYER_RADIUS } from '../engine/constants';
+import { DOOR_SLIDE_MS, FROST_CONE_COS, PASSAGE_RANGE, PLAYER_RADIUS } from '../engine/constants';
 import type { FloorGrid } from '../engine/grid';
 import type { MirrorRef } from './floorObjects';
 import type { PlayerState } from './player';
@@ -108,4 +108,35 @@ export function tryPushDoor(mirrors: MirrorRef[], player: PlayerState): MirrorRe
     }
   }
   return best;
+}
+
+/**
+ * Silvered door lifecycle — the only owner of "is this door still pushable".
+ * One-way by design: `closed → opening → open`, and `open` is terminal. A
+ * floor reset does not re-close a door (the house remembers its own secrets),
+ * so this state outlives GamePhase transitions.
+ */
+export type DoorPhase = 'closed' | 'opening' | 'open';
+
+export interface DoorAnim {
+  id: number;
+  phase: DoorPhase;
+  /** Slide progress 0..1 — meaningful only while `opening`. */
+  t: number;
+}
+
+export function createDoor(id: number): DoorAnim {
+  return { id, phase: 'closed', t: 0 };
+}
+
+/** One push: closed → opening. Any other phase is unchanged (one push per door). */
+export function beginDoorSlide(d: DoorAnim): DoorAnim {
+  return d.phase === 'closed' ? { id: d.id, phase: 'opening', t: 0 } : d;
+}
+
+/** Advance an opening door by dtS; reaches `open` at t ≥ 1. Other phases are unchanged. */
+export function stepDoor(d: DoorAnim, dtS: number): DoorAnim {
+  if (d.phase !== 'opening') return d;
+  const t = d.t + (dtS * 1000) / DOOR_SLIDE_MS;
+  return t >= 1 ? { id: d.id, phase: 'open', t: 1 } : { id: d.id, phase: 'opening', t };
 }

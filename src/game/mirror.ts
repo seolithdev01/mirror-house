@@ -10,12 +10,15 @@ import {
 import { Dir, DIR_VECTOR } from '../engine/grid';
 import type { Floor } from './maze';
 import type { MirrorKind } from './floorObjects';
+import type { MirrorVisual } from './frost';
 import { AVATAR_LAYER } from './avatar';
 
 export interface MirrorSpot { x: number; z: number; rotY: number }
 
-/** Fog visual state shared by RT hero mirrors and cheap mirror meshes (M2 frost). */
-export type MirrorFogState = 'clear' | 'fogged' | 'captured';
+/** Fog visual state shared by RT hero mirrors and cheap mirror meshes (M2 frost).
+ *  Aliased to frost's `MirrorVisual` rather than re-declared: the renderer and
+ *  the sight logic must not be able to drift into disagreement. */
+export type MirrorFogState = MirrorVisual;
 
 /** Anything whose material can be swapped for the frost visual (hero or cheap). */
 export interface FogVisual {

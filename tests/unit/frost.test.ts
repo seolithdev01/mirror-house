@@ -5,6 +5,7 @@ import {
   fogTarget,
   initMirrorRuntime,
   isFogged,
+  mirrorVisual,
   updateBreath,
   FOG_COST,
 } from '../../src/game/frost';
@@ -51,5 +52,23 @@ describe('frost', () => {
     expect(updateBreath(1, 0, true)).toBeCloseTo(1 - FOG_COST);
     expect(updateBreath(0, 4, false)).toBeCloseTo(1);
     expect(updateBreath(0.99, 4, false)).toBe(1);
+  });
+
+  it('mirrorVisual: captured beats an unexpired fog; expired fog reads clear', () => {
+    const rt = initMirrorRuntime([m(1, 'standing', 0, 0), m(2, 'beacon', 0, 0)]);
+    applyFog(rt, 1, 1000);
+    expect(mirrorVisual(rt[0]!, 1000)).toBe('fogged');
+    expect(mirrorVisual(rt[0]!, 26_001)).toBe('clear');
+    applyFog(rt, 2, 1000);
+    expect(mirrorVisual(rt[1]!, 999_999)).toBe('captured');
+  });
+
+  it('isFogged is exactly "not clear" — the two can never disagree', () => {
+    const rt = initMirrorRuntime([m(1, 'standing', 0, 0)]);
+    for (const now of [0, 999, 1000, 26_000, 26_001, 1e9]) {
+      applyFog(rt, 1, 1000);
+      expect(isFogged(rt[0]!, now)).toBe(mirrorVisual(rt[0]!, now) !== 'clear');
+    }
+    expect(isFogged(rt[0]!, 2000)).toBe(true);
   });
 });

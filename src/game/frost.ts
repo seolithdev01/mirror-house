@@ -81,9 +81,27 @@ export function applyFog(rt: MirrorRuntime[], id: number, now: number): void {
   }
 }
 
-/** Captured mirrors count as fogged for as long as the floor lives. */
+/**
+ * A mirror's single sight/display state — the one place that decides whether
+ * glass is see-through, frosted, or permanently captured. Precedence is
+ * meaningful: a captured beacon never clears, an unexpired standing fog is
+ * `fogged`, everything else is `clear`.
+ *
+ * `cracked` is ORTHOGONAL damage, deliberately outside this union: a crack
+ * tints the glass but changes neither what it shows nor what can see through
+ * it, and a floor reset un-cracks it while captured stays captured.
+ */
+export type MirrorVisual = 'clear' | 'fogged' | 'captured';
+
+export function mirrorVisual(m: MirrorRuntime, now: number): MirrorVisual {
+  if (m.captured) return 'captured';
+  if (m.foggedUntil !== null && now <= m.foggedUntil) return 'fogged';
+  return 'clear';
+}
+
+/** Sight test — one derivation, shared by echoes, passages and the renderer. */
 export function isFogged(m: MirrorRuntime, now: number): boolean {
-  return m.captured || (m.foggedUntil !== null && now <= m.foggedUntil);
+  return mirrorVisual(m, now) !== 'clear';
 }
 
 /** Spend FOG_COST / recharge BREATH_RECHARGE_PER_S, clamped to 0..1. */
