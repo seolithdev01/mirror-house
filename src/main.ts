@@ -7,7 +7,6 @@ import {
   DOOR_SLIDE_MS,
   EYE_HEIGHT,
   EXIT_LOCKED_EMISSIVE,
-  FAIL_FREEZE_MS,
   FIXED_STEP,
   FOG_COST,
   SHARD_BEACON,
@@ -19,7 +18,17 @@ import { bracketSamples, recordPath, sampleDelayed, type PathSample } from './ga
 import { initEchoes, updateEcho } from './game/echo';
 import { createEchoMesh, syncEchoMesh } from './game/echoView';
 import { generateFloorObjects, mirrorSpotFor, type MirrorRef } from './game/floorObjects';
-import { createFloorRun, isAtExit, runElapsedMs } from './game/floorRun';
+import {
+  active,
+  clearRun,
+  createFloorRun,
+  failRun,
+  isAtExit,
+  runElapsedMs,
+  startRun,
+  tickFail,
+  type FailReason,
+} from './game/floorRun';
 import { buildFloorScene } from './game/floorScene';
 import { applyFog, fogTarget, initMirrorRuntime, isFogged, updateBreath } from './game/frost';
 import {
@@ -58,7 +67,7 @@ const seed = isValidSeed(urlSeed) ? urlSeed : randomSeed();
 const floor = generateFloor({ ...TIER_ONE, seed });
 let player: PlayerState = spawnPlayer(floor);
 let meta = loadMeta();
-let run = createFloorRun(seed); // re-armed (fresh) by resetFloor after a fail
+let phase = createFloorRun(); // the GamePhase master machine — re-armed (ready) on reset
 const exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -165,19 +174,14 @@ const echoMeshes = echoes.map(() => {
 
 // Fail + restart (M2/T6). Caught by an echo or Chhaya, or the house collapses
 // at ANGER_MAX: the HUD announces it, input freezes FAIL_FREEZE_MS (the timer
-// pins at the fail moment via run state), then the floor re-arms for the next
-// attempt — mirrors unfrost/un-crack, echoes and Chhaya reset, pending beacon
-// shards are forfeited, and the player returns to the spawn.
-let floorFailed = false;
-let freezeUntil: number | null = null;
-let frozenElapsedMs = 0;
-
-function failFloor(reason: string): void {
-  if (floorFailed || run.clearedAt !== null) return;
-  floorFailed = true;
-  const now = performance.now();
-  freezeUntil = now + FAIL_FREEZE_MS;
-  frozenElapsedMs = runElapsedMs(run, now);
+// pins at the fail moment — runElapsedMs of a failing phase), then the floor
+// re-arms for the next attempt — mirrors unfrost/un-crack, echoes and Chhaya
+// reset, pending beacon shards are forfeited, and the player returns to the
+// spawn. All of that lifecycle lives in the GamePhase machine.
+function failFloor(reason: FailReason): void {
+  const next = failRun(phase, reason, performance.now());
+  if (next === phase) return; // re-fail during the freeze, or the fail-after-clear race
+  phase = next;
   hud.showFail(reason === 'collapse' ? 'The mirrors collapsed' : 'Caught by the glass');
 }
 
@@ -193,11 +197,8 @@ function resetFloor(now: number): void {
   chhaya.visible = false;
   house = { ...initHouseState(), attempts: house.attempts + 1 };
   breath = 1;
-  run = createFloorRun(seed);
   player = spawnPlayer(floor);
   input.snapshotAndReset(); // drain mouseDx banked during the freeze — no giant first turn
-  floorFailed = false;
-  freezeUntil = null;
   hud.hideFail();
   hud.hideCleared(); // a cleared banner never outlives a reset (T6 review fix)
   setExitLocked(true);
@@ -236,7 +237,7 @@ function updateChhaya(now: number): void {
 }
 
 function tryFrost(now: number): void {
-  if (floorFailed || run.clearedAt !== null) return; // no frost while frozen or done
+  if (!active(phase)) return; // no frost while frozen or done
   const target = fogTarget(allMirrors, player);
   if (!target || breath < FOG_COST) return;
   const rt = mirrorRuntime.find((r) => r.id === target.id);
@@ -315,7 +316,7 @@ function activeDoorMirrors(): MirrorRef[] {
 }
 
 function stepThrough(): void {
-  if (floorFailed || run.clearedAt !== null) return;
+  if (!active(phase)) return;
   const tp = tryTeleport(allMirrors, player, floor.grid);
   if (!tp) return;
   // Snap position + facing-out heading; the avatar follows immediately so the
@@ -327,7 +328,7 @@ function stepThrough(): void {
 }
 
 function pushDoor(): void {
-  if (floorFailed || run.clearedAt !== null) return;
+  if (!active(phase)) return;
   const target = tryPushDoor(activeDoorMirrors(), player);
   if (!target || target.wallDir === null) return;
   openedDoorIds.add(target.id); // one push per door — it goes inert from here
@@ -367,15 +368,16 @@ let frameIndex = 0;
 function frame(now: number): void {
   const elapsed = Math.min(now - last, 250) / 1000;
   last = now;
-  if (freezeUntil !== null) {
-    // Fail freeze: no simulation, inputs ignored, timer pinned at the fail
-    // moment via run state — restarting re-arms it fresh.
+  // Fail freeze handoff: at resetAt the machine re-arms (ready) and the floor
+  // resets for the next attempt. No simulation on the reset frame itself.
+  const { phase: reArmed, shouldReset } = tickFail(phase, now);
+  if (shouldReset) {
+    phase = reArmed;
+    resetFloor(now);
     accumulator = 0;
-    if (run.startedAt !== null) run.startedAt = now - frozenElapsedMs;
-    if (now >= freezeUntil) resetFloor(now);
-  } else {
+  } else if (active(phase)) {
     accumulator += elapsed;
-    while (accumulator >= FIXED_STEP && freezeUntil === null) {
+    while (accumulator >= FIXED_STEP && active(phase)) {
       const inputFrame =
         mode === 'mouse'
           ? mouseOnlyInput(input.mouseState())
@@ -383,7 +385,7 @@ function frame(now: number): void {
       player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
       const inputActive =
         inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
-      if (run.startedAt === null && inputActive) run.startedAt = now;
+      if (inputActive) phase = startRun(phase, now); // first input starts the clock
       updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);
       breath = updateBreath(breath, FIXED_STEP, false); // recharge per fixed step
       echoes = echoes.map((e) => {
@@ -405,7 +407,7 @@ function frame(now: number): void {
       // Sprint into a mirror and it cracks: the house angers, the glass tints.
       const sprintMoving =
         inputFrame.sprint && (inputFrame.forward !== 0 || inputFrame.strafe !== 0);
-      if (sprintMoving && !floorFailed && run.clearedAt === null) {
+      if (sprintMoving && active(phase)) {
         const target = crackTarget(allMirrors, mirrorRuntime, player, true);
         if (target) {
           house = applyCrack(house, mirrorRuntime, target.id);
@@ -414,10 +416,9 @@ function frame(now: number): void {
         }
       }
       // Chhaya walks the player's path, 6s late — record only while the run is
-      // active; after clear/fail she stands wherever the path ended.
-      if (run.startedAt !== null && run.clearedAt === null && !floorFailed)
-        path = recordPath(path, player.x, player.y, now);
-      if (!floorFailed) {
+      // running; after clear/fail she stands wherever the path ended.
+      if (phase.kind === 'running') path = recordPath(path, player.x, player.y, now);
+      if (active(phase)) {
         for (const e of echoes)
           if (Math.hypot(e.x - player.x, e.y - player.y) < CONTACT_RADIUS) failFloor('caught');
         const at = sampleDelayed(path, now);
@@ -426,11 +427,15 @@ function frame(now: number): void {
       }
       accumulator -= FIXED_STEP;
     }
+  } else {
+    // Failing freeze (or the run already over): no simulation, inputs ignored,
+    // the timer pinned at the fail moment via runElapsedMs of the failing phase.
+    accumulator = 0;
   }
   echoes.forEach((e, i) => syncEchoMesh(echoMeshes[i]!, e));
   updateChhaya(now);
   hud.setChips({
-    timerMs: runElapsedMs(run, now),
+    timerMs: runElapsedMs(phase, now),
     streak: meta.streak.count,
     bestMs: meta.best[seed] ?? null,
   });
@@ -447,14 +452,12 @@ function frame(now: number): void {
   }
   const unlocked = exitUnlocked(allMirrors, mirrorRuntime);
   if (
-    run.clearedAt === null &&
-    !floorFailed && // a same-frame fail+clear must not award a clear (T6 review fix)
-    run.startedAt !== null &&
+    phase.kind === 'running' && // a same-frame fail+clear must not award a clear (T6 review fix)
     unlocked &&
     isAtExit(player.x, player.y, exitCenter.cx, exitCenter.cy)
   ) {
-    run.clearedAt = now;
-    const ms = runElapsedMs(run, now);
+    phase = clearRun(phase, now);
+    const ms = runElapsedMs(phase, now);
     const wasBest = meta.best[seed];
     meta = recordRun(meta, seed, ms, todayStamp());
     meta = awardShards(
@@ -467,7 +470,7 @@ function frame(now: number): void {
   }
   // Passage hints (T7), in precedence order: step-through, push-door, then
   // the sealed-exit explanation — the prompt always names the key that works.
-  if (!floorFailed && run.clearedAt === null) {
+  if (active(phase)) {
     if (tryTeleport(allMirrors, player, floor.grid) !== null) {
       hud.hint('Space — step through');
     } else if (tryPushDoor(activeDoorMirrors(), player) !== null) {
@@ -582,10 +585,10 @@ if (import.meta.env.DEV) {
       crackedAny: house.crackedAny,
       beacons: beaconsCaptured(allMirrors, mirrorRuntime),
       exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
-      failed: floorFailed,
+      failed: phase.kind === 'failing',
     }),
     metaShards: () => meta.shards ?? 0,
-    fail: (reason: string) => failFloor(reason),
+    fail: (reason: string) => failFloor(reason === 'collapse' ? 'collapse' : 'caught'),
     fogTarget: () => fogTarget(allMirrors, player)?.id ?? null,
     canStepThrough: () => tryTeleport(allMirrors, player, floor.grid) !== null,
     stepThrough,
