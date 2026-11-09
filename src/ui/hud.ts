@@ -63,6 +63,10 @@ export interface Hud {
   /** M4/T6 — re-label every chrome string this HUD owns (buttons, chips,
    *  overlays) in the new language; values recompose from cached state. */
   setLang(lang: Lang): void;
+  /** M5/T3 — the caption bar (#mh-captions, bottom-center). main feeds it
+   *  renderCaptions(el, feed, now) every frame; its fade is the reduced-flash
+   *  CSS family. A polite live region: the lines read themselves. */
+  captionBar: HTMLElement;
   root: HTMLElement;
 }
 
@@ -175,6 +179,14 @@ export function createHud(init: HudInit): Hud {
   const toast = document.createElement('div');
   toast.id = 'mh-toast';
   toast.hidden = true;
+  // M5/T3 — the caption bar: fixed bottom-center (out of the top-right
+  // column's flow), role=status so the lines announce themselves. Its text
+  // is renderCaptions' output; main owns the feed.
+  const captionBar = document.createElement('div');
+  captionBar.id = 'mh-captions';
+  captionBar.hidden = true;
+  captionBar.setAttribute('role', 'status');
+  captionBar.setAttribute('aria-live', 'polite');
   root.append(
     modes,
     faq,
@@ -192,6 +204,7 @@ export function createHud(init: HudInit): Hud {
     fail,
     hint,
     toast,
+    captionBar,
   );
   document.body.appendChild(root);
 
@@ -369,6 +382,7 @@ export function createHud(init: HudInit): Hud {
       if (lastTierStats !== null && !tier.hidden)
         tierStats.textContent = fill(t(lang, 'overlay.tierStats'), lastTierStats);
     },
+    captionBar,
     root,
   };
 }

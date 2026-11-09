@@ -88,6 +88,10 @@ export const FAQ: readonly FaqEntry[] = [
     a: 'Yes on all three. On the published build, your browser’s Install app / Add to Home Screen action gives Mirror House its own window and icon, and a service worker keeps a copy of the game — installed once, it loads and plays with the network off. The HUD speaks English and Hindi: the 🌐 button cycles between them (or ?lang=hi in the URL) and your choice is remembered. Aaina’s dialogue and these answers stay English for now — the content pipeline owns them.',
   },
   {
+    q: 'What are captions — and where do I turn them on?',
+    a: 'Captions write the house’s sound cues as text, the way subtitles carry speech. The bar at the bottom-centre of the screen shows the latest two lines for a few seconds each: an Echo stirring in the glass, giving chase, or wandering blinded by your frost; your shadow’s first appearance on a floor (and exactly how many seconds behind you she walks — 7 on floor 1, tightening to 4 in the Dwaar); Taal’s lantern flaring when his touch lands; the house’s anger at 60 and at 90; fails, clears, descents and the tier; Aaina’s hints; and the music starting or muting. Turn them on in ⚙ Settings → Access — “Captions for sound cues”. The choice is saved with everything else, the text follows the Text size setting, and in Hindi play the lines are Hindi.',
+  },
+  {
     q: 'I found a bug.',
     a: 'Thank you — please file it at github.com/seolithdev01/mirror-house/issues with your seed code; the layout reproduces itself.',
   },
@@ -98,7 +102,7 @@ export function buildFaqOverlay(): {
   toggle(): void;
   setLang(lang: Lang): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 21
+  // M4/T6 — the heading and the close button are chrome (localized); the 22
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   const root = document.createElement('div');

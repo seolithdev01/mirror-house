@@ -13,6 +13,8 @@ const PARAM_KEYS = [
   'hint.tactical',
   'settings.keyConflict',
   'misc.close',
+  'caption.chhaya',
+  'caption.cleared',
 ] as const;
 
 const tokens = (s: string): string => (s.match(/\{\w+\}/g) ?? []).sort().join(',');

@@ -145,6 +145,7 @@ import {
   type ViewMode,
 } from './game/viewMode';
 import { buildAainaOverlay } from './ui/aaina';
+import { CAPTION_TTL_MS, captionFeed, renderCaptions, type CaptionEvent } from './ui/captions';
 import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
 import { fill, resolveLang, t, type Lang } from './ui/i18n';
@@ -346,6 +347,33 @@ const waypoints: Array<{ x: number; y: number }> = [];
 const WAYPOINT_MAX = 8;
 const overhead = createOverhead(overheadCanvas);
 
+// M5/T3 — captions: the sound-cue feed behind the bottom bar. pushCaption is
+// the ONE door (gated on a11y.captions); the feed dedupes by id within its
+// ttl, so a repeatedly-firing cue (the echo sense check runs every 250 ms
+// per echo) speaks once per window. The frame loop renders the latest two
+// lines and clears the feed the moment the toggle goes off.
+let captions: CaptionEvent[] = [];
+function pushCaption(id: string, text: string): void {
+  if (!a11y().captions) return;
+  const now = performance.now();
+  captions = captionFeed(captions, { id, text, at: now, ttlMs: CAPTION_TTL_MS }, now);
+}
+/** The anger thresholds already spoke this attempt (reset with the house).
+ *  Per-frame check — anger rises in the fixed step (cracks, Taal's touch)
+ *  and via the dev faucet; one reader catches every writer. */
+let anger60Spoken = false;
+let anger90Spoken = false;
+function captionAnger(): void {
+  if (!anger60Spoken && house.anger >= 60) {
+    anger60Spoken = true;
+    pushCaption('anger-60', t(lang, 'caption.anger60'));
+  }
+  if (!anger90Spoken && house.anger >= 90) {
+    anger90Spoken = true;
+    pushCaption('anger-90', t(lang, 'caption.anger90'));
+  }
+}
+
 /** Mark the player's current cell explored (fog of war). */
 function markVisited(): void {
   const c = floor.grid.cellAt(player.x, player.y);
@@ -375,6 +403,11 @@ function failFloor(reason: FailReason): void {
   if (next === phase) return; // re-fail during the freeze, or the fail-after-clear race
   phase = next;
   hud.showFail(t(lang, reason === 'collapse' ? 'overlay.failCollapse' : 'overlay.failCaught'));
+  // M5/T3 — the fail caption reuses the overlay's own line: one announcement.
+  pushCaption(
+    reason === 'collapse' ? 'fail-collapse' : 'fail-caught',
+    t(lang, reason === 'collapse' ? 'overlay.failCollapse' : 'overlay.failCaught'),
+  );
 }
 
 function resetFloor(now: number): void {
@@ -391,7 +424,9 @@ function resetFloor(now: number): void {
   if (taalFigure !== null) taalFigure.group.visible = taal !== null;
   path = []; // Chhaya loses the trail; she hides on the next update
   chhaya.visible = false;
+  chhayaAnnounced = false; // the new attempt's first sighting speaks again
   house = { ...initHouseState(), attempts: house.attempts + 1 };
+  anger60Spoken = anger90Spoken = false; // the calmed house has nothing said
   breath = 1;
   hintsUsed = 0; // a fresh attempt prices Aaina's hints from the base again
   purchasedHint = null;
@@ -420,6 +455,9 @@ const chhaya = createChhaya();
 chhaya.visible = false; // hidden until the first recorded sample expires (the floor's grace)
 scene.add(chhaya);
 let chhayaHeading = 0;
+// M5/T3 — her caption speaks once per attempt: the first frame her delayed
+// sample exists (reset with the trail in resetFloor/buildFloor).
+let chhayaAnnounced = false;
 
 /** Chhaya walks closer as the campaign descends (M4/T2): her delay comes from
  *  the floor ramp — 7s on floor 1 down to 4.6s, 4s in the Dwaar. */
@@ -434,6 +472,13 @@ function updateChhaya(now: number): void {
   // than lingering beside a run that is over.
   const visible = at !== null && active(phase);
   chhaya.visible = visible;
+  if (visible && !chhayaAnnounced) {
+    // M5/T3 — first sighting this attempt: the line names the live delay
+    // (7 s on floor 1 … 4 s in the Dwaar), so the caption stays true as the
+    // campaign tightens it.
+    chhayaAnnounced = true;
+    pushCaption('chhaya', fill(t(lang, 'caption.chhaya'), { s: delay / 1000 }));
+  }
   if (!visible || at === null) return;
   const br = bracketSamples(path, now - delay);
   if (br !== null) {
@@ -490,6 +535,7 @@ function buyHint(): void {
   hintsUsed += 1;
   purchasedHint = { kind: hint.kind, text: hint.text };
   updateShardsChip(); // the purse shrank; the pending stake is untouched
+  pushCaption('hint', t(lang, 'caption.hint')); // M5/T3 — the buy has a sound cue
 }
 
 /**
@@ -589,7 +635,8 @@ const settings = buildSettingsOverlay({
   },
   onCaptions: (on) => {
     save = { ...save, a11y: { ...a11y(), captions: on } };
-    persist(); // the caption BAR is T3; the choice banks now
+    persist(); // M5/T3 — the bar is live: pushCaption gates on this flag, and
+    // the frame loop empties the feed the moment the toggle goes off
   },
   onRebind: (action, code) => {
     const { map, conflict } = rebind(a11y().keyMap, action, code);
@@ -875,6 +922,8 @@ function buildFloor(c: Campaign): void {
   purchasedHint = null;
   path = []; // Chhaya loses the trail; she hides until the new path ages
   chhaya.visible = false;
+  chhayaAnnounced = false; // the new floor's first sighting speaks again
+  anger60Spoken = anger90Spoken = false; // a fresh house has said nothing
   player = spawnPlayer(floor);
   visited.clear(); // the fog closes in — the new floor starts unexplored
   pings = []; // the old floor's radar is spent
@@ -936,6 +985,7 @@ function startAudioOnGesture(): void {
   if (audioGestureDone) return;
   audioGestureDone = true;
   audio.start();
+  pushCaption('audio-start', t(lang, 'caption.audioStarted')); // M5/T3 — the music's first breath
 }
 window.addEventListener('keydown', startAudioOnGesture, { once: true });
 window.addEventListener('pointerdown', startAudioOnGesture, { once: true });
@@ -948,6 +998,7 @@ function toggleMute(): void {
   save = { ...save, muted: next };
   persist();
   hud.setMuted(next);
+  pushCaption(next ? 'muted' : 'unmuted', t(lang, next ? 'caption.muted' : 'caption.unmuted'));
 }
 
 // M4/T4 — 💾 export / 📂 import. The File System Access API is the happy
@@ -1348,7 +1399,19 @@ function frame(now: number): void {
         // loseMemoryAt, so a changed value marks this tick's check — ping at
         // the echo's position. The throttle lives inside updateEcho, so this
         // never double-fires within its SENSE_INTERVAL_MS cadence.
-        if (next.loseMemoryAt !== e.loseMemoryAt) pings.push({ x: next.x, y: next.y, at: now });
+        if (next.loseMemoryAt !== e.loseMemoryAt) {
+          pings.push({ x: next.x, y: next.y, at: now });
+          // M5/T3 — the caption rides the SAME detection point (never a
+          // recompute): one id, one line per ttl window however often the
+          // per-echo sense cadence re-fires it.
+          pushCaption('echo-sense', t(lang, 'caption.echoSense'));
+        }
+        // M5/T3 — mode edges: the chase begins, the confusion lands. The
+        // captions speak on the transition, so a held state never repeats.
+        if (next.mode === 'chase' && e.mode !== 'chase')
+          pushCaption('echo-chase', t(lang, 'caption.echoChase'));
+        if (next.mode === 'confused' && e.mode !== 'confused')
+          pushCaption('echo-confused', t(lang, 'caption.echoConfused'));
         // Stuck bounty: first confusion banks the award flag for this run.
         return next.mode === 'confused' && !next.stuckAwarded
           ? { ...next, stuckAwarded: true }
@@ -1387,6 +1450,9 @@ function frame(now: number): void {
         ) {
           taal = { ...taal, touchCooldownUntil: now + TAAL_TOUCH_COOLDOWN_MS };
           house = { ...house, anger: house.anger + TAAL_TOUCH_ANGER };
+          // M5/T3 — one line per touch (dedupe rides out his 1.5s cooldown);
+          // captionAnger below picks up any threshold this touch crossed.
+          pushCaption('taal-touch', t(lang, 'caption.taal'));
           if (isCollapse(house)) failFloor('collapse');
         }
         const at = sampleDelayed(path, now, chhayaDelayMs());
@@ -1429,6 +1495,13 @@ function frame(now: number): void {
   });
   hud.setBreath(breath);
   hud.setAnger(house.anger / ANGER_MAX);
+  // M5/T3 — captions: the thresholds speak once per attempt (per-frame check
+  // catches every anger writer), then the bar paints the latest two lines.
+  // When the toggle is off the feed empties here, so nothing stale waits to
+  // reappear if it comes back on mid-line.
+  captionAnger();
+  if (!a11y().captions && captions.length > 0) captions = [];
+  renderCaptions(hud.captionBar, captions, now);
   // Audio feed (M3/T6): one threat→music intensity per frame — anger, pursuit
   // pressure, failing, cleared — smoothed inside the engine's scheduler.
   audioIntensity = intensityFrom({
@@ -1479,10 +1552,15 @@ function frame(now: number): void {
       save = mergeCampaign(save, campaign); // tier complete is a save event
       persist(true);
       hud.showTierComplete({ floors: DWAAR_FLOOR, shards: save.shards });
+      pushCaption('tier', t(lang, 'overlay.tierTitle')); // M5/T3 — the tier line is the overlay's own
     } else {
       hud.showCleared(ms, save.best[seed] ?? null, wasBest === undefined || ms < wasBest);
       hud.showDescend();
       descendAt = now + DESCEND_MS;
+      // M5/T3 — clear + descend land as the bar's two lines (short form; the
+      // banner above keeps the full best-time sentence).
+      pushCaption('clear', fill(t(lang, 'caption.cleared'), { s: `${(ms / 1000).toFixed(1)}s` }));
+      pushCaption('descend', t(lang, 'overlay.descend'));
     }
   }
   // Stair Door handoff: once the 0.8s hold elapses, the campaign descends and
@@ -1608,6 +1686,8 @@ if (import.meta.env.DEV) {
     },
     view: () => view, // M3/T3 — which ViewMode is showing ([V] cycles)
     viewMode: () => view, // M3/T6 — the same value under its exact hook name
+    // M5/T3 — the live caption feed (id + text), the bar's backing store.
+    captions: () => captions.map((c) => ({ id: c.id, text: c.text })),
     // M3/T6 — the audio engine's observable state (started/muted) plus the
     // last intensity the frame loop fed it.
     audioState: () => ({

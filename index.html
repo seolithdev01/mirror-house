@@ -246,6 +246,30 @@
       #mh-toast[hidden] {
         display: none;
       }
+      /* M5/T3 — the caption bar: bottom-center, the latest two sound-cue
+         lines (renderCaptions joins them with \n; pre-line stacks them).
+         Fixed inside the pointer-events:none #hud root, so it centres on the
+         viewport whatever the column does, and its font rides the text-scale
+         ladder like every HUD surface. */
+      #mh-captions {
+        position: fixed;
+        bottom: 64px;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: min(560px, 90vw);
+        background: rgba(5, 6, 10, 0.72);
+        border: 1px solid #2a3560;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font: calc(15px * var(--mh-text-scale, 1))/1.5 system-ui;
+        color: #f2e9d8;
+        text-align: center;
+        white-space: pre-line;
+        pointer-events: none;
+      }
+      #mh-captions[hidden] {
+        display: none;
+      }
       #mh-faq-overlay {
         position: fixed;
         inset: 0;
@@ -489,7 +513,8 @@
       body.mh-reduced-flash #mh-descend,
       body.mh-reduced-flash #mh-fail,
       body.mh-reduced-flash #mh-hint,
-      body.mh-reduced-flash #mh-toast {
+      body.mh-reduced-flash #mh-toast,
+      body.mh-reduced-flash #mh-captions {
         transition: opacity 320ms ease;
       }
       body.mh-reduced-flash #mh-faq-overlay[hidden],
@@ -508,7 +533,8 @@
       body.mh-reduced-flash #mh-descend[hidden],
       body.mh-reduced-flash #mh-fail[hidden],
       body.mh-reduced-flash #mh-hint[hidden],
-      body.mh-reduced-flash #mh-toast[hidden] {
+      body.mh-reduced-flash #mh-toast[hidden],
+      body.mh-reduced-flash #mh-captions[hidden] {
         display: block;
         opacity: 0;
         pointer-events: none;

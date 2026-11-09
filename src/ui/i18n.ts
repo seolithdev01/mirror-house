@@ -44,7 +44,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'settings.reducedFlash': 'Reduce flashing',
     'settings.reducedFlashNote': 'Steadies pulsing lights; overlays fade in and out.',
     'settings.captions': 'Captions for sound cues',
-    'settings.captionsNote': 'Saved now — the caption bar arrives in a coming update.',
+    'settings.captionsNote': 'Sound cues show as text, bottom-centre, two lines at a time.',
     // M5/T2 — the Controls section: the 15 rebindable actions
     'settings.controls': 'Controls',
     'settings.keyNote': 'Click a key to change it. Escape cancels.',
@@ -95,6 +95,20 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'tab.ask': 'Ask',
     'tab.hint': 'Hint',
     'tab.lore': 'Lore',
+    // M5/T3 — caption bar lines (sound cues as text; ≤2 on screen at once).
+    // Fail/descend/tier reuse the overlay strings — the same announcement.
+    'caption.echoSense': 'The glass sees you — an Echo stirs',
+    'caption.echoChase': 'An Echo gives chase',
+    'caption.echoConfused': 'An Echo wanders, blinded',
+    'caption.chhaya': 'Your shadow is {s}s behind',
+    'caption.taal': "Taal's lantern flares — the house's temper rises",
+    'caption.anger60': 'The house is angry — the mirrors hum',
+    'caption.anger90': 'The house is furious — the mirrors tremble',
+    'caption.cleared': 'Floor cleared — {s}',
+    'caption.hint': "Aaina's hint is yours",
+    'caption.audioStarted': 'The music begins',
+    'caption.muted': 'Sound muted',
+    'caption.unmuted': 'Sound on',
     // misc chrome
     'misc.close': '✕ Close ({key})',
     'misc.playAgain': '↻ Play again',
@@ -135,7 +149,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'settings.reducedFlash': 'चमक कम करें',
     'settings.reducedFlashNote': 'स्पंदित रोशनी स्थिर होती है; परदे धीरे-धीरे आते-जाते हैं।',
     'settings.captions': 'ध्वनि संकेतों के कैप्शन',
-    'settings.captionsNote': 'अभी सहेजा जाता है — कैप्शन पट्टी आगामी अपडेट में आएगी।',
+    'settings.captionsNote':
+      'ध्वनि संकेत लिखे रूप में दिखते हैं — नीचे बीच में, एक साथ दो पंक्तियाँ।',
     // M5/T2 — कंट्रोल्स अनुभाग: पुनर्बद्ध की जा सकने वाली 15 क्रियाएँ
     'settings.controls': 'कंट्रोल्स',
     'settings.keyNote': 'कुंजी बदलने के लिए उस पर क्लिक करें। रद्द करने के लिए Escape दबाएँ।',
@@ -186,6 +201,19 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'tab.ask': 'पूछें',
     'tab.hint': 'संकेत',
     'tab.lore': 'कथा',
+    // M5/T3 — कैप्शन पट्टी की पंक्तियाँ (छोटी, स्वाभाविक हिंदी; नाम देवनागरी में)
+    'caption.echoSense': 'काँच ने देख लिया — एक प्रतिध्वनि जागी',
+    'caption.echoChase': 'प्रतिध्वनि पीछा करने लगी',
+    'caption.echoConfused': 'प्रतिध्वनि अंधी होकर भटकने लगी',
+    'caption.chhaya': 'आपकी छाया {s} सेकंड पीछे है',
+    'caption.taal': 'ताल की लालटेन भड़की — घर का क्रोध बढ़ा',
+    'caption.anger60': 'घर क्रोधित है — दर्पण गूँज रहे हैं',
+    'caption.anger90': 'घर अधीर है — दर्पण काँप रहे हैं',
+    'caption.cleared': 'मंज़िल {s} में पार',
+    'caption.hint': 'आईना का संकेत मिल गया',
+    'caption.audioStarted': 'संगीत शुरू हुआ',
+    'caption.muted': 'ध्वनि मौन',
+    'caption.unmuted': 'ध्वनि चालू',
     // शेष क्रोम
     'misc.close': '✕ बंद करें ({key})',
     'misc.playAgain': '↻ फिर से खेलें',

@@ -72,6 +72,8 @@ interface DebugHook {
     textScale: number;
     keyMap: Record<string, string>;
   };
+  // M5/T3 — the live caption feed behind the bottom bar
+  captions(): Array<{ id: string; text: string }>;
 }
 // page.evaluate results cannot carry functions across the process boundary,
 // so the closure-backed members (look/mode/streak/best) are invoked in the
@@ -212,12 +214,12 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('step003: FAQ opens with 21 entries and H toggles', async ({ page }) => {
+test('step003: FAQ opens with 22 entries and H toggles', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=FAQ');
   await ready(page);
   await page.locator('#mh-faq').click();
-  await expect(page.locator('#mh-faq-box details')).toHaveCount(21);
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(22);
   await page.keyboard.press('KeyH'); // closes
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens
