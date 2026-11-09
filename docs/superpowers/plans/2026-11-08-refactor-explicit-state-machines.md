@@ -46,11 +46,11 @@ export function isAtExit(px: number, py: number, exitCx: number, exitCy: number)
 export const EXIT_RADIUS = 1.6; // unchanged
 ```
 
-- [ ] **Step 1: Rewrite tests** (`tests/unit/floorrun.test.ts`) — transitions, idempotence, THE race (`failRun` after `clearRun` is a no-op), re-fail-during-freeze keeps original `resetAt`, `tickFail` boundary (now = resetAt−1 vs resetAt), elapsed in all four phases, `isAtExit` cases (keep existing).
-- [ ] **Step 2: RED → implement → GREEN.**
-- [ ] **Step 3: Rewire `src/main.ts`:** delete `floorFailed` and `freezeUntil`; `let phase = createFloorRun()`; timer start on first active input (`phase = startRun(phase, now)`); simulation gate (`active(phase) && !faqOpen` — FAQ gate lands in T3, wire the `active` half now); clear condition becomes `phase.kind === 'running' && exitUnlocked(...) && isAtExit(...)` → `phase = clearRun(phase, now)`; contact/collapse fails become `phase = failRun(phase, 'caught'|'collapse', now)` (dev `fail()` and `addAnger` routes too); each frame `tickFail(phase, now)` → on `shouldReset` run the existing `resetFloor()` body (attempts++, re-inits, HUD) with `phase = createFloorRun()`; delete the old `run.startedAt = now − frozenElapsedMs` timer-pin hack (use `runElapsedMs(phase, now)`); Chhaya recording gate `phase.kind === 'running'`; HUD timer chip from `runElapsedMs`.
-- [ ] **Step 4: Gates + `npm run e2e` — 10/10.**
-- [ ] **Step 5: Commit** — `refactor(sm): GamePhase master machine replaces floorFailed/freezeUntil/run lifecycle`
+- [x] **Step 1: Rewrite tests** (`tests/unit/floorrun.test.ts`) — transitions, idempotence, THE race (`failRun` after `clearRun` is a no-op), re-fail-during-freeze keeps original `resetAt`, `tickFail` boundary (now = resetAt−1 vs resetAt), elapsed in all four phases, `isAtExit` cases (keep existing).
+- [x] **Step 2: RED → implement → GREEN.**
+- [x] **Step 3: Rewire `src/main.ts`:** delete `floorFailed` and `freezeUntil`; `let phase = createFloorRun()`; timer start on first active input (`phase = startRun(phase, now)`); simulation gate (`active(phase) && !faqOpen` — FAQ gate lands in T3, wire the `active` half now); clear condition becomes `phase.kind === 'running' && exitUnlocked(...) && isAtExit(...)` → `phase = clearRun(phase, now)`; contact/collapse fails become `phase = failRun(phase, 'caught'|'collapse', now)` (dev `fail()` and `addAnger` routes too); each frame `tickFail(phase, now)` → on `shouldReset` run the existing `resetFloor()` body (attempts++, re-inits, HUD) with `phase = createFloorRun()`; delete the old `run.startedAt = now − frozenElapsedMs` timer-pin hack (use `runElapsedMs(phase, now)`); Chhaya recording gate `phase.kind === 'running'`; HUD timer chip from `runElapsedMs`.
+- [x] **Step 4: Gates + `npm run e2e` — 10/10.**
+- [x] **Step 5: Commit** — `refactor(sm): GamePhase master machine replaces floorFailed/freezeUntil/run lifecycle`
 
 ---
 
@@ -74,11 +74,11 @@ export interface DoorAnim { id: number; phase: DoorPhase; t: number }
 export function stepDoor(d: DoorAnim, dtS: number): DoorAnim; // opening: t += dtS*1000/DOOR_SLIDE_MS, → 'open' at t≥1; others unchanged
 ```
 
-- [ ] **Step 1: Tests** — `mirrorVisual` precedence (captured beats unexpired fog; expired fog → clear); `isFogged` equivalence; `stepDoor` progression/boundary/idempotence on 'open'.
-- [ ] **Step 2: RED → implement → GREEN.**
-- [ ] **Step 3: Rewire main.ts** — `syncFogVisuals` consumes `mirrorVisual` (delete its private re-derivation); door animation entries become `DoorAnim` records stepped via `stepDoor` (replace the inline 0.4s math; filter out `'open'` entries same as today's splice).
-- [ ] **Step 4: Gates + e2e 10/10.**
-- [ ] **Step 5: Commit** — `refactor(sm): mirrorVisual single source + typed door phase`
+- [x] **Step 1: Tests** — `mirrorVisual` precedence (captured beats unexpired fog; expired fog → clear); `isFogged` equivalence; `stepDoor` progression/boundary/idempotence on 'open'.
+- [x] **Step 2: RED → implement → GREEN.**
+- [x] **Step 3: Rewire main.ts** — `syncFogVisuals` consumes `mirrorVisual` (delete its private re-derivation); door animation entries become `DoorAnim` records stepped via `stepDoor` (replace the inline 0.4s math; filter out `'open'` entries same as today's splice).
+- [x] **Step 4: Gates + e2e 10/10.**
+- [x] **Step 5: Commit** — `refactor(sm): mirrorVisual single source + typed door phase`
 
 ---
 
@@ -92,10 +92,10 @@ export function stepDoor(d: DoorAnim, dtS: number): DoorAnim; // opening: t += d
 2. `faqOpen` tracked from the overlay's `hidden` property each frame (no new state — derived).
 3. Chhaya mesh visible iff `sampleDelayed(...) !== null && active(phase)` (hides on cleared/failing; hook `chhayaPos()` unchanged — it reports the sample regardless).
 
-- [ ] **Step 1: New e2e** — `sm: movement suppressed while FAQ open, resumes after close`: goto fixed seed, record `getPlayer()`, open FAQ via `#mh-faq`, hold W 600ms, assert position unchanged; press H to close, hold W 600ms, assert moved > 0.5m. Add console-error collector as usual.
-- [ ] **Step 2: Implement the gate; run `npm run e2e` → 11/11.**
-- [ ] **Step 3: Full gates.**
-- [ ] **Step 4: Commit** — `refactor(sm): unified input gate (FAQ pause), Chhaya phase visibility, e2e`
+- [x] **Step 1: New e2e** — `sm: movement suppressed while FAQ open, resumes after close`: goto fixed seed, record `getPlayer()`, open FAQ via `#mh-faq`, hold W 600ms, assert position unchanged; press H to close, hold W 600ms, assert moved > 0.5m. Add console-error collector as usual.
+- [x] **Step 2: Implement the gate; run `npm run e2e` → 11/11.**
+- [x] **Step 3: Full gates.**
+- [x] **Step 4: Commit** — `refactor(sm): unified input gate (FAQ pause), Chhaya phase visibility, e2e`
 
 ---
 
@@ -113,9 +113,9 @@ export function stepDoor(d: DoorAnim, dtS: number): DoorAnim; // opening: t += d
 
 **Spec §7.1 addition (verbatim):** `State-machine policy: all lifecycle behavior is modeled as explicit discriminated-union state machines with pure transition functions, one owning module each, documented in docs/STATE_MACHINES.md. New features add machines, not scattered flags.`
 
-- [ ] **Step 1: Write the doc from the shipped code (verify each transition against source — no aspirational rows).**
-- [ ] **Step 2: Spec + README lines; full gates + 11/11 e2e; bundle check.**
-- [ ] **Step 3: Commit** — `docs(sm): STATE_MACHINES.md map + spec policy`
+- [x] **Step 1: Write the doc from the shipped code (verify each transition against source — no aspirational rows).**
+- [x] **Step 2: Spec + README lines; full gates + 11/11 e2e; bundle check.**
+- [x] **Step 3: Commit** — `docs(sm): STATE_MACHINES.md map + spec policy`
 
 ## Plan Self-Review
 

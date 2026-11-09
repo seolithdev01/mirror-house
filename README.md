@@ -11,6 +11,8 @@ A 100-floor, first-person mirror-maze escape game. You descend a century-old pal
 
 Work proceeds in numbered steps (`#stepNNN`) — one brief per step, archived with its response under `docs/prompts-history/YYYY/MM/`.
 
+State is explicit: every lifecycle is a discriminated-union machine with pure transitions, mapped in [docs/STATE_MACHINES.md](docs/STATE_MACHINES.md).
+
 ## Run it
 
 ```bash

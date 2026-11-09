@@ -210,6 +210,7 @@ Post-beta: invite community composers to record **original** tier themes (CLA + 
 - **TypeScript (strict) + Vite** build; **three.js** (WebGL2, WebGL1 fallback) renderer; **Web Audio** for all sound; **IndexedDB** (via idb-keyval) for saves; hand-rolled service worker for PWA offline.
 - No engine (Godot-web wasm is 30–50MB — wrong for a snappy CF Pages static site); no frontend framework (UI is a small state→DOM layer).
 - **Tests:** Vitest units (maze generation, PRNG determinism, AI senses, save migrations, economy math); Playwright smoke (load → move → fog a mirror → save → export). CI: GitHub Actions → lint, test, build, deploy.
+- **State machines:** all lifecycle behaviour is modeled as explicit discriminated-union state machines with pure transition functions, one owning module each, documented in [STATE_MACHINES.md](../../STATE_MACHINES.md). New features add machines, not scattered flags.
 
 ### 7.2 Repo layout (from step002)
 ```
