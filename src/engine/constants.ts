@@ -22,3 +22,12 @@ export const FOG_RANGE = 5; // meters — farthest foggable mirror
 // (dot > 0) and its lateral component sin(θ) does not exceed this value.
 export const FROST_CONE_COS = Math.cos(Math.PI / 3);
 export const SHARD_BEACON = 5; // shards pending per captured beacon (awarded at clear by T6)
+
+// Echoes (M2) — mirror-sight sensing, flow-field pursuit, confusion
+export const ECHO_SPEED = 2.2; // m/s
+export const CONTACT_RADIUS = 0.7; // m — echo touch fails the floor ('caught')
+export const SENSE_RANGE = 13; // m — max echo–mirror AND player–mirror sight distance
+export const SENSE_INTERVAL_MS = 250; // ms between sense checks per echo
+export const CHASE_MEMORY_MS = 2000; // ms an echo remembers its last sensed player cell
+export const CONFUSE_FOGGED_R = 6; // m — fogged mirrors this close count toward confusion
+export const CONFUSE_UNFOGGED_R = 8; // m — one unfogged eye this close prevents confusion

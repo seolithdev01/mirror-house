@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as THREE from 'three';
-import { EYE_HEIGHT, FIXED_STEP, FOG_COST, SHARD_BEACON } from './engine/constants';
+import { CONTACT_RADIUS, EYE_HEIGHT, FIXED_STEP, FOG_COST, SHARD_BEACON } from './engine/constants';
 import { InputCollector, keysToMoveInput, mouseOnlyInput, type InputMode } from './engine/input';
 import { Dir } from './engine/grid';
 import { createAvatar, updateAvatar } from './game/avatar';
+import { initEchoes, updateEcho } from './game/echo';
+import { createEchoMesh, syncEchoMesh } from './game/echoView';
 import { generateFloorObjects, mirrorSpotFor, type MirrorRef } from './game/floorObjects';
 import { createFloorRun, isAtExit, runElapsedMs } from './game/floorRun';
 import { buildFloorScene } from './game/floorScene';
@@ -97,6 +99,25 @@ const totalBeacons = allMirrors.filter((m) => m.kind === 'beacon').length;
 let capturedBeacons = 0;
 let pendingShards = 0;
 
+// M2 echoes: hollow reflections hunting through the mirrors above. They see
+// via allMirrors/mirrorRuntime, walk the flow field, and touch-fail the run.
+// Layer-0 glass figures — visible to the player AND inside every mirror pass.
+let echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, performance.now());
+const echoMeshes = echoes.map(() => {
+  const mesh = createEchoMesh();
+  scene.add(mesh);
+  return mesh;
+});
+
+// Contact fails the floor. Placeholder no-op until T6's house state lands
+// (shatter + restart + streak break); the check site stays here regardless.
+let floorFailed = false;
+function failFloor(reason: string): void {
+  if (floorFailed) return;
+  floorFailed = true;
+  console.warn(`floor failed: ${reason}`);
+}
+
 function tryFrost(now: number): void {
   const target = fogTarget(allMirrors, player);
   if (!target || breath < FOG_COST) return;
@@ -108,7 +129,10 @@ function tryFrost(now: number): void {
   if (!wasCaptured && rt.captured) {
     capturedBeacons++;
     pendingShards += SHARD_BEACON;
-    hud.setChips({ beacons: { captured: capturedBeacons, total: totalBeacons }, shards: pendingShards });
+    hud.setChips({
+      beacons: { captured: capturedBeacons, total: totalBeacons },
+      shards: pendingShards,
+    });
   }
 }
 
@@ -145,7 +169,10 @@ const hud = createHud({
   },
   onFrost: () => tryFrost(performance.now()),
 });
-hud.setChips({ beacons: { captured: capturedBeacons, total: totalBeacons }, shards: pendingShards });
+hud.setChips({
+  beacons: { captured: capturedBeacons, total: totalBeacons },
+  shards: pendingShards,
+});
 canvas.addEventListener('click', () => {
   if (mode === 'hybrid') {
     const lock = canvas.requestPointerLock() as unknown as
@@ -153,9 +180,13 @@ canvas.addEventListener('click', () => {
     lock?.catch?.(() => {});
   }
 });
-window.addEventListener('keydown', (e) => { if (e.code === 'KeyH' && !e.repeat) faq.toggle(); });
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyH' && !e.repeat) faq.toggle();
+});
 // Frost is a keydown press, not a held key (e.repeat guard) — same trigger as the HUD button.
-window.addEventListener('keydown', (e) => { if (e.code === 'KeyF' && !e.repeat) tryFrost(performance.now()); });
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyF' && !e.repeat) tryFrost(performance.now());
+});
 
 function resize(): void {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -187,8 +218,24 @@ function frame(now: number): void {
     if (run.startedAt === null && inputActive) run.startedAt = now;
     updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);
     breath = updateBreath(breath, FIXED_STEP, false); // recharge per fixed step
+    echoes = echoes.map((e) =>
+      updateEcho(
+        e,
+        player,
+        allMirrors,
+        mirrorRuntime,
+        floor.grid,
+        objs.patrolAnchors,
+        now,
+        FIXED_STEP,
+      ),
+    );
+    if (!floorFailed)
+      for (const e of echoes)
+        if (Math.hypot(e.x - player.x, e.y - player.y) < CONTACT_RADIUS) failFloor('caught');
     accumulator -= FIXED_STEP;
   }
+  echoes.forEach((e, i) => syncEchoMesh(echoMeshes[i]!, e));
   hud.setChips({
     timerMs: runElapsedMs(run, now),
     streak: meta.streak.count,
@@ -244,6 +291,7 @@ if (import.meta.env.DEV) {
     streak: () => meta.streak.count,
     bestFor: (s: string) => meta.best[s] ?? null,
     breath: () => breath,
+    echoes: () => echoes.map((e) => ({ id: e.id, x: e.x, y: e.y, mode: e.mode })),
     beacons: () => ({ captured: capturedBeacons, total: totalBeacons }),
     fogTarget: () => fogTarget(allMirrors, player)?.id ?? null,
     mirrorRefs: () => allMirrors.map((m) => ({ ...m })),
