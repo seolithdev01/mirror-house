@@ -63,6 +63,8 @@ interface DebugHook {
   visitedCount(): number;
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
+  // M4/T6 — the live UI language (the ?lang=hi e2e reads it)
+  lang(): string;
 }
 // page.evaluate results cannot carry functions across the process boundary,
 // so the closure-backed members (look/mode/streak/best) are invoked in the
@@ -661,5 +663,145 @@ test('m4: manifest + sw wiring', async ({ page }) => {
     navigator.serviceWorker ? navigator.serviceWorker.getRegistration() : null,
   );
   expect(reg).toBeFalsy();
+  expect(errors).toEqual([]);
+});
+
+/** Clear floor 1 of `seed` the scripted way — start the run with one step,
+ *  frost every beacon, then warp through the now-open stair door. Returns the
+ *  exit position so callers can witness the fresh spawn against it. */
+async function clearFloorOne(page: Page, seed: string): Promise<{ x: number; z: number }> {
+  await page.goto(`/?seed=${seed}`);
+  await ready(page);
+  // the clear check needs a started run — one step starts the clock
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(200);
+  await page.keyboard.up('KeyW');
+  while (
+    (await page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.beaconsLeft();
+    })) > 0
+  ) {
+    await captureNextBeacon(page);
+  }
+  const exit = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.exitPos();
+  });
+  await page.evaluate((e: { x: number; z: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(e.x, e.z);
+  }, exit);
+  await expect(page.locator('#mh-cleared')).toBeVisible({ timeout: 5000 });
+  return exit;
+}
+
+test('m4: descend to floor 2', async ({ page }) => {
+  const errors = collectErrors(page);
+  const exit = await clearFloorOne(page, 'DESCEND');
+
+  // the 0.8s `descending…` hold elapses and floor 2 arms (buildFloor rebuilds)
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.campaign()
+        .floor === 2,
+  );
+  const after = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      seed: h.seed,
+      visited: h.visitedCount(),
+      pending: h.house().pendingShards,
+      beacons: h.house().beacons,
+      player: h.getPlayer(),
+    };
+  });
+  expect(after.seed).toBe('DESCEND:2'); // a fresh maze, one floor deeper
+  expect(after.visited).toBe(1); // only the new floor's spawn cell is explored
+  expect(after.pending).toBe(0); // the new floor stakes nothing yet
+  expect(after.beacons.captured).toBe(0);
+  expect(Math.hypot(after.player.x - exit.x, after.player.y - exit.z)).toBeGreaterThan(1); // a fresh spawn, not the old stair door
+  await expect(page.locator('#mh-floor')).toHaveText('L02');
+  await expect(page.locator('#mh-descend')).toBeHidden(); // the banner died with floor 1
+  expect(errors).toEqual([]);
+});
+
+test('m4: save round-trip persists progress', async ({ page }) => {
+  const errors = collectErrors(page);
+  await clearFloorOne(page, 'ROUNDTRIP');
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.campaign()
+        .floor === 2,
+  );
+
+  // The descend flushed with persist(true), but idbPut is async (open → tx →
+  // commit) and fire-and-forget by design — this page's FIRST ever write must
+  // even build the store. Wait for the store itself to show floor 2 before
+  // leaving, or the reload could beat the commit and boot a fresh default.
+  await page.waitForFunction(() =>
+    new Promise<boolean>((resolve) => {
+      const req = indexedDB.open('mirror-house', 1);
+      req.onsuccess = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('save')) {
+          db.close();
+          return resolve(false);
+        }
+        const get = db.transaction('save', 'readonly').objectStore('save').get('main');
+        get.onsuccess = () => {
+          const row = get.result as { progress?: { floor?: number } } | undefined;
+          db.close();
+          resolve(row?.progress?.floor === 2);
+        };
+        get.onerror = () => {
+          db.close();
+          resolve(false);
+        };
+      };
+      req.onerror = () => resolve(false);
+    }),
+  );
+
+  // a fresh load WITHOUT any URL seed — the campaign must resume from IDB
+  // (a seed in the URL would win the boot race and drag the player to floor 1)
+  await page.goto('/');
+  await ready(page);
+  const resumed = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { campaign: h.campaign(), seed: h.seed, pending: h.house().pendingShards };
+  });
+  expect(resumed.campaign).toEqual({ base: 'ROUNDTRIP', floor: 2, tierComplete: false });
+  expect(resumed.seed).toBe('ROUNDTRIP:2'); // floor 2 of the same base, rebuilt
+  expect(resumed.pending).toBe(0);
+  await expect(page.locator('#mh-floor')).toHaveText('L02');
+  expect(errors).toEqual([]);
+});
+
+test('m4: hindi chrome via ?lang=hi', async ({ page }) => {
+  const errors = collectErrors(page);
+  // hi: the URL names it — mode buttons and chips render Devanagari
+  await page.goto('/?lang=hi&seed=HINDII');
+  await ready(page);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.lang(),
+    ),
+  ).toBe('hi');
+  await expect(page.locator('#hud button[data-mode="hybrid"]')).toContainText('दोनों');
+  await expect(page.locator('#mh-floor')).toContainText('स्तर');
+  await expect(page.locator('#mh-shards')).toContainText('शार्ड');
+  await expect(page.locator('#overhead')).toBeHidden(); // chrome only — the game boots in focus
+
+  // en: the URL beats the now-saved hi — the default English chrome is intact
+  await page.goto('/?seed=HINDII&lang=en');
+  await ready(page);
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.lang(),
+    ),
+  ).toBe('en');
+  await expect(page.locator('#hud button[data-mode="hybrid"]')).toHaveText('⌨+🖱 Both');
+  await expect(page.locator('#mh-floor')).toHaveText('L01');
   expect(errors).toEqual([]);
 });

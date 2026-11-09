@@ -31,7 +31,9 @@ export interface Hud {
     bestMs?: number | null;
     timerMs?: number | null;
     beacons?: { captured: number; total: number };
-    shards?: number;
+    /** M4/T7 — the unified shards display: the plain banked count, or the
+     *  `banked (+pending)` string main's single writer composes. */
+    shards?: number | string;
   }): void;
   setBreath(v: number): void;
   setAnger(v: number): void;
@@ -223,7 +225,7 @@ export function createHud(init: HudInit): Hud {
     bestMs?: number | null;
     timerMs?: number | null;
     beacons?: { captured: number; total: number };
-    shards?: number;
+    shards?: number | string; // M4/T7 — the unified display, composed upstream
   } = {};
 
   const chipText = (id: string, text: string): void => {

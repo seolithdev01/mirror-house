@@ -374,9 +374,9 @@ function resetFloor(now: number): void {
   setExitLocked(true);
   hud.setChips({
     beacons: beaconsCaptured(allMirrors, mirrorRuntime),
-    shards: house.shards,
     timerMs: null,
   });
+  updateShardsChip(); // the forfeited pending leaves the chip — the purse stays
 }
 
 // M2 Chhaya: the six-second shadow. A pure replay of the player's recorded
@@ -457,7 +457,7 @@ function buyHint(): void {
   persist();
   hintsUsed += 1;
   purchasedHint = { kind: hint.kind, text: hint.text };
-  hud.setChips({ shards: save.shards });
+  updateShardsChip(); // the purse shrank; the pending stake is untouched
 }
 
 /**
@@ -483,7 +483,8 @@ function tryFrost(now: number): void {
   if (!wasCaptured && rt.captured) {
     // Beacon shards bank as pending in the house state — awarded at clear.
     house = { ...house, shards: house.shards + SHARD_BEACON };
-    hud.setChips({ beacons: beaconsCaptured(allMirrors, mirrorRuntime), shards: house.shards });
+    hud.setChips({ beacons: beaconsCaptured(allMirrors, mirrorRuntime) });
+    updateShardsChip(); // the new stake joins the display: `banked (+pending)`
     setExitLocked(!exitUnlocked(allMirrors, mirrorRuntime));
   }
 }
@@ -581,6 +582,20 @@ function cycleLang(): void {
   refreshChrome();
 }
 refreshChrome(); // the boot paint: labels, chips and the 🔊 state in `lang`
+
+/** M4/T7 — the ONE writer of the shards chip. Before this, six call sites
+ *  each fed setChips a `shards:` number — sometimes the banked purse
+ *  (save.shards, the IDB truth), sometimes the floor's pending captures
+ *  (house.shards, banked only at clear, forfeited on a fail), so the chip
+ *  silently flipped between two meanings mid-run. Now the display is always
+ *  `banked (+pending)` — the purse plus what this attempt has staked — and
+ *  `(+0)` hides: nothing at stake reads as just the purse. Every shards
+ *  mutation (beacon capture, hint buy, clear banking, fail forfeit, floor
+ *  rebuild, dev grant) funnels through here; nothing else may write it. */
+function updateShardsChip(): void {
+  const pending = house.shards;
+  hud.setChips({ shards: pending > 0 ? `${save.shards} (+${pending})` : save.shards });
+}
 
 // ---- Campaign floor lifecycle (M4/T2) --------------------------------------
 // The Stair Door flow: clearing floors 1–9 holds 0.8s behind a `descending…`
@@ -793,9 +808,9 @@ function buildFloor(c: Campaign): void {
   hud.setFloor(floorChipLabel(c));
   hud.setChips({
     beacons: beaconsCaptured(allMirrors, mirrorRuntime),
-    shards: house.shards,
     timerMs: null,
   });
+  updateShardsChip(); // a fresh floor stakes nothing — the purse alone shows
 }
 
 /** Tier screen → Stay: the cleared Dwaar stays open as a free walk. The shard
@@ -977,6 +992,14 @@ function setViewMode(next: ViewMode): void {
   renderer.setPixelRatio(next === 'quad' ? QUAD_PIXEL_RATIO : FULL_PIXEL_RATIO);
   const mapShowing = showsOverhead(next);
   overheadCanvas.style.display = mapShowing ? 'block' : 'none';
+  if (mapShowing) {
+    // M4/T7 — entering a map releases a hybrid-mode pointer lock: the lock
+    // would keep the cursor captive (and hidden) over the 2D canvas, which
+    // needs a free pointer for waypoint clicks. Guarded — the API is missing
+    // in some embedders — and a no-op when nothing is locked. The lock returns
+    // on the next canvas click (see the requestPointerLock listener).
+    document.exitPointerLock?.();
+  }
   if (!mapShowing) overhead.clear();
   hud.setView(viewLabel(next));
 }
@@ -1334,8 +1357,13 @@ function frame(now: number): void {
       save,
       house.shards + shardsForClear(house, echoes.filter((e) => e.stuckAwarded).length),
     );
+    // The stake is in the purse now — zero the pending so the unified chip
+    // never counts the same shards as banked AND at stake during the 0.8s hold
+    // (the next floor's buildFloor would reset it anyway; this keeps the
+    // in-between frames honest).
+    house = { ...house, shards: 0 };
     persist(true); // a cleared floor banks NOW — no debounce window
-    hud.setChips({ shards: save.shards }); // chip flips from pending to banked
+    updateShardsChip(); // chip flips from `banked (+pending)` to plain banked
     if (isDwaar(campaign.floor)) {
       campaign = completeTier(campaign);
       save = mergeCampaign(save, campaign); // tier complete is a save event
@@ -1470,7 +1498,7 @@ if (import.meta.env.DEV) {
     grantShards: (n: number) => {
       save = awardShards(save, n);
       persist();
-      hud.setChips({ shards: save.shards });
+      updateShardsChip();
     },
     // M3/T6 — Aaina's live panel state: open, the next hint's price, the last
     // purchased line (null until a buy lands and while it is still current).
