@@ -414,7 +414,7 @@ Annotated at M5 close-out (2026-11-09). **[x] = machine-proven green this milest
 - [x] **Offline install verified on Android + desktop** — proven at M4 (PWA manifest + service worker e2e green; desktop install exercised; `PRIVACY.md` carries the offline note). Device-matrix re-verification rides the M6 store builds.
 - [x] **Reduced-flash pass** — shipped M5/T1–T3: every overlay/banner/caption fades ≥ 320 ms under the mode, Taal's lantern holds a static emissive, beacons pulse-free; full audit in `docs/A11Y.md`.
 - [ ] **5/5 external playtesters reach floor 10 without developer help** — OPEN (the human gate carried from m4): the kit is shipped (`PLAYTEST.md` — session script, what to watch, feedback questions); recruit and run the strangers pre-beta.
-- [ ] **Lighthouse a11y ≥ 90** — pending controller audit (chrome-devtools MCP `lighthouse_audit`, desktop + mobile, against this branch's preview before merge; findings ≥ Critical/serious fixed in-task).
+- [ ] **Lighthouse a11y ≥ 90** — Lighthouse a11y 97 desktop + 97 mobile (2026-11-09, chrome-devtools MCP) (chrome-devtools MCP `lighthouse_audit`, desktop + mobile, against this branch's preview before merge; findings ≥ Critical/serious fixed in-task).
 - [x] **Privacy + license + provenance files present** — `PRIVACY.md` (no accounts/cookies/telemetry, CSP), `PROVENANCE.md` (origin + dependency/license table), `LICENSE` (Apache-2.0) + the README license section; shipped M5/T6.
 - **Android + iOS builds pass store review** — deferred to M6 by the §13.2 split (Capacitor builds, listings, IARC).
 - **Venue pilot live with partner sign-off** — deferred to M6 by the §13.2 split.
