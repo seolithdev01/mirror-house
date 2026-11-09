@@ -35,3 +35,14 @@ desktop.ini
 
 # superpowers sdd scratch
 .superpowers/
+
+# android (capacitor) build outputs — generated android/.gitignore covers most;
+# these pin the release/keystore paths it leaves open
+android/.gradle/
+android/app/build/
+android/app/release/
+android/local.properties
+android/.idea/
+android/key.properties
+android/*.keystore
+android/*.jks

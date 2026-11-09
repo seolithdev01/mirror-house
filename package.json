@@ -13,12 +13,17 @@
     "lint": "eslint src tests",
     "format": "prettier --write .",
     "e2e": "playwright test",
-    "soak": "node scripts/soak.mjs"
+    "soak": "node scripts/soak.mjs",
+    "cap:sync": "vite build && cap sync",
+    "cap:android": "cap open android"
   },
   "dependencies": {
+    "@capacitor/core": "^8.6.0",
     "three": "^0.187.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
     "@playwright/test": "^1.65.0",
     "@types/node": "^26.6.6",
     "@types/three": "^0.187.0",
