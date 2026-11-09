@@ -393,7 +393,7 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 | M0  | 1     | Repo scaffold, CI, empty deploy to CF Pages                                             | PR preview + prod URL live; lint/test/build green                                                |
 | M1  | 2–3   | Grid + movement + seeded maze-gen + FOCUS view                                          | Deterministic floors from seed; 60fps mid desktop                                                |
 | M2  | 4–5   | Mirrors + frost + Echoes + Chhaya + traps                                               | One playable floor loop, winnable and losable                                                    |
-| M3  | 6–7   | QUAD/OVERHEAD/TACTICAL + HUD + Aaina v1 + audio engine                                  | All views ≤ budget; hint economy works                                                           |
+| M3  | 6–7   | QUAD/OVERHEAD/TACTICAL + HUD + Aaina v1 + audio engine                                  | All views ≤ budget; hint economy works — delivered 2026-11-09 (m3)                               |
 | M4  | 8–9   | Tier 1 content (10 floors + Dwaar I), saves, PWA, i18n                                  | Playtest 5 strangers complete Tier 1 unaided                                                     |
 | M5  | 10–11 | Polish, a11y pass, perf presets, beta hardening                                         | Exit criteria below all green; web beta launches here                                            |
 | M6  | 12–13 | Capacitor store builds, listings, IARC ratings; venue pilot pack published; full launch | Android + iOS pass review; venue pack live with partner sign-off; beta live on web + both stores |

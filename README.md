@@ -2,7 +2,7 @@
 
 A 100-floor, first-person mirror-maze escape game. You descend a century-old palace of glass where reflections deceive you — and the things hunting you. Free, open source, runs in any modern browser, saves live only on your device.
 
-**Status:** m2 — the mirror maze is alive: fog, hunt, escape. See "Run it" below.
+**Status:** m3 — the maze in four views, a lantern that bargains, and a score that breathes with the house. See "Run it" below.
 
 - [Design blueprint (step001)](docs/superpowers/specs/2026-11-08-mirror-house-design.md)
 - [Prompt/request history](docs/prompts-history/README.md)
@@ -40,6 +40,10 @@ Three fully playable ways to walk — switch anytime with the buttons at the top
 | 🖱 Mouse    | Mouse only       | Hold the **left button** to walk, hold the **right button** to sprint, steer by moving the cursor left or right of center. |
 | ⌨+🖱 Both   | Hybrid (default) | `WASD` move and strafe, mouse to look (click the view to capture the pointer), `Q`/`E` also turn, `Shift` sprint.          |
 
+### Views — `V` to cycle, `T` to stop and think
+
+`V` walks **Focus → Quad → Overhead → Focus**. Focus is the first-person view. Quad fills the screen with four live panes — front, left, right, back (the side panes render on alternate frames to hold the frame budget). Overhead is a walking 2D map that shows only what you have explored: corridors fill in as you enter them, and a fading ping marks Chhaya each time she walks. From the Overhead map, `T` enters the **tactical pause**: the floor freezes while you plan — click cells to drop up to eight ivory waypoints, the first `Esc` clears your marks, and the next `Esc` (or any `V`) returns you to your eyes with the route still drawn on the map. The run clock keeps running while you plan: best times are pause-proof by construction.
+
 ### House Anger — don't sprint into the glass
 
 Sprinting body-first into a mirror cracks it: +15 anger, once per pane. Seven cracks — 100 anger — and the mirrors collapse: the floor fails and instantly re-arms, and the shards you had banked on it are forfeit. Walking never cracks anything. When glass is near, arrive at a walk.
@@ -56,6 +60,14 @@ Chhaya walks your exact path, exactly six seconds behind. Never retrace your ste
 ### Shards
 
 Scored per cleared floor: 5 per beacon captured, +25 for a flawless floor (nothing cracked), +10 per Echo you confused at least once. Beacon shards bank as _pending_ and are only paid out when you actually clear — get caught or collapse and they are forfeit. Your banked total (💠 chip) lives on your device beside your streak.
+
+### Aaina — the lantern speaks (`Q`)
+
+Press `Q` (or the 💬 button) to open Aaina's panel — the FAQ's diegetic sister, docked beside the maze. The floor keeps running while she talks. Her **Hint** tab sells knowledge for shards: ◆5 for the first hint on a floor, ◆10 for the second, ◆15 after that (the price resets on a new floor), and only banked shards — the 💠 chip — can pay, never the pending ones riding the current run. She names her subject before you buy (the beacons, the open stair door, the thing hunting you…) and will not repeat herself until the situation changes. Her **Lore** tab unlocks a memory per cleared floor; shards cannot buy those.
+
+### Sound — alive from your first input
+
+The music is generated live in your browser — raga-inspired classical-fusion, fully original, no samples. It stays silent until your first keypress or click (browsers require a gesture), then follows the house: a calm drone while you explore, tabla and melody sharpening as anger and pursuit climb, silence-hugging calm once the floor is cleared. `M` or the 🔊 button mutes; the choice is remembered on your device.
 
 ### URL options
 
@@ -75,7 +87,7 @@ The run timer starts on your first input and stops when you reach the stair door
 
 ### FAQ
 
-The **? FAQ** button (top right) or the `H` key opens 16 questions in-game: how to move, how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, what seeds are, the Daily, where your data lives, and what's coming next (Aaina the lantern voice; the deeper Sentinels of the floors below).
+The **? FAQ** button (top right) or the `H` key opens 18 questions in-game: how to move, the views and the tactical map, how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, who Aaina is and what her hints cost, where the music comes from, what seeds are, the Daily, where your data lives, and what's coming next (the deeper Sentinels of the floors below).
 
 ### Your data stays on your device
 

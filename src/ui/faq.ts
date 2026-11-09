@@ -14,6 +14,10 @@ export const FAQ: readonly FaqEntry[] = [
     a: 'Three modes, all fully playable alone — switch with the buttons at top right. Keys: WASD + mouse look (hybrid). Keys only: arrows or Q/E turn. Mouse only: hold left button to walk toward the cursor, hold right to sprint.',
   },
   {
+    q: 'How do the views and the map work?',
+    a: 'V cycles: Focus (first person) → Quad (front, left, right and back panes at once) → Overhead (a walking 2D map of everything you have explored) → back to Focus. From the Overhead map, T is the tactical pause: the floor freezes while you plan, a click marks a cell as a waypoint (up to eight), the first Esc clears your marks and the next Esc — or any V — returns you to your eyes with the route still drawn. The run clock keeps running while you plan: best times are pause-proof.',
+  },
+  {
     q: 'Why do I see myself in the mirrors?',
     a: 'Because it is the point. Your reflection is you — coat and lantern are yours to configure (try ?look=teal-white in the URL). In later floors, the house will try to fake it.',
   },
@@ -35,7 +39,11 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'Who is the lantern voice?',
-    a: "Aaina — a shard of the palace's first true mirror. She guides, hints, and occasionally judges. She arrives with the next milestone.",
+    a: "Aaina — a shard of the palace's first true mirror, docked beside the maze when you press Q. She guides, hints, and occasionally judges. Her hints cost shards; her Lore tab costs cleared floors.",
+  },
+  {
+    q: 'What does Aaina sell — and what do hints cost?',
+    a: 'Open her panel with Q (or the 💬 button) and pick the Hint tab. Hints are priced in shards: ◆5 for the first on a floor, ◆10 for the second, ◆15 after that — the price resets on a new floor. Only banked shards (the 💠 chip) can pay, never the pending ones riding the current floor. She names her subject before you buy (the beacons, the open stair door, the thing hunting you…) and will not repeat herself until the situation changes.',
   },
   {
     q: 'What hunts me?',
@@ -63,7 +71,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'Who made the music?',
-    a: 'Nobody yet — it arrives soon, generated live in your browser: Indian classical-fusion, fully original, no samples.',
+    a: 'Nobody — it is generated live in your browser: raga-inspired classical-fusion, fully original, no samples. It begins with your first input and follows the house, sharpening as anger and pursuit climb. M or the 🔊 button mutes it, and the choice is remembered.',
   },
   {
     q: 'I found a bug.',

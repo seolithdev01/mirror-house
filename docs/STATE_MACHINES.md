@@ -15,7 +15,7 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 169 unit tests + 11 Playwright tests, and the machine modules' own
+  suite is 174 unit tests + 15 Playwright tests, and the machine modules' own
   suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
@@ -24,15 +24,18 @@ a single value with named transitions.
 
 ## The inventory
 
-| #   | Machine            | States                                                                 | Owner                                    | Kind                                                            |
-| --- | ------------------ | ---------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------- |
-| 1   | **GamePhase**      | `ready` · `running` · `failing` · `cleared`                            | `src/game/floorRun.ts`                   | Explicit (step 4)                                               |
-| 2   | **MirrorVisual**   | `clear` · `fogged` · `captured`                                        | `src/game/frost.ts`                      | Explicit (step 5)                                               |
-| 3   | **DoorPhase**      | `closed` · `opening` · `open`                                          | `src/game/passages.ts`                   | Explicit (step 5)                                               |
-| 4   | **Echo mode**      | `patrol` · `chase` · `confused`                                        | `src/game/echo.ts`                       | Pure machine, now documented                                    |
-| 5   | **Pending shards** | `pending` → `banked` \| `forfeited`                                    | `src/game/houseState.ts` + `meta.ts`     | Lifecycle, documented                                           |
-| 6   | **InputMode**      | `keyboard` · `mouse` · `hybrid`                                        | `src/engine/input.ts` + `main.ts`        | Configuration, not a lifecycle                                  |
-| 7   | **Input gate**     | FAQ `closed` · `open`; view `focus` · `quad` · `overhead` · `tactical` | `src/ui/faq.ts` + `src/game/viewMode.ts` | Two pauses gate the loop: the FAQ overlay and the tactical view |
+| #   | Machine            | States                                      | Owner                                    | Kind                                                            |
+| --- | ------------------ | ------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------- |
+| 1   | **GamePhase**      | `ready` · `running` · `failing` · `cleared` | `src/game/floorRun.ts`                   | Explicit (step 4)                                               |
+| 2   | **MirrorVisual**   | `clear` · `fogged` · `captured`             | `src/game/frost.ts`                      | Explicit (step 5)                                               |
+| 3   | **DoorPhase**      | `closed` · `opening` · `open`               | `src/game/passages.ts`                   | Explicit (step 5)                                               |
+| 4   | **Echo mode**      | `patrol` · `chase` · `confused`             | `src/game/echo.ts`                       | Pure machine, now documented                                    |
+| 5   | **Pending shards** | `pending` → `banked` \| `forfeited`         | `src/game/houseState.ts` + `meta.ts`     | Lifecycle, documented                                           |
+| 6   | **InputMode**      | `keyboard` · `mouse` · `hybrid`             | `src/engine/input.ts` + `main.ts`        | Configuration, not a lifecycle                                  |
+| 7   | **Input gate**     | FAQ `closed` · `open` ∥ ViewMode `tactical` | `src/ui/faq.ts` + `src/game/viewMode.ts` | Two pauses gate the loop: the FAQ overlay and the tactical view |
+| 8   | **ViewMode**       | `focus` · `quad` · `overhead` · `tactical`  | `src/game/viewMode.ts`                   | Pure machine (M3/T3); `tactical` is the pause view              |
+| 9   | **Aaina overlay**  | `closed` · `open{tab}`                      | `src/ui/aaina.ts`                        | Diegetic panel — does **not** pause                             |
+| 10  | **AudioEngine**    | `idle` · `running`                          | `src/audio/engine.ts`                    | Starts on first gesture; `muted` is a flag, not a state         |
 
 ---
 
@@ -52,7 +55,9 @@ The master machine. Everything else derives from it.
 
 **Invariants.** `cleared` is terminal. A re-fail during the freeze never extends
 the freeze. `runElapsedMs` is pinned at `failedAt`/`clearedAt` once the run ends,
-so the HUD clock can never tick on a corpse.
+so the HUD clock can never tick on a corpse. Ratified decision (M3): the wall
+clock runs under every pause (FAQ, tactical) — best times are pause-proof by
+construction.
 
 **Derived:** `active(p)` (ready or running) gates simulation and verbs;
 `runElapsedMs(p, now)` is the only timer source.
@@ -153,7 +158,7 @@ lifecycle:
 Two pauses, one gate. The FAQ overlay is two states derived from the element
 (`open` when `root.hidden === false`), toggled by the HUD button, the `H` key,
 the close button and a backdrop click. The tactical view (M3/T4) is a
-`ViewMode` value (`focus` · `quad` · `overhead` · `tactical` — `src/game/viewMode.ts`),
+`ViewMode` value (`focus` · `quad` · `overhead` · `tactical` — §8 below),
 entered with `T` from overhead and left with `Esc` (after one Esc-clears
 waypoints press) or any `[V]` press.
 
@@ -161,22 +166,87 @@ Together they are the input gate's second half:
 `simActive = active(phase) && faqHidden && !isTactical(view)` — and the same
 three terms gate the verbs through `canAct` (frost, step-through, push). This
 is the machine that used to be implicit and unread — the reason you could
-walk the maze while reading the FAQ.
+walk the maze while reading the FAQ. Aaina's panel is deliberately outside
+this gate (§9): she is diegetic, so the floor keeps running while she talks —
+but her one dual-use key (`Q`, the toggle) is claimed per fixed step exactly
+as §6 documents for the other shared keys.
+
+---
+
+## 8. ViewMode — `src/game/viewMode.ts`
+
+How the floor is presented (M3/T3): `focus` · `quad` · `overhead` ·
+`tactical`. A pure machine — `main.ts` owns the single `view` value, drives it
+with `[V]` and the tactical exits, and `setViewMode` applies the side effects
+(quad drops to pixel ratio 1, the map modes own the 2D canvas's visibility,
+the HUD chip names the mode you landed in).
+
+| From                  | Event (`[V]`, no repeat) | To                               |
+| --------------------- | ------------------------ | -------------------------------- |
+| `focus`               | `cycleView`              | `quad`                           |
+| `quad`                | `cycleView`              | `overhead`                       |
+| `overhead`            | `cycleView`              | `focus`                          |
+| `tactical`            | `cycleView`              | `focus` — any V leaves           |
+| `overhead`            | `T` keydown              | `tactical` (T4's pause)          |
+| `tactical`            | `Esc` with waypoints     | `tactical` — marks cleared first |
+| `tactical` (no marks) | `Esc` (`exitTactical`)   | `focus`                          |
+
+The pause predicate is part of the input gate (§7), not a field: `isTactical`
+is one of the three `canAct`/`simActive` terms. `showsOverhead` marks the two
+map modes — `overhead` (walking map) and `tactical` (paused map) share T4's
+canvas render with the fog of war, Chhaya pings and your waypoints.
+
+---
+
+## 9. Aaina overlay — `src/ui/aaina.ts`
+
+The FAQ overlay's diegetic sister (M3/T2): `closed` or `open{tab}` with
+`tab ∈ ask | hint | lore`, derived from `root.hidden` plus the tab value —
+exactly the FAQ overlay's shape plus one tab axis. `toggle()` ([Q] or the HUD
+💬 button) always reopens at the `ask` tab; the tab buttons, the close button
+and `[Q]` again close her. She is **not** a pause: `canAct` deliberately
+excludes her, so movement, echoes and Chhaya keep running while she talks —
+she reads the floor per frame (`refreshAaina`) and the hint tab prices its
+offer live (§5's shard economy; `hintCost(hintsUsed)` = 5, 10, 15 … per
+floor). The lore tab gates on cleared floors, not shards.
+
+---
+
+## 10. AudioEngine — `src/audio/engine.ts`
+
+`idle` → `running`, once, on the first user gesture — a keydown or a canvas
+click (`{ once: true }` on both, plus an `audioGestureDone` flag in
+`main.ts`; `start()` itself is idempotent, so there is no double-start path).
+Everything sustained (drone, melody voice, pad, percussion filter) is built
+exactly once inside `start`. There is no `running` → `idle`: the engine runs
+until the tab dies. Under node/browserless the factory returns an inert stub
+(the canvas-guard pattern), which is how the unit suite reaches the theory.
+
+`muted` is a flag, not a state: it never pauses the scheduler — it zeroes the
+master gain (`AUDIO_GAIN_CEILING` ↔ 0). Boot applies `meta.muted` before the
+engine ever starts, so a muted boot stays silent; `[M]` and the HUD 🔊 button
+toggle it and persist the choice. **Intensity is derived** (see look-alikes):
+`main.ts` feeds `intensityFrom({ anger, chasing, failing, cleared })` every
+frame; the scheduler smooths toward it (0.12 lerp per 50 ms wake-up).
 
 ---
 
 ## Look-alikes — deliberately _not_ machines
 
-| Thing                 | Why not                                                                                                                                  |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Breath** (0..1)     | A clamped resource with a continuous rate. No discrete states; `updateBreath` is arithmetic.                                             |
-| **Anger** (0..100)    | A resource with a threshold. `isCollapse(h)` is the event; there is no state to be in.                                                   |
-| **Run timer**         | Derived: `runElapsedMs(phase, now)`. Never stored.                                                                                       |
-| **HUD hints**         | Derived each frame by a precedence chain (step-through → push → sealed exit), not stored.                                                |
-| **Chhaya visibility** | Derived: visible iff a delayed path sample exists **and** the phase is active. She has no state of her own.                              |
-| **Cracked glass**     | Orthogonal damage flag on the runtime mirror; guarded once-per-mirror by `applyCrack`.                                                   |
-| **Pointer lock**      | Owned by the browser. We observe; we do not model.                                                                                       |
-| **Meta save `v1`**    | A versioning policy, not a machine: `loadMeta` validates `v === 1` and falls back to defaults; migrations arrive with the M4 save chain. |
+| Thing                 | Why not                                                                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Breath** (0..1)     | A clamped resource with a continuous rate. No discrete states; `updateBreath` is arithmetic.                                               |
+| **Anger** (0..100)    | A resource with a threshold. `isCollapse(h)` is the event; there is no state to be in.                                                     |
+| **Run timer**         | Derived: `runElapsedMs(phase, now)`. Never stored.                                                                                         |
+| **HUD hints**         | Derived each frame by a precedence chain (step-through → push → sealed exit), not stored.                                                  |
+| **Chhaya visibility** | Derived: visible iff a delayed path sample exists **and** the phase is active. She has no state of her own.                                |
+| **Cracked glass**     | Orthogonal damage flag on the runtime mirror; guarded once-per-mirror by `applyCrack`.                                                     |
+| **Audio intensity**   | Derived per frame by `intensityFrom({ anger, chasing, failing, cleared })` (M3/T6); the engine only smooths toward the target.             |
+| **`hintsUsed`**       | A per-floor counter (0 at spawn, reset in `resetFloor`), not a state: it prices Aaina's next hint (`hintCost`), nothing more.              |
+| **`visited` / pings** | Fog-of-war data (M3/T4): a `Set` of explored cells plus a decaying ping array (`pingOpacity`). Written by the fixed step, read by the map. |
+| **Waypoints**         | Tactical-view data: ivory cell marks (max `WAYPOINT_MAX`), click-toggled, first `Esc` cleared. A list with a cap, not a lifecycle.         |
+| **Pointer lock**      | Owned by the browser. We observe; we do not model.                                                                                         |
+| **Meta save `v1`**    | A versioning policy, not a machine: `loadMeta` validates `v === 1` and falls back to defaults; migrations arrive with the M4 save chain.   |
 
 ---
 
@@ -191,8 +261,9 @@ walk the maze while reading the FAQ.
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **169/169** unit ·
-**11/11** Playwright (10 pre-existing, 1 new for the FAQ pause).
+`npm run typecheck` clean · `npm run lint` clean · **174/174** unit ·
+**15/15** Playwright (11 from m2 and earlier, 4 new for m3: view cycle +
+tactical pause, audio gesture/mute, Aaina's hint economy, fog of war).
 
 ---
 

@@ -69,9 +69,9 @@ export function createAudioEngine(seed: string): AudioEngine;
 
 Engine internals (keep compact): scheduler `setInterval` 50ms with 120ms lookahead scheduling from `theory` via `createRng(seed + ':audio')`; drone = two detuned triangle oscillators at root/2 through a lowpass, constant; melody = triangle osc with exponential envelope + portamento (`frequency.linearRampToValueAtTime`) — a note per ~0.45s at low intensity, ~0.22s at high; percussion = filtered noise burst (high) + sine thump (low); pad = two detuned saws through lowpass + slow LFO, gain rises with intensity. Master gain `AUDIO_GAIN_CEILING`, mute = master gain 0. All nodes created once at start.
 
-- [ ] **Step 1: Failing tests** (`tests/unit/theory.test.ts`): scales' exact semitones; `midiToHz(69)===440`; melody walk determinism (same rng seed ⇒ same 16 notes), stays within octave span, wider average leap at intensity 0.9 vs 0.2 (statistical, seeded); `beatAccents` cycle pinned at both intensities; `intensityFrom` all four branches + clamp.
-- [ ] **Step 2: RED → implement theory + engine (+ node inert stub) → GREEN.**
-- [ ] **Step 3: Gates. Commit** — `feat(m3): procedural audio — raga-mood theory + WebAudio engine`
+- [x] **Step 1: Failing tests** (`tests/unit/theory.test.ts`): scales' exact semitones; `midiToHz(69)===440`; melody walk determinism (same rng seed ⇒ same 16 notes), stays within octave span, wider average leap at intensity 0.9 vs 0.2 (statistical, seeded); `beatAccents` cycle pinned at both intensities; `intensityFrom` all four branches + clamp.
+- [x] **Step 2: RED → implement theory + engine (+ node inert stub) → GREEN.**
+- [x] **Step 3: Gates. Commit** — `feat(m3): procedural audio — raga-mood theory + WebAudio engine`
 
 ---
 
@@ -111,9 +111,9 @@ export const LORE: readonly string[]; // 6 short lore paragraphs (the Glazier, A
 
 Overlay (`src/ui/aaina.ts`): like the FAQ overlay (`createElement` only): three tabs — **Ask** (renders the existing `FAQ` array from `src/ui/faq.ts` — import and reuse), **Hint** (shows `nextHint` preview KIND only until purchased — e.g. "I can tell you about: _the beacons_ — cost ◆ 10" + Buy button; disabled when unaffordable; on buy: reveals text, spends shards, increments `hintsUsed`), **Lore** (LORE entries, locked ones show "🔒 Clears floors to hear more"). State machine: closed/open with tab — closed→open(tab: ask)→open(tab: hint)…→closed. [Q] or HUD button toggles; opening pauses nothing (unlike FAQ it is diegetic — the lantern talks while you walk; do NOT gate simulation).
 
-- [ ] **Step 1: Failing tests** (`tests/unit/aaina.test.ts`): priority chain all six orderings (hand-built contexts); escalating cost (0→5, 1→10, 3→20); `spendShards` success/insufficient(null); lore unlock thresholds 0/1/3/6.
-- [ ] **Step 2: RED → implement → GREEN. Step 3: wire main.ts** (context from live state: `beaconsLeft()`, `anger()`, chhayaNear = active sample within 6m, chasing = echo count mode==='chase', exitUnlocked; hint purchase → `meta = spendShards(...)` + saveMeta + HUD shards chip; `hintsUsed` per-floor, reset in `resetFloor`).
-- [ ] **Step 4: Gates + e2e 11/11. Commit** — `feat(m3): aaina v1 — dialogue overlay + shard hint economy + lore unlocks`
+- [x] **Step 1: Failing tests** (`tests/unit/aaina.test.ts`): priority chain all six orderings (hand-built contexts); escalating cost (0→5, 1→10, 3→20); `spendShards` success/insufficient(null); lore unlock thresholds 0/1/3/6.
+- [x] **Step 2: RED → implement → GREEN. Step 3: wire main.ts** (context from live state: `beaconsLeft()`, `anger()`, chhayaNear = active sample within 6m, chasing = echo count mode==='chase', exitUnlocked; hint purchase → `meta = spendShards(...)` + saveMeta + HUD shards chip; `hintsUsed` per-floor, reset in `resetFloor`).
+- [x] **Step 4: Gates + e2e 11/11. Commit** — `feat(m3): aaina v1 — dialogue overlay + shard hint economy + lore unlocks`
 
 ---
 
@@ -136,9 +136,9 @@ export function showsOverhead(v: ViewMode): boolean; // overhead | tactical
 
 QUAD rendering (main.ts): keep the existing full render for 'focus'; for 'quad' use `renderer.setScissorTest(true)` with four rects — front = top-left half, left = top-right, right = bottom-left, back = bottom-right (each pane `w/2 × h/2`); front pane renders every frame; the other three on alternate frames (`frameIndex % 3 !== paneIndex % 3` skip). Cameras: three additional `PerspectiveCamera` clones sharing aspect 1 (square panes), yaw offsets: left = heading − π/2, right = +π/2, back = π — camera mapping stays `rotation.y = -yaw`. Side cams see layer 0 (avatar only via mirrors, as designed). Pixel ratio capped at 1 for 'quad'. V keydown (no repeat) cycles; HUD chip shows the mode name.
 
-- [ ] **Step 1: Tests** (viewmode transitions + tactical pause predicate). **Step 2: RED → implement → GREEN.**
-- [ ] **Step 3: Wire quad + V key + chip; gates + e2e 11/11.**
-- [ ] **Step 4: Commit** — `feat(m3): view mode machine + QUAD scissor viewports`
+- [x] **Step 1: Tests** (viewmode transitions + tactical pause predicate). **Step 2: RED → implement → GREEN.**
+- [x] **Step 3: Wire quad + V key + chip; gates + e2e 11/11.**
+- [x] **Step 4: Commit** — `feat(m3): view mode machine + QUAD scissor viewports`
 
 ---
 
@@ -176,9 +176,9 @@ Rules: cells not in `visited` are near-black (fog of war — `visited` = cells t
 
 TACTICAL: `simActive` gains `&& !isTactical(viewMode)` (movement/enemies/Chhaya paused; verbs too — `canAct` already central, extend it). Entering: from OVERHEAD via `Space`... no — Space is step-through. Enter tactical with `T` while in overhead (hint chip says so); Esc exits to focus. Update STATE_MACHINES.md input-gate row (FAQ + tactical).
 
-- [ ] **Step 1:** no new unit tests for canvas drawing (browser-only) — pure parts are viewMode (T3) and ping decay: add `pingOpacity(at: number, now: number): number | null` pure fn + test (in overhead.ts, exported).
-- [ ] **Step 2: Implement + wire; gates + e2e 11/11.**
-- [ ] **Step 3: Commit** — `feat(m3): overhead tactical map — fog of war, pings, waypoints, pause`
+- [x] **Step 1:** no new unit tests for canvas drawing (browser-only) — pure parts are viewMode (T3) and ping decay: add `pingOpacity(at: number, now: number): number | null` pure fn + test (in overhead.ts, exported).
+- [x] **Step 2: Implement + wire; gates + e2e 11/11.**
+- [x] **Step 3: Commit** — `feat(m3): overhead tactical map — fog of war, pings, waypoints, pause`
 
 ---
 
@@ -195,7 +195,7 @@ Exactly four fixes:
 3. **E-key dual-use** (Minor): when the door hint is showing (`hint` text === push-hint), suppress that keydown's turn contribution — implement in main.ts by consuming the event: `if (doorHintActive && e.code === 'KeyE') { pushDoor(); return; }` before the input collector sees it... input is polled, not event-driven — instead: in the fixed step, when `doorHintActive`, zero out `inputFrame.turn`'s KeyE share by... simplest honest fix: `keysToMoveInput` can't know; do it in main: if doorHintActive, recompute turn without keyTurn for that step. Implement minimal: `if (doorHintActive) inputFrame = { ...inputFrame, turn: inputFrame.turn < 0 ? Math.max(0, inputFrame.turn + KEY_TURN_PER_STEP) : inputFrame.turn };` — no: turn is mouseDx + keyTurn combined. Cleaner: when doorHintActive and KeyE is held, subtract KEY_TURN_PER_STEP once per step from turn. Document in STATE_MACHINES input row.
 4. **Prettier sweep** (chore): `npx prettier --write .` on the repo, single commit — no functional changes; verify gates + e2e after.
 
-- [ ] **Step 1: Tests first for 1–3** (frost-through-wall now null; echo closes to player position — hand-built grid; E-suppression pure helper if extracted). **Step 2: Implement. Step 3: Gates + e2e 11/11. Step 4: Commits** — `fix(m3): frost LOS, in-cell pursuit, E-key door nudge` then `chore(m3): prettier sweep`
+- [x] **Step 1: Tests first for 1–3** (frost-through-wall now null; echo closes to player position — hand-built grid; E-suppression pure helper if extracted). **Step 2: Implement. Step 3: Gates + e2e 11/11. Step 4: Commits** — `fix(m3): frost LOS, in-cell pursuit, E-key door nudge` then `chore(m3): prettier sweep`
 
 ---
 
@@ -214,8 +214,8 @@ Exactly four fixes:
 3. `m3: aaina hint economy` — `grantShards(20)` → open aaina ([Q]) → Hint tab → buy (cost 5) → `aaina().lastHint` non-null and shards 15; buy again (cost 10) → 5.
 4. `m3: overhead fog of war + pings exist` — warp to a far cell → `visitedCount()` grows; `enemyPos` chase… keep simple: assert `visitedCount() > 1` after walking and overhead canvas visible in overhead mode.
 
-- [ ] **Step 1: Hook + wiring. Step 2: Tests. Step 3: `npm run e2e` → 15/15 (fix only genuine regressions; report flakiness honestly). Step 4: Gates.**
-- [ ] **Step 5: Commit** — `test(m3): e2e — views, audio gesture/mute, aaina economy, fog of war`
+- [x] **Step 1: Hook + wiring. Step 2: Tests. Step 3: `npm run e2e` → 15/15 (fix only genuine regressions; report flakiness honestly). Step 4: Gates.**
+- [x] **Step 5: Commit** — `test(m3): e2e — views, audio gesture/mute, aaina economy, fog of war`
 
 ---
 
@@ -225,9 +225,9 @@ Exactly four fixes:
 
 - Modify: `docs/STATE_MACHINES.md` (rows: ViewMode machine with pause predicate in the input gate; Aaina overlay closed/open(tab); AudioEngine idle→running(→muted as flag); look-alikes: intensity (derived), hintsUsed (per-floor counter), visited/pings (data), waypoints), `docs/superpowers/specs/2026-11-08-mirror-house-design.md` (§13.2 M3 → delivered), `README.md` (views, Aaina, audio, new keys), `src/ui/faq.ts` (2 new entries: view modes; Aaina/hints)
 
-- [ ] **Step 1:** registry + spec + README + FAQ; verify STATE_MACHINES rows against shipped source (no aspirational rows — the step005 lesson).
-- [ ] **Step 2:** acceptance checklist: gates + 15/15 e2e; bundle < 3 MB gz; manual/deferred notes (audio mix feel, quad perf on real GPU).
-- [ ] **Step 3: Commit** — `docs(m3): machines registry, spec delivery marks, how to play`
+- [x] **Step 1:** registry + spec + README + FAQ; verify STATE_MACHINES rows against shipped source (no aspirational rows — the step005 lesson).
+- [x] **Step 2:** acceptance checklist: gates + 15/15 e2e; bundle < 3 MB gz; manual/deferred notes (audio mix feel, quad perf on real GPU).
+- [x] **Step 3: Commit** — `docs(m3): machines registry, spec delivery marks, how to play`
 
 ## Plan Self-Review
 
