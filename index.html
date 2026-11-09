@@ -402,6 +402,8 @@
       #mh-settings-box {
         min-width: 300px;
         max-width: 440px;
+        max-height: 82vh;
+        overflow: auto;
         background: #0b1026;
         border: 1px solid #2a3560;
         border-radius: 10px;
@@ -446,6 +448,34 @@
         border-radius: 6px;
         padding: 6px 14px;
         cursor: pointer;
+      }
+      /* M5/T2 — Controls rows: action label left, the bound key right. Click
+         arms the capture (gold italic "press a key…"), the next keydown
+         rebinds through the conflict guard; refusals name the owner inline. */
+      #mh-settings-box .mh-key-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 2px 0;
+      }
+      #mh-settings-box .mh-key-label {
+        flex: 1;
+      }
+      #mh-settings-box .mh-key-btn {
+        margin-top: 0;
+        min-width: 76px;
+        padding: 3px 10px;
+        font-family: ui-monospace, monospace;
+        text-align: center;
+      }
+      #mh-settings-box .mh-key-btn.mh-key-capturing {
+        border-color: #d9a441;
+        color: #d9a441;
+        font-style: italic;
+      }
+      #mh-keymap-msg.mh-key-conflict {
+        color: #e07a5f;
       }
       /* Reduced-flash (M5/T1): with the body class on (the ⚙ Access toggle),
          every overlay and banner fades in and out over ≥300ms instead of

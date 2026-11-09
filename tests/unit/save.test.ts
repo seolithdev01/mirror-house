@@ -267,7 +267,13 @@ describe('save: a11y field validation (M5/T1)', () => {
   it('rejects malformed a11y boxes', () => {
     const withA11y = (a11y: unknown): unknown => mutated((r) => (r.a11y = a11y));
     const flags = { reducedFlash: false, captions: false };
-    expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: { aaina: 'KeyI' } }))).not.toBeNull();
+    // M5/T2 tightened keyMap validation: the full 15-action set, code-shaped
+    // values (the remap layer's own describe block owns those semantics).
+    expect(
+      validateSave(
+        withA11y({ ...flags, textScale: 1, keyMap: { ...DEFAULT_KEYMAP, aaina: 'KeyP' } }),
+      ),
+    ).not.toBeNull();
     expect(validateSave(withA11y(null))).toBeNull();
     expect(validateSave(withA11y('a11y'))).toBeNull();
     expect(validateSave(withA11y({ ...flags, textScale: 1 }))).toBeNull(); // keyMap missing
@@ -372,6 +378,74 @@ function byAction(action: string): string {
   if (code === undefined) throw new Error(`unknown action ${action}`);
   return code;
 }
+
+// ---- M5/T2 — the remap layer's keymap semantics: known actions, code shapes --
+
+describe('save: keyMap validation — known actions + code shapes (M5/T2)', () => {
+  const withKeyMap = (keyMap: unknown): unknown => mutated((r) => (r.a11y = keyMap));
+  const flags = { reducedFlash: false, captions: false, textScale: 1 };
+  const a11yWith = (keyMap: unknown): unknown => withKeyMap({ ...flags, keyMap });
+
+  it('accepts a remapped full map — every action present, codes round-trip', () => {
+    const keyMap = { ...DEFAULT_KEYMAP, forward: 'KeyP', push: 'Minus' };
+    const out = validateSave(a11yWith(keyMap));
+    expect(out?.a11y?.keyMap).toEqual(keyMap);
+    expect(out?.a11y?.keyMap).not.toBe(keyMap); // fresh tree, never the input's
+  });
+
+  it('rejects unknown actions — the 15 are the whole vocabulary', () => {
+    expect(
+      validateSave(a11yWith({ ...DEFAULT_KEYMAP, macro: 'KeyP' })),
+    ).toBeNull(); // extra action
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, Forward: 'KeyP' }))).toBeNull(); // case is not a rename
+  });
+
+  it('rejects missing actions — a valid map binds every one of the 15', () => {
+    const partial = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete partial.frost;
+    expect(validateSave(a11yWith(partial))).toBeNull();
+  });
+
+  it('rejects values that are not KeyboardEvent.code-shaped', () => {
+    for (const bad of ['wasd', 'keyW', 'P', 'Key W', 'Key-W', 'keydown', 'X'.repeat(30), ' KeyW']) {
+      expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: bad })), `${bad} shape`).toBeNull();
+    }
+  });
+
+  it('accepts the real code families a capture can produce', () => {
+    for (const good of [
+      'KeyP',
+      'Digit1',
+      'ArrowDown',
+      'ShiftRight',
+      'Enter',
+      'NumpadMultiply',
+      'F12',
+      'Semicolon',
+      'IntlYen',
+    ]) {
+      expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: good })), `${good} shape`).not.toBeNull();
+    }
+    // Space is a real code too — it just belongs to stepThrough by default, so
+    // binding it elsewhere must move stepThrough off it first (no new duals).
+    expect(
+      validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: 'Space', stepThrough: 'Minus' })),
+    ).not.toBeNull();
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: 'Space' }))).toBeNull(); // would double-book Space
+  });
+
+  it('duplicates: only the turnR+push pair may share a code — nothing else, no triples', () => {
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP }))).not.toBeNull(); // the default E pair
+    expect(
+      validateSave(a11yWith({ ...DEFAULT_KEYMAP, turnR: 'KeyR', push: 'KeyR' })),
+    ).not.toBeNull(); // the pair on another code is the same sanctioned shape
+    expect(
+      validateSave(a11yWith({ ...DEFAULT_KEYMAP, turnR: 'KeyP', push: 'KeyP', forward: 'KeyP' })),
+    ).toBeNull(); // a triple
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, frost: 'KeyW' }))).toBeNull(); // forward+frost share
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, turnR: 'KeyR', aaina: 'KeyR' }))).toBeNull(); // turnR+aaina is not the sanctioned pair
+  });
+});
 
 describe('save: idb wrapper is inert under node (no indexedDB)', () => {
   it('get resolves null and put resolves without a store', async () => {

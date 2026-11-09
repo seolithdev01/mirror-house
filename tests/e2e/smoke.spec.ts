@@ -65,6 +65,13 @@ interface DebugHook {
   campaign(): { base: string; floor: number; tierComplete: boolean };
   // M4/T6 — the live UI language (the ?lang=hi e2e reads it)
   lang(): string;
+  // M5/T1 — the live a11y block (the ⚙ overlay's writes land here for e2e)
+  a11y(): {
+    reducedFlash: boolean;
+    captions: boolean;
+    textScale: number;
+    keyMap: Record<string, string>;
+  };
 }
 // page.evaluate results cannot carry functions across the process boundary,
 // so the closure-backed members (look/mode/streak/best) are invoked in the
@@ -776,6 +783,48 @@ test('m4: save round-trip persists progress', async ({ page }) => {
   expect(resumed.seed).toBe('ROUNDTRIP:2'); // floor 2 of the same base, rebuilt
   expect(resumed.pending).toBe(0);
   await expect(page.locator('#mh-floor')).toHaveText('L02');
+  expect(errors).toEqual([]);
+});
+
+test('m5: rebind forward to P through the settings overlay', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=REBINDP');
+  await ready(page);
+  const pos = () =>
+    page.evaluate(() =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+    );
+
+  // ⚙ → Controls: click the forward row → the capture arms ("press a key…") →
+  // the next keydown (P) is taken by the rebind, never by the game
+  await page.locator('#mh-settings').click();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+  await page.locator('.mh-key-btn[data-action="forward"]').click();
+  await expect(page.locator('.mh-key-btn[data-action="forward"]')).toHaveText(/press a key/i);
+  await page.keyboard.press('KeyP');
+  await expect(page.locator('.mh-key-btn[data-action="forward"]')).toHaveText('P');
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.a11y()
+          .keyMap.forward,
+    ),
+  ).toBe('KeyP'); // the live map carries the rebind
+  await page.locator('#mh-settings-close').click();
+  await expect(page.locator('#mh-settings-overlay')).toBeHidden();
+
+  // P now walks; the abandoned default W is dead
+  const before = await pos();
+  await page.keyboard.down('KeyP');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('KeyP');
+  const afterP = await pos();
+  expect(Math.hypot(afterP.x - before.x, afterP.y - before.y)).toBeGreaterThan(0.5);
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(400);
+  await page.keyboard.up('KeyW');
+  const afterW = await pos();
+  expect(Math.hypot(afterW.x - afterP.x, afterW.y - afterP.y)).toBeLessThan(0.05);
   expect(errors).toEqual([]);
 });
 

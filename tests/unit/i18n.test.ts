@@ -8,6 +8,10 @@ const PARAM_KEYS = [
   'overlay.clearedBest',
   'overlay.tierStats',
   'hint.sealed',
+  'hint.step',
+  'hint.push',
+  'hint.tactical',
+  'settings.keyConflict',
   'misc.close',
 ] as const;
 

@@ -17,9 +17,11 @@ import {
   TIER_ONE_FLOORS,
 } from './engine/constants';
 import {
+  actionFor,
   InputCollector,
   keysToMoveInput,
   mouseOnlyInput,
+  rebind,
   withoutKey,
   type InputMode,
 } from './engine/input';
@@ -140,7 +142,6 @@ import {
   isTactical,
   QUAD_PIXEL_RATIO,
   showsOverhead,
-  VIEW_KEY,
   type ViewMode,
 } from './game/viewMode';
 import { buildAainaOverlay } from './ui/aaina';
@@ -148,7 +149,7 @@ import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
 import { fill, resolveLang, t, type Lang } from './ui/i18n';
 import { createOverhead, pingOpacity } from './ui/overhead';
-import { buildSettingsOverlay, type TextScale } from './ui/settings';
+import { buildSettingsOverlay, keyLabel, type TextScale } from './ui/settings';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const overheadCanvas = document.querySelector<HTMLCanvasElement>('#overhead')!;
@@ -188,6 +189,13 @@ let save: SaveData = normalizeSave((await idbGet()) ?? migrateFromMetaV1() ?? de
 /** The save's a11y block, defaulted — never undefined past boot. */
 function a11y(): A11ySettings {
   return save.a11y ?? DEFAULT_A11Y;
+}
+/** M5/T2 — the live code for an action: the save's keymap with the default
+ *  as the floor. Post-normalize the map always binds all 15 actions, so the
+ *  fallbacks are belt-and-braces for hand-built saves, same stance as T1's
+ *  aainaKey() (which this generalizes and replaces). */
+function keyOf(action: string): string {
+  return a11y().keyMap[action] ?? DEFAULT_KEYMAP[action] ?? '';
 }
 // M5/T1 — a11y application. Text scale is one CSS var every HUD/overlay font
 // multiplies in (index.html defaults it to 1); reduced-flash flips a body
@@ -557,6 +565,17 @@ const aaina = buildAainaOverlay({ onBuyHint: buyHint });
 // M5/T1 — the ⚙ settings overlay: every control applies at once (text scale
 // re-sets the CSS var, reduced-flash flips the body class + the beat glow
 // flag); persistence rides the usual debounce, flushed when it closes.
+// M5/T2 — Controls goes live: rebinds run through the conflict guard and the
+// new map lands in save.a11y.keyMap (validated on load by the strict gate);
+// every successful write pushes the values back so the rows re-render.
+function pushA11yValues(): void {
+  settings.setValues({
+    textScale: a11y().textScale,
+    reducedFlash: a11y().reducedFlash,
+    captions: a11y().captions,
+    keyMap: a11y().keyMap,
+  });
+}
 const settings = buildSettingsOverlay({
   onTextScale: (scale) => {
     save = { ...save, a11y: { ...a11y(), textScale: scale } };
@@ -572,12 +591,26 @@ const settings = buildSettingsOverlay({
     save = { ...save, a11y: { ...a11y(), captions: on } };
     persist(); // the caption BAR is T3; the choice banks now
   },
+  onRebind: (action, code) => {
+    const { map, conflict } = rebind(a11y().keyMap, action, code);
+    if (conflict !== null) return conflict; // refused — the overlay names the owner inline
+    save = { ...save, a11y: { ...a11y(), keyMap: map } };
+    persist();
+    pushA11yValues();
+    return null;
+  },
+  onResetKeys: () => {
+    save = { ...save, a11y: { ...a11y(), keyMap: { ...DEFAULT_KEYMAP } } };
+    persist();
+    pushA11yValues();
+  },
   onClosed: () => persist(true), // a closed overlay must not ride a debounce window
 });
 settings.setValues({
   textScale: a11y().textScale,
   reducedFlash: a11y().reducedFlash,
   captions: a11y().captions,
+  keyMap: a11y().keyMap,
 });
 const hud = createHud({
   mode,
@@ -916,9 +949,6 @@ function toggleMute(): void {
   persist();
   hud.setMuted(next);
 }
-window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyM' && !e.repeat) toggleMute();
-});
 
 // M4/T4 — 💾 export / 📂 import. The File System Access API is the happy
 // path where it exists; <a download> / <input type=file> are the fallbacks.
@@ -1022,23 +1052,6 @@ async function importSave(): Promise<void> {
   await idbPut(next);
   location.reload(); // the boot chain applies the new save from IDB
 }
-window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyH' && !e.repeat) faq.toggle();
-});
-// Aaina toggles on her own key — [I] by default (M5/T1 moved her off Q, so Q
-// and E are pure turning; a rebinding in T2 reads the same map slot). She is
-// NOT a pause: the floor keeps simulating while she is open (see the fixed
-// step below for the one input her open panel claims).
-function aainaKey(): string {
-  return a11y().keyMap.aaina ?? DEFAULT_KEYMAP.aaina ?? 'KeyI';
-}
-window.addEventListener('keydown', (e) => {
-  if (e.code === aainaKey() && !e.repeat) aaina.toggle();
-});
-// Frost is a keydown press, not a held key (e.repeat guard) — same trigger as the HUD button.
-window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyF' && !e.repeat) tryFrost(performance.now());
-});
 // [V] cycles the view (M3/T3), a keydown press like frost. Pixel ratio is part
 // of the mode: quad's four panes render at ratio 1, every other mode restores
 // the full-ratio buffer. The map modes own the 2D canvas's visibility (shown
@@ -1060,18 +1073,17 @@ function setViewMode(next: ViewMode): void {
   if (!mapShowing) overhead.clear();
   hud.setView(viewLabel(next));
 }
-window.addEventListener('keydown', (e) => {
-  if (e.code === VIEW_KEY && !e.repeat) setViewMode(cycleView(view));
-});
 
 // TACTICAL (M3/T4): T enters the pause from the overhead map (the hint chip
 // says so while you walk in overhead). Esc clears the waypoints first — one
 // deliberate un-marking press — and the next Esc leaves for focus, so a
-// planned route survives the exit and shows while you walk it.
+// planned route survives the exit and shows while you walk it. T itself is a
+// remappable action (the dispatcher below owns it); Esc stays hardwired as
+// the everywhere-cancel, and a live rebind capture outranks both.
 window.addEventListener('keydown', (e) => {
   if (e.repeat) return;
-  if (e.code === 'KeyT' && view === 'overhead') setViewMode('tactical');
-  else if (e.code === 'Escape' && isTactical(view)) {
+  if (settings.capturingAction() !== null) return; // the capture owns Esc here
+  if (e.code === 'Escape' && isTactical(view)) {
     if (waypoints.length > 0) waypoints.length = 0;
     else setViewMode(exitTactical(view));
   }
@@ -1151,12 +1163,47 @@ function pushDoor(): void {
   } // no neighbor (degenerate boundary mount): the edge cannot open — the door still slides, and goes inert
 }
 
+// M5/T2 — the ONE action dispatch: every press-verb routes through
+// actionFor(e.code, keymap), so a rebinding is live everywhere at once. The
+// spelled-out E-dual semantics: actionFor names the LAST-declared action for
+// a shared code (push, declared after turnR), and the CONTEXT lives here —
+// pushDoor() itself no-ops without a door in reach/cone, so a shared key
+// pushes exactly while the push hint shows (the fixed step below claims that
+// key's movement share over the same window) and does nothing otherwise,
+// where turning is held-key movement resolved inside keysToMoveInput. Aaina
+// is deliberately NOT a pause: the floor keeps simulating while she talks.
+// While the ⚙ overlay captures a rebind, the dispatch stands down — the
+// pressed key belongs to the capture (its own capture-phase listener eats
+// the event; this guard is the belt to that brace).
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' && !e.repeat) {
-    e.preventDefault(); // nothing else in the UI owns Space
-    stepThrough();
-  } else if (e.code === 'KeyE' && !e.repeat) {
-    pushDoor();
+  if (e.repeat) return;
+  if (settings.capturingAction() !== null) return;
+  switch (actionFor(e.code, a11y().keyMap)) {
+    case 'mute':
+      toggleMute();
+      break;
+    case 'faq':
+      faq.toggle();
+      break;
+    case 'aaina':
+      aaina.toggle();
+      break;
+    case 'frost':
+      tryFrost(performance.now());
+      break;
+    case 'view':
+      setViewMode(cycleView(view));
+      break;
+    case 'tactical':
+      if (view === 'overhead') setViewMode('tactical');
+      break;
+    case 'stepThrough':
+      e.preventDefault(); // nothing else in the UI owns the step key
+      stepThrough();
+      break;
+    case 'push':
+      pushDoor();
+      break;
   }
 });
 
@@ -1265,16 +1312,20 @@ function frame(now: number): void {
       // Diegetic, not a pause: movement stays live while Aaina talks, but HER
       // KEY is claimed while she is open (M5/T1: generalized to whatever the
       // keyMap binds her to — [I] by default, so the claim is usually a no-op
-      // for movement and only bites if T2 rebinds her onto a movement key).
-      // The door's E claim below is the same pattern.
-      if (!aaina.root.hidden) snap = withoutKey(snap, aainaKey());
-      // E's dual use, same claim via the same helper: while the push hint owns
-      // E, a press that pushes the door must not also turn you off the door's
-      // cone — drop its turn-right share for that step (mouse and the arrows
-      // keep turning, and E turns again the moment no door is in reach).
-      if (doorHintActive()) snap = withoutKey(snap, 'KeyE');
+      // for movement and only bites if a remap puts her on a movement key).
+      // The door's claim below is the same pattern.
+      if (!aaina.root.hidden) snap = withoutKey(snap, keyOf('aaina'));
+      // The push key's dual use, same claim via the same helper: while the
+      // push hint shows, a press that pushes the door must not also steer you
+      // off the door's cone — drop that key's movement share for the step
+      // (mouse and the arrows keep turning, and the key moves you again the
+      // moment no door is in reach). M5/T2: the claim follows push's binding
+      // wherever the map puts it, so it stays exact for ANY remap.
+      if (doorHintActive()) snap = withoutKey(snap, keyOf('push'));
       const inputFrame =
-        mode === 'mouse' ? mouseOnlyInput(input.mouseState()) : keysToMoveInput(snap, mode);
+        mode === 'mouse'
+          ? mouseOnlyInput(input.mouseState())
+          : keysToMoveInput(snap, mode, a11y().keyMap);
       player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
       markVisited(); // fog of war: the cell under your feet is explored
       const inputActive =
@@ -1451,16 +1502,17 @@ function frame(now: number): void {
   } else if (active(phase)) {
     // Passage hints (T7), in precedence order: step-through, push-door, the
     // sealed-exit explanation, then the tactical invite — the prompt always
-    // names the key that works.
+    // names the key that works (M5/T2: through the map, so a remap never
+    // leaves the hint naming a dead key).
     if (tryTeleport(allMirrors, player, floor.grid) !== null) {
-      hud.hint(t(lang, 'hint.step'));
+      hud.hint(fill(t(lang, 'hint.step'), { key: keyLabel(keyOf('stepThrough')) }));
     } else if (tryPushDoor(activeDoorMirrors(), player) !== null) {
-      hud.hint(t(lang, 'hint.push'));
+      hud.hint(fill(t(lang, 'hint.push'), { key: keyLabel(keyOf('push')) }));
     } else if (!unlocked && Math.hypot(player.x - exitCenter.cx, player.y - exitCenter.cy) < 3) {
       const bc = beaconsCaptured(allMirrors, mirrorRuntime);
       hud.hint(fill(t(lang, 'hint.sealed'), { n: bc.captured, total: bc.total }));
     } else if (view === 'overhead') {
-      hud.hint(t(lang, 'hint.tactical')); // the chip that names the map's other door
+      hud.hint(fill(t(lang, 'hint.tactical'), { key: keyLabel(keyOf('tactical')) })); // the chip that names the map's other door
     } else {
       hud.hint(null);
     }

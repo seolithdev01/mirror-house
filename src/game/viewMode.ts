@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // ViewMode (M3/T3): how the floor is presented. Pure machine — main.ts owns
-// the single `view` value, drives it with [V] (cycleView) and the tactical
+// the single `view` value, drives it with the view action's bound key
+// (M5/T2: [V] by default, via actionFor on the keymap) and the tactical
 // exits, and switches the renderer between the focus render, the QUAD scissor
 // viewports, and (T4) the overhead 2D canvas.
 //
@@ -12,9 +13,6 @@
 // `tactical` is the pause: isTactical gates the fixed-step simulation (the
 // same way the FAQ overlay does). showsOverhead marks the two map modes —
 // overhead (walking map) and tactical (paused map) share T4's canvas render.
-
-/** Keydown that cycles the view (no repeat, same pattern as KeyF/KeyQ). */
-export const VIEW_KEY = 'KeyV';
 
 /** QUAD renders four panes at pixel ratio 1 — the perf budget for 4 viewports. */
 export const QUAD_PIXEL_RATIO = 1;

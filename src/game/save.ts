@@ -71,7 +71,6 @@ export interface A11ySettings {
 const MODES: readonly string[] = ['keyboard', 'mouse', 'hybrid'];
 const LANGS: readonly string[] = ['en', 'hi'];
 const TEXT_SCALES: readonly number[] = [1, 1.25, 1.5];
-const KEYMAP_ACTIONS_MAX = 32; // 15 defaults + headroom for T2's growth
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const SHARDS_MAX = 1_000_000_000;
 const STREAK_COUNT_MAX = 1_000_000;
@@ -172,19 +171,41 @@ function validateProgress(raw: unknown): SaveData['progress'] | null {
   return { seedBase, floor, tierComplete };
 }
 
-/** M5/T1 — the key binding table: a plain string→string map, 1..32 actions,
- *  bounded keys and values (action names and KeyboardEvent.code shapes). An
- *  opaque validated box for T1; T2's remap layer owns per-action semantics. */
+/** Every KeyboardEvent.code value is PascalCase alphanumerics (`KeyW`,
+ *  `ArrowUp`, `NumpadMultiply`, `F12`, `IntlYen`) starting with a capital
+ *  letter. This is the SHAPE check — it rejects junk ('wasd', 'P', 'Key W')
+ *  while accepting every code the capture UI can produce from a real event. */
+const CODE_RE = /^[A-Z][A-Za-z0-9]{1,23}$/;
+
+/** The one sanctioned duplicate pair (M5/T2): turnR and push may share a code
+ *  — the default KeyE — because push is contextual (the door claims the key
+ *  only while its hint shows). No other pair, and never a triple. */
+const DUAL_OK: readonly string[] = ['push', 'turnR'];
+
+/** M5/T2 — the remap layer's keymap gate, stricter than T1's opaque box: the
+ *  action set must be EXACTLY the 15 known actions (unknown actions rejected,
+ *  missing ones too — a valid map binds every action), every code must be
+ *  KeyboardEvent.code-shaped, and duplicated codes are legal only for the
+ *  turnR+push pair. The result is a fresh map in DEFAULT_KEYMAP's canonical
+ *  order; the validated object never shares structure with the input. */
 function validateKeyMap(raw: unknown): KeyMap | null {
   if (!isPlainObject(raw)) return null;
-  const keys = Object.keys(raw);
-  if (keys.length === 0 || keys.length > KEYMAP_ACTIONS_MAX) return null;
+  const actions = Object.keys(raw);
+  const known = Object.keys(DEFAULT_KEYMAP);
+  if (actions.length !== known.length) return null; // extra (unknown) or missing actions
+  const byCode = new Map<string, string[]>();
   const out: Record<string, string> = {};
-  for (const k of keys) {
-    if (!boundedString(k)) return null;
-    const v: unknown = raw[k];
-    if (!boundedString(v)) return null;
-    out[k] = v;
+  for (const action of known) {
+    // hasOwn, not truthiness: an own property is required, inherited or junk keys fail
+    if (!Object.hasOwn(raw, action)) return null;
+    const code: unknown = raw[action];
+    if (typeof code !== 'string' || !CODE_RE.test(code)) return null;
+    out[action] = code;
+    byCode.set(code, [...(byCode.get(code) ?? []), action]);
+  }
+  for (const actions_ of byCode.values()) {
+    if (actions_.length < 2) continue;
+    if (actions_.length > 2 || actions_.some((a) => !DUAL_OK.includes(a))) return null;
   }
   return out;
 }

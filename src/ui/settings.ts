@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // The ⚙ settings overlay (M5/T1) — the FAQ overlay's modal shape in the
-// house's palette. This task owns two sections: Display (text scale radio
-// 1/1.25/1.5 — main applies it as the `--mh-text-scale` CSS var on body) and
-// Access (reduced-flash + captions toggles — reduced-flash steadies every
-// pulsing light today; captions persists now, the caption bar itself arrives
-// in T3). Performance (T4) and Controls (T2) are deferred WHOLE — no stub
-// sections, no coming-soon headers. Every control applies instantly; main
-// persists (debounced) and flushes on close via onClosed.
+// house's palette. Display (text scale radio 1/1.25/1.5 — main applies it as
+// the `--mh-text-scale` CSS var on body) and Access (reduced-flash + captions
+// toggles — reduced-flash steadies every pulsing light today; captions
+// persists now, the caption bar itself arrives in T3). M5/T2 adds Controls:
+// the 15 rebindable actions as label+key rows — click a row, the next keydown
+// is captured (Escape cancels), main rebinds through the conflict guard and
+// pushes the new values back; a refused rebind names the conflicting action
+// inline. Performance (T4) stays deferred WHOLE. Every control applies
+// instantly; main persists (debounced) and flushes on close via onClosed.
 
-import { t, type Lang } from './i18n';
+import { DEFAULT_KEYMAP, type KeyMap } from '../game/save';
+import { fill, t, type Lang } from './i18n';
 
 export type TextScale = 1 | 1.25 | 1.5;
 
@@ -21,12 +24,21 @@ export interface SettingsValues {
   textScale: TextScale;
   reducedFlash: boolean;
   captions: boolean;
+  /** M5/T2 — the live key binding table the Controls rows render. */
+  keyMap: KeyMap;
 }
 
 export interface SettingsInit {
   onTextScale(scale: TextScale): void;
   onReducedFlash(on: boolean): void;
   onCaptions(on: boolean): void;
+  /** M5/T2 — attempt a rebind through the conflict guard; the OFFENDING
+   *  action's name comes back on refusal (the inline warning names it), or
+   *  null on success (main has already applied + persisted + pushed values). */
+  onRebind(action: string, code: string): string | null;
+  /** M5/T2 — reset every binding to DEFAULT_KEYMAP (the one sanctioned way
+   *  back to the default E pair once it has been split). */
+  onResetKeys(): void;
   /** Fired on every closing path (✕, backdrop, toggle-to-close) — main
    *  flushes the debounced save write here, so a closed tab eats nothing. */
   onClosed(): void;
@@ -38,10 +50,41 @@ export interface SettingsOverlay {
   toggle(): void;
   setValues(v: SettingsValues): void;
   setLang(lang: Lang): void;
+  /** M5/T2 — the action whose key the overlay is capturing right now, or
+   *  null. Main's keydown dispatch stands down while a capture is live, so
+   *  the pressed key belongs to the rebind, never to the game. */
+  capturingAction(): string | null;
 }
 
 /** Radio id per ladder step (`…-100`, `…-125`, `…-150` — selector-safe). */
 const scaleId = (s: TextScale): string => `mh-settings-scale-${Math.round(s * 100)}`;
+
+/** The one-line friendly name for a KeyboardEvent.code — `KeyP` → `P`,
+ *  `Digit1` → `1`, arrows to glyphs, modifiers to L/R names; anything else
+ *  (Space, Enter, F12, …) shows as-is. Pure display, both languages. */
+export function keyLabel(code: string): string {
+  const m = /^Key([A-Z])$/.exec(code) ?? /^Digit([0-9])$/.exec(code);
+  if (m) return m[1]!;
+  const ARROWS: Readonly<Record<string, string>> = {
+    ArrowUp: '↑',
+    ArrowDown: '↓',
+    ArrowLeft: '←',
+    ArrowRight: '→',
+  };
+  const arrow = ARROWS[code];
+  if (arrow !== undefined) return arrow;
+  const MODS: Readonly<Record<string, string>> = {
+    ShiftLeft: 'L Shift',
+    ShiftRight: 'R Shift',
+    ControlLeft: 'L Ctrl',
+    ControlRight: 'R Ctrl',
+    AltLeft: 'L Alt',
+    AltRight: 'R Alt',
+    MetaLeft: 'L Meta',
+    MetaRight: 'R Meta',
+  };
+  return MODS[code] ?? code;
+}
 
 export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
   let lang: Lang = 'en';
@@ -100,12 +143,116 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
   const captionsNote = document.createElement('p');
   captionsNote.className = 'mh-settings-note';
 
+  // ---- Controls: the 15 rebindable actions (M5/T2) --------------------------
+  const controls = document.createElement('h3');
+  const keyNote = document.createElement('p');
+  keyNote.className = 'mh-settings-note';
+  const keymapList = document.createElement('div');
+  keymapList.className = 'mh-keymap';
+  /** Rows in DEFAULT_KEYMAP's canonical order; buttons keyed by action. */
+  const keyBtns: Record<string, HTMLButtonElement> = {};
+  const keyLabels: Record<string, HTMLElement> = {};
+  for (const action of Object.keys(DEFAULT_KEYMAP)) {
+    const row = document.createElement('div');
+    row.className = 'mh-key-row';
+    const label = document.createElement('span');
+    label.className = 'mh-key-label';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mh-key-btn';
+    btn.dataset.action = action;
+    btn.addEventListener('click', () => startCapture(action));
+    row.append(label, btn);
+    keymapList.appendChild(row);
+    keyBtns[action] = btn;
+    keyLabels[action] = label;
+  }
+  const keyMsg = document.createElement('p');
+  keyMsg.className = 'mh-settings-note';
+  keyMsg.id = 'mh-keymap-msg';
+  keyMsg.setAttribute('role', 'status');
+  const resetKeys = document.createElement('button');
+  resetKeys.type = 'button';
+  resetKeys.id = 'mh-settings-reset-keys';
+  resetKeys.addEventListener('click', () => init.onResetKeys());
+
+  /** The captured rebind state: null = idle; an action name = the next
+   *  keydown (except Escape) rebinds that action. */
+  let capturing: string | null = null;
+  /** The overlay's mirror of the live map — main pushes it via setValues. */
+  let keyMap: KeyMap = DEFAULT_KEYMAP;
+
+  function renderKeyRows(): void {
+    for (const action of Object.keys(DEFAULT_KEYMAP)) {
+      const btn = keyBtns[action]!;
+      const label = keyLabels[action]!;
+      label.textContent = t(lang, `key.${action}`);
+      if (capturing === action) {
+        btn.textContent = t(lang, 'settings.pressKey');
+        btn.classList.add('mh-key-capturing');
+      } else {
+        btn.textContent = keyLabel(keyMap[action] ?? '?');
+        btn.classList.remove('mh-key-capturing');
+      }
+    }
+  }
+
+  function setKeyMsg(text: string | null, warn: boolean): void {
+    keyMsg.textContent = text ?? '';
+    keyMsg.classList.toggle('mh-key-conflict', warn);
+  }
+
+  function startCapture(action: string): void {
+    capturing = action;
+    setKeyMsg(t(lang, 'settings.pressKey'), false);
+    renderKeyRows();
+  }
+
+  function endCapture(): void {
+    capturing = null;
+    renderKeyRows();
+  }
+
+  // The capture eats the next keydown on the CAPTURE phase of window — first
+  // in line before every bubble-phase game listener — and stops the event's
+  // propagation outright, so a key bound to a verb (M mutes, H opens the FAQ)
+  // rebinds instead of firing while it is being captured.
+  window.addEventListener(
+    'keydown',
+    (e: KeyboardEvent) => {
+      if (capturing === null) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      const action = capturing;
+      if (e.code === 'Escape') {
+        endCapture();
+        setKeyMsg(null, false);
+        return;
+      }
+      const conflict = init.onRebind(action, e.code); // success → main pushed setValues
+      capturing = null;
+      renderKeyRows();
+      if (conflict !== null)
+        setKeyMsg(
+          fill(t(lang, 'settings.keyConflict'), { action: t(lang, `key.${conflict}`) }),
+          true,
+        );
+      else setKeyMsg(null, false);
+    },
+    true,
+  );
+
   const close = document.createElement('button');
   close.type = 'button';
   close.id = 'mh-settings-close';
   function closeNow(): void {
     if (!root.hidden) {
       root.hidden = true;
+      if (capturing !== null) {
+        endCapture(); // a closing overlay never keeps a capture armed
+        setKeyMsg(null, false);
+      }
       init.onClosed();
     }
   }
@@ -122,6 +269,11 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     reducedNote,
     captionsLabel,
     captionsNote,
+    controls,
+    keyNote,
+    keymapList,
+    keyMsg,
+    resetKeys,
     close,
   );
   root.appendChild(box);
@@ -136,7 +288,11 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     reducedNote.textContent = t(lang, 'settings.reducedFlashNote');
     captionsText.textContent = t(lang, 'settings.captions');
     captionsNote.textContent = t(lang, 'settings.captionsNote');
+    controls.textContent = t(lang, 'settings.controls');
+    keyNote.textContent = t(lang, 'settings.keyNote');
+    resetKeys.textContent = t(lang, 'settings.resetKeys');
     close.textContent = t(lang, 'settings.close');
+    renderKeyRows();
   }
   relabel();
 
@@ -150,11 +306,14 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
       for (const s of TEXT_SCALES) radios[s]!.checked = s === v.textScale;
       reduced.checked = v.reducedFlash;
       captions.checked = v.captions;
+      keyMap = v.keyMap;
+      renderKeyRows();
     },
     setLang: (next) => {
       if (next === lang) return;
       lang = next;
       relabel();
     },
+    capturingAction: () => capturing,
   };
 }

@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
 import {
+  actionFor,
   keysToMoveInput,
   keysToMoveInput as map,
   mouseOnlyInput,
+  rebind,
   withoutKey,
 } from '../../src/engine/input';
 import {
@@ -11,6 +13,7 @@ import {
   MOUSE_TURN_PER_STEP,
   TURN_SENSITIVITY,
 } from '../../src/engine/constants';
+import { DEFAULT_KEYMAP } from '../../src/game/save';
 
 const snap = (keys: string[], mouseDx = 0) => ({ keys: new Set(keys), mouseDx });
 
@@ -86,5 +89,114 @@ describe('withoutKey — the dual-use key claim', () => {
     expect(keysToMoveInput(s).turn).toBeCloseTo(10 * TURN_SENSITIVITY + KEY_TURN_PER_STEP);
     expect(keysToMoveInput(withoutKey(s, 'KeyE')).turn).toBeCloseTo(10 * TURN_SENSITIVITY);
     expect(keysToMoveInput(withoutKey(s, 'KeyE')).forward).toBe(0); // only turn is E's share
+  });
+});
+
+// ---- M5/T2 — remapping: the map resolves codes, rebind guards conflicts ------
+
+describe('keysToMoveInput through a remapped keymap (M5/T2)', () => {
+  it('a remapped forward key moves; the abandoned default code is dead', () => {
+    const km = { ...DEFAULT_KEYMAP, forward: 'KeyP' };
+    expect(keysToMoveInput(snap(['KeyP']), 'hybrid', km).forward).toBe(1);
+    expect(keysToMoveInput(snap(['KeyW']), 'hybrid', km).forward).toBe(0); // W no longer moves
+    expect(keysToMoveInput(snap(['KeyS']), 'hybrid', km).forward).toBe(-1); // untouched actions ride along
+  });
+
+  it('turning and sprint resolve through the map too', () => {
+    const km = { ...DEFAULT_KEYMAP, turnL: 'KeyZ', turnR: 'KeyC', sprint: 'KeyX' };
+    expect(keysToMoveInput(snap(['KeyC']), 'hybrid', km).turn).toBeCloseTo(KEY_TURN_PER_STEP);
+    expect(keysToMoveInput(snap(['KeyZ']), 'keyboard', km).turn).toBeCloseTo(-KEY_TURN_PER_STEP);
+    expect(keysToMoveInput(snap(['KeyX']), 'hybrid', km).sprint).toBe(true);
+    expect(keysToMoveInput(snap(['KeyW']), 'hybrid', km).sprint).toBe(false); // W never sprinted anyway
+    expect(keysToMoveInput(snap(['KeyX', 'KeyW']), 'hybrid', km).forward).toBe(1); // sprint pairs with move
+  });
+
+  it('arrows and the shifts stay hardwired alternates under any remap', () => {
+    const km = { ...DEFAULT_KEYMAP, forward: 'KeyP', sprint: 'KeyX' };
+    expect(keysToMoveInput(snap(['ArrowUp']), 'hybrid', km).forward).toBe(1);
+    expect(keysToMoveInput(snap(['ArrowLeft']), 'hybrid', km).strafe).toBe(-1);
+    expect(keysToMoveInput(snap(['ShiftRight']), 'hybrid', km).sprint).toBe(true);
+  });
+
+  it('the third parameter defaults to the default map — old call sites unchanged', () => {
+    expect(keysToMoveInput(snap(['KeyW'])).forward).toBe(1);
+    expect(keysToMoveInput(snap(['KeyP'])).forward).toBe(0);
+  });
+});
+
+describe('actionFor — reverse lookup (M5/T2)', () => {
+  it('returns the action for a unique code, null for an unmapped one', () => {
+    expect(actionFor('KeyW', DEFAULT_KEYMAP)).toBe('forward');
+    expect(actionFor('KeyI', DEFAULT_KEYMAP)).toBe('aaina');
+    expect(actionFor('Space', DEFAULT_KEYMAP)).toBe('stepThrough');
+    expect(actionFor('KeyZ', DEFAULT_KEYMAP)).toBeNull();
+    expect(actionFor('', DEFAULT_KEYMAP)).toBeNull();
+  });
+
+  it('duplicate codes resolve to the LAST-defined action — KeyE is push, not turnR', () => {
+    // The spelled-out semantics: DEFAULT_KEYMAP declares turnR before push, so
+    // actionFor('KeyE') names push. main is the one that CONTEXTUALIZES — it
+    // checks the door's push hint first and treats the key as turning
+    // otherwise; actionFor itself stays pure and last-defined-wins.
+    expect(actionFor('KeyE', DEFAULT_KEYMAP)).toBe('push');
+    expect(actionFor('KeyE', { a: 'KeyE', b: 'KeyE' })).toBe('b'); // insertion order decides
+  });
+
+  it('breaking the E pair changes the lookup: KeyE names turnR once push leaves', () => {
+    const km = { ...DEFAULT_KEYMAP, push: 'KeyP' };
+    expect(actionFor('KeyE', km)).toBe('turnR');
+    expect(actionFor('KeyP', km)).toBe('push');
+  });
+
+  it('a fully remapped map resolves every action', () => {
+    const km: Record<string, string> = {};
+    const actions = Object.keys(DEFAULT_KEYMAP);
+    for (let i = 0; i < actions.length; i++) km[actions[i]!] = `Key${String.fromCharCode(65 + i)}`; // A..O, no duals
+    for (const [action, code] of Object.entries(km)) expect(actionFor(code, km)).toBe(action);
+  });
+});
+
+describe('rebind — conflict guard + immutability (M5/T2)', () => {
+  it('a free code rebinds and returns a NEW map; the input is untouched', () => {
+    const out = rebind(DEFAULT_KEYMAP, 'forward', 'KeyP');
+    expect(out.conflict).toBeNull();
+    expect(out.map.forward).toBe('KeyP');
+    expect(out.map).not.toBe(DEFAULT_KEYMAP); // a copy, never the default in place
+    expect(DEFAULT_KEYMAP.forward).toBe('KeyW'); // the default is readonly in spirit AND fact
+    expect(Object.keys(out.map).length).toBe(Object.keys(DEFAULT_KEYMAP).length);
+    expect(out.map.aaina).toBe('KeyI'); // every other action rides along
+  });
+
+  it('a code another action owns refuses with that action named, map unchanged', () => {
+    const out = rebind(DEFAULT_KEYMAP, 'forward', 'KeyF'); // frost owns KeyF
+    expect(out.conflict).toBe('frost');
+    expect(out.map).toBe(DEFAULT_KEYMAP); // refused → the caller keeps what it had
+    expect(DEFAULT_KEYMAP.forward).toBe('KeyW');
+  });
+
+  it('rebinding onto the E pair refuses — no new duplicates, not even a triple', () => {
+    expect(rebind(DEFAULT_KEYMAP, 'frost', 'KeyE').conflict).toBe('turnR'); // first sharer named
+    const split = rebind(DEFAULT_KEYMAP, 'push', 'KeyP').map; // E pair broken, push on P
+    expect(rebind(split, 'frost', 'KeyP').conflict).toBe('push'); // P is taken now
+    expect(rebind(split, 'turnR', 'KeyP').conflict).toBe('push'); // no rebuilding a dual elsewhere
+  });
+
+  it('rebinding an action to its own code is the sanctioned no-op (self)', () => {
+    const out = rebind(DEFAULT_KEYMAP, 'forward', 'KeyW');
+    expect(out.conflict).toBeNull();
+    expect(out.map).toBe(DEFAULT_KEYMAP); // nothing changes — the same reference
+  });
+
+  it('moving an action OFF the shared E code is legal — the partner keeps the key', () => {
+    const out = rebind(DEFAULT_KEYMAP, 'push', 'KeyP');
+    expect(out.conflict).toBeNull();
+    expect(out.map.turnR).toBe('KeyE'); // turnR keeps E
+    expect(out.map.push).toBe('KeyP');
+    // Rebuilding the dual elsewhere refuses too (keep simple: NO rebind creates
+    // a duplicate; Reset-to-defaults is the one sanctioned way back to the
+    // default E pair).
+    const back = rebind(out.map, 'push', 'KeyE'); // push returns to E where turnR now sits alone
+    expect(back.conflict).toBe('turnR');
+    expect(back.map).toBe(out.map);
   });
 });
