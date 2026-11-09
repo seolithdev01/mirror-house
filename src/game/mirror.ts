@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as THREE from 'three';
-import { CELL_SIZE, CRACK_TINT } from '../engine/constants';
+import {
+  CELL_SIZE,
+  CRACK_TINT,
+  DOOR_SLIDE_M,
+  WALL_HEIGHT,
+  WALL_THICKNESS,
+} from '../engine/constants';
 import { Dir, DIR_VECTOR } from '../engine/grid';
 import type { Floor } from './maze';
 import type { MirrorKind } from './floorObjects';
@@ -88,6 +94,18 @@ export function createMirrorMesh(kind: MirrorKind): CheapMirror {
   };
 }
 
+/** Options for the RT mirror classes of visuals: heroes render at 512, the
+ *  true-mirror step-through pairs (T7) reuse the class at 256 with a gold
+ *  frame so the passage reads at a glance. */
+export interface HeroMirrorOptions {
+  /** RT texture resolution per side (default 512 — the entrance/exit heroes). */
+  size?: number;
+  /** Thin gold box behind the glass — the true-mirror passage marker. */
+  frame?: boolean;
+  /** RT material tint (default 0xcfe8ea). */
+  tint?: number;
+}
+
 export class HeroMirror implements FogVisual, CrackVisual {
   readonly mesh: THREE.Mesh;
   private readonly rt: THREE.WebGLRenderTarget;
@@ -98,13 +116,22 @@ export class HeroMirror implements FogVisual, CrackVisual {
   private readonly baseTint: number;
   private fogged = false;
 
-  constructor(spot: MirrorSpot, tint = 0xcfe8ea) {
-    this.rt = new THREE.WebGLRenderTarget(512, 512);
+  constructor(spot: MirrorSpot, opts: HeroMirrorOptions = {}) {
+    const { size = 512, frame = false, tint = 0xcfe8ea } = opts;
+    this.rt = new THREE.WebGLRenderTarget(size, size);
     this.rtMaterial = new THREE.MeshBasicMaterial({ map: this.rt.texture, color: tint });
     this.baseTint = tint;
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.4), this.rtMaterial);
     this.mesh.position.set(spot.x, 1.35, spot.z);
     this.mesh.rotation.y = spot.rotY;
+    if (frame) {
+      const framing = new THREE.Mesh(
+        new THREE.BoxGeometry(1.66, 2.56, 0.06),
+        new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.8, roughness: 0.35 }),
+      );
+      framing.position.z = -0.04; // just behind the glass (local +z is the facing normal)
+      this.mesh.add(framing);
+    }
     const normal = new THREE.Vector3(Math.sin(spot.rotY), 0, Math.cos(spot.rotY));
     this.plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, this.mesh.position);
     this.cam.layers.enable(AVATAR_LAYER); // the avatar is visible ONLY here and in other mirror passes
@@ -149,5 +176,48 @@ export class HeroMirror implements FogVisual, CrackVisual {
   dispose(): void {
     this.rt.dispose();
     this.mesh.geometry.dispose();
+    for (const child of this.mesh.children) (child as THREE.Mesh).geometry.dispose(); // the true-mirror gold frame
   }
+}
+
+/** A silvered push-door (T7): a wall-sized slab (the same box geometry the
+ *  instanced walls use, in mirror-look material) carrying the glass plane on
+ *  its cell-facing side. `setSlide(0..1)` slides the whole slab DOOR_SLIDE_M
+ *  along its wall — main.ts drives the lerp from the frame loop and hides the
+ *  wall instance underneath (floorScene's hideWallEdge) as the door opens. */
+export interface SilveredDoor {
+  readonly group: THREE.Group;
+  /** The glass plane — binds into the shared fog/crack visual array. */
+  readonly mirror: CheapMirror;
+  setSlide(t: number): void; // 0 closed, 1 fully slid; positions are precomputed
+}
+
+export function createSilveredDoor(spot: MirrorSpot, wallDir: Dir): SilveredDoor {
+  const v = DIR_VECTOR[wallDir]!;
+  const alongX = v.dy !== 0; // N/S walls run along X; E/W walls along Z
+  const slab = new THREE.Mesh(
+    alongX
+      ? new THREE.BoxGeometry(CELL_SIZE + WALL_THICKNESS, WALL_HEIGHT, WALL_THICKNESS)
+      : new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, CELL_SIZE + WALL_THICKNESS),
+    new THREE.MeshStandardMaterial({ color: MIRROR_BASE_COLOR, metalness: 0.9, roughness: 0.15 }),
+  );
+  slab.position.y = WALL_HEIGHT / 2;
+  const mirror = createMirrorMesh('silvered');
+  mirror.mesh.position.set(-v.dx * 0.12, 1.35, -v.dy * 0.12); // glass faces into the cell
+  mirror.mesh.rotation.y = spot.rotY;
+  const group = new THREE.Group();
+  group.add(slab, mirror.mesh);
+  const wallX = spot.x + v.dx * 0.12; // the mirror sits 0.12 off the wall plane
+  const wallZ = spot.z + v.dy * 0.12;
+  group.position.set(wallX, 0, wallZ);
+  const axisX = alongX ? 1 : 0;
+  const axisZ = alongX ? 0 : 1;
+  return {
+    group,
+    mirror,
+    setSlide(t: number): void {
+      const k = Math.min(1, Math.max(0, t));
+      group.position.set(wallX + axisX * DOOR_SLIDE_M * k, 0, wallZ + axisZ * DOOR_SLIDE_M * k);
+    },
+  };
 }

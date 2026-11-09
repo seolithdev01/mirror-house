@@ -20,6 +20,9 @@ export interface MirrorRef {
   cellX: number;
   cellY: number;
   pairId: number | null;
+  /** The wall edge this object covers as a door (T7): standing/silvered mount
+   *  on a wall and carry its dir; beacon/true never open anything — null. */
+  wallDir: Dir | null;
 }
 
 export interface FloorObjects {
@@ -124,6 +127,7 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
       cellX: c.x,
       cellY: c.y,
       pairId,
+      wallDir: kind === 'standing' || kind === 'silvered' ? c.spot.dir : null,
     });
     used.add(key(c.x, c.y));
     return id;

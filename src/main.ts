@@ -4,6 +4,7 @@ import {
   ANGER_MAX,
   CHHAYA_DELAY_MS,
   CONTACT_RADIUS,
+  DOOR_SLIDE_MS,
   EYE_HEIGHT,
   EXIT_LOCKED_EMISSIVE,
   FAIL_FREEZE_MS,
@@ -35,12 +36,15 @@ import { generateFloor, TIER_ONE } from './game/maze';
 import { awardShards, dailySeed, loadMeta, recordRun, saveMeta, todayStamp } from './game/meta';
 import {
   createMirrorMesh,
+  createSilveredDoor,
   HeroMirror,
   mirrorSpots,
   type CrackVisual,
   type FogVisual,
   type MirrorFogState,
+  type SilveredDoor,
 } from './game/mirror';
+import { tryPushDoor, tryTeleport } from './game/passages';
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
 import { buildFaqOverlay } from './ui/faq';
@@ -97,6 +101,7 @@ for (const cell of [floor.entrance, floor.exit]) {
       cellX: cell.x,
       cellY: cell.y,
       pairId: null,
+      wallDir: spot.dir,
     });
 }
 const allMirrors = [...objs.mirrors, ...heroRefs];
@@ -105,17 +110,33 @@ let mirrorRuntime = initMirrorRuntime(allMirrors); // re-init by resetFloor afte
 // Bind every mirror to a visual: HeroMirror when its spot matches by position
 // proximity (same wall-mount convention; a floorObjects mirror can never sit
 // closer than ~0.24m to a hero spot), else a cheap reflective-look mesh.
+// T7 passages: the true pair gets its own 256px RT HeroMirrors with a gold
+// frame, and each silvered mirror becomes a wall-sized slab door that slides.
 const MIRROR_MATCH_EPS = 0.05;
 interface MirrorBinding {
   bind: FogVisual & CrackVisual;
   hero: HeroMirror | null;
   state: MirrorFogState;
 }
+const trueMirrors: HeroMirror[] = []; // RT step-through pairs — updated like the heroes
+const silveredDoors: Array<{ ref: MirrorRef; door: SilveredDoor }> = [];
 const visuals: MirrorBinding[] = allMirrors.map((m) => {
   const hero = heroMirrors.find(
     (h) => Math.hypot(h.mesh.position.x - m.x, h.mesh.position.z - m.z) < MIRROR_MATCH_EPS,
   );
   if (hero) return { bind: hero, hero, state: 'clear' as const };
+  if (m.kind === 'true') {
+    const tm = new HeroMirror(m, { size: 256, frame: true });
+    trueMirrors.push(tm);
+    scene.add(tm.mesh);
+    return { bind: tm, hero: tm, state: 'clear' as const };
+  }
+  if (m.kind === 'silvered' && m.wallDir !== null) {
+    const door = createSilveredDoor(m, m.wallDir);
+    silveredDoors.push({ ref: m, door });
+    scene.add(door.group);
+    return { bind: door.mirror, hero: null, state: 'clear' as const };
+  }
   const { mesh, setFog, setCracked } = createMirrorMesh(m.kind);
   mesh.position.set(m.x, 1.35, m.z);
   mesh.rotation.y = m.rotY;
@@ -276,6 +297,52 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyF' && !e.repeat) tryFrost(performance.now());
 });
 
+// T7 passages — step-through (Space) and push-doors (E), both keydown presses
+// like frost. A pushed door is one-time: its id banks here so it never hints
+// or pushes again. The opened wall edge stays open for the rest of the floor
+// (fail/restart included — the house remembers its own secrets).
+const openedDoorIds = new Set<number>();
+const doorAnims: Array<{ door: SilveredDoor; startedAt: number }> = [];
+
+function activeDoorMirrors(): MirrorRef[] {
+  return allMirrors.filter((m) => m.kind !== 'silvered' || !openedDoorIds.has(m.id));
+}
+
+function stepThrough(): void {
+  if (floorFailed || run.clearedAt !== null) return;
+  const tp = tryTeleport(allMirrors, player, floor.grid);
+  if (!tp) return;
+  // Snap position + facing-out heading; the avatar follows immediately so the
+  // jump reads clean. Chhaya needs no special handling — she replays the
+  // recorded path, so she walks your exact route and blinks across the same
+  // glass, 6s behind you.
+  player = { x: tp.x, y: tp.y, heading: tp.heading };
+  updateAvatar(avatar, player.x, player.y, player.heading, false, performance.now() / 1000);
+}
+
+function pushDoor(): void {
+  if (floorFailed || run.clearedAt !== null) return;
+  const target = tryPushDoor(activeDoorMirrors(), player);
+  if (!target || target.wallDir === null) return;
+  openedDoorIds.add(target.id); // one push per door — it goes inert from here
+  const neighbor = floor.grid.neighborIndex(target.cellX, target.cellY, target.wallDir);
+  if (neighbor) {
+    floor.grid.setOpen(target.cellX, target.cellY, target.wallDir);
+    sceneBuilt.hideWallEdge(target.cellX, target.cellY, target.wallDir);
+  } // no neighbor (degenerate boundary mount): the edge cannot open — the door still slides, and goes inert
+  const bound = silveredDoors.find((d) => d.ref.id === target.id);
+  if (bound) doorAnims.push({ door: bound.door, startedAt: performance.now() });
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && !e.repeat) {
+    e.preventDefault(); // nothing else in the UI owns Space
+    stepThrough();
+  } else if (e.code === 'KeyE' && !e.repeat) {
+    pushDoor();
+  }
+});
+
 function resize(): void {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -364,6 +431,14 @@ function frame(now: number): void {
   hud.setBreath(breath);
   hud.setAnger(house.anger / ANGER_MAX);
   syncFogVisuals(now);
+  // Silvered push-doors slide 1.2m along their wall over 0.4s (simple linear
+  // lerp); once spent the door rests open and inert — no further hints.
+  for (let i = doorAnims.length - 1; i >= 0; i--) {
+    const a = doorAnims[i]!;
+    const t = Math.min(1, (now - a.startedAt) / DOOR_SLIDE_MS);
+    a.door.setSlide(t);
+    if (t >= 1) doorAnims.splice(i, 1);
+  }
   const unlocked = exitUnlocked(allMirrors, mirrorRuntime);
   if (
     run.clearedAt === null &&
@@ -383,14 +458,19 @@ function frame(now: number): void {
     hud.showCleared(ms, meta.best[seed] ?? null, wasBest === undefined || ms < wasBest);
     hud.setChips({ shards: meta.shards ?? 0 }); // chip flips from pending to banked
   }
-  // Sealed-door hint: standing at a locked exit explains the beacon gate.
-  if (
-    run.clearedAt === null &&
-    !unlocked &&
-    Math.hypot(player.x - exitCenter.cx, player.y - exitCenter.cy) < 3
-  ) {
-    const bc = beaconsCaptured(allMirrors, mirrorRuntime);
-    hud.hint(`The stair door is sealed — frost the beacons (${bc.captured}/${bc.total})`);
+  // Passage hints (T7), in precedence order: step-through, push-door, then
+  // the sealed-exit explanation — the prompt always names the key that works.
+  if (!floorFailed && run.clearedAt === null) {
+    if (tryTeleport(allMirrors, player, floor.grid) !== null) {
+      hud.hint('Space — step through');
+    } else if (tryPushDoor(activeDoorMirrors(), player) !== null) {
+      hud.hint('E — push');
+    } else if (!unlocked && Math.hypot(player.x - exitCenter.cx, player.y - exitCenter.cy) < 3) {
+      const bc = beaconsCaptured(allMirrors, mirrorRuntime);
+      hud.hint(`The stair door is sealed — frost the beacons (${bc.captured}/${bc.total})`);
+    } else {
+      hud.hint(null);
+    }
   } else {
     hud.hint(null);
   }
@@ -398,8 +478,10 @@ function frame(now: number): void {
   camera.rotation.y = -player.heading;
   lantern.position.set(player.x, EYE_HEIGHT, player.y);
   // mirrors update on alternate frames — perf budget (each costs one extra scene render);
-  // fogged hero mirrors skip their RT pass entirely (matte material, no reflection)
-  heroMirrors.forEach((m, i) => {
+  // fogged hero mirrors skip their RT pass entirely (matte material, no
+  // reflection). True-mirror pairs share the same budget at 256px (they are
+  // never fogged, so their RT always runs when their turn comes).
+  [...heroMirrors, ...trueMirrors].forEach((m, i) => {
     const v = visuals.find((x) => x.hero === m);
     if (v?.state === 'clear' && frameIndex % 2 === i % 2) m.update(renderer, scene, camera);
   });
@@ -444,6 +526,11 @@ if (import.meta.env.DEV) {
     metaShards: () => meta.shards ?? 0,
     fail: (reason: string) => failFloor(reason),
     fogTarget: () => fogTarget(allMirrors, player)?.id ?? null,
+    canStepThrough: () => tryTeleport(allMirrors, player, floor.grid) !== null,
+    stepThrough,
+    doorTarget: () => tryPushDoor(activeDoorMirrors(), player)?.id ?? null,
+    pushDoor,
+    doorsOpened: () => [...openedDoorIds],
     mirrorRefs: () => allMirrors.map((m) => ({ ...m })),
     mirrorRuntime: () => mirrorRuntime.map((r) => ({ ...r })),
     canWalk: (x: number, y: number, d: number) => floor.grid.canWalk(x, y, d as Dir),

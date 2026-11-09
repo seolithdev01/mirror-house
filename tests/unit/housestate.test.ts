@@ -29,6 +29,7 @@ const m = (id: number, kind: MirrorRef['kind'], x: number, z: number): MirrorRef
   cellX: 0,
   cellY: 0,
   pairId: null,
+  wallDir: null,
 });
 
 /** Runtime list matching the fixture ids — houseState matches by id, not index. */

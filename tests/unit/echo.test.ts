@@ -25,6 +25,7 @@ const mir = (id: number, x: number, z: number): MirrorRef => ({
   cellX: 2,
   cellY: 2,
   pairId: null,
+  wallDir: null,
 });
 
 const echoAt = (x: number, y: number, over: Partial<EchoState> = {}): EchoState => ({

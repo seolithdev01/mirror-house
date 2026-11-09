@@ -29,6 +29,15 @@ describe('generateFloorObjects', () => {
     expect(o.mirrors.filter((m) => m.kind !== 'true').every((m) => m.pairId === null)).toBe(true);
   });
 
+  it('wallDir is the mount dir for standing/silvered, null for beacon/true', () => {
+    const o = generateFloorObjects(floor);
+    for (const m of o.mirrors) {
+      const spot = mirrorSpotFor(floor.grid, m.cellX, m.cellY);
+      expect(spot).not.toBeNull();
+      expect(m.wallDir).toBe(m.kind === 'standing' || m.kind === 'silvered' ? spot!.dir : null);
+    }
+  });
+
   it('beacons are far from the entrance and mutually spread', () => {
     const dist = bfsDistances(floor.grid, floor.entrance);
     const o = generateFloorObjects(floor);
