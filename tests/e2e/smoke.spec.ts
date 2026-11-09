@@ -846,6 +846,30 @@ test('m5: rebind forward to P through the settings overlay', async ({ page }) =>
   expect(errors).toEqual([]);
 });
 
+// M5 final review — the merge-gate proof: a focused dialog control owns its
+// activation keys. Opening ⚙ lands focus on the first control (the trap), Tab
+// walks to the reduced-flash checkbox, and Space must TOGGLE it — the step
+// key's dispatch (and its preventDefault) stands down for the focused control.
+test('m5: Space toggles the focused checkbox in ⚙ (dialog keys stand down)', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=KBDTOG');
+  await ready(page);
+  await page.locator('#mh-settings').click();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+  const box = page.locator('#mh-settings-reduced-flash');
+  await expect(box).not.toBeChecked(); // a fresh save boots with it off
+  // the trap focuses the first control (the 100% text-scale radio); ONE Tab
+  // reaches the checkbox — the unchecked scale radios are skipped (a radio
+  // group's checked member is its only tab stop)
+  await page.keyboard.press('Tab');
+  await expect(box).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(box).toBeChecked(); // the checkbox owns the key — proof
+  expect(errors).toEqual([]);
+});
+
 test('m4: hindi chrome via ?lang=hi', async ({ page }) => {
   const errors = collectErrors(page);
   // hi: the URL names it — mode buttons and chips render Devanagari

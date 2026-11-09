@@ -195,12 +195,25 @@ export const CODE_RE = /^[A-Z][A-Za-z0-9]{1,23}$/;
  *  only while its hint shows). No other pair, and never a triple. */
 const DUAL_OK: readonly string[] = ['push', 'turnR'];
 
+/** M5 final review — codes NO binding may be imported on, mirroring the
+ *  capture UI's refusals (input.ts capturableCode + the capture's own
+ *  Escape-cancel): `Arrow*`/`Shift*` are the hardwired move/sprint alternates
+ *  that fire under every remap (a binding there would fire two verbs on one
+ *  press), and Escape/Tab are the everywhere-dialog keys (close, focus
+ *  cycle). One grandfather: the default map's own `sprint: 'ShiftLeft'` —
+ *  the untouched default must keep validating, exactly as the capture
+ *  refuses every NEW shift binding while the default ships one. */
+const RESERVED_CODE_RE = /^(Arrow|Shift)/;
+const RESERVED_CODES: readonly string[] = ['Escape', 'Tab'];
+
 /** M5/T2 — the remap layer's keymap gate, stricter than T1's opaque box: the
  *  action set must be EXACTLY the 15 known actions (unknown actions rejected,
  *  missing ones too — a valid map binds every action), every code must be
- *  KeyboardEvent.code-shaped, and duplicated codes are legal only for the
- *  turnR+push pair. The result is a fresh map in DEFAULT_KEYMAP's canonical
- *  order; the validated object never shares structure with the input. */
+ *  KeyboardEvent.code-shaped, no code may sit on the reserved families above
+ *  (the default's ShiftLeft sprint excepted), and duplicated codes are legal
+ *  only for the turnR+push pair. The result is a fresh map in
+ *  DEFAULT_KEYMAP's canonical order; the validated object never shares
+ *  structure with the input. */
 function validateKeyMap(raw: unknown): KeyMap | null {
   if (!isPlainObject(raw)) return null;
   const actions = Object.keys(raw);
@@ -213,6 +226,13 @@ function validateKeyMap(raw: unknown): KeyMap | null {
     if (!Object.hasOwn(raw, action)) return null;
     const code: unknown = raw[action];
     if (typeof code !== 'string' || !CODE_RE.test(code)) return null;
+    // M5 final review — a hand-edited file cannot smuggle in what the capture
+    // UI would refuse; the default's own ShiftLeft sprint is the one survivor.
+    if (
+      !(action === 'sprint' && code === DEFAULT_KEYMAP.sprint) &&
+      (RESERVED_CODE_RE.test(code) || RESERVED_CODES.includes(code))
+    )
+      return null;
     out[action] = code;
     byCode.set(code, [...(byCode.get(code) ?? []), action]);
   }

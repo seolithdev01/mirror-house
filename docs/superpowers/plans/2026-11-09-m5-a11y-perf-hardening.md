@@ -135,7 +135,7 @@ soak.mjs: node script (Playwright lib) — loads preview build, plays a scripted
 
 - [x] **Step 1:** docs + checklist with evidence. **Step 2:** Lighthouse runs + fixes. **Step 3:** Gates + 21/21. **Step 4: Commit** — `docs(m5): exit criteria evidence, registry notes, lighthouse scores`
 
-> **T7 close-out note (2026-11-09).** Docs, checklist evidence and registry notes landed as `docs(m5): exit criteria evidence, registry notes, how to play for everyone`; gates green (316 unit + 23/23 e2e, bundle 635 kB min / 168 kB gzip). **Lighthouse (desktop + mobile) pending controller audit** — see spec §13.3's open line; record both a11y scores here when run, fix anything ≥ Critical/serious in-task.
+> **T7 close-out note (2026-11-09).** Docs, checklist evidence and registry notes landed as `docs(m5): exit criteria evidence, registry notes, how to play for everyone`; gates green (316 unit + 23/23 e2e, bundle 635 kB min / 168 kB gzip). **Lighthouse a11y 97 desktop + 97 mobile (controller-run, 2026-11-09)** — spec §13.3's line is ticked; findings ≥ Critical/serious fixed in-task: none.
 
 ## Plan Self-Review
 

@@ -1323,6 +1323,22 @@ function pushDoor(): void {
 window.addEventListener('keydown', (e) => {
   if (e.repeat) return;
   if (settings.capturingAction() !== null) return;
+  // M5 final review — a focused interactive control owns its activation
+  // keys: Space toggles the checkbox under it and presses the focused
+  // button, Enter/NumpadEnter press it too, so the step key's
+  // preventDefault must never eat them (keyboard use of the ⚙/FAQ/Aaina
+  // dialogs). `closest` from the event target finds the control whether the
+  // press landed on it or inside its label; body/canvas focus matches
+  // nothing, so every game key keeps working there. One guard ahead of the
+  // whole switch, so the faq/aaina/mute/view/tactical cases stand down the
+  // same way — a control's activation key never fires the action behind it.
+  // (Arrow*/Shift*/Tab/Escape need no guard: the capture gate and the import
+  // gate both refuse to bind them to any action.)
+  if (
+    (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') &&
+    (e.target as HTMLElement | null)?.closest?.('button, input, select, textarea, a[href]')
+  )
+    return;
   switch (actionFor(e.code, a11y().keyMap)) {
     case 'mute':
       toggleMute();

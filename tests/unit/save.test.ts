@@ -491,11 +491,12 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
   });
 
   it('accepts the real code families a capture can produce', () => {
+    // Arrow*/Shift* left this list at the final review: the capture gate
+    // (capturableCode) refuses them live, and the import gate below now
+    // refuses them too — see the reserved-codes test.
     for (const good of [
       'KeyP',
       'Digit1',
-      'ArrowDown',
-      'ShiftRight',
       'Enter',
       'NumpadMultiply',
       'F12',
@@ -513,6 +514,24 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
       validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: 'Space', stepThrough: 'Minus' })),
     ).not.toBeNull();
     expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: 'Space' }))).toBeNull(); // would double-book Space
+  });
+
+  // M5 final review — import-gate parity with the capture UI: a hand-edited
+  // file cannot smuggle in a binding the capture would refuse.
+  it('refuses the reserved codes: Arrow*/Shift* hardwired alternates, Escape/Tab dialog keys', () => {
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, frost: 'ArrowUp' }))).toBeNull();
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, mute: 'ArrowLeft' }))).toBeNull();
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, faq: 'Escape' }))).toBeNull();
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, tactical: 'Tab' }))).toBeNull();
+    // every shift is refused for every action — even sprint's family, where
+    // only the default's own ShiftLeft is grandfathered below
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, sprint: 'ShiftRight' }))).toBeNull();
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: 'ShiftLeft' }))).toBeNull();
+  });
+
+  it('the default map still validates — its own ShiftLeft sprint is the sanctioned survivor', () => {
+    const out = validateSave(a11yWith({ ...DEFAULT_KEYMAP }));
+    expect(out?.a11y?.keyMap).toEqual(DEFAULT_KEYMAP); // E-dual and all
   });
 
   it('duplicates: only the turnR+push pair may share a code — nothing else, no triples', () => {
