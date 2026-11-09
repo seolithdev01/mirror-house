@@ -11,3 +11,14 @@ export const TURN_SENSITIVITY = 0.003; // radians per mouse pixel
 export const KEY_TURN_PER_STEP = 0.045; // radians per fixed step in keyboard mode
 export const MOUSE_TURN_PER_STEP = 0.06; // radians per fixed step in mouse-only mode
 export const FIXED_STEP = 1 / 120; // seconds
+
+// Frost Lantern (M2) — fog, breath, beacon capture
+export const FOG_DURATION_MS = 25000; // ms a fogged standing mirror stays matte
+export const FOG_COST = 0.34; // breath spent per fog
+export const BREATH_RECHARGE_PER_S = 0.25; // breath per second (full refill in 4s)
+export const FOG_RANGE = 5; // meters — farthest foggable mirror
+// cos(60°) = 0.5, which is also sin(30°): the lantern covers a 60° cone
+// (±30° around the heading). A target at bearing θ is inside iff it is ahead
+// (dot > 0) and its lateral component sin(θ) does not exceed this value.
+export const FROST_CONE_COS = Math.cos(Math.PI / 3);
+export const SHARD_BEACON = 5; // shards pending per captured beacon (awarded at clear by T6)

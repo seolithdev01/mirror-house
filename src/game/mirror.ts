@@ -3,9 +3,29 @@ import * as THREE from 'three';
 import { CELL_SIZE } from '../engine/constants';
 import { Dir, DIR_VECTOR } from '../engine/grid';
 import type { Floor } from './maze';
+import type { MirrorKind } from './floorObjects';
 import { AVATAR_LAYER } from './avatar';
 
 export interface MirrorSpot { x: number; z: number; rotY: number }
+
+/** Fog visual state shared by RT hero mirrors and cheap mirror meshes (M2 frost). */
+export type MirrorFogState = 'clear' | 'fogged' | 'captured';
+
+/** Anything whose material can be swapped for the frost visual (hero or cheap). */
+export interface FogVisual {
+  setFog(state: MirrorFogState): void;
+}
+
+// Shared swap targets — fogged glass goes matte (a perf win: fogging removes
+// reflective work); a captured beacon additionally carries the teal emissive,
+// pulse-free. Shared instances: never disposed per mirror.
+const foggedMaterial = new THREE.MeshStandardMaterial({ color: 0x39415f, roughness: 1 });
+const capturedMaterial = new THREE.MeshStandardMaterial({
+  color: 0x39415f,
+  roughness: 1,
+  emissive: 0x2ec4b6,
+  emissiveIntensity: 0.6,
+});
 
 /** Deterministic wall-mounted spots: first walled direction of the entrance and exit cells. */
 export function mirrorSpots(floor: Floor): MirrorSpot[] {
@@ -27,19 +47,47 @@ export function mirrorSpots(floor: Floor): MirrorSpot[] {
   return spots;
 }
 
-export class HeroMirror {
+/**
+ * Cheap standing/beacon/true/silvered mirror: reflective-look material (no RT
+ * pass). Beacons add the teal emissive so objectives read at a glance. The
+ * caller positions/rotates `mesh` from the MirrorRef spot.
+ */
+export interface CheapMirror extends FogVisual {
+  readonly mesh: THREE.Mesh;
+}
+
+export function createMirrorMesh(kind: MirrorKind): CheapMirror {
+  const base = new THREE.MeshStandardMaterial({
+    color: 0x8fb8c8,
+    metalness: 0.9,
+    roughness: 0.15,
+    ...(kind === 'beacon' ? { emissive: 0x2ec4b6, emissiveIntensity: 0.25 } : {}),
+  });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.4), base);
+  let state: MirrorFogState = 'clear';
+  return {
+    mesh,
+    setFog(next: MirrorFogState): void {
+      if (next === state) return;
+      state = next;
+      mesh.material = next === 'captured' ? capturedMaterial : next === 'fogged' ? foggedMaterial : base;
+    },
+  };
+}
+
+export class HeroMirror implements FogVisual {
   readonly mesh: THREE.Mesh;
   private readonly rt: THREE.WebGLRenderTarget;
+  private readonly rtMaterial: THREE.MeshBasicMaterial;
   private readonly cam = new THREE.PerspectiveCamera();
   private readonly plane: THREE.Plane;
   private readonly target = new THREE.Vector3();
+  private fogged = false;
 
   constructor(spot: MirrorSpot, tint = 0xcfe8ea) {
     this.rt = new THREE.WebGLRenderTarget(512, 512);
-    this.mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.5, 2.4),
-      new THREE.MeshBasicMaterial({ map: this.rt.texture, color: tint }),
-    );
+    this.rtMaterial = new THREE.MeshBasicMaterial({ map: this.rt.texture, color: tint });
+    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.4), this.rtMaterial);
     this.mesh.position.set(spot.x, 1.35, spot.z);
     this.mesh.rotation.y = spot.rotY;
     const normal = new THREE.Vector3(Math.sin(spot.rotY), 0, Math.cos(spot.rotY));
@@ -47,7 +95,14 @@ export class HeroMirror {
     this.cam.layers.enable(AVATAR_LAYER); // the avatar is visible ONLY here and in other mirror passes
   }
 
+  /** Swap to the matte fog material while fogged; restore the RT material after. */
+  setFog(state: MirrorFogState): void {
+    this.fogged = state !== 'clear';
+    this.mesh.material = this.fogged ? foggedMaterial : this.rtMaterial;
+  }
+
   update(renderer: THREE.WebGLRenderer, scene: THREE.Scene, mainCam: THREE.PerspectiveCamera): void {
+    if (this.fogged) return; // matte glass shows no reflection — skip the RT pass entirely
     const pos = new THREE.Vector3();
     mainCam.getWorldPosition(pos);
     const d = this.plane.distanceToPoint(pos);

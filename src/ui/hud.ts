@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { FOG_COST } from '../engine/constants';
 import type { InputMode } from '../engine/input';
 
 export type HudInit = {
@@ -6,10 +7,18 @@ export type HudInit = {
   onMode(m: InputMode): void;
   onFaq(): void;
   onDaily(): void;
+  onFrost(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
-  setChips(chips: { streak?: number; bestMs?: number | null; timerMs?: number | null }): void;
+  setChips(chips: {
+    streak?: number;
+    bestMs?: number | null;
+    timerMs?: number | null;
+    beacons?: { captured: number; total: number };
+    shards?: number;
+  }): void;
+  setBreath(v: number): void;
   showCleared(ms: number, bestMs: number | null, isBest: boolean): void;
   hideCleared(): void;
   root: HTMLElement;
@@ -48,13 +57,29 @@ export function createHud(init: HudInit): Hud {
   daily.id = 'mh-daily';
   daily.textContent = '★ Daily';
   daily.addEventListener('click', () => init.onDaily());
+  const frost = document.createElement('button');
+  frost.type = 'button';
+  frost.id = 'mh-frost';
+  frost.textContent = '❄ Frost';
+  frost.addEventListener('click', () => init.onFrost());
   const chips = document.createElement('div');
   chips.id = 'mh-chips';
-  chips.append(chip('🔥 0', 'streak'), chip('⏱ —', 'best'), chip('⏳ 0.0s', 'timer'));
+  chips.append(
+    chip('🔥 0', 'streak'),
+    chip('⏱ —', 'best'),
+    chip('⏳ 0.0s', 'timer'),
+    chip('🪞 0/0', 'beacons'),
+    chip('💠 0', 'shards'),
+  );
+  const breath = document.createElement('div');
+  breath.id = 'mh-breath';
+  const breathFill = document.createElement('div');
+  breathFill.id = 'mh-breath-fill';
+  breath.appendChild(breathFill);
   const cleared = document.createElement('div');
   cleared.id = 'mh-cleared';
   cleared.hidden = true;
-  root.append(modes, faq, daily, chips, cleared);
+  root.append(modes, faq, daily, frost, chips, breath, cleared);
   document.body.appendChild(root);
 
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
@@ -75,6 +100,16 @@ export function createHud(init: HudInit): Hud {
         (document.getElementById('mh-timer') as HTMLElement).textContent = `⏳ ${
           c.timerMs == null ? '—' : fmt(c.timerMs)
         }`;
+      if (c.beacons !== undefined)
+        (document.getElementById('mh-beacons') as HTMLElement).textContent =
+          `🪞 ${c.beacons.captured}/${c.beacons.total}`;
+      if (c.shards !== undefined)
+        (document.getElementById('mh-shards') as HTMLElement).textContent = `💠 ${c.shards}`;
+    },
+    setBreath: (v) => {
+      const clamped = Math.max(0, Math.min(1, v));
+      breathFill.style.width = `${(clamped * 100).toFixed(1)}%`;
+      frost.disabled = clamped < FOG_COST; // no click-spam when there is not enough breath
     },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;
