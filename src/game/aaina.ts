@@ -11,11 +11,13 @@ export interface HintContext {
   anger: number;
   chhayaNear: boolean;
   chasing: number;
+  /** M4/T3 — Taal walks this floor (his cameo floor). */
+  taalPresent: boolean;
   exitUnlocked: boolean;
   hintsUsed: number;
 }
 
-export type HintKind = 'exit' | 'beacons' | 'chhaya' | 'chase' | 'anger' | 'stuck';
+export type HintKind = 'exit' | 'beacons' | 'chhaya' | 'chase' | 'taal' | 'anger' | 'stuck';
 
 export interface Hint {
   kind: HintKind;
@@ -35,6 +37,7 @@ export const HINTS: Record<HintKind, string> = {
   exit: 'There — the beacons are all frosted and the stair door has turned gold. Walk through and descend. I will come along; stairs are the one thing I never argue with.',
   chase:
     'An Echo sees you through clear glass. Break its stare: fog the pane it watches through (F), or put honest stone between you. Enough frosted eyes in one place will spin it into a standstill.',
+  taal: 'Taal is on this floor — the Sentinel who moves on the beat. He cannot kill you; his touch only angers the house. Cross him in the rest between the accents, when the lantern dims, and keep your count.',
   chhaya:
     'She is close — your own footsteps, six seconds late. Never retrace your path; bend your trail instead. And if you must, step through a True Mirror (Space) to somewhere your past never walked.',
   anger:
@@ -49,6 +52,8 @@ export function nextHint(ctx: HintContext): Hint {
   if (ctx.beaconsLeft > 0 && ctx.anger < ANGER_MAX) kind = 'beacons';
   else if (ctx.exitUnlocked) kind = 'exit';
   else if (ctx.chasing > 0) kind = 'chase';
+  else if (ctx.taalPresent)
+    kind = 'taal'; // chasing-adjacent: the beat-walker is about
   else if (ctx.chhayaNear) kind = 'chhaya';
   else if (ctx.anger >= ANGER_HINT_AT) kind = 'anger';
   else kind = 'stuck';

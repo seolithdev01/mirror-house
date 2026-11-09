@@ -42,6 +42,7 @@ const KIND_LABEL: Record<HintKind, string> = {
   beacons: 'the beacons',
   exit: 'the open stair door',
   chase: 'the thing hunting you',
+  taal: 'the one on the beat',
   chhaya: 'your six-second shadow',
   anger: "the house's temper",
   stuck: 'the way onward',

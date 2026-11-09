@@ -13,6 +13,7 @@ import {
   FIXED_STEP,
   FOG_COST,
   SHARD_BEACON,
+  TAAL_FLOOR,
   TIER_ONE_FLOORS,
 } from './engine/constants';
 import {
@@ -23,7 +24,13 @@ import {
   type InputMode,
 } from './engine/input';
 import { Dir } from './engine/grid';
-import { createAvatar, createChhaya, updateAvatar } from './game/avatar';
+import {
+  createAvatar,
+  createChhaya,
+  createTaal,
+  updateAvatar,
+  type TaalFigure,
+} from './game/avatar';
 import {
   completeTier,
   descend,
@@ -81,6 +88,15 @@ import {
   shardsForClear,
 } from './game/houseState';
 import { parseLook } from './game/look';
+import {
+  beatPulse,
+  initTaal,
+  taalTouch,
+  TAAL_TOUCH_ANGER,
+  TAAL_TOUCH_COOLDOWN_MS,
+  updateTaal,
+  type TaalState,
+} from './game/taal';
 import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
 import {
   awardShards,
@@ -193,6 +209,11 @@ let doorStates = new Map<number, DoorAnim>();
 let doorById = new Map<number, SilveredDoor>();
 let echoes: ReturnType<typeof initEchoes> = [];
 let echoMeshes: THREE.Group[] = [];
+// M4/T3 — Taal's cameo. State is null everywhere but his floor; the figure
+// exists exactly while that floor is built (buildFloor owns both, the
+// teardown rides floorDisposers with the rest of the stage).
+let taal: TaalState | null = null;
+let taalFigure: TaalFigure | null = null;
 let floorDisposers: Array<() => void> = []; // one floor's teardown, in order
 // Beacon gate: the stair door burns dim red until every beacon is frosted,
 // then returns to its built gold. Tint the material of the CURRENT floor's
@@ -275,6 +296,10 @@ function resetFloor(now: number): void {
     v.bind.setCracked(false);
   }
   echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, now);
+  // Taal restarts his loop from the first anchor — the beat never missed a
+  // step, only the attempt did. Cooldown clears; the figure is the floor's.
+  taal = taalFigure === null ? null : initTaal(objs.patrolAnchors);
+  if (taalFigure !== null) taalFigure.group.visible = taal !== null;
   path = []; // Chhaya loses the trail; she hides on the next update
   chhaya.visible = false;
   house = { ...initHouseState(), attempts: house.attempts + 1 };
@@ -343,6 +368,9 @@ function aainaContext(): HintContext {
     beaconsLeft: bc.total - bc.captured,
     anger: house.anger,
     chhayaNear: at !== null && active(phase) && Math.hypot(at.x - player.x, at.y - player.y) < 6,
+    // M4/T3 — his cameo floor, him on it: Aaina names the beat before she
+    // names your shadow (chasing-adjacent in her chain of concerns).
+    taalPresent: campaign.floor === TAAL_FLOOR && taal !== null,
     chasing: echoes.filter((e) => e.mode === 'chase').length,
     exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
     hintsUsed,
@@ -626,6 +654,23 @@ function buildFloor(c: Campaign): void {
       disposeEchoMesh(mesh);
     }
   });
+
+  // M4/T3 — Taal's cameo: the beat-walker tests only floor 5. One figure on
+  // the stage, one state on the loop; every other floor leaves both null
+  // (teardownFloor already cleared them when the previous floor was his).
+  if (c.floor === TAAL_FLOOR) {
+    const fig = createTaal();
+    scene.add(fig.group);
+    taalFigure = fig;
+    taal = initTaal(objs.patrolAnchors);
+    fig.group.visible = taal !== null; // degenerate anchorless floor: no cameo
+    floorDisposers.push(() => {
+      scene.remove(fig.group);
+      fig.dispose();
+      taalFigure = null;
+      taal = null;
+    });
+  }
 
   // T7 passages: a silvered ref always gets its door machine here; a rebuild
   // starts every door closed again (the old floor's secrets died with it).
@@ -985,6 +1030,10 @@ function frame(now: number): void {
           ? { ...next, stuckAwarded: true }
           : next;
       });
+      // The beat-walk (M4/T3): Taal strides the anchor loop at the pulsing
+      // speed — same wall-clock now the lantern reads, so stride and glow
+      // can never fall out of time.
+      if (taal !== null) taal = updateTaal(taal, objs.patrolAnchors, floor.grid, now, FIXED_STEP);
       // Sprint into a mirror and it cracks: the house angers, the glass tints.
       const sprintMoving =
         inputFrame.sprint && (inputFrame.forward !== 0 || inputFrame.strafe !== 0);
@@ -1003,6 +1052,19 @@ function frame(now: number): void {
       if (active(phase)) {
         for (const e of echoes)
           if (Math.hypot(e.x - player.x, e.y - player.y) < CONTACT_RADIUS) failFloor('caught');
+        // Taal's touch (M4/T3): a teaser, not a killer — no fail, no shards,
+        // just the house angering +20, once per 1.5s (taalTouch gates the
+        // wall clock; the cooldown banks on the state). A touch CAN tip an
+        // already-furious house over ANGER_MAX — the collapse is his alone.
+        if (
+          taal !== null &&
+          Math.hypot(taal.x - player.x, taal.y - player.y) < CONTACT_RADIUS &&
+          taalTouch(taal.touchCooldownUntil, now)
+        ) {
+          taal = { ...taal, touchCooldownUntil: now + TAAL_TOUCH_COOLDOWN_MS };
+          house = { ...house, anger: house.anger + TAAL_TOUCH_ANGER };
+          if (isCollapse(house)) failFloor('collapse');
+        }
         const at = sampleDelayed(path, now, chhayaDelayMs());
         if (at !== null && Math.hypot(at.x - player.x, at.y - player.y) < CONTACT_RADIUS)
           failFloor('caught');
@@ -1018,6 +1080,14 @@ function frame(now: number): void {
     input.snapshotAndReset();
   }
   echoes.forEach((e, i) => syncEchoMesh(echoMeshes[i]!, e));
+  // Taal follows his state, lantern reading the same wall-clock beat his
+  // stride does — the glow lurches on the accent and dims into the rest,
+  // running even behind a pause: the beat never stops for anyone.
+  if (taal !== null && taalFigure !== null) {
+    taalFigure.group.position.set(taal.x, 0, taal.y);
+    taalFigure.group.rotation.y = -taal.heading; // same convention as the avatar
+    taalFigure.setBeat(beatPulse(now));
+  }
   updateChhaya(now);
   // Chhaya's map radar (T4): a ping every CHHAYA_PING_MS while her sample
   // exists on a live, unpaused floor — the same liveness updateChhaya used to
@@ -1215,6 +1285,16 @@ if (import.meta.env.DEV) {
     breath: () => breath,
     echoes: () => echoes.map((e) => ({ id: e.id, x: e.x, y: e.y, mode: e.mode })),
     chhaya: () => sampleDelayed(path, performance.now(), chhayaDelayMs()),
+    // M4/T3 — the beat-walker's live state (null off his floor).
+    taal: () =>
+      taal === null
+        ? null
+        : {
+            x: taal.x,
+            y: taal.y,
+            anchorIdx: taal.anchorIdx,
+            cooldownUntil: taal.touchCooldownUntil,
+          },
     // T8 e2e hooks — scripted win/lose. `mirrors()` replaces the old hero
     // count (the step003 suite reads .total now). mirrorAt(kind) prefers the
     // first mirror of that kind not captured yet, so a capture loop walks the

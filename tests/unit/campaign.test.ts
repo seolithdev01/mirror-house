@@ -137,7 +137,8 @@ describe('floorParams ramp (all 10 floors pinned)', () => {
   });
 
   it('delays never drop below the 4500 clamp on procedural floors', () => {
-    for (let f = 1; f < DWAAR_FLOOR; f++) expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(4500);
+    for (let f = 1; f < DWAAR_FLOOR; f++)
+      expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(4500);
   });
 });
 
