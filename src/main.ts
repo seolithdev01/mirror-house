@@ -11,7 +11,13 @@ import {
   FOG_COST,
   SHARD_BEACON,
 } from './engine/constants';
-import { InputCollector, keysToMoveInput, mouseOnlyInput, type InputMode } from './engine/input';
+import {
+  InputCollector,
+  keysToMoveInput,
+  mouseOnlyInput,
+  withoutKey,
+  type InputMode,
+} from './engine/input';
 import { Dir } from './engine/grid';
 import { createAvatar, createChhaya, updateAvatar } from './game/avatar';
 import {
@@ -372,7 +378,7 @@ function canAct(): boolean {
 
 function tryFrost(now: number): void {
   if (!canAct()) return; // no frost while frozen, done, or reading the FAQ
-  const target = fogTarget(allMirrors, player);
+  const target = fogTarget(allMirrors, player, floor.grid);
   if (!target || breath < FOG_COST) return;
   const rt = mirrorRuntime.find((r) => r.id === target.id);
   if (!rt) return;
@@ -541,6 +547,16 @@ function activeDoorMirrors(): MirrorRef[] {
   return allMirrors.filter((m) => m.kind !== 'silvered' || doorState(m.id).phase === 'closed');
 }
 
+/** The HUD would show 'E — push' right now: no step-through available and a
+ *  still-closed silvered door in range and cone (the hint chain's push
+ *  branch). While true, E belongs to the door for the fixed step's input. */
+function doorHintActive(): boolean {
+  return (
+    tryTeleport(allMirrors, player, floor.grid) === null &&
+    tryPushDoor(activeDoorMirrors(), player) !== null
+  );
+}
+
 function stepThrough(): void {
   if (!canAct()) return;
   const tp = tryTeleport(allMirrors, player, floor.grid);
@@ -681,11 +697,12 @@ function frame(now: number): void {
       // frame's input (E and the arrows keep turning). Consequence, accepted
       // for v1: a Q tap opens her, so keyboard/hybrid left-nudge is E/arrows'
       // job now — mouse look in hybrid is unaffected.
-      if (!aaina.root.hidden && snap.keys.has('KeyQ')) {
-        const keys = new Set(snap.keys);
-        keys.delete('KeyQ');
-        snap = { keys, mouseDx: snap.mouseDx };
-      }
+      if (!aaina.root.hidden) snap = withoutKey(snap, 'KeyQ');
+      // E's dual use, same claim via the same helper: while the push hint owns
+      // E, a press that pushes the door must not also turn you off the door's
+      // cone — drop its turn-right share for that step (mouse and the arrows
+      // keep turning, and E turns again the moment no door is in reach).
+      if (doorHintActive()) snap = withoutKey(snap, 'KeyE');
       const inputFrame =
         mode === 'mouse' ? mouseOnlyInput(input.mouseState()) : keysToMoveInput(snap, mode);
       player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
@@ -952,7 +969,7 @@ if (import.meta.env.DEV) {
     }),
     metaShards: () => meta.shards ?? 0,
     fail: (reason: string) => failFloor(reason === 'collapse' ? 'collapse' : 'caught'),
-    fogTarget: () => fogTarget(allMirrors, player)?.id ?? null,
+    fogTarget: () => fogTarget(allMirrors, player, floor.grid)?.id ?? null,
     canStepThrough: () => tryTeleport(allMirrors, player, floor.grid) !== null,
     stepThrough,
     doorTarget: () => tryPushDoor(activeDoorMirrors(), player)?.id ?? null,

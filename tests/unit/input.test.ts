@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
-import { keysToMoveInput, keysToMoveInput as map, mouseOnlyInput } from '../../src/engine/input';
+import {
+  keysToMoveInput,
+  keysToMoveInput as map,
+  mouseOnlyInput,
+  withoutKey,
+} from '../../src/engine/input';
 import { KEY_TURN_PER_STEP, MOUSE_TURN_PER_STEP, TURN_SENSITIVITY } from '../../src/engine/constants';
 
 const snap = (keys: string[], mouseDx = 0) => ({ keys: new Set(keys), mouseDx });
@@ -50,5 +55,23 @@ describe('input modes', () => {
     expect(mouseOnlyInput({ leftDown: false, rightDown: false, cursorNorm: 1 }).forward).toBe(0);
     expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: -0.9 }).turn).toBeCloseTo(-MOUSE_TURN_PER_STEP);
     expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: 0.1 }).turn).toBe(0); // deadzone
+  });
+});
+
+describe('withoutKey — the dual-use key claim', () => {
+  it('drops only the claimed key, keeps the rest and the mouse; absent key → same snapshot', () => {
+    const s = snap(['KeyE', 'KeyW'], 7);
+    const claimed = withoutKey(s, 'KeyE');
+    expect(claimed.keys.has('KeyE')).toBe(false);
+    expect(claimed.keys.has('KeyW')).toBe(true);
+    expect(claimed.mouseDx).toBe(7);
+    expect(withoutKey(s, 'KeyQ')).toBe(s); // nothing claimed → same reference
+  });
+
+  it('a claimed key loses exactly its turn share — mouse and other keys keep turning', () => {
+    const s = snap(['KeyE'], 10);
+    expect(keysToMoveInput(s).turn).toBeCloseTo(10 * TURN_SENSITIVITY + KEY_TURN_PER_STEP);
+    expect(keysToMoveInput(withoutKey(s, 'KeyE')).turn).toBeCloseTo(10 * TURN_SENSITIVITY);
+    expect(keysToMoveInput(withoutKey(s, 'KeyE')).forward).toBe(0); // only turn is E's share
   });
 });

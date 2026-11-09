@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
+import { Dir, FloorGrid } from '../../src/engine/grid';
 import {
   applyFog,
   fogTarget,
@@ -23,6 +24,18 @@ const m = (id: number, kind: MirrorRef['kind'], x: number, z: number, rotY = 0):
   wallDir: null,
 });
 
+/** A 5x5 grid with every internal wall open — LOS is always clear, so the
+ *  kind/range/cone geometry can be tested on its own. */
+const openGrid = (): FloorGrid => {
+  const g = new FloorGrid(5, 5);
+  for (let y = 0; y < 5; y++)
+    for (let x = 0; x < 5; x++) {
+      if (x < 4) g.setOpen(x, y, Dir.East);
+      if (y < 4) g.setOpen(x, y, Dir.South);
+    }
+  return g;
+};
+
 describe('frost', () => {
   it('fogTarget: nearest standing/beacon within range and cone; ignores true/silvered', () => {
     const player = { x: 0, y: 0, heading: 0 }; // facing north (-y)
@@ -32,12 +45,20 @@ describe('frost', () => {
       m(3, 'true', 0, -1),
       m(4, 'silvered', 0, -1.5),
     ];
-    expect(fogTarget(mirrors, player)?.id).toBe(1);
+    expect(fogTarget(mirrors, player, openGrid())?.id).toBe(1);
   });
   it('fogTarget: outside cone or range → null', () => {
     const player = { x: 0, y: 0, heading: 0 };
-    expect(fogTarget([m(1, 'standing', 3, -3)], player)).toBeNull(); // ~45° off-cone
-    expect(fogTarget([m(1, 'standing', 0, -5.5)], player)).toBeNull(); // beyond 5m
+    expect(fogTarget([m(1, 'standing', 3, -3)], player, openGrid())).toBeNull(); // ~45° off-cone
+    expect(fogTarget([m(1, 'standing', 0, -5.5)], player, openGrid())).toBeNull(); // beyond 5m
+  });
+  it('fogTarget: a wall between player and mirror blocks the frost (LOS)', () => {
+    const g = new FloorGrid(5, 5); // fully walled — every cell isolated
+    const player = { x: 0, y: 0, heading: 0 }; // cell (2,2)
+    const mirror = m(1, 'standing', 0, -4); // cell (2,1): dead ahead, 4m — but across a wall
+    expect(fogTarget([mirror], player, g)).toBeNull();
+    g.setOpen(2, 2, Dir.North); // open the shared edge — the same geometry now fogs
+    expect(fogTarget([mirror], player, g)?.id).toBe(1);
   });
   it('applyFog: standing times out, beacon is captured forever', () => {
     const rt = initMirrorRuntime([m(1, 'standing', 0, 0), m(2, 'beacon', 0, 0)]);

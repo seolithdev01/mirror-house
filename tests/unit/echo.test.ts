@@ -223,4 +223,43 @@ describe('updateEcho', () => {
     expect(e.anchorIdx).toBe(1);
     expect(e.x).toBeLessThan(8);
   });
+
+  it('in-cell pursuit: echo in the sensed cell closes on the player position, not the cell center', () => {
+    const g = openGrid();
+    const anchors = [{ x: -8, y: 0 }];
+    const player: PlayerState = { x: 1.5, y: 0.5, heading: 0 }; // cell (2,2), off-center
+    // echo AT the sensed cell's center (0,0) with live memory of that cell —
+    // the old code parked here: the cell-center goal was already reached.
+    let e = echoAt(0, 0, {
+      mode: 'chase',
+      lastSensedCell: { x: 2, y: 2 },
+      loseMemoryAt: 10_000,
+      nextSenseAt: 1_000_000, // no fresh sense: chase purely on memory
+    });
+    let dist = Math.hypot(e.x - player.x, e.y - player.y);
+    for (let i = 0; i < 240 && dist > 1e-9; i++) {
+      e = updateEcho(e, player, [], [], g, anchors, 5000 + i * 8, 1 / 120);
+      const next = Math.hypot(e.x - player.x, e.y - player.y);
+      expect(next).toBeLessThan(dist); // every step closes
+      dist = next;
+    }
+    expect(dist).toBeCloseTo(0, 1); // two seconds of pursuit ends on the player
+  });
+
+  it('in-cell pursuit guards the walls: a player who left the sensed cell is chased at its center', () => {
+    const g = openGrid();
+    const anchors = [{ x: -8, y: 0 }];
+    const player: PlayerState = { x: 30, y: 0, heading: 0 }; // far away, outside the cell
+    // echo off-center inside the sensed cell: it still walks to the cell
+    // center — the live player position is only followed inside that cell.
+    const e = echoAt(1.5, 0, {
+      mode: 'chase',
+      lastSensedCell: { x: 2, y: 2 },
+      loseMemoryAt: 10_000,
+      nextSenseAt: 1_000_000,
+    });
+    const next = updateEcho(e, player, [], [], g, anchors, 5000, 1 / 120);
+    expect(next.x).toBeCloseTo(1.5 - ECHO_SPEED / 120); // toward (0,0), not toward x=30
+    expect(next.y).toBeCloseTo(0);
+  });
 });

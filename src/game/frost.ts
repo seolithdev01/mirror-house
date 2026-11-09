@@ -10,6 +10,8 @@ import {
   FOG_RANGE,
   FROST_CONE_COS,
 } from '../engine/constants';
+import type { FloorGrid } from '../engine/grid';
+import { losClear } from '../engine/los';
 import type { MirrorKind, MirrorRef } from './floorObjects';
 import type { PlayerState } from './player';
 
@@ -36,12 +38,17 @@ export function initMirrorRuntime(mirrors: MirrorRef[]): MirrorRuntime[] {
 
 /**
  * The mirror the lantern would fog right now: nearest `standing`|`beacon`
- * mirror within FOG_RANGE and the 60° cone around the player's heading.
- * (`true`/`silvered` are never fog targets; fog state is deliberately not
- * consulted — this is a pure function of geometry, so re-fogging an
- * already-fogged mirror simply refreshes its timer.)
+ * mirror within FOG_RANGE and the 60° cone around the player's heading, with
+ * clear grid LOS from the player to the mirror center — frost does not pass
+ * through walls. (`true`/`silvered` are never fog targets; fog state is
+ * deliberately not consulted — this is a pure function of geometry, so
+ * re-fogging an already-fogged mirror simply refreshes its timer.)
  */
-export function fogTarget(mirrors: MirrorRef[], player: PlayerState): MirrorRef | null {
+export function fogTarget(
+  mirrors: MirrorRef[],
+  player: PlayerState,
+  grid: FloorGrid,
+): MirrorRef | null {
   const fx = Math.sin(player.heading);
   const fz = -Math.cos(player.heading); // heading 0 = north (-y); world z ↔ player y
   let best: MirrorRef | null = null;
@@ -61,6 +68,9 @@ export function fogTarget(mirrors: MirrorRef[], player: PlayerState): MirrorRef 
     // mirrors behind the player whose lateral sine alone would qualify
     // (sin(150°) = sin(30°)).
     if (dot <= 0 || lateral > FROST_CONE_COS) continue;
+    // A wall between the player and the glass blocks the throw — the lantern
+    // reaches only what the player can see (same DDA LOS the echo senses use).
+    if (!losClear(grid, player.x, player.y, m.x, m.z)) continue;
     if (dist < bestDist) {
       best = m;
       bestDist = dist;

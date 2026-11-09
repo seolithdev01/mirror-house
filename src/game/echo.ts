@@ -152,8 +152,9 @@ export function updateEcho(
   }
 
   // Pathing: follow the flow field toward the target cell; inside the target
-  // cell (flowStep null) walk straight at its center. Both endpoints of every
-  // step lie in the union of two adjacent open cells, so no wall collision is
+  // cell (flowStep null) walk straight at its center — or, in chase mode, at
+  // the player themself (see the lunge below). Both endpoints of every step
+  // lie in the union of two adjacent open cells, so no wall collision is
   // needed — the field already respects walls.
   let { x, y, heading, field } = echo;
   if (target !== null) {
@@ -167,7 +168,22 @@ export function updateEcho(
     }
     const cell = grid.cellAt(x, y);
     const goal = flowStep(field, grid, cell.x, cell.y) ?? target;
-    const { cx, cy } = grid.cellCenter(goal.x, goal.y);
+    // In-cell pursuit: once the echo stands in the sensed cell it lunges at
+    // the player's exact position instead of parking on the cell center — but
+    // only while the player is still IN that cell. The echo sees only through
+    // mirrors: a player who slipped out is chased at the remembered spot, and
+    // the same-cell endpoints keep every step inside one cell, preserving the
+    // no-wall-collision invariant above.
+    const playerCell = grid.cellAt(player.x, player.y);
+    const lungeAtPlayer =
+      mode === 'chase' &&
+      cell.x === target.x &&
+      cell.y === target.y &&
+      playerCell.x === target.x &&
+      playerCell.y === target.y;
+    const { cx, cy } = lungeAtPlayer
+      ? { cx: player.x, cy: player.y }
+      : grid.cellCenter(goal.x, goal.y);
     const dx = cx - x;
     const dy = cy - y;
     const dist = Math.hypot(dx, dy);

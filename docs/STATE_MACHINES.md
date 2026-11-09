@@ -139,6 +139,12 @@ lifecycle:
 - Every change writes `meta.mode`; `meta.mode` is the boot value.
 - Pointer lock itself is browser-owned; `InputCollector` only mirrors it by
   clearing held keys on `pointerlockchange`.
+- **Dual-use key claims** (`withoutKey`, claimed per fixed step in `main.ts`):
+  a key that also drives a verb yields only its movement share while the verb
+  owns it — Q while Aaina is open (her toggle), E while the push hint shows
+  (the door). The claim drops the key from the snapshot before
+  `keysToMoveInput` sees it, so exactly that key's turn contribution
+  disappears; mouse and every other key are untouched.
 
 ---
 
