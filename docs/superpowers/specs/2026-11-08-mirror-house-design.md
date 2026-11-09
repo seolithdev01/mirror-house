@@ -402,7 +402,7 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 | M3  | 6–7   | QUAD/OVERHEAD/TACTICAL + HUD + Aaina v1 + audio engine                                  | All views ≤ budget; hint economy works — delivered 2026-11-09 (m3)                               |
 | M4  | 8–9   | Tier 1 content (10 floors + Dwaar I), saves, PWA, i18n                                  | Playtest 5 strangers complete Tier 1 unaided — delivered 2026-11-09 (m4); playtest gate OPEN, see §13.1 |
 | M5  | 10–11 | Polish, a11y pass, perf presets, beta hardening                                         | Exit criteria below all green; web beta launches here — delivered 2026-11-09 (m5); the human/pre-beta lines stay OPEN, see §13.3 |
-| M6  | 12–13 | Capacitor store builds, listings, IARC ratings; venue pilot pack published; full launch | Android + iOS pass review; venue pack live with partner sign-off; beta live on web + both stores |
+| M6  | 12–13 | Capacitor store builds, listings, IARC ratings; venue pilot pack published; full launch | Android + iOS pass review; venue pack live with partner sign-off; beta live on web + both stores — delivered 2026-11-09 (m6): web beta LIVE at the Pages URL (m5 build serves today; `0.2.0-beta.1` auto-deploys on merge to `main`); venue machinery + DEMO pack live (partner sign-off OPEN); Android debug APK built green (store submission OPEN pending Play account); iOS runbook shipped (Mac required) — see §13.4 |
 
 ### 13.3 Exit criteria
 
@@ -416,12 +416,24 @@ Annotated at M5 close-out (2026-11-09). **[x] = machine-proven green this milest
 - [ ] **5/5 external playtesters reach floor 10 without developer help** — OPEN (the human gate carried from m4): the kit is shipped (`PLAYTEST.md` — session script, what to watch, feedback questions); recruit and run the strangers pre-beta.
 - [x] **Lighthouse a11y ≥ 90** — Lighthouse a11y 97 desktop + 97 mobile (2026-11-09, chrome-devtools MCP) (chrome-devtools MCP `lighthouse_audit`, desktop + mobile, against this branch's preview before merge; findings ≥ Critical/serious fixed in-task).
 - [x] **Privacy + license + provenance files present** — `PRIVACY.md` (no accounts/cookies/telemetry, CSP), `PROVENANCE.md` (origin + dependency/license table), `LICENSE` (Apache-2.0) + the README license section; shipped M5/T6.
-- **Android + iOS builds pass store review** — deferred to M6 by the §13.2 split (Capacitor builds, listings, IARC).
-- **Venue pilot live with partner sign-off** — deferred to M6 by the §13.2 split.
+- **Android + iOS builds pass store review** — deferred to M6 by the §13.2 split; at m6 close-out (2026-11-09) the Android build is machine-proven: debug APK 4,278,439 bytes + unsigned release APK 3,281,351 bytes, `aapt`-verified manifest (`com.amtocsoft.mirrorhouse`, versionCode 1 / `0.2.0-beta.1`, minSdk 24 / target 36, hi label आईना घर, web shell + demo venue pack bundled) — see `docs/BUILD-STORES.md`. Store review itself stays OPEN pending the user-owned Play/App Store accounts; the listing/IARC/Data-Safety answers are drafted in `docs/STORE-LISTING.md`. iOS is runbook-only on this Windows host (Mac required).
+- **Venue pilot live with partner sign-off** — deferred to M6 by the §13.2 split; at m6 close-out the venue machinery is LIVE with the fictional DEMO pack (⚙ → Floors / `?venue=`, e2e-proven); the signed real-partner pilot stays OPEN — recruit per `docs/LAUNCH.md` §3.
 
 ### 13.4 Launch & feedback
 
 Production on CF Pages (custom subdomain) **first** — the web beta never waits on store review — then Google Play and App Store releases, source public on GitHub, announcement to 2–3 playtest communities; feedback via GitHub issues + a form link; "diagnostics export" button for bug reports (local counters only, user-attached).
+
+> **M6 close-out (2026-11-09).** Production-first held: the Pages URL
+> <https://mirror-house-8fg.pages.dev> is live (200, serving the m5 build —
+> the `0.2.0-beta.1` bundle rides the CI deploy when this branch merges to
+> `main`). Launch-kit state: venue machinery + DEMO pack live ✓ (partner
+> sign-off OPEN); Android debug APK built green from this tree ✓ (unsigned
+> release APK proven too; Play submission OPEN pending the user's account —
+> runbook `docs/BUILD-STORES.md`); iOS runbook ✓ (Mac required); listings/
+> IARC/Data-Safety answers drafted ✓ (`docs/STORE-LISTING.md`). The
+> operational launch-day checklist with per-item witnesses is `docs/LAUNCH.md`
+> §4; announcements, the venue pilots, and the §13.1 five-stranger playtest
+> gate remain OPEN human actions.
 
 ---
 

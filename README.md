@@ -2,7 +2,7 @@
 
 A 100-floor, first-person mirror-maze escape game. You descend a century-old palace of glass where reflections deceive you — and the things hunting you. Free, open source, runs in any modern browser, saves live only on your device.
 
-**Status:** **beta** — `0.2.0-beta.1`: the Tier-1 campaign, saves, accessibility, and quality presets of m0–m5, plus m6's venue side-floors (a local venture can host a themed floor — the ☕ Glasshouse Café demo ships in ⚙ → Floors), Capacitor/Android store builds, and the launch kit. See "Run it" below.
+**Status:** **beta** — `0.2.0-beta.1`: the Tier-1 campaign, saves, accessibility, and quality presets of m0–m5, plus m6's venue side-floors (a local venture can host a themed floor — the ☕ Glasshouse Café demo ships in ⚙ → Floors), the Android store build (debug APK proven — [docs/BUILD-STORES.md](docs/BUILD-STORES.md); store submission pending accounts), and the launch kit. **Play it: <https://mirror-house-8fg.pages.dev>** — or run it locally below.
 
 - [Changelog](CHANGELOG.md) · [Launch kit](docs/LAUNCH.md) · [Store listing](docs/STORE-LISTING.md) · [Store builds](docs/BUILD-STORES.md)
 - [Design blueprint (step001)](docs/superpowers/specs/2026-11-08-mirror-house-design.md)

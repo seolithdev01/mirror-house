@@ -184,6 +184,8 @@ One pass, in order; every line names the artifact that proves it.
 - [ ] **Stores (when ready)** — the Android build follows
       [BUILD-STORES.md](BUILD-STORES.md): `npm run cap:sync`, sign, upload
       the AAB; the listing copy to paste is [STORE-LISTING.md](STORE-LISTING.md).
+      The debug + unsigned-release APKs are already build-proven (2026-11-09);
+      what remains is the keystore, the Play account, and the upload.
       Stores are optional for launch day — the web build is the launch.
 - [ ] **Venue pilots (the week after)** — send §3 to the first
       [3–5] venues; each new pack lands in `public/venues/` as its own JSON

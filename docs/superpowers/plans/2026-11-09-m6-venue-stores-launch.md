@@ -39,7 +39,7 @@ export function venueSeed(p: VenuePack, dayStamp: string): string; // `${p.id}:$
 
 main: `?venue=demo-glasshouse-cafe` (or settings Play) → build floor with venue params + accent materials (marker/beacon emissive → pack primary/secondary), HUD banner `☕ Glasshouse Café — DEMO floor (daily seed)`, campaign hooks bypassed (no descend/clear-banking — exit shows "Floor cleared — return via ⚙"), back-to-campaign button in the banner. i18n: pack taglines via locale tables.
 
-- [ ] **Step 1: Failing tests** — validate strict/lenient cases; venueFloorParams clamps; venueSeed deterministic + charset-valid. **Step 2: RED → implement → GREEN.** **Step 3: Wire settings/URL/banner/return; PROVENANCE policy; e2e `m6: venue demo floor loads and returns` (goto ?venue=… → banner shows pack name → floor builds with beacons=pack count via hook `venue()` → exit reach → return → campaign().floor unchanged). Gates + 25/25.** **Step 4: Commit** — `feat(m6): venue-pack system + glasshouse café demo floor`
+- [x] **Step 1: Failing tests** — validate strict/lenient cases; venueFloorParams clamps; venueSeed deterministic + charset-valid. **Step 2: RED → implement → GREEN.** **Step 3: Wire settings/URL/banner/return; PROVENANCE policy; e2e `m6: venue demo floor loads and returns` (goto ?venue=… → banner shows pack name → floor builds with beacons=pack count via hook `venue()` → exit reach → return → campaign().floor unchanged). Gates + 25/25.** **Step 4: Commit** — `feat(m6): venue-pack system + glasshouse café demo floor`
 
 ---
 
@@ -50,10 +50,10 @@ main: `?venue=demo-glasshouse-cafe` (or settings Play) → build floor with venu
 - Modify: `package.json` (deps + scripts `cap:sync`, `cap:android`), `.gitignore` (android build outputs)
 
 **Steps:**
-- [ ] 1. `npm i @capacitor/core && npm i -D @capacitor/cli @capacitor/android`; `capacitor.config.ts` (appId `com.amtocsoft.mirrorhouse`, appName `Mirror House`, webDir `dist`, android: { allowMixedContent: false }); `npm run build && npx cap add android && npx cap sync`; commit the platform (gitignore `android/.gradle/`, `android/app/build/`, `android/app/release/`).
-- [ ] 2. App metadata: label `Mirror House` (+ hi `आईना घर` in values-hi), versionCode 1 / versionName `0.2.0-beta.1` in `android/app/build.gradle`; launcher icons from T3's PNGs (`cap copy` after).
-- [ ] 3. `docs/BUILD-STORES.md` — the full runbook: Android (debug APK locally: `npx cap run android`; release: keystore create + `assembleRelease`/bundleRelease + Play Console upload steps + Data Safety answers pointer); iOS (REQUIRES a Mac: `npm i -D @capacitor/ios`, `npx cap add ios`, open Xcode, signing with the Apple Developer account, App Store Connect steps, IARC); WebView notes (audio gesture policy already handled; SW runs in WebView origin — offline works).
-- [ ] 4. Verify: `npx cap sync android` clean; gradle wrapper present. Commit — `chore(m6): capacitor + android platform, store build runbook`
+- [x] 1. `npm i @capacitor/core && npm i -D @capacitor/cli @capacitor/android`; `capacitor.config.ts` (appId `com.amtocsoft.mirrorhouse`, appName `Mirror House`, webDir `dist`, android: { allowMixedContent: false }); `npm run build && npx cap add android && npx cap sync`; commit the platform (gitignore `android/.gradle/`, `android/app/build/`, `android/app/release/`).
+- [x] 2. App metadata: label `Mirror House` (+ hi `आईना घर` in values-hi), versionCode 1 / versionName `0.2.0-beta.1` in `android/app/build.gradle`; launcher icons from T3's PNGs (`cap copy` after).
+- [x] 3. `docs/BUILD-STORES.md` — the full runbook: Android (debug APK locally: `npx cap run android`; release: keystore create + `assembleRelease`/bundleRelease + Play Console upload steps + Data Safety answers pointer); iOS (REQUIRES a Mac: `npm i -D @capacitor/ios`, `npx cap add ios`, open Xcode, signing with the Apple Developer account, App Store Connect steps, IARC); WebView notes (audio gesture policy already handled; SW runs in WebView origin — offline works).
+- [x] 4. Verify: `npx cap sync android` clean; gradle wrapper present. Commit — `chore(m6): capacitor + android platform, store build runbook`
 
 ---
 
@@ -64,9 +64,9 @@ main: `?venue=demo-glasshouse-cafe` (or settings Play) → build floor with venu
 - Modify: `android/…/res` mipmap (real PNGs replace defaults)
 
 **Steps:**
-- [ ] 1. `scripts/gen-icons.mjs` — Playwright renders `public/icon.svg` at 512/192/180/144 (transparent + solid-indigo-background variants for adaptive-icon layers), writes PNGs to `store-assets/` and into the android mipmap dirs; `npm run icons`. Run it — real PNGs land.
-- [ ] 2. `docs/STORE-LISTING.md` — en+hi short/full descriptions, keywords, category (Game/Puzzle/Adventure), screenshots checklist (FOCUS+reflection, QUAD, OVERHEAD tactical, Dwaar, settings-a11y, Hindi UI), IARC questionnaire DRAFTED ANSWERS (fantasy violence: glass shatter, no blood/gore → expected E10+/PEGI7), Data Safety (collects nothing — device-only storage), privacy-policy URL = the PRIVACY.md page URL on the repo/site.
-- [ ] 3. Gates (icons script is standalone; web unchanged); 25/25. Commit — `chore(m6): launcher/store icons + store listing & ratings kit`
+- [x] 1. `scripts/gen-icons.mjs` — Playwright renders `public/icon.svg` at 512/192/180/144 (transparent + solid-indigo-background variants for adaptive-icon layers), writes PNGs to `store-assets/` and into the android mipmap dirs; `npm run icons`. Run it — real PNGs land.
+- [x] 2. `docs/STORE-LISTING.md` — en+hi short/full descriptions, keywords, category (Game/Puzzle/Adventure), screenshots checklist (FOCUS+reflection, QUAD, OVERHEAD tactical, Dwaar, settings-a11y, Hindi UI), IARC questionnaire DRAFTED ANSWERS (fantasy violence: glass shatter, no blood/gore → expected E10+/PEGI7), Data Safety (collects nothing — device-only storage), privacy-policy URL = the PRIVACY.md page URL on the repo/site.
+- [x] 3. Gates (icons script is standalone; web unchanged); 25/25. Commit — `chore(m6): launcher/store icons + store listing & ratings kit`
 
 ---
 
@@ -77,18 +77,18 @@ main: `?venue=demo-glasshouse-cafe` (or settings Play) → build floor with venu
 - Modify: `package.json` (0.2.0-beta.1), `public/sw.js` (SW_CACHE 'mh-v5'), `src/main.ts` (M5 minors: Escape with two stacked dialogs closes only the topmost; arrows don't flip radios while ⚙ open → stand-down already covers activation keys — extend to Arrow keys when settings open), `README.md` (status → Beta; badges text; links), `src/ui/faq.ts` (+1: venue floors)
 
 **Steps:**
-- [ ] 1. `docs/LAUNCH.md` — beta announcement copy (Reddit r/WebGames + r/InternetIsBeautiful drafts: the one-line pitch, 3-bullet hook, link, feedback ask), the venue-pilot pitch template for local ventures (what they get, what it costs nothing/beta, the pack checklist), launch-day checklist (web ✓ live, stores via BUILD-STORES, venues via LAUNCH template).
-- [ ] 2. CHANGELOG (m0 scaffold → m5 a11y one-liners + m6). Version + SW_CACHE bump. M5 minors (Escape topmost-only; arrows-in-settings).
-- [ ] 3. Gates + 25/25 e2e. Commit — `chore(m6): launch kit, version 0.2.0-beta.1, sw cache bump, m5 minors`
+- [x] 1. `docs/LAUNCH.md` — beta announcement copy (Reddit r/WebGames + r/InternetIsBeautiful drafts: the one-line pitch, 3-bullet hook, link, feedback ask), the venue-pilot pitch template for local ventures (what they get, what it costs nothing/beta, the pack checklist), launch-day checklist (web ✓ live, stores via BUILD-STORES, venues via LAUNCH template).
+- [x] 2. CHANGELOG (m0 scaffold → m5 a11y one-liners + m6). Version + SW_CACHE bump. M5 minors (Escape topmost-only; arrows-in-settings).
+- [x] 3. Gates + 25/25 e2e. Commit — `chore(m6): launch kit, version 0.2.0-beta.1, sw cache bump, m5 minors`
 
 ---
 
 ### Task 5: Android debug build + close-out
 
 **Steps:**
-- [ ] 1. **Real build attempt**: `cd android && ./gradlew.bat assembleDebug` (Java 17 + SDK present). If green → APK path recorded; install-less smoke: report APK size + manifest sanity (aapt if available). If the build fails on environment quirks (NDK/SDK licenses), fix or honestly record the blocker + remaining steps — no fake claims.
-- [ ] 2. Spec §13.2 M6 annotated: web beta LIVE ✓; venue machinery LIVE with DEMO pack ✓ (partner sign-off OPEN); Android platform built (status per step 1; store submission OPEN pending Play account); iOS runbook ✓ (Mac required); §13.4 launch checklist updated. README + FAQ final. Plan ticks.
-- [ ] 3. Full gates + 25/25 + bundle check. Commit — `docs(m6): launch status, changelog, exit marks`
+- [x] 1. **Real build attempt**: `cd android && ./gradlew.bat assembleDebug` (Java 17 + SDK present). If green → APK path recorded; install-less smoke: report APK size + manifest sanity (aapt if available). If the build fails on environment quirks (NDK/SDK licenses), fix or honestly record the blocker + remaining steps — no fake claims.
+- [x] 2. Spec §13.2 M6 annotated: web beta LIVE ✓; venue machinery LIVE with DEMO pack ✓ (partner sign-off OPEN); Android platform built (status per step 1; store submission OPEN pending Play account); iOS runbook ✓ (Mac required); §13.4 launch checklist updated. README + FAQ final. Plan ticks.
+- [x] 3. Full gates + 25/25 + bundle check. Commit — `docs(m6): launch status, changelog, exit marks`
 
 ## Plan Self-Review
 

@@ -18,6 +18,9 @@ Versions follow the store line: `0.1.0` carried everything through M5,
   (`com.amtocsoft.mirrorhouse`, `versionName 0.2.0-beta.1`), with the
   build/sign/runbook in [docs/BUILD-STORES.md](docs/BUILD-STORES.md) and the
   ready-to-paste listing copy in [docs/STORE-LISTING.md](docs/STORE-LISTING.md).
+  The debug APK builds green from a clean tree (4.08 MiB, manifest
+  `aapt`-verified; unsigned release APK proven too) — Play submission waits
+  on the store account.
 - **Launch kit** — beta announcement drafts (en+hi), the venue-pilot pitch and
   pack checklist, and the launch-day checklist:
   [docs/LAUNCH.md](docs/LAUNCH.md). This changelog. Version bumped to

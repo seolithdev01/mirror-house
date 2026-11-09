@@ -32,11 +32,20 @@ them by hand.
 - Android Studio (with SDK platform 36); `ANDROID_HOME` set
   (`%LOCALAPPDATA%\Android\Sdk` on this host). `local.properties` (sdk.dir) is
   generated per-machine and git-ignored.
-- JDK: building from Android Studio uses its bundled JBR (21). Command-line
-  `./gradlew` uses `JAVA_HOME` — this host defaults to Temurin 17 (AGP 8.13
-  needs 17+, so it works; if a build ever demands more, point `JAVA_HOME` at
-  Android Studio's `jbr/` or a JDK 21, or set `org.gradle.java.home` in
-  `android/gradle.properties`).
+- **JDK 21 — required, proven 2026-11-09.** Capacitor 8's android modules
+  compile with `sourceCompatibility JavaVersion.VERSION_21`, so a JDK 17
+  `JAVA_HOME` dies at `:capacitor-android:compileDebugJavaWithJavac` with
+  `error: invalid source release: 21`. Android Studio's bundled JBR (21)
+  works out of the box; for command-line builds point `JAVA_HOME` at a JDK
+  21. This host carries a portable Temurin 21.0.13+9 (checksum-verified from
+  the Adoptium API) at `C:\Users\raghu\.jdks\jdk21\jdk-21.0.13+9`:
+
+  ```bash
+  JAVA_HOME='C:\Users\raghu\.jdks\jdk21\jdk-21.0.13+9' ./gradlew assembleDebug
+  ```
+
+  (`org.gradle.java.home` in `android/gradle.properties` is the sticky
+  per-project alternative.)
 
 ### Debug build / run on a device
 
@@ -48,6 +57,17 @@ npx cap run android           # build + install + launch on device/emulator
 
 Debug builds are signed with the auto-generated debug keystore — fine for
 testing and sideloading, not for Play.
+
+Proven 2026-11-09 (m6/T5, clean tree: `npm run build` → `npx cap sync
+android` → `./gradlew assembleDebug --no-daemon` under JDK 21):
+`BUILD SUCCESSFUL in 52s` → `android/app/build/outputs/apk/debug/app-debug.apk`
+at 4,278,439 bytes (4.08 MiB). `aapt dump badging` confirms
+`com.amtocsoft.mirrorhouse` versionCode 1 / versionName `0.2.0-beta.1`,
+minSdk 24 / target 36, label "Mirror House" (hi: `आईना घर`), launchable
+`MainActivity`, and the full web shell — `index.html`, `sw.js`, hashed JS
+bundle, and `venues/demo-glasshouse-cafe.json` — bundled under
+`assets/public/`. The same session also proved `assembleRelease`:
+`app-release-unsigned.apk` at 3,281,351 bytes (3.13 MiB).
 
 ### Release build (signed)
 
