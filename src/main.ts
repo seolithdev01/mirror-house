@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as THREE from 'three';
+import { createAudioEngine } from './audio/engine';
+import { intensityFrom } from './audio/theory';
 import {
   ANGER_MAX,
   CHHAYA_DELAY_MS,
@@ -114,6 +116,13 @@ const seed = isValidSeed(urlSeed) ? urlSeed : randomSeed();
 const floor = generateFloor({ ...TIER_ONE, seed });
 let player: PlayerState = spawnPlayer(floor);
 let meta = loadMeta();
+// M3/T6 procedural audio: the engine exists from boot but only speaks after
+// the first user gesture (listener below) — an AudioContext must start
+// user-initiated. The saved mute preference applies before that start, so a
+// muted boot never makes a sound.
+const audio = createAudioEngine(seed);
+audio.setMuted(meta.muted ?? false);
+let audioIntensity = 0.2; // last intensity fed to the engine (audioState reports it)
 let phase = createFloorRun(); // the GamePhase master machine — re-armed (ready) on reset
 const exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
@@ -452,7 +461,9 @@ const hud = createHud({
     window.location.search = `?seed=${d}`;
   },
   onFrost: () => tryFrost(performance.now()),
+  onMute: () => toggleMute(),
 });
+hud.setMuted(audio.muted); // the 🔊/🔇 label matches the boot preference
 hud.setChips({ beacons: beaconsCaptured(allMirrors, mirrorRuntime), shards: house.shards });
 setExitLocked(true); // the stair door starts sealed behind its beacons
 canvas.addEventListener('click', () => {
@@ -461,6 +472,29 @@ canvas.addEventListener('click', () => {
       { catch?: (cb: () => void) => void } | undefined;
     lock?.catch?.(() => {});
   }
+});
+// Audio speaks only after the FIRST user gesture — one keydown or one canvas
+// click, whichever comes first. `{ once: true }` retires each listener after
+// its own firing; the flag makes the loser of that race a no-op.
+let audioGestureDone = false;
+function startAudioOnGesture(): void {
+  if (audioGestureDone) return;
+  audioGestureDone = true;
+  audio.start();
+}
+window.addEventListener('keydown', startAudioOnGesture, { once: true });
+canvas.addEventListener('click', startAudioOnGesture, { once: true });
+// [M] and the HUD 🔊 button toggle the mute (M3/T6); the choice persists in
+// meta.muted and the next boot re-applies it before the engine ever starts.
+function toggleMute(): void {
+  const next = !audio.muted;
+  audio.setMuted(next);
+  meta = { ...meta, muted: next };
+  saveMeta(meta);
+  hud.setMuted(next);
+}
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyM' && !e.repeat) toggleMute();
 });
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyH' && !e.repeat) faq.toggle();
@@ -780,6 +814,15 @@ function frame(now: number): void {
   });
   hud.setBreath(breath);
   hud.setAnger(house.anger / ANGER_MAX);
+  // Audio feed (M3/T6): one threat→music intensity per frame — anger, pursuit
+  // pressure, failing, cleared — smoothed inside the engine's scheduler.
+  audioIntensity = intensityFrom({
+    anger: house.anger,
+    chasing: echoes.filter((e) => e.mode === 'chase').length,
+    failing: phase.kind === 'failing',
+    cleared: phase.kind === 'cleared',
+  });
+  audio.setIntensity(audioIntensity);
   if (!aaina.root.hidden) refreshAaina(); // she reads the floor while you walk it
   syncFogVisuals(now);
   // Door machine: an opening door advances on frame time, then rests open for
@@ -889,6 +932,27 @@ if (import.meta.env.DEV) {
     look: () => look.name,
     mode: () => mode,
     view: () => view, // M3/T3 — which ViewMode is showing ([V] cycles)
+    viewMode: () => view, // M3/T6 — the same value under its exact hook name
+    // M3/T6 — the audio engine's observable state (started/muted) plus the
+    // last intensity the frame loop fed it.
+    audioState: () => ({
+      started: audio.started,
+      muted: audio.muted,
+      intensity: audioIntensity,
+    }),
+    // M3/T6 dev faucet — bank + save shards at once (e2e seeds Aaina's purse).
+    grantShards: (n: number) => {
+      meta = awardShards(meta, n);
+      saveMeta(meta);
+      hud.setChips({ shards: meta.shards ?? 0 });
+    },
+    // M3/T6 — Aaina's live panel state: open, the next hint's price, the last
+    // purchased line (null until a buy lands and while it is still current).
+    aaina: () => ({
+      open: !aaina.root.hidden,
+      hintCost: hintCost(hintsUsed),
+      lastHint: purchasedHint === null ? null : purchasedHint.text,
+    }),
     // M3/T4 map hooks — fog, radar, and the player's marks
     visitedCount: () => visited.size,
     pings: () => pings.length,

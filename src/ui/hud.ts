@@ -10,6 +10,8 @@ export type HudInit = {
   onAaina(): void;
   onDaily(): void;
   onFrost(): void;
+  /** M3/T6 — toggles the audio mute (same as the [M] key). */
+  onMute(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -24,6 +26,8 @@ export interface Hud {
   setAnger(v: number): void;
   /** M3/T3 — the view chip: which ViewMode the renderer is showing ([V] cycles). */
   setView(label: string): void;
+  /** M3/T6 — the 🔊/🔇 button label follows the audio engine's mute state. */
+  setMuted(muted: boolean): void;
   showCleared(ms: number, bestMs: number | null, isBest: boolean): void;
   hideCleared(): void;
   showFail(reason: string): void;
@@ -76,6 +80,11 @@ export function createHud(init: HudInit): Hud {
   frost.id = 'mh-frost';
   frost.textContent = '❄ Frost';
   frost.addEventListener('click', () => init.onFrost());
+  const mute = document.createElement('button');
+  mute.type = 'button';
+  mute.id = 'mh-mute';
+  mute.textContent = '🔊 Sound';
+  mute.addEventListener('click', () => init.onMute());
   const chips = document.createElement('div');
   chips.id = 'mh-chips';
   chips.append(
@@ -105,7 +114,7 @@ export function createHud(init: HudInit): Hud {
   const hint = document.createElement('div');
   hint.id = 'mh-hint';
   hint.hidden = true;
-  root.append(modes, faq, aaina, daily, frost, chips, breath, anger, cleared, fail, hint);
+  root.append(modes, faq, aaina, daily, frost, mute, chips, breath, anger, cleared, fail, hint);
   document.body.appendChild(root);
 
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
@@ -144,6 +153,9 @@ export function createHud(init: HudInit): Hud {
     },
     setView: (label) => {
       (document.getElementById('mh-view') as HTMLElement).textContent = `👁 ${label}`;
+    },
+    setMuted: (m) => {
+      mute.textContent = m ? '🔇 Muted' : '🔊 Sound';
     },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;

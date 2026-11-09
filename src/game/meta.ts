@@ -11,6 +11,9 @@ export interface MetaSave {
   streak: { count: number; lastDay: string };
   /** Additive (M2/T6): shards banked from cleared floors. Absent on older saves. */
   shards?: number;
+  /** Additive (M3/T6): audio mute preference; boot applies it before the
+   *  engine starts. Absent on older saves (unmuted). */
+  muted?: boolean;
 }
 
 export const META_KEY = 'mirrorhouse.meta.v1';

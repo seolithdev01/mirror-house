@@ -54,6 +54,13 @@ interface DebugHook {
   exitPos(): { x: number; z: number };
   warp(x: number, y: number, heading?: number): void;
   addAnger(n: number): void;
+  // M3/T6 hooks — views, audio, Aaina's economy, fog of war
+  view(): string;
+  viewMode(): string;
+  audioState(): { started: boolean; muted: boolean; intensity: number };
+  grantShards(n: number): void;
+  aaina(): { open: boolean; hintCost: number; lastHint: string | null };
+  visitedCount(): number;
 }
 // page.evaluate results cannot carry functions across the process boundary,
 // so the closure-backed members (look/mode/streak/best) are invoked in the
@@ -402,5 +409,202 @@ test('m2: full win flow records shards and best', async ({ page }) => {
   }, 'M2WIN');
   expect(after.shards).toBeGreaterThanOrEqual(15); // 3 × SHARD_BEACON banked on clear
   expect(after.best).not.toBeNull();
+  expect(errors).toEqual([]);
+});
+
+test('m3: V cycles views and T pauses the floor', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=VTACTIC');
+  await ready(page);
+  const viewMode = () =>
+    page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.viewMode(),
+    );
+  const pos = () =>
+    page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+    );
+
+  // [V] walks the cycle: focus → quad → overhead
+  expect(await viewMode()).toBe('focus');
+  await page.keyboard.press('KeyV');
+  expect(await viewMode()).toBe('quad');
+  await page.keyboard.press('KeyV');
+  expect(await viewMode()).toBe('overhead');
+
+  // T pauses from the overhead map; holding W cannot move the player
+  await page.keyboard.press('KeyT');
+  expect(await viewMode()).toBe('tactical');
+  const frozenAt = await pos();
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(500);
+  const during = await pos();
+  expect(Math.hypot(during.x - frozenAt.x, during.y - frozenAt.y)).toBeLessThan(0.05);
+
+  // Esc resumes focus and the still-held W covers ground again
+  await page.keyboard.press('Escape');
+  expect(await viewMode()).toBe('focus');
+  const resumedAt = await pos();
+  await page.waitForTimeout(500);
+  await page.keyboard.up('KeyW');
+  const after = await pos();
+  expect(Math.hypot(after.x - resumedAt.x, after.y - resumedAt.y)).toBeGreaterThan(0.5);
+  expect(errors).toEqual([]);
+});
+
+test('m3: audio starts on first gesture and M mutes', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=MUTEKEY');
+  await ready(page);
+  const audioState = () =>
+    page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.audioState(),
+    );
+
+  const a0 = await audioState();
+  expect(a0.started).toBe(false); // silent until a gesture
+  expect(a0.muted).toBe(false); // a fresh save boots unmuted
+  expect(a0.intensity).toBeGreaterThan(0); // the frame loop already feeds a calm 0.2
+
+  await page.keyboard.press('KeyZ'); // any keydown is the gesture
+  expect((await audioState()).started).toBe(true);
+
+  await page.keyboard.press('KeyM');
+  expect((await audioState()).muted).toBe(true);
+  // the choice persists in the save — boot re-applies it before start
+  const saved = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('mirrorhouse.meta.v1') ?? '{}'),
+  );
+  expect(saved.muted).toBe(true);
+
+  await page.keyboard.press('KeyM');
+  expect((await audioState()).muted).toBe(false);
+
+  // the HUD 🔊 button throws the same switch
+  await page.locator('#mh-mute').click();
+  expect((await audioState()).muted).toBe(true);
+  await expect(page.locator('#mh-mute')).toHaveText(/🔇/);
+  expect(errors).toEqual([]);
+});
+
+test('m3: aaina hint economy — buy, price grows, situation moves', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=AAINAQ');
+  await ready(page);
+  await page.evaluate((n: number) => {
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.grantShards(
+      n,
+    );
+  }, 20);
+  expect(
+    await page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.metaShards(),
+    ),
+  ).toBe(20);
+
+  // open her panel ([Q]) and go to the Hint tab
+  await page.keyboard.press('KeyQ');
+  await expect(page.locator('#mh-aaina-overlay')).toBeVisible();
+  await page.locator('#mh-aaina-tab-hint').click();
+  let panel = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.aaina(),
+  );
+  expect(panel.open).toBe(true);
+  expect(panel.hintCost).toBe(5);
+  expect(panel.lastHint).toBeNull();
+
+  // first buy: ◆5, the line is revealed, the purse drops to 15
+  await page.locator('#mh-aaina-buy').click();
+  panel = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.aaina(),
+  );
+  expect(panel.lastHint).not.toBeNull();
+  expect(
+    await page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.metaShards(),
+    ),
+  ).toBe(15);
+
+  // the bought line pins the Buy button until her subject changes: clear the
+  // beacons and she moves on to the open stair door
+  while (
+    (await page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.beaconsLeft(),
+    )) > 0
+  ) {
+    await captureNextBeacon(page);
+  }
+
+  // second buy: the floor's second hint costs ◆10, leaving ◆5
+  panel = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.aaina(),
+  );
+  expect(panel.hintCost).toBe(10);
+  await page.locator('#mh-aaina-buy').click();
+  expect(
+    await page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.metaShards(),
+    ),
+  ).toBe(5);
+  panel = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.aaina(),
+  );
+  expect(panel.lastHint).not.toBeNull();
+  expect(errors).toEqual([]);
+});
+
+test('m3: overhead map shows and the fog of war grows', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=FOGMAP');
+  await ready(page);
+  const visitedCount = () =>
+    page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.visitedCount(),
+    );
+
+  expect(await visitedCount()).toBe(1); // only the spawn cell is explored
+  await expect(page.locator('#overhead')).toBeHidden(); // focus shows no map
+
+  await page.keyboard.press('KeyV');
+  await page.keyboard.press('KeyV'); // focus → quad → overhead
+  expect(
+    await page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.viewMode(),
+    ),
+  ).toBe('overhead');
+  await expect(page.locator('#overhead')).toBeVisible();
+
+  // warp to a far cell and walk — every cell entered joins the explored set
+  const exit = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.exitPos(),
+  );
+  await page.evaluate((e: { x: number; z: number }) => {
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.warp(
+      e.x,
+      e.z,
+    );
+  }, exit);
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('KeyW');
+  expect(await visitedCount()).toBeGreaterThan(1);
   expect(errors).toEqual([]);
 });
