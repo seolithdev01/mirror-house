@@ -142,7 +142,12 @@ npx cap open ios        # opens Xcode
 
 ## Launcher icons
 
-`cap add` ships Capacitor's stock icons (`android/app/src/main/res/mipmap-*/`).
-**Task 3 replaces them** with renders of the game's own icon (`public/icon.svg`
-→ PNG set) followed by `npx cap sync android` — this runbook is written against
-that plan; do not ship the stock icons to a store.
+`cap add` ships Capacitor's stock icons — those are gone. `npm run icons`
+(`scripts/gen-icons.mjs`) renders `public/icon.svg` into every launcher size
+(legacy `ic_launcher`/`ic_launcher_round` at 48–192 px + the adaptive
+`ic_launcher_foreground` at 108 dp per density, glyph at 60% height inside the
+66/108 safe zone) and the store set in `store-assets/` (see
+[`STORE-LISTING.md`](STORE-LISTING.md)); the adaptive background layer is the
+`@color/ic_launcher_background` night indigo (`#0b1026`). Change the icon by
+editing `public/icon.svg`, re-running `npm run icons`, then `npx cap sync
+android`.
