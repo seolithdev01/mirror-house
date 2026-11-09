@@ -214,6 +214,21 @@
       #mh-hint[hidden] {
         display: none;
       }
+      /* M4/T4 — short-lived notices (import rejections, export confirmations).
+         Gold-edged like the cleared banner: it speaks for the save, not the
+         floor. Auto-hides from hud.ts after 2.5s. */
+      #mh-toast {
+        background: rgba(11, 16, 38, 0.92);
+        border: 1px solid #d9a441;
+        color: #f2e9d8;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 13px;
+        pointer-events: none;
+      }
+      #mh-toast[hidden] {
+        display: none;
+      }
       #mh-faq-overlay {
         position: fixed;
         inset: 0;

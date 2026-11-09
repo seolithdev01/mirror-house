@@ -168,10 +168,12 @@ test('loads a seeded floor, moves with W, no page errors', async ({ page }) => {
 test('same seed renders the same spawn', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=SAMESAME');
+  await ready(page); // boot is async now (M4/T4 save load) — wait for the hook
   const p = await page.evaluate(() =>
     (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
   await page.reload();
+  await ready(page);
   const q = await page.evaluate(() =>
     (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
@@ -479,11 +481,23 @@ test('m3: audio starts on first gesture and M mutes', async ({ page }) => {
 
   await page.keyboard.press('KeyM');
   expect((await audioState()).muted).toBe(true);
-  // the choice persists in the save — boot re-applies it before start
-  const saved = await page.evaluate(() =>
-    JSON.parse(localStorage.getItem('mirrorhouse.meta.v1') ?? '{}'),
+  // the choice persists in the IDB save v2 (M4/T4; write-through debounced
+  // 250ms) — read the store directly once the debounce window has closed
+  await page.waitForTimeout(400);
+  const saved = await page.evaluate(
+    () =>
+      new Promise<{ muted?: boolean } | null>((resolve) => {
+        const req = indexedDB.open('mirror-house', 1);
+        req.onsuccess = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('save')) return resolve(null);
+          const get = db.transaction('save', 'readonly').objectStore('save').get('main');
+          get.onsuccess = () => resolve((get.result as { muted?: boolean } | undefined) ?? null);
+        };
+        req.onerror = () => resolve(null);
+      }),
   );
-  expect(saved.muted).toBe(true);
+  expect(saved?.muted).toBe(true);
 
   await page.keyboard.press('KeyM');
   expect((await audioState()).muted).toBe(false);

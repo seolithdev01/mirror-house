@@ -16,6 +16,10 @@ export type HudInit = {
   onPlayAgain(): void;
   /** M4/T2 — tier complete → free walk in the cleared Dwaar (Stay). */
   onStay(): void;
+  /** M4/T4 — 💾: serialize the IDB save v2 to a file (FS Access or download). */
+  onExport(): void;
+  /** M4/T4 — 📂: pick a file, validate, store, reload. */
+  onImport(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -46,6 +50,9 @@ export interface Hud {
   hideFail(): void;
   /** One line of in-world guidance; null hides it (T7 passages will drive it). */
   hint(text: string | null): void;
+  /** M4/T4 — a short-lived notice (import rejections, export confirmations).
+   *  Separate from hint(): the frame loop rewrites hint() every frame. */
+  toast(text: string): void;
   root: HTMLElement;
 }
 
@@ -97,6 +104,19 @@ export function createHud(init: HudInit): Hud {
   mute.id = 'mh-mute';
   mute.textContent = '🔊 Sound';
   mute.addEventListener('click', () => init.onMute());
+  // M4/T4 — the save chain's front door: export the IDB save, import one back.
+  const exportBtn = document.createElement('button');
+  exportBtn.type = 'button';
+  exportBtn.id = 'mh-export';
+  exportBtn.textContent = '💾';
+  exportBtn.title = 'Export save file';
+  exportBtn.addEventListener('click', () => init.onExport());
+  const importBtn = document.createElement('button');
+  importBtn.type = 'button';
+  importBtn.id = 'mh-import';
+  importBtn.textContent = '📂';
+  importBtn.title = 'Import save file';
+  importBtn.addEventListener('click', () => init.onImport());
   const chips = document.createElement('div');
   chips.id = 'mh-chips';
   chips.append(
@@ -130,6 +150,9 @@ export function createHud(init: HudInit): Hud {
   const hint = document.createElement('div');
   hint.id = 'mh-hint';
   hint.hidden = true;
+  const toast = document.createElement('div');
+  toast.id = 'mh-toast';
+  toast.hidden = true;
   root.append(
     modes,
     faq,
@@ -137,6 +160,8 @@ export function createHud(init: HudInit): Hud {
     daily,
     frost,
     mute,
+    exportBtn,
+    importBtn,
     chips,
     breath,
     anger,
@@ -144,6 +169,7 @@ export function createHud(init: HudInit): Hud {
     descend,
     fail,
     hint,
+    toast,
   );
   document.body.appendChild(root);
 
@@ -179,6 +205,7 @@ export function createHud(init: HudInit): Hud {
 
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
   let hintText: string | null = null; // last shown hint (hint() early-returns on repeats)
+  let toastTimer = 0; // the toast's own hide timer (re-toast restarts the clock)
   const setMode = (mode: InputMode) => {
     for (const m of Object.keys(buttons)) buttons[m]!.classList.toggle('active', m === mode);
   };
@@ -255,6 +282,14 @@ export function createHud(init: HudInit): Hud {
       hintText = text;
       hint.hidden = text === null;
       hint.textContent = text;
+    },
+    toast: (text) => {
+      toast.textContent = text;
+      toast.hidden = false;
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => {
+        toast.hidden = true;
+      }, 2500);
     },
     root,
   };

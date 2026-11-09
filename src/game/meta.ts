@@ -23,6 +23,8 @@ export function defaultMeta(mode: InputMode = 'hybrid'): MetaSave {
   return { v: 1, lookName: 'indigo-gold', mode, best: {}, streak: { count: 0, lastDay: '' } };
 }
 
+/** @deprecated M4/T4 — persistence moved to the IDB save v2 (game/save.ts).
+ *  main.ts no longer reads localStorage; kept exported for the unit tests. */
 export function loadMeta(): MetaSave {
   try {
     const raw = globalThis.localStorage?.getItem(META_KEY);
@@ -37,6 +39,8 @@ export function loadMeta(): MetaSave {
   return defaultMeta();
 }
 
+/** @deprecated M4/T4 — writes stopped when persistence moved to IDB save v2
+ *  (game/save.ts). Kept exported for the unit tests. */
 export function saveMeta(m: MetaSave): void {
   try {
     globalThis.localStorage?.setItem(META_KEY, JSON.stringify(m));
@@ -68,7 +72,19 @@ export function dailySeed(stamp: string): string {
   return out;
 }
 
-export function recordRun(m: MetaSave, seed: string, ms: number, today: string): MetaSave {
+/** Best-time + streak box shared by MetaSave (v1) and SaveData (v2) — the
+ *  pure progression fns below run on either save generation (M4/T4). */
+export interface ProgressionSave {
+  best: Record<string, number>;
+  streak: { count: number; lastDay: string };
+}
+
+export function recordRun<T extends ProgressionSave>(
+  m: T,
+  seed: string,
+  ms: number,
+  today: string,
+): T {
   const prev = m.best[seed];
   return {
     ...m,
@@ -78,14 +94,14 @@ export function recordRun(m: MetaSave, seed: string, ms: number, today: string):
 }
 
 /** Bank cleared-floor shards into the save (additive from an absent count). */
-export function awardShards(m: MetaSave, gained: number): MetaSave {
+export function awardShards<T extends { shards?: number }>(m: T, gained: number): T {
   return { ...m, shards: (m.shards ?? 0) + gained };
 }
 
 /** Spend banked shards (M3/T2: Aaina's hints). Null when the balance cannot
  *  cover it — the caller keeps the old save; balances never go negative, and
  *  an absent count (older save) spends as an empty purse. */
-export function spendShards(m: MetaSave, n: number): MetaSave | null {
+export function spendShards<T extends { shards?: number }>(m: T, n: number): T | null {
   const banked = m.shards ?? 0;
   if (n < 0 || banked < n) return null;
   return { ...m, shards: banked - n };

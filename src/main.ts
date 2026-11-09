@@ -101,12 +101,21 @@ import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze'
 import {
   awardShards,
   dailySeed,
-  loadMeta,
+  META_KEY,
   recordRun,
-  saveMeta,
   spendShards,
   todayStamp,
 } from './game/meta';
+import {
+  defaultSave,
+  idbGet,
+  idbPut,
+  mergeCampaign,
+  migrateMeta,
+  serializeSave,
+  validateSave,
+  type SaveData,
+} from './game/save';
 import {
   createMirrorMesh,
   createSilveredDoor,
@@ -148,8 +157,12 @@ const diagnostics = document.querySelector<HTMLElement>('#diagnostics')!;
 
 // M4/T2 campaign boot. The URL names the campaign's BASE seed — `?seed=PLAY`
 // starts floor 1 of that base; DEV builds may also jump with `&floor=N`.
-// No usable URL seed → a random base. (Saved-campaign resume arrives with
-// T4's saves — until then the campaign lives in this one module-level binding.)
+// M4/T4 makes boot save-driven and async: IDB save v2 first, then a one-time
+// migration of the localStorage meta v1 (the copy stays untouched — belt and
+// braces), then a fresh default. The URL still overrides the campaign. The
+// top-level await below pauses module evaluation — the debug hook at the
+// bottom therefore registers only after the save has landed, and e2e's
+// waitForFunction tolerates that whenever it lands.
 const urlParams = new URLSearchParams(window.location.search);
 const urlSeed = normalizeSeed(urlParams.get('seed') ?? '');
 function bootFloorFromUrl(): number {
@@ -157,18 +170,53 @@ function bootFloorFromUrl(): number {
   const n = Number.parseInt(urlParams.get('floor') ?? '', 10);
   return Number.isInteger(n) && n >= 1 && n <= TIER_ONE_FLOORS ? n : 1;
 }
+/** Migration reads the legacy localStorage meta v1 ONCE; unreadable → null
+ *  (a fresh default, never a dead boot). The localStorage copy is left in
+ *  place deliberately — removal is a later, deliberate housekeeping step. */
+function migrateFromMetaV1(): SaveData | null {
+  try {
+    const raw = globalThis.localStorage?.getItem(META_KEY);
+    if (!raw) return null;
+    return migrateMeta(JSON.parse(raw) as unknown);
+  } catch {
+    return null;
+  }
+}
+let save: SaveData = (await idbGet()) ?? migrateFromMetaV1() ?? defaultSave();
 let campaign: Campaign = isValidSeed(urlSeed)
-  ? { seedBase: urlSeed, floor: bootFloorFromUrl(), tierComplete: false }
-  : newCampaign(randomSeed());
+  ? { seedBase: urlSeed, floor: bootFloorFromUrl(), tierComplete: false } // URL wins over the save
+  : {
+      // resume as saved — tierComplete gates lore/aggregation, not the boot
+      seedBase: save.progress.seedBase,
+      floor: save.progress.floor,
+      tierComplete: save.progress.tierComplete,
+    };
 let player: PlayerState; // armed by buildFloor — the spawn belongs to the floor
-let meta = loadMeta();
+
+// M4/T4 — the single write-through. Mutate the in-memory save, then persist():
+// the debounced arm (250ms) coalesces bursts (mode flips, hint buys), while
+// flush=true cancels the timer and writes NOW — a cleared floor, a descend,
+// the tier screen, and an import must never ride a debounce window that a
+// closed tab could eat.
+let persistTimer: number | null = null;
+function persist(flush = false): void {
+  if (persistTimer !== null) window.clearTimeout(persistTimer);
+  persistTimer = null;
+  if (flush) void idbPut(save);
+  else
+    persistTimer = window.setTimeout(() => {
+      persistTimer = null;
+      void idbPut(save);
+    }, 250);
+}
+
 // M3/T6 procedural audio: the engine exists from boot but only speaks after
 // the first user gesture (listener below) — an AudioContext must start
 // user-initiated. The saved mute preference applies before that start, so a
 // muted boot never makes a sound. One voice per house: the campaign base
 // carries it across every floor.
 const audio = createAudioEngine(campaign.seedBase);
-audio.setMuted(meta.muted ?? false);
+audio.setMuted(save.muted);
 let audioIntensity = 0.2; // last intensity fed to the engine (audioState reports it)
 let phase = createFloorRun(); // the GamePhase master machine — re-armed (ready) on reset
 
@@ -183,7 +231,14 @@ const scene = new THREE.Scene();
 const VOID_COLOR = 0x0b1026; // the night the house floats in — background, fog, map-mode clear
 scene.background = new THREE.Color(VOID_COLOR);
 scene.fog = new THREE.Fog(VOID_COLOR, 2, 26);
-const look = parseLook(urlParams.get('look'));
+// M4/T4 — the URL `?look=` still wins for this visit; otherwise the saved
+// look returns. The resolved name becomes the saved one (parseLook heals a
+// junk name to indigo-gold), so a URL choice or self-heal persists.
+const look = parseLook(urlParams.get('look') ?? save.lookName);
+if (save.lookName !== look.name) {
+  save = { ...save, lookName: look.name };
+  persist();
+}
 const avatar = createAvatar(look);
 scene.add(avatar);
 
@@ -384,23 +439,23 @@ function refreshAaina(): void {
   aaina.updateHint({
     kind: hint.kind,
     cost: hintCost(hintsUsed),
-    shards: meta.shards ?? 0,
+    shards: save.shards,
     revealedText: purchasedHint === null ? null : purchasedHint.text,
   });
-  aaina.updateLore(loreUnlockedCount(Object.keys(meta.best).length));
+  aaina.updateLore(loreUnlockedCount(Object.keys(save.best).length));
 }
 
 /** Buy the offered hint: banked shards only (pending floor shards cannot pay),
  *  saved at once, hintsUsed up — the next hint this floor costs more. */
 function buyHint(): void {
   const hint = nextHint(aainaContext());
-  const spent = spendShards(meta, hintCost(hintsUsed));
+  const spent = spendShards(save, hintCost(hintsUsed));
   if (spent === null) return; // unaffordable — the Buy button is disabled; this is the guard
-  meta = spent;
-  saveMeta(meta);
+  save = spent;
+  persist();
   hintsUsed += 1;
   purchasedHint = { kind: hint.kind, text: hint.text };
-  hud.setChips({ shards: meta.shards ?? 0 });
+  hud.setChips({ shards: save.shards });
 }
 
 /**
@@ -471,7 +526,7 @@ const QUAD_SIDE_YAW: readonly { cam: THREE.PerspectiveCamera; yaw: number }[] = 
 
 const input = new InputCollector();
 input.attach(window);
-let mode: InputMode = meta.mode;
+let mode: InputMode = save.mode;
 const faq = buildFaqOverlay();
 const aaina = buildAainaOverlay({ onBuyHint: buyHint });
 const hud = createHud({
@@ -479,8 +534,8 @@ const hud = createHud({
   onMode: (m) => {
     mode = m;
     hud.setMode(m);
-    meta = { ...meta, mode: m };
-    saveMeta(meta);
+    save = { ...save, mode: m };
+    persist();
   },
   onFaq: () => faq.toggle(),
   onAaina: () => aaina.toggle(),
@@ -492,6 +547,9 @@ const hud = createHud({
   onMute: () => toggleMute(),
   onPlayAgain: () => playAgain(),
   onStay: () => stayInDwaar(),
+  // M4/T4 — the save chain's front door: 💾 export / 📂 import.
+  onExport: () => void exportSave(),
+  onImport: () => void importSave(),
 });
 hud.setMuted(audio.muted); // the 🔊/🔇 label matches the boot preference
 
@@ -726,6 +784,8 @@ function stayInDwaar(): void {
  *  floor 1 from the top, chip and all. */
 function playAgain(): void {
   campaign = newCampaign(randomSeed());
+  save = mergeCampaign(save, campaign);
+  persist(true); // part of the tier flow — the new spine banks before it walks
   buildFloor(campaign);
 }
 
@@ -755,13 +815,116 @@ canvas.addEventListener('click', startAudioOnGesture, { once: true });
 function toggleMute(): void {
   const next = !audio.muted;
   audio.setMuted(next);
-  meta = { ...meta, muted: next };
-  saveMeta(meta);
+  save = { ...save, muted: next };
+  persist();
   hud.setMuted(next);
 }
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyM' && !e.repeat) toggleMute();
 });
+
+// M4/T4 — 💾 export / 📂 import. The File System Access API is the happy
+// path where it exists; <a download> / <input type=file> are the fallbacks.
+// Import validates strictly, flushes into IDB, and reloads — the boot chain
+// then applies the imported save exactly as it would a stored one. A rejected
+// file says so via the HUD toast (the per-frame hint line would eat it).
+const SAVE_FILE_NAME = 'mirror-house-save.json';
+const SAVE_FILE_TYPES = [
+  { description: 'Mirror House save', accept: { 'application/json': ['.json'] } },
+];
+type WritableLike = { write(data: string): Promise<void>; close(): Promise<void> };
+
+function isAbort(e: unknown): boolean {
+  return e instanceof DOMException && e.name === 'AbortError'; // user closed the picker
+}
+
+async function exportSave(): Promise<void> {
+  const text = serializeSave(save);
+  const picker = (
+    window as unknown as {
+      showSaveFilePicker?: (o: unknown) => Promise<{ createWritable(): Promise<WritableLike> }>;
+    }
+  ).showSaveFilePicker;
+  if (typeof picker === 'function') {
+    try {
+      const handle = await picker.call(window, {
+        suggestedName: SAVE_FILE_NAME,
+        types: SAVE_FILE_TYPES,
+      });
+      const writable = await handle.createWritable();
+      await writable.write(text);
+      await writable.close();
+      hud.toast('Save exported');
+      return;
+    } catch (e) {
+      if (isAbort(e)) return; // changed their mind — not an error
+      // fall through to the download fallback
+    }
+  }
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = SAVE_FILE_NAME;
+  a.click();
+  URL.revokeObjectURL(url);
+  hud.toast('Save exported');
+}
+
+/** Ask the user for one file and read its text; null = cancelled/none. */
+async function pickSaveText(): Promise<string | null> {
+  const picker = (
+    window as unknown as {
+      showOpenFilePicker?: (o: unknown) => Promise<Array<{ getFile(): Promise<File> }>>;
+    }
+  ).showOpenFilePicker;
+  if (typeof picker === 'function') {
+    try {
+      const [handle] = await picker.call(window, { types: SAVE_FILE_TYPES, multiple: false });
+      if (!handle) return null;
+      return await (await handle.getFile()).text();
+    } catch (e) {
+      if (isAbort(e)) return null;
+      // fall through to <input type=file>
+    }
+  }
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.addEventListener('change', () => {
+      const f = input.files?.[0];
+      if (f) void f.text().then((t) => resolve(t));
+      else resolve(null);
+    });
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
+}
+
+async function importSave(): Promise<void> {
+  const text = await pickSaveText();
+  if (text === null) return; // picker dismissed — nothing to say
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text) as unknown;
+  } catch {
+    hud.toast('Save file rejected');
+    return;
+  }
+  const next = validateSave(parsed);
+  if (next === null) {
+    hud.toast('Save file rejected');
+    return;
+  }
+  // Cancel any pending debounced write FIRST — it would clobber the imported
+  // save with the pre-import in-memory state if it fired before the reload.
+  if (persistTimer !== null) {
+    window.clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  await idbPut(next);
+  location.reload(); // the boot chain applies the new save from IDB
+}
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyH' && !e.repeat) faq.toggle();
 });
@@ -1098,8 +1261,8 @@ function frame(now: number): void {
   }
   hud.setChips({
     timerMs: runElapsedMs(phase, now),
-    streak: meta.streak.count,
-    bestMs: meta.best[seed] ?? null,
+    streak: save.streak.count,
+    bestMs: save.best[seed] ?? null,
   });
   hud.setBreath(breath);
   hud.setAnger(house.anger / ANGER_MAX);
@@ -1135,19 +1298,21 @@ function frame(now: number): void {
     // deeper; the Dwaar claims the Truth-Shard and raises the tier screen.
     phase = clearRun(phase, now);
     const ms = runElapsedMs(phase, now);
-    const wasBest = meta.best[seed];
-    meta = recordRun(meta, seed, ms, todayStamp());
-    meta = awardShards(
-      meta,
+    const wasBest = save.best[seed];
+    save = recordRun(save, seed, ms, todayStamp());
+    save = awardShards(
+      save,
       house.shards + shardsForClear(house, echoes.filter((e) => e.stuckAwarded).length),
     );
-    saveMeta(meta);
-    hud.setChips({ shards: meta.shards ?? 0 }); // chip flips from pending to banked
+    persist(true); // a cleared floor banks NOW — no debounce window
+    hud.setChips({ shards: save.shards }); // chip flips from pending to banked
     if (isDwaar(campaign.floor)) {
       campaign = completeTier(campaign);
-      hud.showTierComplete({ floors: DWAAR_FLOOR, shards: meta.shards ?? 0 });
+      save = mergeCampaign(save, campaign); // tier complete is a save event
+      persist(true);
+      hud.showTierComplete({ floors: DWAAR_FLOOR, shards: save.shards });
     } else {
-      hud.showCleared(ms, meta.best[seed] ?? null, wasBest === undefined || ms < wasBest);
+      hud.showCleared(ms, save.best[seed] ?? null, wasBest === undefined || ms < wasBest);
       hud.showDescend();
       descendAt = now + DESCEND_MS;
     }
@@ -1158,6 +1323,8 @@ function frame(now: number): void {
   if (descendAt !== null && phase.kind === 'cleared' && now >= descendAt) {
     descendAt = null;
     campaign = descend(campaign);
+    save = mergeCampaign(save, campaign);
+    persist(true); // the stair door banks the new position NOW
     buildFloor(campaign);
   }
   // Tactical pause note (T4) outranks the passage prompts — the verbs are
@@ -1261,9 +1428,9 @@ if (import.meta.env.DEV) {
     }),
     // M3/T6 dev faucet — bank + save shards at once (e2e seeds Aaina's purse).
     grantShards: (n: number) => {
-      meta = awardShards(meta, n);
-      saveMeta(meta);
-      hud.setChips({ shards: meta.shards ?? 0 });
+      save = awardShards(save, n);
+      persist();
+      hud.setChips({ shards: save.shards });
     },
     // M3/T6 — Aaina's live panel state: open, the next hint's price, the last
     // purchased line (null until a buy lands and while it is still current).
@@ -1280,8 +1447,8 @@ if (import.meta.env.DEV) {
     // window aspect — the side panes are w/2 × h/2, not square.
     camAspects: () => [camera.aspect, ...QUAD_SIDE_YAW.map((s) => s.cam.aspect)],
     avatarPresent: true,
-    streak: () => meta.streak.count,
-    bestFor: (s: string) => meta.best[s] ?? null,
+    streak: () => save.streak.count,
+    bestFor: (s: string) => save.best[s] ?? null,
     breath: () => breath,
     echoes: () => echoes.map((e) => ({ id: e.id, x: e.x, y: e.y, mode: e.mode })),
     chhaya: () => sampleDelayed(path, performance.now(), chhayaDelayMs()),
@@ -1312,7 +1479,7 @@ if (import.meta.env.DEV) {
       return bc.total - bc.captured;
     },
     anger: () => house.anger,
-    shards: () => meta.shards ?? 0,
+    shards: () => save.shards,
     attempts: () => house.attempts,
     enemyCount: () => echoes.length,
     enemyPos: (i: number) => {
@@ -1359,7 +1526,7 @@ if (import.meta.env.DEV) {
       exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
       failed: phase.kind === 'failing',
     }),
-    metaShards: () => meta.shards ?? 0,
+    metaShards: () => save.shards, // M4/T4: same purse, IDB save v2 now
     fail: (reason: string) => failFloor(reason === 'collapse' ? 'collapse' : 'caught'),
     fogTarget: () => fogTarget(allMirrors, player, floor.grid)?.id ?? null,
     canStepThrough: () => tryTeleport(allMirrors, player, floor.grid) !== null,
