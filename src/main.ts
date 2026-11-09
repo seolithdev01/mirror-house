@@ -133,6 +133,9 @@ const visuals: MirrorBinding[] = allMirrors.map((m) => {
   }
   if (m.kind === 'silvered' && m.wallDir !== null) {
     const door = createSilveredDoor(m, m.wallDir);
+    // The slab coincides exactly with the wall instance it covers — hide that
+    // edge now, or the two z-fight from frame one (push-time hide is too late).
+    sceneBuilt.hideWallEdge(m.cellX, m.cellY, m.wallDir);
     silveredDoors.push({ ref: m, door });
     scene.add(door.group);
     return { bind: door.mirror, hero: null, state: 'clear' as const };
@@ -192,6 +195,7 @@ function resetFloor(now: number): void {
   breath = 1;
   run = createFloorRun(seed);
   player = spawnPlayer(floor);
+  input.snapshotAndReset(); // drain mouseDx banked during the freeze — no giant first turn
   floorFailed = false;
   freezeUntil = null;
   hud.hideFail();
@@ -237,6 +241,7 @@ function tryFrost(now: number): void {
   if (!target || breath < FOG_COST) return;
   const rt = mirrorRuntime.find((r) => r.id === target.id);
   if (!rt) return;
+  if (rt.captured) return; // re-frosting a captured beacon buys nothing — keep the breath
   const wasCaptured = rt.captured;
   applyFog(mirrorRuntime, target.id, now);
   breath = updateBreath(breath, 0, true);
