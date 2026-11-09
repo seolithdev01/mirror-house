@@ -624,3 +624,42 @@ test('m3: overhead map shows and the fog of war grows', async ({ page }) => {
   expect(await visitedCount()).toBeGreaterThan(1);
   expect(errors).toEqual([]);
 });
+
+test('m4: manifest + sw wiring', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=PWAWIRE');
+  await expect(page.locator('#game')).toBeVisible();
+
+  // the manifest is linked and the link actually resolves
+  const manifestHref = await page.evaluate(() =>
+    document.querySelector('link[rel="manifest"]')?.getAttribute('href'),
+  );
+  expect(manifestHref).toBeTruthy();
+  const res = await page.request.fetch(manifestHref!);
+  expect(res.status()).toBe(200);
+
+  // the OS chrome reads the house's night
+  const theme = await page.evaluate(() =>
+    document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
+  );
+  expect(theme).toBe('#0b1026');
+
+  // the favicon link points at the lantern glyph
+  const icon = await page.evaluate(() =>
+    document.querySelector('link[rel="icon"]')?.getAttribute('href'),
+  );
+  expect(icon).toBe('/icon.svg');
+  const iconRes = await page.request.fetch(icon!);
+  expect(iconRes.status()).toBe(200);
+
+  // the SW registration is PROD-only: this suite runs the DEV server, so no
+  // registration may exist (the honest dev-level offline-wiring assertion —
+  // the real offline reload is proven against a PROD build in the task report).
+  // NOTE: getRegistration() resolves `undefined` (not null) when none exists —
+  // the SW spec's own hole — so falsy is the exact check.
+  const reg = await page.evaluate(() =>
+    navigator.serviceWorker ? navigator.serviceWorker.getRegistration() : null,
+  );
+  expect(reg).toBeFalsy();
+  expect(errors).toEqual([]);
+});

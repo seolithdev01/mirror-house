@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mirror House lantern">
+  <!-- the night the house floats in -->
+  <rect width="512" height="512" rx="112" fill="#0b1026" />
+  <!-- the lantern: gold frame, indigo glass, one steady flame -->
+  <g stroke="#d9a441" stroke-linecap="round">
+    <!-- hanging hook -->
+    <path d="M296 118a40 40 0 1 0-80 0" fill="none" stroke-width="16" />
+    <!-- cap -->
+    <path d="M222 130h68l20 36H202z" stroke="none" fill="#d9a441" />
+    <!-- glass body -->
+    <rect x="198" y="166" width="116" height="216" rx="26" fill="#141a36" stroke-width="14" />
+    <!-- ribs -->
+    <path d="M232 178v192M280 178v192" fill="none" stroke-width="8" opacity="0.5" />
+    <!-- base -->
+    <path d="M198 382h116l20 34H178z" stroke="none" fill="#d9a441" />
+    <!-- the flame -->
+    <path d="M256 216c18 24 18 54 0 78-18-24-18-54 0-78z" stroke="none" fill="#ffe9b0" />
+  </g>
+</svg>

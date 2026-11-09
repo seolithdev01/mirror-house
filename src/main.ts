@@ -540,6 +540,9 @@ const hud = createHud({
   onFaq: () => faq.toggle(),
   onAaina: () => aaina.toggle(),
   onDaily: () => {
+    // T4 review fix: the navigation reloads the page — flush any pending
+    // debounced write NOW or the reload eats it.
+    persist(true);
     const d = dailySeed(todayStamp());
     window.location.search = `?seed=${d}`;
   },
@@ -1400,6 +1403,19 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+// M4/T5 — PWA: the service worker registers in PROD builds only, after the
+// first frame has painted (two rAFs = one painted frame behind us — the boot
+// never waits on it). The dev server must never see a SW: a runtime cache and
+// vite's live module graph do not mix, and the e2e suite runs dev on purpose.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      // the SW is an enhancement — a failed registration must never block play
+      void navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }),
+  );
+}
 
 if (import.meta.env.DEV) {
   (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__ = {
