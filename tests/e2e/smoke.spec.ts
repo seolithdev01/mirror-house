@@ -230,12 +230,12 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('step003: FAQ opens with 24 entries and H toggles', async ({ page }) => {
+test('step003: FAQ opens with 25 entries and H toggles', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=FAQ');
   await ready(page);
   await page.locator('#mh-faq').click();
-  await expect(page.locator('#mh-faq-box details')).toHaveCount(24);
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(25);
   await page.keyboard.press('KeyH'); // closes
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens
@@ -1183,5 +1183,101 @@ test('m5: warp-caught restart returns the player to spawn within 2000ms', async 
   expect(after.attempts).toBe(1);
   expect(after.failed).toBe(false);
   expect(restartMs, 'contact → back at spawn').toBeLessThanOrEqual(2000);
+  expect(errors).toEqual([]);
+});
+
+// M6/T4 — the M5 carried minors, together (both live on the ⚙ overlay):
+// (a) dialogs stack — ⚙ open, then H opens the FAQ on top of it — and one
+// Escape peels exactly the TOPMOST layer, leaving the dialog under it open;
+// the next press unwinds the next. (b) while ⚙ is open its radios own the
+// arrows natively (a focused radio walks its group on Arrow*), so the
+// hardwired arrow alternates leave the movement snapshot — the player stands
+// down — and walking returns the moment the overlay closes.
+test('m6: Escape closes only the topmost dialog; arrows stand down while ⚙ is open', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=DIALOGS');
+  await ready(page);
+  const pos = () =>
+    page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.getPlayer();
+    });
+
+  // (a) the stack: ⚙ open, then H opens the FAQ above it — both live at once
+  await page.locator('#mh-settings').click();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+  await page.keyboard.press('KeyH');
+  await expect(page.locator('#mh-faq-overlay')).toBeVisible();
+
+  // one Escape peels ONLY the topmost (the FAQ); ⚙ survives underneath
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mh-faq-overlay')).toBeHidden();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+
+  // the second press unwinds the next layer — the stack empties in order
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mh-settings-overlay')).toBeHidden();
+
+  // (b) arrows: ⚙ open (focus on its first radio) → the radios own Arrow*,
+  // the player stands down even with the key held
+  await page.locator('#mh-settings').click();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+  const before = await pos();
+  await page.keyboard.down('ArrowUp');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('ArrowUp');
+  const during = await pos();
+  expect(Math.hypot(during.x - before.x, during.y - before.y)).toBeLessThan(0.05);
+
+  // close (✕) — the hardwired arrows move the player again
+  await page.locator('#mh-settings-close').click();
+  await expect(page.locator('#mh-settings-overlay')).toBeHidden();
+  const beforeWalk = await pos();
+  await page.keyboard.down('ArrowUp');
+  await page.waitForTimeout(600);
+  await page.keyboard.up('ArrowUp');
+  const afterWalk = await pos();
+  expect(Math.hypot(afterWalk.x - beforeWalk.x, afterWalk.y - beforeWalk.y)).toBeGreaterThan(0.5);
+  expect(errors).toEqual([]);
+});
+
+// M6/T4 (T1 adjudication) — Aaina stays in the campaign: on a venue floor the
+// hint sale is refused outright — the purse untouched, no purchased line, no
+// price growth — and the toast names the way back to her.
+test('m6: aaina refuses hint sales on a venue floor', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=VENUHINT&venue=demo-glasshouse-cafe');
+  await ready(page);
+  await page.evaluate((n: number) => {
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.grantShards(
+      n,
+    );
+  }, 20);
+
+  // her panel opens on the sponsored floor and the Hint tab offers the usual
+  // first sale — the window is honest, the till is not
+  await page.keyboard.press('KeyI');
+  await expect(page.locator('#mh-aaina-overlay')).toBeVisible();
+  await page.locator('#mh-aaina-tab-hint').click();
+  const offered = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.aaina(),
+  );
+  expect(offered.hintCost).toBe(5);
+  expect(offered.lastHint).toBeNull();
+
+  // the buy is a refusal: toast says the way back, nothing else moves
+  await expect(page.locator('#mh-aaina-buy')).toBeEnabled();
+  await page.locator('#mh-aaina-buy').click();
+  await expect(page.locator('#mh-toast')).toBeVisible();
+  await expect(page.locator('#mh-toast')).toContainText('Return to your campaign');
+  const after = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { shards: h.metaShards(), panel: h.aaina() };
+  });
+  expect(after.shards).toBe(20); // the purse never opened
+  expect(after.panel.lastHint).toBeNull(); // no line was sold
+  expect(after.panel.hintCost).toBe(5); // hintsUsed never moved
   expect(errors).toEqual([]);
 });

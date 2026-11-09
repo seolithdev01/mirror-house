@@ -2,8 +2,9 @@
 
 A 100-floor, first-person mirror-maze escape game. You descend a century-old palace of glass where reflections deceive you — and the things hunting you. Free, open source, runs in any modern browser, saves live only on your device.
 
-**Status:** m5 — beta-hardened: the Tier-1 campaign and travelling save of m4, plus the accessibility pass (remap every key, reduce flashing, captions, text scale), auto quality presets, and the privacy/provenance/playtest docs. See "Run it" below.
+**Status:** **beta** — `0.2.0-beta.1`: the Tier-1 campaign, saves, accessibility, and quality presets of m0–m5, plus m6's venue side-floors (a local venture can host a themed floor — the ☕ Glasshouse Café demo ships in ⚙ → Floors), Capacitor/Android store builds, and the launch kit. See "Run it" below.
 
+- [Changelog](CHANGELOG.md) · [Launch kit](docs/LAUNCH.md) · [Store listing](docs/STORE-LISTING.md) · [Store builds](docs/BUILD-STORES.md)
 - [Design blueprint (step001)](docs/superpowers/specs/2026-11-08-mirror-house-design.md)
 - [Prompt/request history](docs/prompts-history/README.md)
 
@@ -108,7 +109,7 @@ The run timer starts on your first input and stops when you reach the stair door
 
 ### FAQ
 
-The **? FAQ** button (top right) or the `H` key opens 24 questions in-game: how to move, the views and the tactical map, how the floors and descending work (Dwaar included, and why Taal only makes you angrier), how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, who Aaina is and what her hints cost, where the music comes from, what seeds are, the Daily, where your data lives and what the export file is, whether it works offline and in which languages, what the captions say and where to turn them on, a tour of ⚙ settings and everything you can change there, and the privacy statement in plain words.
+The **? FAQ** button (top right) or the `H` key opens 25 questions in-game: how to move, the views and the tactical map, how the floors and descending work (Dwaar included, and why Taal only makes you angrier), how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, who Aaina is and what her hints cost, where the music comes from, what seeds are, the Daily, where your data lives and what the export file is, whether it works offline and in which languages, what the captions say and where to turn them on, a tour of ⚙ settings and everything you can change there, what a sponsored (venue) floor is and why it never touches your campaign, and the privacy statement in plain words.
 
 ### Your data stays on your device — and can travel
 
@@ -121,7 +122,7 @@ A rejected or corrupt stored save reads as absent: the game boots fresh with sen
 
 ### Install it — it works offline
 
-Mirror House is a PWA. On the production build, use your browser's *Install app* / *Add to Home Screen* action: it gets its own window, its own icon (the gold lantern), and a service worker caches the shell and assets — installed once, it loads and plays with the network cut. The whole game ships as a single ~168 KB (gzipped) bundle, so the first load is quick and the offline copy is small.
+Mirror House is a PWA. On the production build, use your browser's _Install app_ / _Add to Home Screen_ action: it gets its own window, its own icon (the gold lantern), and a service worker caches the shell and assets — installed once, it loads and plays with the network cut. The whole game ships as a single ~168 KB (gzipped) bundle, so the first load is quick and the offline copy is small.
 
 ### नमस्ते — English and Hindi
 

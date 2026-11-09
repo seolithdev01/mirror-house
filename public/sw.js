@@ -5,10 +5,21 @@
 //   activate  → delete every cache whose name !== CACHE + clients.claim
 //   fetch     → same-origin GET only:
 //                 /assets/*   → cache-first (match, else fetch + put)
+//                 /venues/*   → cache-first (the precached packs; match, else
+//                                 fetch + put — a shipped pack survives offline)
 //                 navigations → network-first, offline fallback to '/'
 //                 everything else → passthrough (no respondWith at all)
-const CACHE = 'mh-v4';
-const PRECACHE = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
+const CACHE = 'mh-v5';
+// M6/T4 — the demo venue pack rides the precache: a sponsored floor is an
+// opt-in side excursion, and the pack's fetch failing offline would toast
+// "venue floor unavailable" for a pack we shipped — so the shell banks it.
+const PRECACHE = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/icon.svg',
+  '/venues/demo-glasshouse-cafe.json',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -36,8 +47,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // passthrough — never remote
 
-  if (url.pathname.startsWith('/assets/')) {
-    // cache-first: hashed filenames are immutable, so a miss fetches and banks
+  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/venues/')) {
+    // cache-first: hashed filenames are immutable, so a miss fetches and banks;
+    // venue packs are precached at install and a miss (a pack we did not ship)
+    // fetches and banks the same way
     event.respondWith(
       caches.open(CACHE).then(async (cache) => {
         const hit = await cache.match(req);

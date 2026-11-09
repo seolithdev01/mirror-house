@@ -572,8 +572,16 @@ function refreshAaina(): void {
 }
 
 /** Buy the offered hint: banked shards only (pending floor shards cannot pay),
- *  saved at once, hintsUsed up — the next hint this floor costs more. */
+ *  saved at once, hintsUsed up — the next hint this floor costs more.
+ *  M6/T4 (T1 adjudication) — Aaina stays in the campaign: on a venue floor
+ *  the sale is refused outright (nothing on a sponsored floor is hers to
+ *  sell, and the campaign situation her hints speak to isn't the one under
+ *  the player's feet) — the toast says how to get her back. */
 function buyHint(): void {
+  if (venue !== null) {
+    hud.toast(t(lang, 'toast.hintVenue'));
+    return; // no spend, no hintsUsed, no purchased line — the refusal is total
+  }
   const hint = nextHint(aainaContext());
   const spent = spendShards(save, hintCost(hintsUsed));
   if (spent === null) return; // unaffordable — the Buy button is disabled; this is the guard
@@ -1627,6 +1635,16 @@ function frame(now: number): void {
       // moment no door is in reach). M5/T2: the claim follows push's binding
       // wherever the map puts it, so it stays exact for ANY remap.
       if (doorHintActive()) snap = withoutKey(snap, keyOf('push'));
+      // M5 minor (landed M6/T4) — while the ⚙ overlay is open its radios own
+      // the arrows natively (a focused radio walks its group on Arrow*), so
+      // the player stands down: the four hardwired arrow codes leave the
+      // snapshot before keysToMoveInput sees it, the same claim pattern as
+      // the two above. Mapped keys keep their share — only the arrow
+      // alternates yield, and only while the overlay is on screen.
+      if (!settings.root.hidden) {
+        for (const arrow of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
+          snap = withoutKey(snap, arrow);
+      }
       const inputFrame =
         mode === 'mouse'
           ? mouseOnlyInput(input.mouseState())

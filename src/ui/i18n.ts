@@ -88,6 +88,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
       'Sponsored floor — no shards or bests; your campaign floor restarts when you return.',
     'overlay.venueCleared': 'Floor cleared — return via ⚙',
     'toast.venueRejected': 'Venue floor unavailable',
+    // M6/T4 — Aaina's venue refusal (T1 adjudication): the sale is refused,
+    // the toast names the way back to her.
+    'toast.hintVenue': 'Return to your campaign to ask Aaina',
     // chips (emoji + label + live value)
     'chip.streak': 'Streak',
     'chip.best': 'Best',
@@ -217,6 +220,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
       'प्रायोजित मंज़िल — कोई शार्ड या सर्वश्रेष्ठ नहीं; लौटने पर आपकी अभियान मंज़िल फिर शुरू होती है।',
     'overlay.venueCleared': 'मंज़िल पार — ⚙ से लौटें',
     'toast.venueRejected': 'वेन्यू मंज़िल उपलब्ध नहीं है',
+    // M6/T4 — आईना की वेन्यू मनाही (T1 निर्णय): बिक्री अस्वीकृत, टोस्ट वापसी का रास्ता बताता है।
+    'toast.hintVenue': 'आईना से पूछने के लिए अपने अभियान पर लौटें',
     // चिपें — छोटे शब्द, एक ही पंक्ति
     'chip.streak': 'लय',
     'chip.best': 'सर्वश्रेष्ठ',
