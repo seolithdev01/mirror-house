@@ -9,6 +9,7 @@
 // one tab axis. Toggled by [I] (her own key since M5/T1) and the HUD 💬 button.
 import type { HintKind } from '../game/aaina';
 import { LORE } from '../game/aaina';
+import { trapDialog } from './dialog';
 import { FAQ } from './faq';
 import { fill, t, type Lang } from './i18n';
 
@@ -64,6 +65,7 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
   box.id = 'mh-aaina-box';
 
   const h = document.createElement('h2');
+  h.id = 'mh-aaina-title'; // M5/T6 — the dialog's accessible name
   h.textContent = 'Aaina — the lantern speaks';
   box.appendChild(h);
 
@@ -134,6 +136,10 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
   box.appendChild(close);
   root.appendChild(box);
   document.body.appendChild(root);
+  // M5/T6 — dialog semantics: role=dialog + aria-modal, Tab cycles inside the
+  // docked panel (the floor keeps simulating underneath, by her design), and
+  // Escape closes — same path as the ✕ and the [I] toggle.
+  trapDialog(root, { labelledBy: 'mh-aaina-title', onEscape: () => (root.hidden = true) });
 
   function relabel(): void {
     for (const tabId of ['ask', 'hint', 'lore'] as const) {
@@ -141,6 +147,7 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
       tabBtns[tabId].textContent = labels[tabId];
     }
     close.textContent = fill(t(lang, 'misc.close'), { key: closeKey });
+    close.setAttribute('aria-label', t(lang, 'aria.close'));
   }
   relabel();
 

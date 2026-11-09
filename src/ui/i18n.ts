@@ -121,6 +121,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.unmuted': 'Sound on',
     // misc chrome
     'misc.close': '✕ Close ({key})',
+    // M5/T6 — the accessible name for every ✕-only close button
+    'aria.close': 'Close',
     'misc.playAgain': '↻ Play again',
     'misc.stay': 'Stay — wander the hall',
     'toast.exported': 'Save exported',
@@ -236,6 +238,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.unmuted': 'ध्वनि चालू',
     // शेष क्रोम
     'misc.close': '✕ बंद करें ({key})',
+    // M5/T6 — केवल ✕ वाले बंद बटनों का सुगम नाम
+    'aria.close': 'बंद करें',
     'misc.playAgain': '↻ फिर से खेलें',
     'misc.stay': 'रुकें — हॉल में घूमें',
     'toast.exported': 'सेव निर्यात हुआ',

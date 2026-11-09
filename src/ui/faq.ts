@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { trapDialog } from './dialog';
 import { fill, t, type Lang } from './i18n';
 
 export interface FaqEntry {
@@ -116,6 +117,7 @@ export function buildFaqOverlay(): {
   const box = document.createElement('div');
   box.id = 'mh-faq-box';
   const h = document.createElement('h2');
+  h.id = 'mh-faq-title'; // M5/T6 — the dialog's accessible name
   box.appendChild(h);
   for (const { q, a } of FAQ) {
     const d = document.createElement('details');
@@ -137,9 +139,13 @@ export function buildFaqOverlay(): {
     if (e.target === root) root.hidden = true;
   });
   document.body.appendChild(root);
+  // M5/T6 — dialog semantics: role=dialog + aria-modal, Tab cycles inside,
+  // Escape closes (same path as the ✕: hidden flips, the trap restores focus).
+  trapDialog(root, { labelledBy: 'mh-faq-title', onEscape: () => (root.hidden = true) });
   function relabel(): void {
     h.textContent = t(lang, 'faq.title');
     close.textContent = fill(t(lang, 'misc.close'), { key: closeKey });
+    close.setAttribute('aria-label', t(lang, 'aria.close'));
   }
   relabel();
   return {

@@ -504,7 +504,12 @@
       /* Reduced-flash (M5/T1): with the body class on (the ⚙ Access toggle),
          every overlay and banner fades in and out over ≥300ms instead of
          appearing at once. A [hidden] overlay keeps its layout box but goes
-         fully transparent and inert — opacity transitions, display cannot. */
+         fully transparent and inert — opacity transitions, display cannot.
+         M5/T6: a faded overlay also drops to visibility:hidden — but only
+         AFTER the 320ms fade (visibility flips on a 0s transition delayed to
+         the fade's end), so the fade still shows while a faded overlay is no
+         longer a pile of ghost tab stops for the keyboard. The shown rules
+         never transition visibility, so it snaps back visible at once. */
       body.mh-reduced-flash #mh-faq-overlay,
       body.mh-reduced-flash #mh-settings-overlay,
       body.mh-reduced-flash #mh-tier-overlay,
@@ -523,11 +528,19 @@
         display: grid; /* keep the box — opacity fades where display cannot */
         opacity: 0;
         pointer-events: none;
+        visibility: hidden; /* M5/T6 — a faded overlay owns no tab stops */
+        transition:
+          opacity 320ms ease,
+          visibility 0s linear 320ms;
       }
       body.mh-reduced-flash #mh-aaina-overlay[hidden] {
         display: flex;
         opacity: 0;
         pointer-events: none;
+        visibility: hidden;
+        transition:
+          opacity 320ms ease,
+          visibility 0s linear 320ms;
       }
       body.mh-reduced-flash #mh-cleared[hidden],
       body.mh-reduced-flash #mh-descend[hidden],
@@ -538,6 +551,10 @@
         display: block;
         opacity: 0;
         pointer-events: none;
+        visibility: hidden;
+        transition:
+          opacity 320ms ease,
+          visibility 0s linear 320ms;
       }
     </style>
   </head>

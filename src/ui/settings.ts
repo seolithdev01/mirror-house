@@ -16,6 +16,7 @@
 import { DEFAULT_KEYMAP, type KeyMap } from '../game/save';
 import { capturableCode } from '../engine/input';
 import { PERF_CHOICES, type PerfChoice } from '../game/quality';
+import { trapDialog } from './dialog';
 import { fill, t, type Lang } from './i18n';
 
 export type TextScale = 1 | 1.25 | 1.5;
@@ -108,6 +109,7 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
   box.id = 'mh-settings-box';
 
   const h = document.createElement('h2');
+  h.id = 'mh-settings-title'; // M5/T6 — the dialog's accessible name
   box.appendChild(h);
 
   // ---- Display: text scale radio ---------------------------------------------
@@ -332,6 +334,11 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
   );
   root.appendChild(box);
   document.body.appendChild(root);
+  // M5/T6 — dialog semantics: role=dialog + aria-modal, Tab cycles inside,
+  // Escape closes through the SAME closeNow (flush the save, disarm a capture
+  // — the capture-phase listener eats an in-capture Escape before this sees
+  // it, so Escape-while-capturing only cancels the capture, as documented).
+  trapDialog(root, { labelledBy: 'mh-settings-title', onEscape: closeNow });
 
   function relabel(): void {
     h.textContent = t(lang, 'settings.title');
@@ -350,6 +357,7 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     keyNote.textContent = t(lang, 'settings.keyNote');
     resetKeys.textContent = t(lang, 'settings.resetKeys');
     close.textContent = t(lang, 'settings.close');
+    close.setAttribute('aria-label', t(lang, 'aria.close')); // M5/T6
     renderKeyRows();
   }
   relabel();

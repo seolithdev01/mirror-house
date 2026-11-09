@@ -2,7 +2,7 @@
 
 A 100-floor, first-person mirror-maze escape game. You descend a century-old palace of glass where reflections deceive you — and the things hunting you. Free, open source, runs in any modern browser, saves live only on your device.
 
-**Status:** m4 — the Tier-1 campaign: ten floors down to the Dwaar threshold hall, a save that travels, installable offline play, and a bilingual HUD (नमस्ते). See "Run it" below.
+**Status:** m5 — beta-hardened: the Tier-1 campaign and travelling save of m4, plus the accessibility pass (remap every key, reduce flashing, captions, text scale), auto quality presets, and the privacy/provenance/playtest docs. See "Run it" below.
 
 - [Design blueprint (step001)](docs/superpowers/specs/2026-11-08-mirror-house-design.md)
 - [Prompt/request history](docs/prompts-history/README.md)
@@ -47,6 +47,17 @@ Three fully playable ways to walk — switch anytime with the buttons at the top
 | ⌨ Keys     | Keyboard only    | `W`/`S` or `↑`/`↓` walk, `←`/`→` or `Q`/`E` turn, `Shift` sprint. No mouse needed.                                         |
 | 🖱 Mouse    | Mouse only       | Hold the **left button** to walk, hold the **right button** to sprint, steer by moving the cursor left or right of center. |
 | ⌨+🖱 Both   | Hybrid (default) | `WASD` move and strafe, mouse to look (click the view to capture the pointer), `Q`/`E` also turn, `Shift` sprint.          |
+
+### Accessibility
+
+The house is meant to be survivable by everyone it hunts:
+
+- **Four ways to see it** — `V` cycles Focus (first person), Quad (all four walls at once), Overhead (a walking 2D map of what you have explored), and `T`'s tactical pause (the floor freezes while you plan; click to mark up to eight waypoints). The map views are first-class play, not minimaps — low-vision players run whole floors from Overhead.
+- **One-handed play** — the 🖐 Mouse mode is complete on its own: left button walks toward the cursor, right button sprints. Keyboard-only (⌨ Keys) is equally complete with no mouse at all.
+- **Remap every key** — ⚙ → Controls: all 15 actions rebind (click a row, press a key); the conflict guard stops double-binding, arrows/Shift stay hardwired as universal alternates, and Reset returns to defaults. Close hints and prompts always name the live key.
+- **Reduce flashing** (⚙ → Access) steadies every pulsing light and fades overlays instead of popping them; **captions** print sound cues as text, bottom-centre; **text size** scales the whole HUD 100/125/150%.
+- Every icon button carries a screen-reader label (English and हिंदी), overlays are real dialogs (Tab cycles inside, `Esc` closes), and the page's `lang` follows the 🌐 button.
+- **Quality presets** (⚙): Auto follows your frame rate; Low/Medium/High are one click, with sharpness applied at once and mirror detail on the next floor.
 
 ### Views — `V` to cycle, `T` to stop and think
 
@@ -99,7 +110,7 @@ The **? FAQ** button (top right) or the `H` key opens 21 questions in-game: how 
 
 ### Your data stays on your device — and can travel
 
-Everything persistent — your look, input mode, mute, language, shards, streak, best times, and your floor in the campaign — lives in one IndexedDB record inside your own browser. No accounts, no servers, no telemetry; nothing leaves your machine unless you carry it yourself. (A legacy localStorage save from earlier milestones migrates itself once on boot.)
+Everything persistent — your look, input mode, mute, language, shards, streak, best times, and your floor in the campaign — lives in one IndexedDB record inside your own browser. No accounts, no servers, no telemetry; nothing leaves your machine unless you carry it yourself. (A legacy localStorage save from earlier milestones migrates itself once on boot.) The full statement — cookies, the export file's exact contents, the CSP — is [PRIVACY.md](PRIVACY.md); where every byte of code, art, and audio comes from is [PROVENANCE.md](PROVENANCE.md); and [PLAYTEST.md](PLAYTEST.md) is the kit for running five strangers through their first floor.
 
 - **💾 export** — writes your whole save as pretty JSON to `mirror-house-save.json` (a save dialog where the browser supports one, a plain download otherwise).
 - **📂 import** — picks a save file back up. It is validated strictly — field by field, version checked — before anything is stored; a tampered or truncated file is rejected with a toast, never executed. The page then reloads onto the imported save.
@@ -119,6 +130,6 @@ The HUD speaks two languages: the **🌐 button** cycles English ↔ हिं�
 ## License
 
 - Code: Apache-2.0 (see [LICENSE](LICENSE))
-- Art, music, docs: CC-BY 4.0 (assets are original/procedural; provenance tracked in `PROVENANCE.md` once assets exist)
+- Art, music, docs: CC-BY 4.0 — everything is original and procedural; the dependency table with licenses lives in [PROVENANCE.md](PROVENANCE.md)
 
 Both confirmed by the project owner on 2026-11-08 and recorded in the blueprint's decisions log (§0).

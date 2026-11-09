@@ -740,8 +740,11 @@ const hud = createHud({
 /** M4/T6 — one fn that re-feeds every localized surface the HUD/overlays own.
  *  The HUD's own setLang relabels its buttons/chips from cached values; the
  *  setters below re-send the strings main composes (view chip, floor chip,
- *  mute label). The per-frame hint line re-localizes on its next frame. */
+ *  mute label). The per-frame hint line re-localizes on its next frame.
+ *  M5/T6 — the document's own lang attribute rides along, so assistive tech
+ *  switches pronunciation with the 🌐 button (and boots right from ?lang=). */
 function refreshChrome(): void {
+  document.documentElement.lang = lang;
   hud.setLang(lang);
   aaina.setLang(lang);
   faq.setLang(lang);
@@ -1789,7 +1792,11 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   );
 }
 
-if (import.meta.env.DEV) {
+// The dev faucet exists in DEV builds and in `vite build --mode soak` builds
+// (M5/T6): the soak script drives the PREVIEW server, which serves the
+// production bundle — a soak-mode build carries the faucet there while a
+// normal production build never does.
+if (import.meta.env.DEV || import.meta.env.MODE === 'soak') {
   (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__ = {
     getPlayer: () => ({ ...player }),
     // The CURRENT floor's seed (`BASE:1`, `BASE:2`, …) — a getter so it stays
@@ -1832,6 +1839,16 @@ if (import.meta.env.DEV) {
       pixelRatio: renderer.getPixelRatio(),
       heroRt: heroMirrors.length,
       trueRt: trueMirrors.length,
+    }),
+    // M5/T6 — the soak census: geometry/texture counts that climb across
+    // floor rebuilds are the leak signature (mirrors dispose per floor;
+    // renderer.info is the witness). Calls/triangles contextualize the
+    // frame; performance.memory (the JS heap) is sampled from the page side.
+    rendererInfo: () => ({
+      geometries: renderer.info.memory.geometries,
+      textures: renderer.info.memory.textures,
+      calls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
     }),
     // M3/T6 — the audio engine's observable state (started/muted) plus the
     // last intensity the frame loop fed it.

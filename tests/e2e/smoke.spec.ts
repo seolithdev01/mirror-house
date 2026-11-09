@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 
 interface DebugHook {
@@ -902,5 +905,139 @@ test('m5: ?perf=low boots the low path — preset low, hero RT off, mirrors rend
   );
   expect(mirrors.total).toBeGreaterThanOrEqual(2); // the hero spots at minimum
   await page.waitForTimeout(700); // a stretch of low-preset frames
+  expect(errors).toEqual([]);
+});
+
+// M5/T6 — the save round-trip through the REAL file system: 💾 takes the
+// <a download> fallback (a Playwright download event carries the file to
+// disk), the JSON on disk is validated against the save v2 shape, then a
+// rewritten copy with a DISTINCT campaign + purse comes back through 📂's
+// hidden <input type=file> fallback (a filechooser we feed directly — the
+// FS Access picker path cannot be driven programmatically). The import
+// reloads to the bare path and the boot chain resumes the imported campaign.
+test('m5: export/import round-trip through a real file', async ({ page }) => {
+  const errors = collectErrors(page);
+  // Shadow both File System Access pickers with own undefined properties —
+  // `typeof picker === 'function'` goes false and both flows take the
+  // fallbacks Playwright can see (delete would not: they live on the
+  // prototype).
+  await page.addInitScript(() => {
+    for (const name of ['showSaveFilePicker', 'showOpenFilePicker'])
+      Object.defineProperty(window, name, { value: undefined, configurable: true });
+  });
+  await page.goto('/?seed=EXPIMP');
+  await ready(page);
+
+  // 💾 → the download event lands the save file on disk
+  const dlPromise = page.waitForEvent('download');
+  await page.locator('#mh-export').click();
+  const dl = await dlPromise;
+  expect(dl.suggestedFilename()).toBe('mirror-house-save.json');
+  const onDisk = await dl.path();
+  expect(onDisk, 'the browser wrote the file').not.toBeNull();
+  const exported = JSON.parse(readFileSync(onDisk!, 'utf8')) as Record<string, unknown>;
+
+  // the file is gameplay data only, in the exact save v2 shape. The campaign
+  // record keeps the SAVE's base (a ?seed= URL visit never rewrites it), so
+  // assert the shape and the seed alphabet, not the visit's code.
+  expect(exported.v).toBe(2);
+  expect(exported.progress).toMatchObject({ floor: 1, tierComplete: false });
+  expect(String((exported.progress as Record<string, unknown>).seedBase)).toMatch(/^[A-Z2-9]{1,16}$/);
+  for (const key of ['lookName', 'mode', 'muted', 'lang', 'shards', 'best', 'streak', 'a11y', 'perf'])
+    expect(exported[key], `save field ${key}`).toBeDefined();
+
+  // rewrite: a distinct campaign (base IMPRT2, floor 3) and a distinct purse
+  const imported = structuredClone(exported);
+  imported.progress = { seedBase: 'IMPRT2', floor: 3, tierComplete: false };
+  imported.shards = 777;
+  const tmp = join(tmpdir(), `mh-roundtrip-${Date.now()}.json`);
+  writeFileSync(tmp, JSON.stringify(imported));
+  try {
+    // 📂 → the fallback input's filechooser takes the rewritten file
+    const fcPromise = page.waitForEvent('filechooser');
+    await page.locator('#mh-import').click();
+    const fc = await fcPromise;
+    await fc.setFiles(tmp);
+
+    // the import reloads to the bare path (M5/T5) and boots the imported save
+    await page.waitForURL((u) => !u.href.includes('seed='));
+    await ready(page);
+    const after = await page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return { campaign: h.campaign(), shards: h.shards(), seed: h.seed };
+    });
+    expect(after.campaign).toEqual({ base: 'IMPRT2', floor: 3, tierComplete: false });
+    expect(after.shards).toBe(777); // the distinct purse proves the import landed
+    expect(after.seed).toBe('IMPRT2:3'); // floor 3 of the imported base, rebuilt
+    await expect(page.locator('#mh-floor')).toHaveText('L03');
+  } finally {
+    rmSync(tmp, { force: true });
+  }
+  expect(errors).toEqual([]);
+});
+
+// M5/T6 — restart timing: warp onto an Echo (contact), then measure wall
+// clock until the player stands back at the spawn with the floor re-armed.
+// The budget is ≤ 2000ms: FAIL_FREEZE_MS holds input 1200ms and the frame
+// loop's failing-phase check re-arms on the first frame past resetAt.
+test('m5: warp-caught restart returns the player to spawn within 2000ms', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=RESTART');
+  await ready(page);
+  const spawn = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.getPlayer();
+  });
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.enemyCount() >
+      0,
+  );
+  const echo = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.enemyPos(0);
+  });
+  expect(echo).not.toBeNull();
+
+  // CONTACT — warp straight onto the Echo; the next fixed step fails the run
+  await page.evaluate((p: { x: number; y: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(p.x, p.y);
+  }, echo!);
+  const t0 = Date.now();
+  // the catch itself must land promptly (a fixed step is 50ms) — the fail
+  // banner rises while the freeze holds
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.house()
+        .failed,
+    null,
+    { timeout: 1000 },
+  );
+  await expect(page.locator('#mh-fail')).toBeVisible();
+
+  // …then the freeze ends, resetFloor re-arms, and the player is back at the
+  // spawn (position AND heading), polled every animation frame
+  await page.waitForFunction(
+    (s: { x: number; y: number; heading: number }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      const p = h.getPlayer();
+      return (
+        !h.house().failed &&
+        Math.hypot(p.x - s.x, p.y - s.y) < 0.01 &&
+        Math.abs(p.heading - s.heading) < 0.01
+      );
+    },
+    spawn,
+    { timeout: 2500 },
+  );
+  const restartMs = Date.now() - t0;
+  const after = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { attempts: h.attempts(), failed: h.house().failed };
+  });
+  expect(after.attempts).toBe(1);
+  expect(after.failed).toBe(false);
+  expect(restartMs, 'contact → back at spawn').toBeLessThanOrEqual(2000);
   expect(errors).toEqual([]);
 });

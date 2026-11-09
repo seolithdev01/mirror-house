@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { FOG_COST } from '../engine/constants';
 import type { InputMode } from '../engine/input';
+import { trapDialog } from './dialog';
 import { fill, t, type Lang } from './i18n';
 
 export type HudInit = {
@@ -210,12 +211,17 @@ export function createHud(init: HudInit): Hud {
 
   // M4/T2 tier-complete screen — a modal like the FAQ's, appended to the body
   // (not the pointer-events:none #hud root) so its buttons own the clicks.
+  // M5/T6 — dialog semantics: role=dialog + aria-modal, focus lands on
+  // ↻ Play again when the screen rises and returns to the trigger when it
+  // falls; Tab cycles the two choices and never escapes (no Escape close —
+  // the shard is claimed, the screen wants a choice, not an exit).
   const tier = document.createElement('div');
   tier.id = 'mh-tier-overlay';
   tier.hidden = true;
   const tierBox = document.createElement('div');
   tierBox.id = 'mh-tier-box';
   const tierTitle = document.createElement('h2');
+  tierTitle.id = 'mh-tier-title';
   const tierStats = document.createElement('p');
   const tierButtons = document.createElement('div');
   tierButtons.id = 'mh-tier-buttons';
@@ -233,6 +239,7 @@ export function createHud(init: HudInit): Hud {
   tierBox.append(tierTitle, tierStats, tierButtons, tierNote);
   tier.appendChild(tierBox);
   document.body.appendChild(tier);
+  trapDialog(tier, { labelledBy: 'mh-tier-title' }); // M5/T6 — self-managing
 
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
   let hintText: string | null = null; // last shown hint (hint() early-returns on repeats)
@@ -279,22 +286,43 @@ export function createHud(init: HudInit): Hud {
       chipText('shards', `💠 ${t(lang, 'chip.shards')} ${lastChips.shards}`);
   }
 
-  /** One place that knows every static chrome label — boot and setLang(). */
+  /** One place that knows every static chrome label — boot and setLang().
+   *  M5/T6: every HUD button also carries an aria-label from the same table —
+   *  the emoji-prefixed and icon-only buttons get a stable accessible name,
+   *  and it flips with the language like the visible text. */
   function relabelStatic(): void {
-    for (const m of Object.keys(buttons)) buttons[m]!.textContent = t(lang, `mode.${m}`);
+    for (const m of Object.keys(buttons)) {
+      const b = buttons[m]!;
+      b.textContent = t(lang, `mode.${m}`);
+      b.setAttribute('aria-label', t(lang, `mode.${m}`));
+    }
     langBtn.textContent = t(lang, lang === 'en' ? 'btn.langHi' : 'btn.langEn');
     langBtn.title = t(lang, 'btn.langTitle');
+    langBtn.setAttribute('aria-label', t(lang, 'btn.langTitle'));
+    gearBtn.textContent = '⚙';
     gearBtn.title = t(lang, 'btn.settings');
+    gearBtn.setAttribute('aria-label', t(lang, 'btn.settings'));
     faq.textContent = t(lang, 'btn.faq');
+    faq.setAttribute('aria-label', t(lang, 'btn.faq'));
     aaina.textContent = t(lang, 'btn.aaina');
+    aaina.setAttribute('aria-label', t(lang, 'btn.aaina'));
     daily.textContent = t(lang, 'btn.daily');
+    daily.setAttribute('aria-label', t(lang, 'btn.daily'));
     frost.textContent = t(lang, 'btn.frost');
+    frost.setAttribute('aria-label', t(lang, 'btn.frost'));
     mute.textContent = t(lang, muted ? 'btn.muted' : 'btn.mute');
+    mute.setAttribute('aria-label', t(lang, muted ? 'btn.muted' : 'btn.mute'));
+    exportBtn.textContent = '💾';
     exportBtn.title = t(lang, 'btn.export');
+    exportBtn.setAttribute('aria-label', t(lang, 'btn.export'));
+    importBtn.textContent = '📂';
     importBtn.title = t(lang, 'btn.import');
+    importBtn.setAttribute('aria-label', t(lang, 'btn.import'));
     tierTitle.textContent = t(lang, 'overlay.tierTitle');
     playAgain.textContent = t(lang, 'misc.playAgain');
+    playAgain.setAttribute('aria-label', t(lang, 'misc.playAgain'));
     stay.textContent = t(lang, 'misc.stay');
+    stay.setAttribute('aria-label', t(lang, 'misc.stay'));
     tierNote.textContent = t(lang, 'overlay.tierNote');
   }
   relabelStatic();
@@ -324,6 +352,7 @@ export function createHud(init: HudInit): Hud {
     setMuted: (m) => {
       muted = m;
       mute.textContent = t(lang, m ? 'btn.muted' : 'btn.mute');
+      mute.setAttribute('aria-label', t(lang, m ? 'btn.muted' : 'btn.mute')); // M5/T6
     },
     setFloor: (label) => {
       (document.getElementById('mh-floor') as HTMLElement).textContent = label;
