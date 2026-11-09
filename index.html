@@ -122,6 +122,73 @@
         font-size: 15px;
         pointer-events: none;
       }
+      /* M4/T2 — the brief `descending…` banner between floors (auto-hides when
+         the next floor arms). */
+      #mh-descend {
+        background: rgba(11, 16, 38, 0.92);
+        border: 1px solid #2ec4b6;
+        color: #f2e9d8;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 15px;
+        pointer-events: none;
+      }
+      #mh-descend[hidden] {
+        display: none;
+      }
+      /* M4/T2 — tier-complete screen: Truth-Shard I, final stats, Play again /
+         Stay. A modal in the FAQ's image, above the HUD. */
+      #mh-tier-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: rgba(5, 8, 20, 0.82);
+        display: grid;
+        place-items: center;
+      }
+      #mh-tier-overlay[hidden] {
+        display: none;
+      }
+      #mh-tier-box {
+        background: #0b1026;
+        border: 1px solid #d9a441;
+        border-radius: 10px;
+        padding: 24px 30px;
+        color: #f2e9d8;
+        font: 15px/1.6 system-ui;
+        text-align: center;
+        max-width: 480px;
+      }
+      #mh-tier-box h2 {
+        margin: 0 0 10px;
+        color: #d9a441;
+        font-size: 19px;
+      }
+      #mh-tier-box p {
+        margin: 6px 0;
+      }
+      #mh-tier-note {
+        color: #9fb4c8;
+        font-size: 13px;
+      }
+      #mh-tier-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin: 14px 0 4px;
+      }
+      #mh-tier-buttons button {
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 8px 16px;
+        cursor: pointer;
+      }
+      #mh-tier-buttons button:hover {
+        border-color: #2ec4b6;
+        color: #2ec4b6;
+      }
       #mh-fail {
         background: rgba(26, 10, 14, 0.92);
         border: 1px solid #b33939;

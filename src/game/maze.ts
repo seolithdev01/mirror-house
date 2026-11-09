@@ -109,9 +109,40 @@ export function generateFloor(params: FloorParams): Floor {
   carveBacktracker(grid, entrance, rng);
   braidDeadEnds(grid, params.braid, rng);
   carveRooms(grid, params.rooms, params.roomMin, params.roomMax, rng);
-  const dist = bfsDistances(grid, entrance);
+  return { seed: params.seed, grid, entrance, exit: farthestCell(grid, entrance) };
+}
+
+/** A hand-authored floor layout: board size plus its open cells, row-major
+ *  (the first open cell is the entrance by convention). */
+export interface GridLayout {
+  width: number;
+  height: number;
+  open: ReadonlyArray<CellIndex>;
+}
+
+/** The bfs-farthest reachable cell from `start` — the exit picker both floor
+ *  paths share (ties break toward the lowest index, so it is deterministic). */
+export function farthestCell(grid: FloorGrid, start: CellIndex): CellIndex {
+  const dist = bfsDistances(grid, start);
   let bestIdx = 0;
   for (let i = 1; i < dist.length; i++) if (dist[i]! > dist[bestIdx]!) bestIdx = i;
-  const exit: CellIndex = { x: bestIdx % grid.width, y: Math.floor(bestIdx / grid.width) };
-  return { seed: params.seed, grid, entrance, exit };
+  return { x: bestIdx % grid.width, y: Math.floor(bestIdx / grid.width) };
+}
+
+/** Floor from a hand-authored open-cell layout (the Dwaar threshold halls):
+ *  an all-walls grid with the shared edge between two adjacent open cells
+ *  opened — a wall cell keeps every wall — entrance = first open cell
+ *  row-major, exit = the bfs-farthest cell from it (same picker as
+ *  generateFloor). No rng: the layout IS the floor. */
+export function floorFromGrid(layout: GridLayout, seed: string): Floor {
+  const grid = new FloorGrid(layout.width, layout.height);
+  const open = new Set(layout.open.map((c) => c.y * layout.width + c.x));
+  for (const c of layout.open) {
+    for (const d of [Dir.East, Dir.South] as const) {
+      const n = grid.neighborIndex(c.x, c.y, d);
+      if (n && open.has(n.y * layout.width + n.x)) grid.setOpen(c.x, c.y, d);
+    }
+  }
+  const entrance = layout.open[0]!;
+  return { seed, grid, entrance, exit: farthestCell(grid, entrance) };
 }

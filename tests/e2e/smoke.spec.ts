@@ -61,6 +61,8 @@ interface DebugHook {
   grantShards(n: number): void;
   aaina(): { open: boolean; hintCost: number; lastHint: string | null };
   visitedCount(): number;
+  // M4/T2 — the campaign spine (base seed, current floor, tier flag)
+  campaign(): { base: string; floor: number; tierComplete: boolean };
 }
 // page.evaluate results cannot carry functions across the process boundary,
 // so the closure-backed members (look/mode/streak/best) are invoked in the
@@ -406,7 +408,7 @@ test('m2: full win flow records shards and best', async ({ page }) => {
   const after = await page.evaluate((s: string) => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     return { shards: h.shards(), best: h.bestFor(s), pending: h.house().pendingShards };
-  }, 'M2WIN');
+  }, 'M2WIN:1'); // M4/T2: bests bucket per floor — floor 1 of base M2WIN
   expect(after.shards).toBeGreaterThanOrEqual(15); // 3 × SHARD_BEACON banked on clear
   expect(after.best).not.toBeNull();
   expect(errors).toEqual([]);

@@ -4,14 +4,16 @@ import { createAudioEngine } from './audio/engine';
 import { intensityFrom } from './audio/theory';
 import {
   ANGER_MAX,
-  CHHAYA_DELAY_MS,
   CHHAYA_PING_MS,
   CONTACT_RADIUS,
+  DESCEND_MS,
+  DWAAR_FLOOR,
   EYE_HEIGHT,
   EXIT_LOCKED_EMISSIVE,
   FIXED_STEP,
   FOG_COST,
   SHARD_BEACON,
+  TIER_ONE_FLOORS,
 } from './engine/constants';
 import {
   InputCollector,
@@ -23,6 +25,16 @@ import {
 import { Dir } from './engine/grid';
 import { createAvatar, createChhaya, updateAvatar } from './game/avatar';
 import {
+  completeTier,
+  descend,
+  dwaarGrid,
+  floorParams,
+  floorSeed,
+  isDwaar,
+  newCampaign,
+  type Campaign,
+} from './game/campaign';
+import {
   hintCost,
   loreUnlockedCount,
   nextHint,
@@ -31,8 +43,13 @@ import {
 } from './game/aaina';
 import { bracketSamples, recordPath, sampleDelayed, type PathSample } from './game/chhaya';
 import { initEchoes, updateEcho } from './game/echo';
-import { createEchoMesh, syncEchoMesh } from './game/echoView';
-import { generateFloorObjects, mirrorSpotFor, type MirrorRef } from './game/floorObjects';
+import { createEchoMesh, disposeEchoMesh, syncEchoMesh } from './game/echoView';
+import {
+  generateFloorObjects,
+  M2_PARAMS,
+  mirrorSpotFor,
+  type MirrorRef,
+} from './game/floorObjects';
 import {
   active,
   clearRun,
@@ -44,7 +61,7 @@ import {
   tickFail,
   type FailReason,
 } from './game/floorRun';
-import { buildFloorScene } from './game/floorScene';
+import { buildFloorScene, type FloorSceneResult } from './game/floorScene';
 import {
   applyFog,
   fogTarget,
@@ -52,6 +69,7 @@ import {
   isFogged,
   mirrorVisual,
   updateBreath,
+  type MirrorRuntime,
 } from './game/frost';
 import {
   applyCrack,
@@ -63,7 +81,7 @@ import {
   shardsForClear,
 } from './game/houseState';
 import { parseLook } from './game/look';
-import { generateFloor, TIER_ONE } from './game/maze';
+import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
 import {
   awardShards,
   dailySeed,
@@ -78,6 +96,7 @@ import {
   createSilveredDoor,
   HeroMirror,
   mirrorSpots,
+  type CheapMirror,
   type CrackVisual,
   type FogVisual,
   type MirrorFogState,
@@ -111,20 +130,31 @@ const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const overheadCanvas = document.querySelector<HTMLCanvasElement>('#overhead')!;
 const diagnostics = document.querySelector<HTMLElement>('#diagnostics')!;
 
-const urlSeed = normalizeSeed(new URLSearchParams(window.location.search).get('seed') ?? '');
-const seed = isValidSeed(urlSeed) ? urlSeed : randomSeed();
-const floor = generateFloor({ ...TIER_ONE, seed });
-let player: PlayerState = spawnPlayer(floor);
+// M4/T2 campaign boot. The URL names the campaign's BASE seed — `?seed=PLAY`
+// starts floor 1 of that base; DEV builds may also jump with `&floor=N`.
+// No usable URL seed → a random base. (Saved-campaign resume arrives with
+// T4's saves — until then the campaign lives in this one module-level binding.)
+const urlParams = new URLSearchParams(window.location.search);
+const urlSeed = normalizeSeed(urlParams.get('seed') ?? '');
+function bootFloorFromUrl(): number {
+  if (!import.meta.env.DEV) return 1; // the floor jump is a dev-only affordance
+  const n = Number.parseInt(urlParams.get('floor') ?? '', 10);
+  return Number.isInteger(n) && n >= 1 && n <= TIER_ONE_FLOORS ? n : 1;
+}
+let campaign: Campaign = isValidSeed(urlSeed)
+  ? { seedBase: urlSeed, floor: bootFloorFromUrl(), tierComplete: false }
+  : newCampaign(randomSeed());
+let player: PlayerState; // armed by buildFloor — the spawn belongs to the floor
 let meta = loadMeta();
 // M3/T6 procedural audio: the engine exists from boot but only speaks after
 // the first user gesture (listener below) — an AudioContext must start
 // user-initiated. The saved mute preference applies before that start, so a
-// muted boot never makes a sound.
-const audio = createAudioEngine(seed);
+// muted boot never makes a sound. One voice per house: the campaign base
+// carries it across every floor.
+const audio = createAudioEngine(campaign.seedBase);
 audio.setMuted(meta.muted ?? false);
 let audioIntensity = 0.2; // last intensity fed to the engine (audioState reports it)
 let phase = createFloorRun(); // the GamePhase master machine — re-armed (ready) on reset
-const exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
 // preserveDrawingBuffer: QUAD's side panes render on alternate frames and must
 // keep their last frame on screen in between — the browser clears an
@@ -137,86 +167,54 @@ const scene = new THREE.Scene();
 const VOID_COLOR = 0x0b1026; // the night the house floats in — background, fog, map-mode clear
 scene.background = new THREE.Color(VOID_COLOR);
 scene.fog = new THREE.Fog(VOID_COLOR, 2, 26);
-const sceneBuilt = buildFloorScene(floor);
-scene.add(sceneBuilt.group);
+const look = parseLook(urlParams.get('look'));
+const avatar = createAvatar(look);
+scene.add(avatar);
+
+// ---- Floor runtime (M4/T2) -------------------------------------------------
+// Everything the CURRENT floor owns lives in these lets; buildFloor() tears
+// the old floor down and constructs the next one (campaign descend, tier
+// Play again). The one-time rig — renderer, scene, avatar, lantern, cameras,
+// HUD, overlays — stays put; only the house itself changes under your feet.
+let floor: Floor; // the active floor (procedural or Dwaar grid)
+let seed = ''; // floorSeed(campaign) — the per-floor best-time bucket + rng stem
+let exitCenter: { cx: number; cy: number } = { cx: 0, cy: 0 };
+let sceneBuilt: FloorSceneResult;
+let exitMarkerMat: THREE.MeshStandardMaterial;
+let exitUnlockedTint = 0;
+let objs: ReturnType<typeof generateFloorObjects>;
+let heroMirrors: HeroMirror[] = []; // RT heroes at the entrance/exit
+let allMirrors: MirrorRef[] = [];
+let mirrorRuntime: MirrorRuntime[] = []; // re-init by resetFloor / buildFloor
+let visuals: MirrorBinding[] = []; // 1:1 with allMirrors — binds each to its visual
+let trueMirrors: HeroMirror[] = []; // RT step-through pairs — updated like the heroes
+let silveredDoors: Array<{ ref: MirrorRef; door: SilveredDoor }> = [];
+let doorStates = new Map<number, DoorAnim>();
+let doorById = new Map<number, SilveredDoor>();
+let echoes: ReturnType<typeof initEchoes> = [];
+let echoMeshes: THREE.Group[] = [];
+let floorDisposers: Array<() => void> = []; // one floor's teardown, in order
 // Beacon gate: the stair door burns dim red until every beacon is frosted,
-// then returns to its built gold. Tint the material the scene was built with.
-const exitMarkerMat = sceneBuilt.exitMarker.material as THREE.MeshStandardMaterial;
-const exitUnlockedTint = exitMarkerMat.emissive.getHex();
+// then returns to its built gold. Tint the material of the CURRENT floor's
+// stage (buildFloor refreshes both bindings).
 function setExitLocked(locked: boolean): void {
   const hex = locked ? EXIT_LOCKED_EMISSIVE : exitUnlockedTint;
   exitMarkerMat.emissive.setHex(hex);
   exitMarkerMat.color.setHex(hex);
 }
-const look = parseLook(new URLSearchParams(window.location.search).get('look'));
-const avatar = createAvatar(look);
-scene.add(avatar);
 
-// M2 frost: deterministic floor objects + the 2 RT hero mirrors at the
-// entrance/exit kept as standing mirrors. Their geometry comes from the pure
-// `mirrorSpotFor` (identical to `mirrorSpots` — proven by T2's cross-check
-// test), so binding a MirrorRef to its HeroMirror is a position match.
-const objs = generateFloorObjects(floor);
-const heroMirrors = mirrorSpots(floor).map((s) => new HeroMirror(s));
-heroMirrors.forEach((m) => scene.add(m.mesh));
-const heroRefs: MirrorRef[] = [];
-for (const cell of [floor.entrance, floor.exit]) {
-  const spot = mirrorSpotFor(floor.grid, cell.x, cell.y);
-  if (spot)
-    heroRefs.push({
-      id: objs.mirrors.length + heroRefs.length,
-      kind: 'standing',
-      x: spot.x,
-      z: spot.z,
-      rotY: spot.rotY,
-      cellX: cell.x,
-      cellY: cell.y,
-      pairId: null,
-      wallDir: spot.dir,
-    });
-}
-const allMirrors = [...objs.mirrors, ...heroRefs];
-let mirrorRuntime = initMirrorRuntime(allMirrors); // re-init by resetFloor after a fail
-
-// Bind every mirror to a visual: HeroMirror when its spot matches by position
-// proximity (same wall-mount convention; a floorObjects mirror can never sit
-// closer than ~0.24m to a hero spot), else a cheap reflective-look mesh.
-// T7 passages: the true pair gets its own 256px RT HeroMirrors with a gold
-// frame, and each silvered mirror becomes a wall-sized slab door that slides.
+// Mirror→visual binding convention (M2 frost / T7 passages), applied per
+// floor by buildFloor: HeroMirror when its spot matches by position proximity
+// (same wall-mount convention; a floorObjects mirror can never sit closer
+// than ~0.24m to a hero spot), else a cheap reflective-look mesh. The true
+// pair gets its own 256px RT HeroMirrors with a gold frame, and each silvered
+// mirror becomes a wall-sized slab door that slides.
 const MIRROR_MATCH_EPS = 0.05;
 interface MirrorBinding {
   bind: FogVisual & CrackVisual;
   hero: HeroMirror | null;
   state: MirrorFogState;
 }
-const trueMirrors: HeroMirror[] = []; // RT step-through pairs — updated like the heroes
-const silveredDoors: Array<{ ref: MirrorRef; door: SilveredDoor }> = [];
-const visuals: MirrorBinding[] = allMirrors.map((m) => {
-  const hero = heroMirrors.find(
-    (h) => Math.hypot(h.mesh.position.x - m.x, h.mesh.position.z - m.z) < MIRROR_MATCH_EPS,
-  );
-  if (hero) return { bind: hero, hero, state: 'clear' as const };
-  if (m.kind === 'true') {
-    const tm = new HeroMirror(m, { size: 256, frame: true });
-    trueMirrors.push(tm);
-    scene.add(tm.mesh);
-    return { bind: tm, hero: tm, state: 'clear' as const };
-  }
-  if (m.kind === 'silvered' && m.wallDir !== null) {
-    const door = createSilveredDoor(m, m.wallDir);
-    // The slab coincides exactly with the wall instance it covers — hide that
-    // edge now, or the two z-fight from frame one (push-time hide is too late).
-    sceneBuilt.hideWallEdge(m.cellX, m.cellY, m.wallDir);
-    silveredDoors.push({ ref: m, door });
-    scene.add(door.group);
-    return { bind: door.mirror, hero: null, state: 'clear' as const };
-  }
-  const { mesh, setFog, setCracked } = createMirrorMesh(m.kind);
-  mesh.position.set(m.x, 1.35, m.z);
-  mesh.rotation.y = m.rotY;
-  scene.add(mesh);
-  return { bind: { setFog, setCracked }, hero: null, state: 'clear' as const };
-});
 
 // House state (M2/T6): anger from sprint-cracked mirrors, attempt count, and
 // the shards pending this attempt (beacon captures bank here — awarded only
@@ -243,7 +241,6 @@ function markVisited(): void {
   const c = floor.grid.cellAt(player.x, player.y);
   visited.add(c.y * floor.grid.width + c.x);
 }
-markVisited(); // the spawn cell is explored from the first breath
 
 // Aaina's hint economy (M3/T2). hintsUsed is a per-floor counter — it resets
 // with the floor, so a new attempt prices hints from ◆ 5 again. purchasedHint
@@ -255,12 +252,7 @@ let purchasedHint: { kind: HintKind; text: string } | null = null;
 // M2 echoes: hollow reflections hunting through the mirrors above. They see
 // via allMirrors/mirrorRuntime, walk the flow field, and touch-fail the run.
 // Layer-0 glass figures — visible to the player AND inside every mirror pass.
-let echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, performance.now());
-const echoMeshes = echoes.map(() => {
-  const mesh = createEchoMesh();
-  scene.add(mesh);
-  return mesh;
-});
+// Spawned per floor by buildFloor; re-armed per attempt by resetFloor.
 
 // Fail + restart (M2/T6). Caught by an echo or Chhaya, or the house collapses
 // at ANGER_MAX: the HUD announces it, input freezes FAIL_FREEZE_MS (the timer
@@ -296,6 +288,7 @@ function resetFloor(now: number): void {
   input.snapshotAndReset(); // drain mouseDx banked during the freeze — no giant first turn
   hud.hideFail();
   hud.hideCleared(); // a cleared banner never outlives a reset (T6 review fix)
+  hud.hideDescend(); // nor does a descend banner (it cannot pend across a fail — belt and braces)
   setExitLocked(true);
   hud.setChips({
     beacons: beaconsCaptured(allMirrors, mirrorRuntime),
@@ -310,18 +303,25 @@ function resetFloor(now: number): void {
 // the echoes she is layer-0 glass: visible to the player AND in every mirror.
 let path: PathSample[] = [];
 const chhaya = createChhaya();
-chhaya.visible = false; // hidden until the first recorded sample expires (6s grace)
+chhaya.visible = false; // hidden until the first recorded sample expires (the floor's grace)
 scene.add(chhaya);
 let chhayaHeading = 0;
 
+/** Chhaya walks closer as the campaign descends (M4/T2): her delay comes from
+ *  the floor ramp — 7s on floor 1 down to 4.6s, 4s in the Dwaar. */
+function chhayaDelayMs(): number {
+  return floorParams(campaign.floor).chhayaDelayMs;
+}
+
 function updateChhaya(now: number): void {
-  const at = sampleDelayed(path, now);
+  const delay = chhayaDelayMs();
+  const at = sampleDelayed(path, now, delay);
   // She belongs to a live floor: on clear or fail she leaves the stage rather
   // than lingering beside a run that is over.
   const visible = at !== null && active(phase);
   chhaya.visible = visible;
   if (!visible || at === null) return;
-  const br = bracketSamples(path, now - CHHAYA_DELAY_MS);
+  const br = bracketSamples(path, now - delay);
   if (br !== null) {
     const dx = br.b.x - br.a.x;
     const dy = br.b.y - br.a.y;
@@ -338,7 +338,7 @@ function updateChhaya(now: number): void {
  */
 function aainaContext(): HintContext {
   const bc = beaconsCaptured(allMirrors, mirrorRuntime);
-  const at = sampleDelayed(path, performance.now());
+  const at = sampleDelayed(path, performance.now(), chhayaDelayMs());
   return {
     beaconsLeft: bc.total - bc.captured,
     anger: house.anger,
@@ -462,10 +462,229 @@ const hud = createHud({
   },
   onFrost: () => tryFrost(performance.now()),
   onMute: () => toggleMute(),
+  onPlayAgain: () => playAgain(),
+  onStay: () => stayInDwaar(),
 });
 hud.setMuted(audio.muted); // the 🔊/🔇 label matches the boot preference
-hud.setChips({ beacons: beaconsCaptured(allMirrors, mirrorRuntime), shards: house.shards });
-setExitLocked(true); // the stair door starts sealed behind its beacons
+
+// ---- Campaign floor lifecycle (M4/T2) --------------------------------------
+// The Stair Door flow: clearing floors 1–9 holds 0.8s behind a `descending…`
+// overlay, then the campaign descends and the next floor arms (timer starts on
+// its first input). Clearing the Dwaar claims the Truth-Shard — the tier
+// screen offers Play again (fresh random base) or Stay (a sanctioned free
+// walk: sim live, echoes respawned for sport, but no objectives and no second
+// banking — the clear check is off while dwaarFreeWalk).
+let descendAt: number | null = null; // when the held clear turns into a descend
+let dwaarFreeWalk = false; // Stay: the cleared Dwaar is a sandbox
+
+/** Free one floor's stage resources: buildFloorScene owns all of its
+ *  materials/textures (they are created per floor), so a tree walk is safe.
+ *  Mirror/echo visuals never pass through here — their modules' dispose
+ *  methods skip the shared fog/crack/glass materials by construction. */
+function disposeTree(root: THREE.Object3D): void {
+  root.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (mesh.geometry) mesh.geometry.dispose();
+    const mat = mesh.material as THREE.Material | THREE.Material[] | undefined;
+    for (const m of Array.isArray(mat) ? mat : mat ? [mat] : []) {
+      (m as THREE.MeshStandardMaterial).map?.dispose();
+      m.dispose();
+    }
+  });
+}
+
+function teardownFloor(): void {
+  for (const dispose of floorDisposers) dispose();
+  floorDisposers = [];
+}
+
+/** The floor chip: `L02` on the ramp; the threshold floor names the tier. */
+function floorChipLabel(c: Campaign): string {
+  const tag = `L${String(c.floor).padStart(2, '0')}`;
+  return isDwaar(c.floor) ? `${tag} · DWAAR I ✦` : tag;
+}
+
+/** Build the campaign's current floor. Floors 1–9 come from the procedural
+ *  generator seeded by floorSeed(campaign) with the ramp's braid and object
+ *  counts (M2_PARAMS base, echoes/beacons overridden); floor 10 is the
+ *  hand-authored Dwaar hall — its grid from DWAAR_LAYOUT via floorFromGrid,
+ *  same object placer with the Dwaar counts (4 beacons, 4 echoes). The build
+ *  also performs the full per-floor reset — fresh mirror runtime, echoes,
+ *  Chhaya trail, house (the attempt tally rides along), fog, radar, hints,
+ *  breath — and re-arms the phase machine, so the timer starts on this
+ *  floor's first input. */
+function buildFloor(c: Campaign): void {
+  teardownFloor();
+  const fp = floorParams(c.floor);
+  seed = floorSeed(c);
+  floor = isDwaar(c.floor)
+    ? floorFromGrid(dwaarGrid(), seed)
+    : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
+  exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
+
+  const stage = buildFloorScene(floor);
+  sceneBuilt = stage;
+  scene.add(stage.group);
+  exitMarkerMat = stage.exitMarker.material as THREE.MeshStandardMaterial;
+  exitUnlockedTint = exitMarkerMat.emissive.getHex();
+  floorDisposers.push(() => {
+    scene.remove(stage.group);
+    disposeTree(stage.group);
+  });
+
+  // Deterministic floor objects + the 2 RT hero mirrors at the entrance/exit
+  // kept as standing mirrors (M2). Their geometry comes from the pure
+  // `mirrorSpotFor` (identical to `mirrorSpots` — proven by T2's cross-check
+  // test), so binding a MirrorRef to its HeroMirror is a position match.
+  objs = generateFloorObjects(floor, { ...M2_PARAMS, beacons: fp.beacons, echoes: fp.echoes });
+  const heroes = mirrorSpots(floor).map((s) => new HeroMirror(s));
+  heroes.forEach((m) => scene.add(m.mesh));
+  heroMirrors = heroes;
+  floorDisposers.push(() => {
+    for (const m of heroes) {
+      scene.remove(m.mesh);
+      m.dispose();
+    }
+  });
+  const heroRefs: MirrorRef[] = [];
+  for (const cell of [floor.entrance, floor.exit]) {
+    const spot = mirrorSpotFor(floor.grid, cell.x, cell.y);
+    if (spot)
+      heroRefs.push({
+        id: objs.mirrors.length + heroRefs.length,
+        kind: 'standing',
+        x: spot.x,
+        z: spot.z,
+        rotY: spot.rotY,
+        cellX: cell.x,
+        cellY: cell.y,
+        pairId: null,
+        wallDir: spot.dir,
+      });
+  }
+  allMirrors = [...objs.mirrors, ...heroRefs];
+  mirrorRuntime = initMirrorRuntime(allMirrors);
+
+  // Bind every mirror to its visual (convention pinned at MIRROR_MATCH_EPS).
+  const nextTrue: HeroMirror[] = [];
+  const nextSilvered: Array<{ ref: MirrorRef; door: SilveredDoor }> = [];
+  const cheap: CheapMirror[] = [];
+  visuals = allMirrors.map((m) => {
+    const hero = heroes.find(
+      (h) => Math.hypot(h.mesh.position.x - m.x, h.mesh.position.z - m.z) < MIRROR_MATCH_EPS,
+    );
+    if (hero) return { bind: hero, hero, state: 'clear' as const };
+    if (m.kind === 'true') {
+      const tm = new HeroMirror(m, { size: 256, frame: true });
+      nextTrue.push(tm);
+      scene.add(tm.mesh);
+      return { bind: tm, hero: tm, state: 'clear' as const };
+    }
+    if (m.kind === 'silvered' && m.wallDir !== null) {
+      const door = createSilveredDoor(m, m.wallDir);
+      // The slab coincides exactly with the wall instance it covers — hide that
+      // edge now, or the two z-fight from frame one (push-time hide is too late).
+      stage.hideWallEdge(m.cellX, m.cellY, m.wallDir);
+      nextSilvered.push({ ref: m, door });
+      scene.add(door.group);
+      return { bind: door.mirror, hero: null, state: 'clear' as const };
+    }
+    const cm = createMirrorMesh(m.kind);
+    cm.mesh.position.set(m.x, 1.35, m.z);
+    cm.mesh.rotation.y = m.rotY;
+    scene.add(cm.mesh);
+    cheap.push(cm);
+    return { bind: cm, hero: null, state: 'clear' as const };
+  });
+  trueMirrors = nextTrue;
+  silveredDoors = nextSilvered;
+  floorDisposers.push(() => {
+    for (const tm of nextTrue) {
+      scene.remove(tm.mesh);
+      tm.dispose();
+    }
+    for (const { door } of nextSilvered) {
+      scene.remove(door.group);
+      door.dispose();
+    }
+    for (const cm of cheap) {
+      scene.remove(cm.mesh);
+      cm.dispose();
+    }
+  });
+
+  echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, performance.now());
+  const meshes = echoes.map(() => {
+    const mesh = createEchoMesh();
+    scene.add(mesh);
+    return mesh;
+  });
+  echoMeshes = meshes;
+  floorDisposers.push(() => {
+    for (const mesh of meshes) {
+      scene.remove(mesh);
+      disposeEchoMesh(mesh);
+    }
+  });
+
+  // T7 passages: a silvered ref always gets its door machine here; a rebuild
+  // starts every door closed again (the old floor's secrets died with it).
+  doorStates = new Map();
+  doorById = new Map();
+  for (const m of allMirrors) if (m.kind === 'silvered') doorStates.set(m.id, createDoor(m.id));
+  for (const { ref, door } of silveredDoors) doorById.set(ref.id, door);
+
+  // Full per-floor reset: everything an attempt owns starts fresh; the house's
+  // attempt tally is the one thing that rides along between floors.
+  house = { ...initHouseState(), attempts: house.attempts };
+  breath = 1;
+  hintsUsed = 0; // a fresh floor prices Aaina's hints from the base again
+  purchasedHint = null;
+  path = []; // Chhaya loses the trail; she hides until the new path ages
+  chhaya.visible = false;
+  player = spawnPlayer(floor);
+  visited.clear(); // the fog closes in — the new floor starts unexplored
+  pings = []; // the old floor's radar is spent
+  lastChhayaPingAt = 0;
+  waypoints.length = 0; // tactical marks belong to the floor they were laid on
+  phase = createFloorRun(); // re-armed — the timer starts on the first input
+  dwaarFreeWalk = false;
+  descendAt = null;
+  markVisited(); // the spawn cell is explored from the first breath
+  input.snapshotAndReset(); // nothing banked behind an overlay fires on the new floor
+  hud.hideFail();
+  hud.hideCleared();
+  hud.hideDescend();
+  hud.hideTier();
+  setExitLocked(true); // the stair door starts sealed behind its beacons
+  hud.setFloor(floorChipLabel(c));
+  hud.setChips({
+    beacons: beaconsCaptured(allMirrors, mirrorRuntime),
+    shards: house.shards,
+    timerMs: null,
+  });
+}
+
+/** Tier screen → Stay: the cleared Dwaar stays open as a free walk. The shard
+ *  and the best are already banked; the echoes respawn for sport and the
+ *  timer re-arms, but the clear check stays off (dwaarFreeWalk) so nothing
+ *  banks twice. */
+function stayInDwaar(): void {
+  hud.hideTier();
+  dwaarFreeWalk = true;
+  phase = createFloorRun(); // sanctioned live floor — ready, clock on first input
+  echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, performance.now());
+  input.snapshotAndReset();
+}
+
+/** Tier screen → Play again: a whole new campaign on a fresh random base —
+ *  floor 1 from the top, chip and all. */
+function playAgain(): void {
+  campaign = newCampaign(randomSeed());
+  buildFloor(campaign);
+}
+
+buildFloor(campaign); // the first floor arms — chip, beacons, sealed door
 canvas.addEventListener('click', () => {
   if (mode === 'hybrid') {
     const lock = canvas.requestPointerLock() as unknown as
@@ -564,11 +783,8 @@ overheadCanvas.addEventListener('click', (e) => {
 // (fail/restart included — the house remembers its own secrets).
 // Silvered doors are one machine (`closed → opening → open`), owned here:
 // doorStates is the only truth for "still pushable", doorById only binds the
-// mesh that animates. A floor reset does not re-close them.
-const doorStates = new Map<number, DoorAnim>();
-const doorById = new Map<number, SilveredDoor>();
-for (const m of allMirrors) if (m.kind === 'silvered') doorStates.set(m.id, createDoor(m.id));
-for (const { ref, door } of silveredDoors) doorById.set(ref.id, door);
+// mesh that animates. A floor reset does not re-close them; a floor REBUILD
+// does (every door machine is minted closed in buildFloor).
 
 /** The door's machine state; a silvered ref always has one (initialised above). */
 function doorState(id: number): DoorAnim {
@@ -780,13 +996,14 @@ function frame(now: number): void {
           if (isCollapse(house)) failFloor('collapse');
         }
       }
-      // Chhaya walks the player's path, 6s late — record only while the run is
-      // running; after clear/fail she stands wherever the path ended.
+      // Chhaya walks the player's path, the floor's delay late — record only
+      // while the run is running; after clear/fail she stands wherever the
+      // path ended.
       if (phase.kind === 'running') path = recordPath(path, player.x, player.y, now);
       if (active(phase)) {
         for (const e of echoes)
           if (Math.hypot(e.x - player.x, e.y - player.y) < CONTACT_RADIUS) failFloor('caught');
-        const at = sampleDelayed(path, now);
+        const at = sampleDelayed(path, now, chhayaDelayMs());
         if (at !== null && Math.hypot(at.x - player.x, at.y - player.y) < CONTACT_RADIUS)
           failFloor('caught');
       }
@@ -838,9 +1055,14 @@ function frame(now: number): void {
   const unlocked = exitUnlocked(allMirrors, mirrorRuntime);
   if (
     phase.kind === 'running' && // a same-frame fail+clear must not award a clear (T6 review fix)
+    !dwaarFreeWalk && // Stay: the shard is banked, the hall has no objectives left
     unlocked &&
     isAtExit(player.x, player.y, exitCenter.cx, exitCenter.cy)
   ) {
+    // The exit is the Stair Door (M4/T2). The phase stays 'cleared' — the sim
+    // halts, exactly as before — and what happens NEXT depends on the floor:
+    // 1–9 hold 0.8s behind the `descending…` overlay then rebuild one floor
+    // deeper; the Dwaar claims the Truth-Shard and raises the tier screen.
     phase = clearRun(phase, now);
     const ms = runElapsedMs(phase, now);
     const wasBest = meta.best[seed];
@@ -850,8 +1072,23 @@ function frame(now: number): void {
       house.shards + shardsForClear(house, echoes.filter((e) => e.stuckAwarded).length),
     );
     saveMeta(meta);
-    hud.showCleared(ms, meta.best[seed] ?? null, wasBest === undefined || ms < wasBest);
     hud.setChips({ shards: meta.shards ?? 0 }); // chip flips from pending to banked
+    if (isDwaar(campaign.floor)) {
+      campaign = completeTier(campaign);
+      hud.showTierComplete({ floors: DWAAR_FLOOR, shards: meta.shards ?? 0 });
+    } else {
+      hud.showCleared(ms, meta.best[seed] ?? null, wasBest === undefined || ms < wasBest);
+      hud.showDescend();
+      descendAt = now + DESCEND_MS;
+    }
+  }
+  // Stair Door handoff: once the 0.8s hold elapses, the campaign descends and
+  // the next floor arms (buildFloor re-arms the phase — the machine never
+  // leaves 'cleared' by any other door).
+  if (descendAt !== null && phase.kind === 'cleared' && now >= descendAt) {
+    descendAt = null;
+    campaign = descend(campaign);
+    buildFloor(campaign);
   }
   // Tactical pause note (T4) outranks the passage prompts — the verbs are
   // gated off while paused, so naming their keys would only mislead.
@@ -930,7 +1167,17 @@ requestAnimationFrame(frame);
 if (import.meta.env.DEV) {
   (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__ = {
     getPlayer: () => ({ ...player }),
-    seed,
+    // The CURRENT floor's seed (`BASE:1`, `BASE:2`, …) — a getter so it stays
+    // live across descends; e2e reads it as the plain string it always was.
+    get seed() {
+      return seed;
+    },
+    // M4/T2 — the campaign spine: base seed, current floor, tier flag.
+    campaign: () => ({
+      base: campaign.seedBase,
+      floor: campaign.floor,
+      tierComplete: campaign.tierComplete,
+    }),
     look: () => look.name,
     mode: () => mode,
     view: () => view, // M3/T3 — which ViewMode is showing ([V] cycles)
@@ -967,7 +1214,7 @@ if (import.meta.env.DEV) {
     bestFor: (s: string) => meta.best[s] ?? null,
     breath: () => breath,
     echoes: () => echoes.map((e) => ({ id: e.id, x: e.x, y: e.y, mode: e.mode })),
-    chhaya: () => sampleDelayed(path, performance.now()),
+    chhaya: () => sampleDelayed(path, performance.now(), chhayaDelayMs()),
     // T8 e2e hooks — scripted win/lose. `mirrors()` replaces the old hero
     // count (the step003 suite reads .total now). mirrorAt(kind) prefers the
     // first mirror of that kind not captured yet, so a capture loop walks the
@@ -992,7 +1239,7 @@ if (import.meta.env.DEV) {
       const e = echoes[i];
       return e ? { x: e.x, y: e.y } : null;
     },
-    chhayaPos: () => sampleDelayed(path, performance.now()),
+    chhayaPos: () => sampleDelayed(path, performance.now(), chhayaDelayMs()),
     mirrorAt: (kind: string) => {
       const m =
         allMirrors.find(

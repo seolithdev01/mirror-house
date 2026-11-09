@@ -12,6 +12,10 @@ export type HudInit = {
   onFrost(): void;
   /** M3/T6 — toggles the audio mute (same as the [M] key). */
   onMute(): void;
+  /** M4/T2 — tier complete → a fresh random-base campaign (Play again). */
+  onPlayAgain(): void;
+  /** M4/T2 — tier complete → free walk in the cleared Dwaar (Stay). */
+  onStay(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -28,8 +32,16 @@ export interface Hud {
   setView(label: string): void;
   /** M3/T6 — the 🔊/🔇 button label follows the audio engine's mute state. */
   setMuted(muted: boolean): void;
+  /** M4/T2 — the floor chip (`L02`, `L10 · DWAAR I ✦` on the threshold floor). */
+  setFloor(label: string): void;
   showCleared(ms: number, bestMs: number | null, isBest: boolean): void;
   hideCleared(): void;
+  /** M4/T2 — the 0.8s `descending…` banner between floors; hide on rebuild. */
+  showDescend(): void;
+  hideDescend(): void;
+  /** M4/T2 — the Truth-Shard tier-complete screen (Play again / Stay). */
+  showTierComplete(stats: { floors: number; shards: number }): void;
+  hideTier(): void;
   showFail(reason: string): void;
   hideFail(): void;
   /** One line of in-world guidance; null hides it (T7 passages will drive it). */
@@ -89,6 +101,7 @@ export function createHud(init: HudInit): Hud {
   chips.id = 'mh-chips';
   chips.append(
     chip('👁 Focus', 'view'),
+    chip('L01', 'floor'),
     chip('🔥 0', 'streak'),
     chip('⏱ —', 'best'),
     chip('⏳ 0.0s', 'timer'),
@@ -108,14 +121,61 @@ export function createHud(init: HudInit): Hud {
   const cleared = document.createElement('div');
   cleared.id = 'mh-cleared';
   cleared.hidden = true;
+  const descend = document.createElement('div');
+  descend.id = 'mh-descend';
+  descend.hidden = true;
   const fail = document.createElement('div');
   fail.id = 'mh-fail';
   fail.hidden = true;
   const hint = document.createElement('div');
   hint.id = 'mh-hint';
   hint.hidden = true;
-  root.append(modes, faq, aaina, daily, frost, mute, chips, breath, anger, cleared, fail, hint);
+  root.append(
+    modes,
+    faq,
+    aaina,
+    daily,
+    frost,
+    mute,
+    chips,
+    breath,
+    anger,
+    cleared,
+    descend,
+    fail,
+    hint,
+  );
   document.body.appendChild(root);
+
+  // M4/T2 tier-complete screen — a modal like the FAQ's, appended to the body
+  // (not the pointer-events:none #hud root) so its buttons own the clicks.
+  const tier = document.createElement('div');
+  tier.id = 'mh-tier-overlay';
+  tier.hidden = true;
+  const tierBox = document.createElement('div');
+  tierBox.id = 'mh-tier-box';
+  const tierTitle = document.createElement('h2');
+  tierTitle.textContent = '✦ Truth-Shard I claimed — Tier I complete';
+  const tierStats = document.createElement('p');
+  const tierButtons = document.createElement('div');
+  tierButtons.id = 'mh-tier-buttons';
+  const playAgain = document.createElement('button');
+  playAgain.type = 'button';
+  playAgain.id = 'mh-tier-again';
+  playAgain.textContent = '↻ Play again';
+  playAgain.addEventListener('click', () => init.onPlayAgain());
+  const stay = document.createElement('button');
+  stay.type = 'button';
+  stay.id = 'mh-tier-stay';
+  stay.textContent = 'Stay — wander the hall';
+  stay.addEventListener('click', () => init.onStay());
+  const tierNote = document.createElement('p');
+  tierNote.id = 'mh-tier-note';
+  tierNote.textContent = 'The shard is already banked — staying is a free walk.';
+  tierButtons.append(playAgain, stay);
+  tierBox.append(tierTitle, tierStats, tierButtons, tierNote);
+  tier.appendChild(tierBox);
+  document.body.appendChild(tier);
 
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
   let hintText: string | null = null; // last shown hint (hint() early-returns on repeats)
@@ -157,6 +217,9 @@ export function createHud(init: HudInit): Hud {
     setMuted: (m) => {
       mute.textContent = m ? '🔇 Muted' : '🔊 Sound';
     },
+    setFloor: (label) => {
+      (document.getElementById('mh-floor') as HTMLElement).textContent = label;
+    },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;
       cleared.textContent = isBest
@@ -165,6 +228,20 @@ export function createHud(init: HudInit): Hud {
     },
     hideCleared: () => {
       cleared.hidden = true;
+    },
+    showDescend: () => {
+      descend.textContent = 'descending…';
+      descend.hidden = false;
+    },
+    hideDescend: () => {
+      descend.hidden = true;
+    },
+    showTierComplete: (stats) => {
+      tierStats.textContent = `${stats.floors} floors cleared · ${stats.shards} shards banked`;
+      tier.hidden = false;
+    },
+    hideTier: () => {
+      tier.hidden = true;
     },
     showFail: (reason) => {
       fail.hidden = false;

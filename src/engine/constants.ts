@@ -65,3 +65,4 @@ export const TIER_ONE_FLOORS = 10; // floors 1–9 procedural ramp, 10 = Dwaar I
 export const DWAAR_FLOOR = 10; // tier-complete threshold hall (fixed layout)
 export const TAAL_FLOOR = 5; // the beat-walker's cameo floor
 export const BEAT_TICK_MS = 250; // Taal's lurch clock — 8-tick cycle (2s)
+export const DESCEND_MS = 800; // ms the descending overlay holds before the next floor arms

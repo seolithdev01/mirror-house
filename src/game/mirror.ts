@@ -73,6 +73,9 @@ export function mirrorSpots(floor: Floor): MirrorSpot[] {
  */
 export interface CheapMirror extends FogVisual, CrackVisual {
   readonly mesh: THREE.Mesh;
+  /** M4/T2 floor teardown — per-instance resources only (shared swap
+   *  materials stay alive for the next floor). */
+  dispose(): void;
 }
 
 const MIRROR_BASE_COLOR = 0x8fb8c8;
@@ -98,6 +101,13 @@ export function createMirrorMesh(kind: MirrorKind): CheapMirror {
     // are shared, and a crack outlives frost anyway (it shows once fog lifts).
     setCracked(cracked: boolean): void {
       base.color.setHex(cracked ? CRACK_TINT : MIRROR_BASE_COLOR);
+    },
+    // M4/T2 floor teardown: free the per-instance geometry and base material.
+    // The shared fogged/captured materials are never touched (mesh.material may
+    // point at them, but `base` is the only instance-owned one).
+    dispose(): void {
+      mesh.geometry.dispose();
+      base.dispose();
     },
   };
 }
@@ -202,6 +212,8 @@ export interface SilveredDoor {
   /** The glass plane — binds into the shared fog/crack visual array. */
   readonly mirror: CheapMirror;
   setSlide(t: number): void; // 0 closed, 1 fully slid; positions are precomputed
+  /** M4/T2 floor teardown — slab + glass, skipping the shared materials. */
+  dispose(): void;
 }
 
 export function createSilveredDoor(spot: MirrorSpot, wallDir: Dir): SilveredDoor {
@@ -230,6 +242,11 @@ export function createSilveredDoor(spot: MirrorSpot, wallDir: Dir): SilveredDoor
     setSlide(t: number): void {
       const k = Math.min(1, Math.max(0, t));
       group.position.set(wallX + axisX * DOOR_SLIDE_M * k, 0, wallZ + axisZ * DOOR_SLIDE_M * k);
+    },
+    dispose(): void {
+      mirror.dispose();
+      slab.geometry.dispose();
+      (slab.material as THREE.MeshStandardMaterial).dispose();
     },
   };
 }

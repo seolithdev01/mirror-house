@@ -31,3 +31,12 @@ export function syncEchoMesh(mesh: THREE.Group, e: EchoState): void {
   mesh.position.set(e.x, 0, e.y);
   mesh.rotation.y = -e.heading; // same heading convention as the avatar
 }
+
+/** M4/T2 floor teardown: free the per-figure geometries. The glass material is
+ *  shared across every echo (and every floor) — never disposed here. */
+export function disposeEchoMesh(mesh: THREE.Group): void {
+  mesh.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.geometry) m.geometry.dispose();
+  });
+}
