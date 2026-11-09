@@ -195,6 +195,7 @@ function resetFloor(now: number): void {
   floorFailed = false;
   freezeUntil = null;
   hud.hideFail();
+  hud.hideCleared(); // a cleared banner never outlives a reset (T6 review fix)
   setExitLocked(true);
   hud.setChips({
     beacons: beaconsCaptured(allMirrors, mirrorRuntime),
@@ -442,6 +443,7 @@ function frame(now: number): void {
   const unlocked = exitUnlocked(allMirrors, mirrorRuntime);
   if (
     run.clearedAt === null &&
+    !floorFailed && // a same-frame fail+clear must not award a clear (T6 review fix)
     run.startedAt !== null &&
     unlocked &&
     isAtExit(player.x, player.y, exitCenter.cx, exitCenter.cy)
@@ -507,13 +509,67 @@ if (import.meta.env.DEV) {
     seed,
     look: () => look.name,
     mode: () => mode,
-    mirrors: heroMirrors.length,
     avatarPresent: true,
     streak: () => meta.streak.count,
     bestFor: (s: string) => meta.best[s] ?? null,
     breath: () => breath,
     echoes: () => echoes.map((e) => ({ id: e.id, x: e.x, y: e.y, mode: e.mode })),
     chhaya: () => sampleDelayed(path, performance.now()),
+    // T8 e2e hooks — scripted win/lose. `mirrors()` replaces the old hero
+    // count (the step003 suite reads .total now). mirrorAt(kind) prefers the
+    // first mirror of that kind not captured yet, so a capture loop walks the
+    // beacons in whatever order the floor laid them — no id assumptions.
+    mirrors: () => {
+      const now = performance.now();
+      return {
+        total: allMirrors.length,
+        fogged: mirrorRuntime.filter((r) => isFogged(r, now)).length,
+        captured: mirrorRuntime.filter((r) => r.captured).length,
+      };
+    },
+    beaconsLeft: () => {
+      const bc = beaconsCaptured(allMirrors, mirrorRuntime);
+      return bc.total - bc.captured;
+    },
+    anger: () => house.anger,
+    shards: () => meta.shards ?? 0,
+    attempts: () => house.attempts,
+    enemyCount: () => echoes.length,
+    enemyPos: (i: number) => {
+      const e = echoes[i];
+      return e ? { x: e.x, y: e.y } : null;
+    },
+    chhayaPos: () => sampleDelayed(path, performance.now()),
+    mirrorAt: (kind: string) => {
+      const m =
+        allMirrors.find(
+          (x) => x.kind === kind && !mirrorRuntime.find((r) => r.id === x.id)?.captured,
+        ) ?? allMirrors.find((x) => x.kind === kind);
+      if (!m) return null;
+      const c = floor.grid.cellCenter(m.cellX, m.cellY);
+      return {
+        x: m.x,
+        z: m.z,
+        id: m.id,
+        kind: m.kind,
+        cellX: m.cellX,
+        cellY: m.cellY,
+        cx: c.cx,
+        cy: c.cy,
+      };
+    },
+    exitPos: () => ({ x: exitCenter.cx, z: exitCenter.cy }),
+    warp: (x: number, y: number, heading?: number) => {
+      player = { x, y, heading: heading ?? player.heading };
+      input.snapshotAndReset(); // drop any pending mouseDx so the jump does not jitter
+      updateAvatar(avatar, player.x, player.y, player.heading, false, performance.now() / 1000);
+      camera.position.set(player.x, EYE_HEIGHT, player.y);
+      camera.rotation.y = -player.heading;
+    },
+    addAnger: (n: number) => {
+      house = { ...house, anger: house.anger + n };
+      if (isCollapse(house)) failFloor('collapse');
+    },
     house: () => ({
       anger: house.anger,
       attempts: house.attempts,
