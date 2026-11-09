@@ -112,6 +112,21 @@ export function createMirrorMesh(kind: MirrorKind): CheapMirror {
   };
 }
 
+/** M5/T4 — the no-RT hero: the standing hero spot rendered as a cheap
+ *  reflective-look mirror (the low preset's path — heroRt false). Same
+ *  placement convention as the HeroMirror constructor (y 1.35, the spot's
+ *  rotation), the same fake material the floor's standing mirrors wear, and
+ *  the full fog/crack interface via createMirrorMesh — so buildFloor binds
+ *  it exactly like an RT hero. True mirrors NEVER take this path: their RT
+ *  is gameplay-critical visibility (the step-through pair), so they keep
+ *  their 256px render target on every preset. */
+export function createHeroStandIn(spot: MirrorSpot): CheapMirror {
+  const cm = createMirrorMesh('standing');
+  cm.mesh.position.set(spot.x, 1.35, spot.z);
+  cm.mesh.rotation.y = spot.rotY;
+  return cm;
+}
+
 /** Options for the RT mirror classes of visuals: heroes render at 512, the
  *  true-mirror step-through pairs (T7) reuse the class at 256 with a gold
  *  frame so the passage reads at a glance. */

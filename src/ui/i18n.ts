@@ -45,6 +45,15 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'settings.reducedFlashNote': 'Steadies pulsing lights; overlays fade in and out.',
     'settings.captions': 'Captions for sound cues',
     'settings.captionsNote': 'Sound cues show as text, bottom-centre, two lines at a time.',
+    // M5/T4 — the Performance section: the quality radio + its two-clock note
+    'settings.performance': 'Performance',
+    'settings.perf': 'Quality',
+    'settings.perf_auto': 'Auto',
+    'settings.perf_low': 'Low',
+    'settings.perf_mid': 'Medium',
+    'settings.perf_high': 'High',
+    'settings.perfNote':
+      'Sharpness applies at once; mirror detail applies on the next floor. Auto follows your frame rate.',
     // M5/T2 — the Controls section: the 15 rebindable actions
     'settings.controls': 'Controls',
     'settings.keyNote': 'Click a key to change it. Escape cancels.',
@@ -151,6 +160,15 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'settings.captions': 'ध्वनि संकेतों के कैप्शन',
     'settings.captionsNote':
       'ध्वनि संकेत लिखे रूप में दिखते हैं — नीचे बीच में, एक साथ दो पंक्तियाँ।',
+    // M5/T4 — प्रदर्शन अनुभाग: गुणवत्ता रेडियो + दो-घड़ी वाली टिप्पणी
+    'settings.performance': 'गति और गुणवत्ता',
+    'settings.perf': 'गुणवत्ता',
+    'settings.perf_auto': 'स्वतः',
+    'settings.perf_low': 'कम',
+    'settings.perf_mid': 'मध्यम',
+    'settings.perf_high': 'उच्च',
+    'settings.perfNote':
+      'स्पष्टता तुरंत लागू; दर्पणों का ब्योरा अगली मंज़िल पर। स्वतः आपके फ़्रेम दर के पीछे चलती है।',
     // M5/T2 — कंट्रोल्स अनुभाग: पुनर्बद्ध की जा सकने वाली 15 क्रियाएँ
     'settings.controls': 'कंट्रोल्स',
     'settings.keyNote': 'कुंजी बदलने के लिए उस पर क्लिक करें। रद्द करने के लिए Escape दबाएँ।',

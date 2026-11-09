@@ -4,12 +4,14 @@ import type { InputMode } from '../engine/input';
 import type { Campaign } from './campaign';
 import { DEFAULT_LOOK_NAME } from './look';
 import { isValidSeed, randomSeed } from './seedCode';
+import { PERF_CHOICES, type PerfChoice } from './quality';
 
 /** The IDB save, generation 2 (M4/T4). Everything the game persists lives in
  *  this one record — meta v1's fields plus the language tag and the campaign
  *  progress — stored under the single key `main` of the `save` store.
  *  M5/T1: `a11y` is ADDITIVE — optional in validation (pre-M5 saves carry no
- *  such key and must keep validating), defaulted post-load by normalizeSave. */
+ *  such key and must keep validating), defaulted post-load by normalizeSave.
+ *  M5/T4: `perf` arrives the same way — optional, healed to 'auto'. */
 export interface SaveData {
   v: 2;
   lookName: string;
@@ -22,6 +24,9 @@ export interface SaveData {
   progress: { seedBase: string; floor: number; tierComplete: boolean };
   /** Absent in pre-M5 saves; present in every save this build exports. */
   a11y?: A11ySettings;
+  /** M5/T4 — the quality choice ('auto' follows the frame rate). Absent in
+   *  pre-T4 saves; present in every save this build exports. */
+  perf?: PerfChoice;
 }
 
 /** action name → KeyboardEvent.code. Readonly on purpose: rebinding (T2)
@@ -92,6 +97,7 @@ export function defaultSave(seedBase: string = randomSeed()): SaveData {
     streak: { count: 0, lastDay: '' },
     progress: { seedBase, floor: 1, tierComplete: false },
     a11y: { ...DEFAULT_A11Y, keyMap: { ...DEFAULT_KEYMAP } },
+    perf: 'auto',
   };
 }
 
@@ -140,7 +146,11 @@ function validateBest(raw: unknown): Record<string, number> | null {
 
 function validateStreak(raw: unknown): SaveData['streak'] | null {
   if (!isPlainObject(raw)) return null;
-  if (Object.keys(raw).length !== 2 || !Object.hasOwn(raw, 'count') || !Object.hasOwn(raw, 'lastDay'))
+  if (
+    Object.keys(raw).length !== 2 ||
+    !Object.hasOwn(raw, 'count') ||
+    !Object.hasOwn(raw, 'lastDay')
+  )
     return null;
   const { count, lastDay }: Record<string, unknown> = raw;
   if (
@@ -230,10 +240,17 @@ function validateA11y(raw: unknown): A11ySettings | null {
   return { reducedFlash, captions, textScale: textScale as A11ySettings['textScale'], keyMap: map };
 }
 
+/** M5/T4 — the perf choice gate: exactly one of the four codes ('auto' or a
+ *  pinned preset). Quality.ts owns the list; the save only polices shape. */
+function validatePerf(raw: unknown): raw is PerfChoice {
+  return typeof raw === 'string' && (PERF_CHOICES as readonly string[]).includes(raw);
+}
+
 /** Strict v2 gate: exact field set (an own `__proto__` key from JSON.parse is
  *  an unknown field and fails), exact types, bounded numbers/strings. M5/T1:
  *  the `a11y` field is OPTIONAL — absent (every pre-M5 save) or fully valid;
- *  anything else fails. Returns a fresh SaveData, or null for anything else. */
+ *  anything else fails. M5/T4: `perf` takes the same stance. Returns a fresh
+ *  SaveData, or null for anything else. */
 export function validateSave(raw: unknown): SaveData | null {
   if (!isPlainObject(raw)) return null;
   const EXPECTED: readonly string[] = [
@@ -248,8 +265,9 @@ export function validateSave(raw: unknown): SaveData | null {
     'progress',
   ];
   const hasA11y = Object.hasOwn(raw, 'a11y');
+  const hasPerf = Object.hasOwn(raw, 'perf');
   const keys = Object.keys(raw);
-  if (keys.length !== EXPECTED.length + (hasA11y ? 1 : 0)) return null;
+  if (keys.length !== EXPECTED.length + (hasA11y ? 1 : 0) + (hasPerf ? 1 : 0)) return null;
   if (EXPECTED.some((k) => !Object.hasOwn(raw, k))) return null;
   if (raw.v !== 2) return null;
   if (!boundedString(raw.lookName)) return null;
@@ -271,6 +289,11 @@ export function validateSave(raw: unknown): SaveData | null {
   if (progress === null) return null;
   const a11y = hasA11y ? validateA11y(raw.a11y) : undefined;
   if (a11y === null) return null; // present but junk — reject, never half-trust
+  let perf: PerfChoice | undefined;
+  if (hasPerf) {
+    if (!validatePerf(raw.perf)) return null; // same stance as a11y
+    perf = raw.perf;
+  }
   const out: SaveData = {
     v: 2,
     lookName: raw.lookName,
@@ -282,19 +305,30 @@ export function validateSave(raw: unknown): SaveData | null {
     streak,
     progress,
   };
-  return a11y === undefined ? out : { ...out, a11y };
+  return {
+    ...out,
+    ...(a11y === undefined ? {} : { a11y }),
+    ...(perf === undefined ? {} : { perf }),
+  };
 }
 
 // ---- normalization (M5/T1) ------------------------------------------------------
 
-/** Post-load defaults for the additive a11y block: a pre-M5 save (no a11y —
- *  stored, exported, imported before this milestone) gains the default block;
- *  a junk block heals to the same defaults rather than crashing boot. A valid
- *  block passes through untouched — the same object, no churn. Runs after
- *  validateSave at boot; export keeps emitting the full shape either way. */
+/** Post-load defaults for the additive a11y block and the M5/T4 perf choice:
+ *  a pre-M5 save (no a11y — stored, exported, imported before this milestone)
+ *  gains the default block, a pre-T4 save (no perf) gains 'auto', and junk
+ *  heals to the same defaults rather than crashing boot. Valid fields pass
+ *  through untouched — the same object, no churn. Runs after validateSave at
+ *  boot; export keeps emitting the full shape either way. */
 export function normalizeSave(s: SaveData): SaveData {
-  if (validateA11y(s.a11y) !== null) return s;
-  return { ...s, a11y: { ...DEFAULT_A11Y, keyMap: { ...DEFAULT_KEYMAP } } };
+  const a11yOk = validateA11y(s.a11y) !== null;
+  const perfOk = validatePerf(s.perf);
+  if (a11yOk && perfOk) return s;
+  return {
+    ...s,
+    ...(a11yOk ? {} : { a11y: { ...DEFAULT_A11Y, keyMap: { ...DEFAULT_KEYMAP } } }),
+    ...(perfOk ? {} : { perf: 'auto' as PerfChoice }),
+  };
 }
 
 // ---- migration ----------------------------------------------------------------

@@ -116,6 +116,7 @@ import {
   type SaveData,
 } from './game/save';
 import {
+  createHeroStandIn,
   createMirrorMesh,
   createSilveredDoor,
   HeroMirror,
@@ -135,6 +136,7 @@ import {
   type DoorAnim,
 } from './game/passages';
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
+import { autoPreset, PROFILES, type PerfChoice, type PerfPreset } from './game/quality';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
 import {
   cycleView,
@@ -251,9 +253,26 @@ let phase = createFloorRun(); // the GamePhase master machine — re-armed (read
 // keep their last frame on screen in between — the browser clears an
 // unpreserved drawing buffer after every composite, which blanks skipped
 // panes. Keeping the buffer makes the stale-side-pane budget actually visible.
+//
+// M5/T4 — quality presets. The CHOICE ('auto' or a pinned rung) resolves at
+// boot: the DEV ?perf= override wins (testing), else the saved choice
+// (normalizeSave healed 'auto' pre-T4 saves). Auto starts from a 60fps prior
+// until the rolling FPS window fills (below), then follows autoPreset. The
+// PRESET is the effective rung every knob reads: pixel ratio applies live
+// (the cap below), Chhaya's bob reads the profile per frame, and the mirror
+// knobs (hero RT on/off + RT size) are read at the next floor build — the
+// settings note says so.
+const PERF_URL_CHOICES: readonly PerfChoice[] = ['auto', 'low', 'mid', 'high'];
+const perfOverride: PerfChoice | null = import.meta.env.DEV
+  ? (PERF_URL_CHOICES.find((c) => c === urlParams.get('perf')) ?? null)
+  : null;
+let perfChoice: PerfChoice = perfOverride ?? save.perf ?? 'auto';
+let preset: PerfPreset =
+  perfChoice === 'auto' ? autoPreset(60, window.devicePixelRatio) : perfChoice;
+
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
-const FULL_PIXEL_RATIO = Math.min(window.devicePixelRatio, 2); // the focus-mode cap
-renderer.setPixelRatio(FULL_PIXEL_RATIO);
+// boot is focus mode: the live devicePixelRatio capped by the preset's rung.
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, PROFILES[preset].pixelRatioCap));
 const scene = new THREE.Scene();
 const VOID_COLOR = 0x0b1026; // the night the house floats in — background, fog, map-mode clear
 scene.background = new THREE.Color(VOID_COLOR);
@@ -486,7 +505,13 @@ function updateChhaya(now: number): void {
     const dy = br.b.y - br.a.y;
     if (dx * dx + dy * dy > 1e-8) chhayaHeading = Math.atan2(dx, -dy); // heading 0 = −y
   }
-  chhaya.position.set(at.x, 0, at.y);
+  // M5/T4 — the bob is the profile's (a pure visual, off on low): her walk
+  // breathes at the avatar's cadence (t·9, ±0.04m — updateAvatar's rhythm).
+  chhaya.position.set(
+    at.x,
+    PROFILES[preset].chhayaBob ? Math.sin((now / 1000) * 9) * 0.04 : 0,
+    at.y,
+  );
   chhaya.rotation.y = -chhayaHeading; // same convention as the avatar
 }
 
@@ -620,6 +645,7 @@ function pushA11yValues(): void {
     reducedFlash: a11y().reducedFlash,
     captions: a11y().captions,
     keyMap: a11y().keyMap,
+    perf: perfChoice, // M5/T4 — the full SettingsValues shape (unchanged by rebinds)
   });
 }
 const settings = buildSettingsOverlay({
@@ -637,6 +663,13 @@ const settings = buildSettingsOverlay({
     save = { ...save, a11y: { ...a11y(), captions: on } };
     persist(); // M5/T3 — the bar is live: pushCaption gates on this flag, and
     // the frame loop empties the feed the moment the toggle goes off
+  },
+  onPerf: (choice) => {
+    // M5/T4 — manual override: the radio pins the rung (or returns to auto);
+    // the choice persists, the preset lands at once (ratio) / next floor.
+    save = { ...save, perf: choice };
+    persist();
+    setPerfChoice(choice);
   },
   onRebind: (action, code) => {
     const { map, conflict } = rebind(a11y().keyMap, action, code);
@@ -658,6 +691,7 @@ settings.setValues({
   reducedFlash: a11y().reducedFlash,
   captions: a11y().captions,
   keyMap: a11y().keyMap,
+  perf: perfChoice, // M5/T4 — the radio reflects the live choice (DEV ?perf= included)
 });
 const hud = createHud({
   mode,
@@ -795,18 +829,39 @@ function buildFloor(c: Campaign): void {
     disposeTree(stage.group);
   });
 
-  // Deterministic floor objects + the 2 RT hero mirrors at the entrance/exit
+  // Deterministic floor objects + the 2 hero mirrors at the entrance/exit
   // kept as standing mirrors (M2). Their geometry comes from the pure
   // `mirrorSpotFor` (identical to `mirrorSpots` — proven by T2's cross-check
-  // test), so binding a MirrorRef to its HeroMirror is a position match.
+  // test), so binding a MirrorRef to its hero visual is a position match.
+  // M5/T4 — the preset picks the hero class: RT heroes on mid/high (at the
+  // profile's RT size — 256 mid, 512 high), the no-RT stand-in (reflective
+  // fake material, the same fog/crack interface) on low. TRUE mirrors below
+  // keep their 256px RT on EVERY preset — their reflection is the
+  // gameplay-critical step-through visibility.
   objs = generateFloorObjects(floor, { ...M2_PARAMS, beacons: fp.beacons, echoes: fp.echoes });
-  const heroes = mirrorSpots(floor).map((s) => new HeroMirror(s));
-  heroes.forEach((m) => scene.add(m.mesh));
+  const qp = PROFILES[preset];
+  const heroes: HeroMirror[] = [];
+  const heroStandIns: CheapMirror[] = [];
+  for (const s of mirrorSpots(floor)) {
+    if (qp.heroRt) {
+      const m = new HeroMirror(s, { size: qp.heroRtSize });
+      heroes.push(m);
+      scene.add(m.mesh);
+    } else {
+      const cm = createHeroStandIn(s);
+      heroStandIns.push(cm);
+      scene.add(cm.mesh);
+    }
+  }
   heroMirrors = heroes;
   floorDisposers.push(() => {
     for (const m of heroes) {
       scene.remove(m.mesh);
       m.dispose();
+    }
+    for (const cm of heroStandIns) {
+      scene.remove(cm.mesh);
+      cm.dispose();
     }
   });
   const heroRefs: MirrorRef[] = [];
@@ -837,6 +892,12 @@ function buildFloor(c: Campaign): void {
       (h) => Math.hypot(h.mesh.position.x - m.x, h.mesh.position.z - m.z) < MIRROR_MATCH_EPS,
     );
     if (hero) return { bind: hero, hero, state: 'clear' as const };
+    // M5/T4 — on the low preset the hero spots are the no-RT stand-ins; the
+    // same position match binds them (hero null: no RT pass, no hero slot).
+    const standIn = heroStandIns.find(
+      (c) => Math.hypot(c.mesh.position.x - m.x, c.mesh.position.z - m.z) < MIRROR_MATCH_EPS,
+    );
+    if (standIn) return { bind: standIn, hero: null, state: 'clear' as const };
     if (m.kind === 'true') {
       const tm = new HeroMirror(m, { size: 256, frame: true });
       nextTrue.push(tm);
@@ -1105,12 +1166,20 @@ async function importSave(): Promise<void> {
 }
 // [V] cycles the view (M3/T3), a keydown press like frost. Pixel ratio is part
 // of the mode: quad's four panes render at ratio 1, every other mode restores
-// the full-ratio buffer. The map modes own the 2D canvas's visibility (shown
-// for overhead/tactical, hidden and cleared otherwise). The chip names the
-// mode you landed in.
+// the focus-ratio buffer — the live devicePixelRatio capped by the M5/T4
+// preset's rung. The map modes own the 2D canvas's visibility (shown for
+// overhead/tactical, hidden and cleared otherwise). The chip names the mode
+// you landed in.
+function focusPixelRatio(): number {
+  return Math.min(window.devicePixelRatio, PROFILES[preset].pixelRatioCap);
+}
+/** The one door for ratio writes — preset changes and view cycles alike. */
+function applyPixelRatio(): void {
+  renderer.setPixelRatio(view === 'quad' ? QUAD_PIXEL_RATIO : focusPixelRatio());
+}
 function setViewMode(next: ViewMode): void {
   view = next;
-  renderer.setPixelRatio(next === 'quad' ? QUAD_PIXEL_RATIO : FULL_PIXEL_RATIO);
+  applyPixelRatio();
   const mapShowing = showsOverhead(next);
   overheadCanvas.style.display = mapShowing ? 'block' : 'none';
   if (mapShowing) {
@@ -1341,6 +1410,37 @@ let frames = 0;
 let fpsClock = last;
 let fps = 0;
 let frameIndex = 0;
+
+// M5/T4 — the auto detector's rolling window: the diagnostics counter emits
+// one fps sample every 250ms; 20 of them is the 5s average autoPreset reads
+// (a sustained read — a single dropped frame cannot flip the preset). The
+// window fills after 5s of play; before that, auto holds its 60fps boot
+// prior so boot jank cannot pin a weak machine to low on frame one.
+const FPS_WINDOW_SAMPLES = 20;
+const fpsSamples: number[] = [];
+function fpsAverage(): number | null {
+  return fpsSamples.length === 0 ? null : fpsSamples.reduce((a, b) => a + b, 0) / fpsSamples.length;
+}
+/** Auto's current read: the average once the window is full, else the prior. */
+function detectedPreset(): PerfPreset {
+  const avg = fpsAverage();
+  return avg === null
+    ? autoPreset(60, window.devicePixelRatio)
+    : autoPreset(avg, window.devicePixelRatio);
+}
+/** Land a preset change: sharpness at once; the mirror knobs (hero RT, RT
+ *  size) are read at the next buildFloor — "applies on next floor". */
+function applyPreset(next: PerfPreset): void {
+  if (next === preset) return;
+  preset = next;
+  applyPixelRatio();
+}
+/** The settings radio (or the DEV param at boot) changed the choice: a pinned
+ *  rung lands at once; auto defers to the detector. */
+function setPerfChoice(choice: PerfChoice): void {
+  perfChoice = choice;
+  applyPreset(choice === 'auto' ? detectedPreset() : choice);
+}
 
 function frame(now: number): void {
   const elapsed = Math.min(now - last, 250) / 1000;
@@ -1639,6 +1739,13 @@ function frame(now: number): void {
     diagnostics.textContent =
       `seed ${seed}  fps ${fps}\n` +
       `pos ${player.x.toFixed(1)}, ${player.y.toFixed(1)}  heading ${player.heading.toFixed(2)}`;
+    // M5/T4 — feed the rolling 5s window; once it is full and the choice is
+    // auto, the average picks the preset (sustained reads only — the boot
+    // prior holds until then). A manual pin never reads this path.
+    fpsSamples.push(fps);
+    if (fpsSamples.length > FPS_WINDOW_SAMPLES) fpsSamples.shift();
+    if (perfChoice === 'auto' && fpsSamples.length >= FPS_WINDOW_SAMPLES)
+      applyPreset(detectedPreset());
   }
   requestAnimationFrame(frame);
 }
@@ -1688,6 +1795,19 @@ if (import.meta.env.DEV) {
     viewMode: () => view, // M3/T6 — the same value under its exact hook name
     // M5/T3 — the live caption feed (id + text), the bar's backing store.
     captions: () => captions.map((c) => ({ id: c.id, text: c.text })),
+    // M5/T4 — the quality state (the ?perf= e2e reads `preset`): the choice,
+    // the effective preset + its profile, the auto window's current average,
+    // the live ratio, and the RT census (heroRt 0 on the low path — the
+    // no-RT stand-in witness; trueRt keeps its 256px RT on every preset).
+    perf: () => ({
+      choice: perfChoice,
+      preset,
+      profile: { ...PROFILES[preset] },
+      fpsAvg: fpsAverage(),
+      pixelRatio: renderer.getPixelRatio(),
+      heroRt: heroMirrors.length,
+      trueRt: trueMirrors.length,
+    }),
     // M3/T6 — the audio engine's observable state (started/muted) plus the
     // last intensity the frame loop fed it.
     audioState: () => ({

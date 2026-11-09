@@ -3,15 +3,18 @@
 // The ⚙ settings overlay (M5/T1) — the FAQ overlay's modal shape in the
 // house's palette. Display (text scale radio 1/1.25/1.5 — main applies it as
 // the `--mh-text-scale` CSS var on body) and Access (reduced-flash + captions
-// toggles — reduced-flash steadies every pulsing light today; captions
-// persists now, the caption bar itself arrives in T3). M5/T2 adds Controls:
-// the 15 rebindable actions as label+key rows — click a row, the next keydown
-// is captured (Escape cancels), main rebinds through the conflict guard and
-// pushes the new values back; a refused rebind names the conflicting action
-// inline. Performance (T4) stays deferred WHOLE. Every control applies
-// instantly; main persists (debounced) and flushes on close via onClosed.
+// toggles — reduced-flash steadies every pulsing light; captions feeds the
+// T3 caption bar). M5/T2 adds Controls: the 15 rebindable actions as
+// label+key rows — click a row, the next keydown is captured (Escape
+// cancels), main rebinds through the conflict guard and pushes the new
+// values back; a refused rebind names the conflicting action inline. M5/T4
+// adds Performance: the auto/low/mid/high quality radio — sharpness applies
+// at once, mirror detail on the next floor (the note says so). Every control
+// applies instantly; main persists (debounced) and flushes on close via
+// onClosed.
 
 import { DEFAULT_KEYMAP, type KeyMap } from '../game/save';
+import { PERF_CHOICES, type PerfChoice } from '../game/quality';
 import { fill, t, type Lang } from './i18n';
 
 export type TextScale = 1 | 1.25 | 1.5;
@@ -26,12 +29,18 @@ export interface SettingsValues {
   captions: boolean;
   /** M5/T2 — the live key binding table the Controls rows render. */
   keyMap: KeyMap;
+  /** M5/T4 — the quality choice the Performance radio reflects ('auto' or a
+   *  pinned preset; the effective preset itself is main's business). */
+  perf: PerfChoice;
 }
 
 export interface SettingsInit {
   onTextScale(scale: TextScale): void;
   onReducedFlash(on: boolean): void;
   onCaptions(on: boolean): void;
+  /** M5/T4 — the player pinned a quality rung (or returned to auto); main
+   *  applies the preset live (pixel ratio instant) and persists the choice. */
+  onPerf(choice: PerfChoice): void;
   /** M5/T2 — attempt a rebind through the conflict guard; the OFFENDING
    *  action's name comes back on refusal (the inline warning names it), or
    *  null on success (main has already applied + persisted + pushed values). */
@@ -58,6 +67,9 @@ export interface SettingsOverlay {
 
 /** Radio id per ladder step (`…-100`, `…-125`, `…-150` — selector-safe). */
 const scaleId = (s: TextScale): string => `mh-settings-scale-${Math.round(s * 100)}`;
+
+/** Radio id per quality choice (`…-auto`, `…-low`, `…-mid`, `…-high`). */
+const perfId = (c: PerfChoice): string => `mh-settings-perf-${c}`;
 
 /** The one-line friendly name for a KeyboardEvent.code — `KeyP` → `P`,
  *  `Digit1` → `1`, arrows to glyphs, modifiers to L/R names; anything else
@@ -142,6 +154,36 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
   captionsLabel.appendChild(captionsText);
   const captionsNote = document.createElement('p');
   captionsNote.className = 'mh-settings-note';
+
+  // ---- Performance: the quality radio (M5/T4) --------------------------------
+  // 'auto' tracks the frame rate (main's rolling 5s average feeds autoPreset);
+  // a pinned rung wins until the player returns to auto. The note is honest
+  // about the two clocks: sharpness (pixel ratio) lands at once, mirror
+  // detail (hero RT, bob) on the next floor build.
+  const performance = document.createElement('h3');
+  const perfField = document.createElement('fieldset');
+  const perfLegend = document.createElement('legend');
+  perfField.appendChild(perfLegend);
+  const perfRadios: Record<string, HTMLInputElement> = {};
+  const perfTexts: Record<string, HTMLElement> = {};
+  for (const c of PERF_CHOICES) {
+    const label = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'mh-perf';
+    input.id = perfId(c);
+    input.value = c;
+    input.addEventListener('change', () => {
+      if (input.checked) init.onPerf(c);
+    });
+    perfRadios[c] = input;
+    const text = document.createElement('span');
+    perfTexts[c] = text;
+    label.append(input, document.createTextNode(' '), text);
+    perfField.appendChild(label);
+  }
+  const perfNote = document.createElement('p');
+  perfNote.className = 'mh-settings-note';
 
   // ---- Controls: the 15 rebindable actions (M5/T2) --------------------------
   const controls = document.createElement('h3');
@@ -269,6 +311,9 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     reducedNote,
     captionsLabel,
     captionsNote,
+    performance,
+    perfField,
+    perfNote,
     controls,
     keyNote,
     keymapList,
@@ -288,6 +333,10 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     reducedNote.textContent = t(lang, 'settings.reducedFlashNote');
     captionsText.textContent = t(lang, 'settings.captions');
     captionsNote.textContent = t(lang, 'settings.captionsNote');
+    performance.textContent = t(lang, 'settings.performance');
+    perfLegend.textContent = t(lang, 'settings.perf');
+    for (const c of PERF_CHOICES) perfTexts[c]!.textContent = t(lang, `settings.perf_${c}`);
+    perfNote.textContent = t(lang, 'settings.perfNote');
     controls.textContent = t(lang, 'settings.controls');
     keyNote.textContent = t(lang, 'settings.keyNote');
     resetKeys.textContent = t(lang, 'settings.resetKeys');
@@ -306,6 +355,7 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
       for (const s of TEXT_SCALES) radios[s]!.checked = s === v.textScale;
       reduced.checked = v.reducedFlash;
       captions.checked = v.captions;
+      for (const c of PERF_CHOICES) perfRadios[c]!.checked = c === v.perf;
       keyMap = v.keyMap;
       renderKeyRows();
     },

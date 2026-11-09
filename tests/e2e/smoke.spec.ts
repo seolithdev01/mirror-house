@@ -74,6 +74,16 @@ interface DebugHook {
   };
   // M5/T3 — the live caption feed behind the bottom bar
   captions(): Array<{ id: string; text: string }>;
+  // M5/T4 — the quality state: the ?perf= e2e reads preset + the RT census
+  perf(): {
+    choice: string;
+    preset: string;
+    profile: { pixelRatioCap: number; heroRt: boolean; heroRtSize: number; chhayaBob: boolean };
+    fpsAvg: number | null;
+    pixelRatio: number;
+    heroRt: number;
+    trueRt: number;
+  };
 }
 // page.evaluate results cannot carry functions across the process boundary,
 // so the closure-backed members (look/mode/streak/best) are invoked in the
@@ -749,28 +759,29 @@ test('m4: save round-trip persists progress', async ({ page }) => {
   // commit) and fire-and-forget by design — this page's FIRST ever write must
   // even build the store. Wait for the store itself to show floor 2 before
   // leaving, or the reload could beat the commit and boot a fresh default.
-  await page.waitForFunction(() =>
-    new Promise<boolean>((resolve) => {
-      const req = indexedDB.open('mirror-house', 1);
-      req.onsuccess = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains('save')) {
-          db.close();
-          return resolve(false);
-        }
-        const get = db.transaction('save', 'readonly').objectStore('save').get('main');
-        get.onsuccess = () => {
-          const row = get.result as { progress?: { floor?: number } } | undefined;
-          db.close();
-          resolve(row?.progress?.floor === 2);
+  await page.waitForFunction(
+    () =>
+      new Promise<boolean>((resolve) => {
+        const req = indexedDB.open('mirror-house', 1);
+        req.onsuccess = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('save')) {
+            db.close();
+            return resolve(false);
+          }
+          const get = db.transaction('save', 'readonly').objectStore('save').get('main');
+          get.onsuccess = () => {
+            const row = get.result as { progress?: { floor?: number } } | undefined;
+            db.close();
+            resolve(row?.progress?.floor === 2);
+          };
+          get.onerror = () => {
+            db.close();
+            resolve(false);
+          };
         };
-        get.onerror = () => {
-          db.close();
-          resolve(false);
-        };
-      };
-      req.onerror = () => resolve(false);
-    }),
+        req.onerror = () => resolve(false);
+      }),
   );
 
   // a fresh load WITHOUT any URL seed — the campaign must resume from IDB
@@ -794,7 +805,9 @@ test('m5: rebind forward to P through the settings overlay', async ({ page }) =>
   await ready(page);
   const pos = () =>
     page.evaluate(() =>
-      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.getPlayer(),
     );
 
   // ⚙ → Controls: click the forward row → the capture arms ("press a key…") →
@@ -836,8 +849,8 @@ test('m4: hindi chrome via ?lang=hi', async ({ page }) => {
   await page.goto('/?lang=hi&seed=HINDII');
   await ready(page);
   expect(
-    await page.evaluate(
-      () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.lang(),
+    await page.evaluate(() =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.lang(),
     ),
   ).toBe('hi');
   await expect(page.locator('#hud button[data-mode="hybrid"]')).toContainText('दोनों');
@@ -849,11 +862,45 @@ test('m4: hindi chrome via ?lang=hi', async ({ page }) => {
   await page.goto('/?seed=HINDII&lang=en');
   await ready(page);
   expect(
-    await page.evaluate(
-      () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.lang(),
+    await page.evaluate(() =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.lang(),
     ),
   ).toBe('en');
   await expect(page.locator('#hud button[data-mode="hybrid"]')).toHaveText('⌨+🖱 Both');
   await expect(page.locator('#mh-floor')).toHaveText('L01');
+  expect(errors).toEqual([]);
+});
+
+test('m5: ?perf=low boots the low path — preset low, hero RT off, mirrors render, no crash', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  // The DEV ?perf= param pins the low preset for this visit: the hook reports
+  // it, the hero mirrors took the no-RT path (heroRt 0 — the entrance/exit
+  // stand-ins render the fake reflective material), the ratio is capped at 1,
+  // and the game keeps running clean on the low-end path.
+  await page.goto('/?perf=low&seed=PERFLOW');
+  await ready(page);
+  const perf = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.perf(),
+  );
+  expect(perf.preset).toBe('low');
+  expect(perf.choice).toBe('low'); // the override is the live choice
+  expect(perf.profile).toEqual({
+    pixelRatioCap: 1,
+    heroRt: false,
+    heroRtSize: 256,
+    chhayaBob: false,
+  });
+  expect(perf.heroRt).toBe(0); // no hero render targets — the stand-in witness
+  expect(perf.pixelRatio).toBeLessThanOrEqual(1); // cap 1: min(dpr, 1)
+
+  // the floor still dresses itself — the two hero spots stand as mirrors and
+  // the frame loop renders on without a crash
+  const mirrors = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.mirrors(),
+  );
+  expect(mirrors.total).toBeGreaterThanOrEqual(2); // the hero spots at minimum
+  await page.waitForTimeout(700); // a stretch of low-preset frames
   expect(errors).toEqual([]);
 });

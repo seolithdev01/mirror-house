@@ -97,10 +97,16 @@ describe('save: validateSave', () => {
   });
 
   it('rejects malformed streak', () => {
-    expect(validateSave(mutated((r) => (r.streak = { count: -1, lastDay: '2026-11-08' })))).toBeNull();
-    expect(validateSave(mutated((r) => (r.streak = { count: 1.5, lastDay: '2026-11-08' })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.streak = { count: -1, lastDay: '2026-11-08' }))),
+    ).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.streak = { count: 1.5, lastDay: '2026-11-08' }))),
+    ).toBeNull();
     expect(validateSave(mutated((r) => (r.streak = { count: 1, lastDay: 'whenever' })))).toBeNull();
-    expect(validateSave(mutated((r) => (r.streak = { count: 1, lastDay: '2026/11/08' })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.streak = { count: 1, lastDay: '2026/11/08' }))),
+    ).toBeNull();
     expect(
       validateSave(mutated((r) => (r.streak = { count: 1, lastDay: '2026-11-08', extra: 1 }))),
     ).toBeNull();
@@ -115,13 +121,19 @@ describe('save: validateSave', () => {
   it('rejects malformed progress', () => {
     expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 0 })))).toBeNull();
     expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 11 })))).toBeNull();
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 2.5 })))).toBeNull();
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: '3' })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 2.5 }))),
+    ).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: '3' }))),
+    ).toBeNull();
     expect(
       validateSave(mutated((r) => (r.progress = { ...good.progress, seedBase: 'bad seed' }))),
     ).toBeNull();
     expect(
-      validateSave(mutated((r) => (r.progress = { ...good.progress, seedBase: 'TOOLONGSEED7777777' }))),
+      validateSave(
+        mutated((r) => (r.progress = { ...good.progress, seedBase: 'TOOLONGSEED7777777' })),
+      ),
     ).toBeNull();
     expect(
       validateSave(mutated((r) => (r.progress = { ...good.progress, tierComplete: 'yes' }))),
@@ -177,6 +189,7 @@ describe('save: migrateMeta (v1 → v2)', () => {
       streak: { count: 3, lastDay: '2026-11-08' },
       progress: { seedBase: s.progress.seedBase, floor: 1, tierComplete: false },
       a11y: DEFAULT_A11Y,
+      perf: 'auto', // M5/T4 — migration lands on the same default as a fresh save
     });
     expect(isValidSeed(s.progress.seedBase)).toBe(true); // a fresh campaign, not the old base
     expect(validateSave(s)).not.toBeNull();
@@ -278,8 +291,12 @@ describe('save: a11y field validation (M5/T1)', () => {
     expect(validateSave(withA11y('a11y'))).toBeNull();
     expect(validateSave(withA11y({ ...flags, textScale: 1 }))).toBeNull(); // keyMap missing
     expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: {} }))).toBeNull(); // empty is not a map
-    expect(validateSave(withA11y({ reducedFlash: 1, captions: false, textScale: 1, keyMap: {} }))).toBeNull();
-    expect(validateSave(withA11y({ ...flags, captions: 'no', textScale: 1, keyMap: {} }))).toBeNull();
+    expect(
+      validateSave(withA11y({ reducedFlash: 1, captions: false, textScale: 1, keyMap: {} })),
+    ).toBeNull();
+    expect(
+      validateSave(withA11y({ ...flags, captions: 'no', textScale: 1, keyMap: {} })),
+    ).toBeNull();
     expect(validateSave(withA11y({ ...flags, textScale: 1.1, keyMap: {} }))).toBeNull(); // off the ladder
     expect(validateSave(withA11y({ ...flags, textScale: '1', keyMap: {} }))).toBeNull();
     expect(validateSave(withA11y({ ...flags, textScale: 2, keyMap: {} }))).toBeNull();
@@ -287,9 +304,7 @@ describe('save: a11y field validation (M5/T1)', () => {
     expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: { aaina: 9 } }))).toBeNull();
     expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: { '': 'KeyI' } }))).toBeNull();
     expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: { aaina: '' } }))).toBeNull();
-    expect(
-      validateSave(withA11y({ ...flags, textScale: 1, keyMap: {}, extra: true })),
-    ).toBeNull(); // unknown field inside a11y
+    expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: {}, extra: true }))).toBeNull(); // unknown field inside a11y
   });
 
   it('defaultSave carries the full default a11y and validates', () => {
@@ -309,15 +324,23 @@ describe('save: normalizeSave — defaults applied post-load (M5/T1)', () => {
   });
 
   it('keeps a present, valid a11y untouched — the same save object, no churn', () => {
-    const a11y: A11ySettings = { reducedFlash: true, captions: false, textScale: 1.5, keyMap: { ...DEFAULT_KEYMAP } };
-    const withA11y = { ...good, a11y };
+    const a11y: A11ySettings = {
+      reducedFlash: true,
+      captions: false,
+      textScale: 1.5,
+      keyMap: { ...DEFAULT_KEYMAP },
+    };
+    const withA11y = { ...good, a11y, perf: 'low' as const }; // perf valid too — nothing to fill
     const s = normalizeSave(withA11y);
     expect(s).toBe(withA11y); // nothing to fill — identical reference
     expect(s.a11y).toBe(a11y);
   });
 
   it('heals an invalid a11y to defaults (belt and braces — a hand-built save never crashes boot)', () => {
-    const junk = { ...good, a11y: { reducedFlash: 'yes', captions: 0, textScale: 9, keyMap: null } };
+    const junk = {
+      ...good,
+      a11y: { reducedFlash: 'yes', captions: 0, textScale: 9, keyMap: null },
+    };
     const s = normalizeSave(junk as unknown as SaveData);
     expect(s.a11y).toEqual(DEFAULT_A11Y);
   });
@@ -327,6 +350,60 @@ describe('save: normalizeSave — defaults applied post-load (M5/T1)', () => {
     const text = serializeSave(s);
     expect(JSON.parse(text)).toEqual(s); // export emits the FULL shape, a11y included
     expect(validateSave(JSON.parse(text))).toEqual(s);
+  });
+});
+
+// ---- M5/T4 — perf field, additive and optional-in-validation ------------------
+//
+// The perf choice arrives additively, same stance as a11y: pre-T4 saves carry
+// no key and validate unchanged; 'auto' is the default normalizeSave fills;
+// present-but-junk rejects the whole save (never half-trusted).
+
+describe('save: perf field validation (M5/T4)', () => {
+  it('accepts an old-shape v2 save without perf — no key synthesized', () => {
+    const out = validateSave(JSON.parse(JSON.stringify(good)));
+    expect(out).toEqual(good);
+    expect(out?.perf).toBeUndefined(); // normalizeSave owns the default, not validateSave
+  });
+
+  it('accepts and echoes each of the four choices', () => {
+    for (const perf of ['auto', 'low', 'mid', 'high'] as const)
+      expect(validateSave(mutated((r) => (r.perf = perf)))).toEqual({ ...good, perf });
+  });
+
+  it('rejects a malformed perf (present but junk is never half-trusted)', () => {
+    expect(validateSave(mutated((r) => (r.perf = 'turbo')))).toBeNull();
+    expect(validateSave(mutated((r) => (r.perf = 'Auto')))).toBeNull(); // exact codes only
+    expect(validateSave(mutated((r) => (r.perf = 2)))).toBeNull();
+    expect(validateSave(mutated((r) => (r.perf = null)))).toBeNull();
+  });
+
+  it("defaultSave carries perf 'auto' and validates", () => {
+    const s = defaultSave('ABCDE2');
+    expect(s.perf).toBe('auto');
+    expect(validateSave(s)).not.toBeNull();
+  });
+});
+
+describe('save: normalizeSave — perf default (M5/T4)', () => {
+  it("fills 'auto' into a save without perf (the stored/pre-T4 boot path)", () => {
+    const old = validateSave(JSON.parse(JSON.stringify(good)))!;
+    expect(old.perf).toBeUndefined();
+    expect(normalizeSave(old).perf).toBe('auto');
+  });
+
+  it('keeps a valid perf untouched — the same reference when nothing else needs healing', () => {
+    // a full fresh-shape save (valid a11y AND perf) — nothing to fill
+    const withPerf = { ...defaultSave('ABCDE2'), perf: 'high' as const };
+    expect(normalizeSave(withPerf).perf).toBe('high');
+    expect(normalizeSave(withPerf)).toBe(withPerf);
+  });
+
+  it("heals an invalid perf to 'auto' alongside an a11y heal (both fill in one pass)", () => {
+    const junk = { ...good, perf: 'ultra', a11y: null };
+    const s = normalizeSave(junk as unknown as SaveData);
+    expect(s.perf).toBe('auto');
+    expect(s.a11y).toEqual(DEFAULT_A11Y);
   });
 });
 
@@ -367,9 +444,9 @@ describe('DEFAULT_KEYMAP (M5/T1)', () => {
     expect(byAction('turnL')).toBe('KeyQ');
     expect(byAction('turnR')).toBe('KeyE');
     expect(byAction('aaina')).toBe('KeyI'); // her own key — the Q conflict is dead
-    expect([...Object.entries(DEFAULT_KEYMAP)].filter(([, c]) => c === 'KeyQ').map(([a]) => a)).toEqual([
-      'turnL',
-    ]);
+    expect(
+      [...Object.entries(DEFAULT_KEYMAP)].filter(([, c]) => c === 'KeyQ').map(([a]) => a),
+    ).toEqual(['turnL']);
   });
 });
 
@@ -394,9 +471,7 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
   });
 
   it('rejects unknown actions — the 15 are the whole vocabulary', () => {
-    expect(
-      validateSave(a11yWith({ ...DEFAULT_KEYMAP, macro: 'KeyP' })),
-    ).toBeNull(); // extra action
+    expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, macro: 'KeyP' }))).toBeNull(); // extra action
     expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, Forward: 'KeyP' }))).toBeNull(); // case is not a rename
   });
 
@@ -408,7 +483,10 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
 
   it('rejects values that are not KeyboardEvent.code-shaped', () => {
     for (const bad of ['wasd', 'keyW', 'P', 'Key W', 'Key-W', 'keydown', 'X'.repeat(30), ' KeyW']) {
-      expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: bad })), `${bad} shape`).toBeNull();
+      expect(
+        validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: bad })),
+        `${bad} shape`,
+      ).toBeNull();
     }
   });
 
@@ -424,7 +502,10 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
       'Semicolon',
       'IntlYen',
     ]) {
-      expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: good })), `${good} shape`).not.toBeNull();
+      expect(
+        validateSave(a11yWith({ ...DEFAULT_KEYMAP, forward: good })),
+        `${good} shape`,
+      ).not.toBeNull();
     }
     // Space is a real code too — it just belongs to stepThrough by default, so
     // binding it elsewhere must move stepThrough off it first (no new duals).
