@@ -46,3 +46,7 @@ android/.idea/
 android/key.properties
 android/*.keystore
 android/*.jks
+
+# defense-in-depth: keystores anywhere under android/
+android/**/*.jks
+android/**/*.keystore

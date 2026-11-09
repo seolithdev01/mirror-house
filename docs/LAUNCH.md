@@ -194,3 +194,5 @@ One pass, in order; every line names the artifact that proves it.
 - [ ] **Triage loop warm** — issues template checked, seed codes reproducible
       (`?seed=CODE`), the playtest kit ([PLAYTEST.md](../PLAYTEST.md)) ready
       for anyone local.
+
+- [ ] Replace the stock Capacitor **splash** PNGs (all densities, `android/app/src/main/res/drawable*/splash.png`) with the night-indigo lantern splash (`npm run icons` extension) before Play upload.
