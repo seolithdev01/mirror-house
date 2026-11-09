@@ -22,6 +22,8 @@ export interface Hud {
   }): void;
   setBreath(v: number): void;
   setAnger(v: number): void;
+  /** M3/T3 — the view chip: which ViewMode the renderer is showing ([V] cycles). */
+  setView(label: string): void;
   showCleared(ms: number, bestMs: number | null, isBest: boolean): void;
   hideCleared(): void;
   showFail(reason: string): void;
@@ -77,6 +79,7 @@ export function createHud(init: HudInit): Hud {
   const chips = document.createElement('div');
   chips.id = 'mh-chips';
   chips.append(
+    chip('👁 Focus', 'view'),
     chip('🔥 0', 'streak'),
     chip('⏱ —', 'best'),
     chip('⏳ 0.0s', 'timer'),
@@ -138,6 +141,9 @@ export function createHud(init: HudInit): Hud {
     setAnger: (v) => {
       const clamped = Math.max(0, Math.min(1, v));
       angerFill.style.width = `${(clamped * 100).toFixed(1)}%`;
+    },
+    setView: (label) => {
+      (document.getElementById('mh-view') as HTMLElement).textContent = `👁 ${label}`;
     },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;

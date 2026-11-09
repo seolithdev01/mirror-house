@@ -84,6 +84,14 @@ import {
 } from './game/passages';
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
+import {
+  cycleView,
+  isTactical,
+  QUAD_PIXEL_RATIO,
+  showsOverhead,
+  VIEW_KEY,
+  type ViewMode,
+} from './game/viewMode';
 import { buildAainaOverlay } from './ui/aaina';
 import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
@@ -99,11 +107,17 @@ let meta = loadMeta();
 let phase = createFloorRun(); // the GamePhase master machine — re-armed (ready) on reset
 const exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// preserveDrawingBuffer: QUAD's side panes render on alternate frames and must
+// keep their last frame on screen in between — the browser clears an
+// unpreserved drawing buffer after every composite, which blanks skipped
+// panes. Keeping the buffer makes the stale-side-pane budget actually visible.
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+const FULL_PIXEL_RATIO = Math.min(window.devicePixelRatio, 2); // the focus-mode cap
+renderer.setPixelRatio(FULL_PIXEL_RATIO);
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b1026);
-scene.fog = new THREE.Fog(0x0b1026, 2, 26);
+const VOID_COLOR = 0x0b1026; // the night the house floats in — background, fog, map-mode clear
+scene.background = new THREE.Color(VOID_COLOR);
+scene.fog = new THREE.Fog(VOID_COLOR, 2, 26);
 const sceneBuilt = buildFloorScene(floor);
 scene.add(sceneBuilt.group);
 // Beacon gate: the stair door burns dim red until every beacon is frosted,
@@ -360,6 +374,27 @@ const lantern = new THREE.PointLight(0xffd9a0, 22, 18, 1.8);
 scene.add(lantern, new THREE.AmbientLight(0x3a3f55, 0.7));
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
 
+// M3/T3 view modes. `view` is the one ViewMode value; [V] walks cycleView
+// (focus → quad → overhead → focus). tactical is T4's Esc pause — unreachable
+// by [V], but its predicates gate the loop already (isTactical pauses sim).
+let view: ViewMode = 'focus';
+const VIEW_LABEL: Record<ViewMode, string> = {
+  focus: 'Focus',
+  quad: 'Quad',
+  overhead: 'Overhead',
+  tactical: 'Tactical',
+};
+
+// QUAD side rig: three cameras at the player's eye, yawed by a fixed offset
+// from the heading (left = −π/2, right = +π/2, back = π). Square panes ⇒
+// aspect 1. They stay on layer 0 — the avatar (layer 1) remains visible only
+// inside mirrors, by design. The front pane IS the main camera.
+const QUAD_SIDE_YAW: readonly { cam: THREE.PerspectiveCamera; yaw: number }[] = [
+  { cam: new THREE.PerspectiveCamera(75, 1, 0.1, 60), yaw: -Math.PI / 2 }, // left
+  { cam: new THREE.PerspectiveCamera(75, 1, 0.1, 60), yaw: Math.PI / 2 }, // right
+  { cam: new THREE.PerspectiveCamera(75, 1, 0.1, 60), yaw: Math.PI }, // back
+];
+
 const input = new InputCollector();
 input.attach(window);
 let mode: InputMode = meta.mode;
@@ -401,6 +436,17 @@ window.addEventListener('keydown', (e) => {
 // Frost is a keydown press, not a held key (e.repeat guard) — same trigger as the HUD button.
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyF' && !e.repeat) tryFrost(performance.now());
+});
+// [V] cycles the view (M3/T3), a keydown press like frost. Pixel ratio is part
+// of the mode: quad's four panes render at ratio 1, every other mode restores
+// the full-ratio buffer. The chip names the mode you landed in.
+function setViewMode(next: ViewMode): void {
+  view = next;
+  renderer.setPixelRatio(next === 'quad' ? QUAD_PIXEL_RATIO : FULL_PIXEL_RATIO);
+  hud.setView(VIEW_LABEL[next]);
+}
+window.addEventListener('keydown', (e) => {
+  if (e.code === VIEW_KEY && !e.repeat) setViewMode(cycleView(view));
 });
 
 // T7 passages — step-through (Space) and push-doors (E), both keydown presses
@@ -469,6 +515,48 @@ function resize(): void {
 window.addEventListener('resize', resize);
 resize();
 
+/**
+ * QUAD (M3/T3): four scissored half-size panes — front top-left (the main
+ * camera, every frame), left top-right, right bottom-left, back bottom-right.
+ * The three side panes round-robin one per frame (`frameIndex % 3 ===
+ * paneIndex % 3` renders; the others keep their last frame — a few frames of
+ * staleness in the sides is the perf budget). Two scene renders per frame
+ * total, at pixel ratio 1. Pane origins use `size − floor(size/2)` so odd
+ * pixel widths leave no uncleared seam between panes.
+ */
+function renderQuad(): void {
+  const pw = Math.floor(window.innerWidth / 2);
+  const ph = Math.floor(window.innerHeight / 2);
+  const xHi = window.innerWidth - pw;
+  const yHi = window.innerHeight - ph;
+  const panes = [
+    { cam: camera, x: 0, y: yHi }, // 0 front — top-left, every frame
+    { cam: QUAD_SIDE_YAW[0]!.cam, x: xHi, y: yHi }, // 1 left — top-right
+    { cam: QUAD_SIDE_YAW[1]!.cam, x: 0, y: 0 }, // 2 right — bottom-left
+    { cam: QUAD_SIDE_YAW[2]!.cam, x: xHi, y: 0 }, // 3 back — bottom-right
+  ];
+  renderer.setScissorTest(true);
+  panes.forEach((p, i) => {
+    if (i > 0 && frameIndex % 3 !== i % 3) return; // not this side pane's frame
+    renderer.setViewport(p.x, p.y, pw, ph);
+    renderer.setScissor(p.x, p.y, pw, ph);
+    renderer.render(scene, p.cam); // autoClear wipes exactly this pane's rect
+  });
+}
+
+/**
+ * Overhead and tactical are map modes: they render NO 3D stage — T4 draws the
+ * 2D canvas map over the canvas. Until that canvas exists, the honest render
+ * is a full clear to the void color (the scene background): the screen shows
+ * the void, never a stale scene. TODO-T4: replace with the overhead canvas.
+ */
+function renderVoid(): void {
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+  renderer.setClearColor(VOID_COLOR);
+  renderer.clear(true, true, true);
+}
+
 let accumulator = 0;
 let last = performance.now();
 let frames = 0;
@@ -482,9 +570,10 @@ function frame(now: number): void {
   // Fail freeze handoff: at resetAt the machine re-arms (ready) and the floor
   // resets for the next attempt. No simulation on the reset frame itself.
   const { phase: reArmed, shouldReset } = tickFail(phase, now);
-  // One gate for the whole simulation: a live floor, and no overlay in front
-  // of it. The FAQ is a pause — movement, verbs and catch-up all respect it.
-  const simActive = active(phase) && faq.root.hidden === true;
+  // One gate for the whole simulation: a live floor, no overlay in front of
+  // it, and not parked in the tactical view. The FAQ and tactical are pauses —
+  // movement, verbs and catch-up all respect both.
+  const simActive = active(phase) && faq.root.hidden === true && !isTactical(view);
   if (shouldReset) {
     phase = reArmed;
     resetFloor(now);
@@ -551,10 +640,10 @@ function frame(now: number): void {
       accumulator -= FIXED_STEP;
     }
   } else {
-    // Frozen (failing), finished (cleared), or paused behind the overlay: no
-    // simulation and no catch-up. Drain the collector so a key held during the
-    // pause, or mouse movement banked behind the overlay, cannot fire a burst
-    // on resume.
+    // Frozen (failing), finished (cleared), paused behind the overlay, or
+    // parked in the tactical view: no simulation and no catch-up. Drain the
+    // collector so a key held during the pause, or mouse movement banked
+    // behind the overlay, cannot fire a burst on resume.
     accumulator = 0;
     input.snapshotAndReset();
   }
@@ -614,16 +703,35 @@ function frame(now: number): void {
   camera.position.set(player.x, EYE_HEIGHT, player.y);
   camera.rotation.y = -player.heading;
   lantern.position.set(player.x, EYE_HEIGHT, player.y);
+  // The quad side rig rides the same eye, yawed by its fixed offset — the
+  // rotation mapping stays `rotation.y = -yaw` for every camera in the game.
+  for (const s of QUAD_SIDE_YAW) {
+    s.cam.position.set(player.x, EYE_HEIGHT, player.y);
+    s.cam.rotation.y = -(player.heading + s.yaw);
+  }
   // mirrors update on alternate frames — perf budget (each costs one extra scene render);
   // fogged hero mirrors skip their RT pass entirely (matte material, no
   // reflection). True-mirror pairs share the same budget at 256px (they are
-  // never fogged, so their RT always runs when their turn comes).
-  [...heroMirrors, ...trueMirrors].forEach((m, i) => {
-    const v = visuals.find((x) => x.hero === m);
-    if (v?.state === 'clear' && frameIndex % 2 === i % 2) m.update(renderer, scene, camera);
-  });
+  // never fogged, so their RT always runs when their turn comes). They read
+  // the main camera — the quad front pane — so the pass runs unchanged in
+  // focus AND quad; the map modes render no 3D at all, so it is skipped there.
+  if (!showsOverhead(view)) {
+    [...heroMirrors, ...trueMirrors].forEach((m, i) => {
+      const v = visuals.find((x) => x.hero === m);
+      if (v?.state === 'clear' && frameIndex % 2 === i % 2) m.update(renderer, scene, camera);
+    });
+  }
   frameIndex++;
-  renderer.render(scene, camera);
+  // View dispatch: quad scissored panes, map modes' void, else the full focus render.
+  if (view === 'quad') {
+    renderQuad();
+  } else if (showsOverhead(view)) {
+    renderVoid();
+  } else {
+    renderer.setScissorTest(false);
+    renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+    renderer.render(scene, camera);
+  }
 
   frames++;
   if (now - fpsClock >= 250) {
@@ -644,6 +752,7 @@ if (import.meta.env.DEV) {
     seed,
     look: () => look.name,
     mode: () => mode,
+    view: () => view, // M3/T3 — which ViewMode is showing ([V] cycles)
     avatarPresent: true,
     streak: () => meta.streak.count,
     bestFor: (s: string) => meta.best[s] ?? null,
