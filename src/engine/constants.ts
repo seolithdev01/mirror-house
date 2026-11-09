@@ -31,3 +31,8 @@ export const SENSE_INTERVAL_MS = 250; // ms between sense checks per echo
 export const CHASE_MEMORY_MS = 2000; // ms an echo remembers its last sensed player cell
 export const CONFUSE_FOGGED_R = 6; // m — fogged mirrors this close count toward confusion
 export const CONFUSE_UNFOGGED_R = 8; // m — one unfogged eye this close prevents confusion
+
+// Chhaya (M2) — the six-second shadow walking the player's recorded path
+export const CHHAYA_DELAY_MS = 6000; // ms behind the player she walks
+export const CHHAYA_PATH_WINDOW_MS = 20_000; // ms of path history retained
+export const CHHAYA_PATH_MAX_SAMPLES = 1200; // hard cap (10s at the 120Hz fixed step)

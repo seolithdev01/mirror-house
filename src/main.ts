@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as THREE from 'three';
-import { CONTACT_RADIUS, EYE_HEIGHT, FIXED_STEP, FOG_COST, SHARD_BEACON } from './engine/constants';
+import {
+  CHHAYA_DELAY_MS,
+  CONTACT_RADIUS,
+  EYE_HEIGHT,
+  FIXED_STEP,
+  FOG_COST,
+  SHARD_BEACON,
+} from './engine/constants';
 import { InputCollector, keysToMoveInput, mouseOnlyInput, type InputMode } from './engine/input';
 import { Dir } from './engine/grid';
-import { createAvatar, updateAvatar } from './game/avatar';
+import { createAvatar, createChhaya, updateAvatar } from './game/avatar';
+import { bracketSamples, recordPath, sampleDelayed, type PathSample } from './game/chhaya';
 import { initEchoes, updateEcho } from './game/echo';
 import { createEchoMesh, syncEchoMesh } from './game/echoView';
 import { generateFloorObjects, mirrorSpotFor, type MirrorRef } from './game/floorObjects';
@@ -118,6 +126,33 @@ function failFloor(reason: string): void {
   console.warn(`floor failed: ${reason}`);
 }
 
+// M2 Chhaya: the six-second shadow. A pure replay of the player's recorded
+// path — recordPath in the fixed step while the run is active, sampleDelayed
+// to place her (heading from the bracketing samples' movement delta). Like
+// the echoes she is layer-0 glass: visible to the player AND in every mirror.
+let path: PathSample[] = [];
+const chhaya = createChhaya();
+chhaya.visible = false; // hidden until the first recorded sample expires (6s grace)
+scene.add(chhaya);
+let chhayaHeading = 0;
+
+function updateChhaya(now: number): void {
+  const at = sampleDelayed(path, now);
+  if (at === null) {
+    chhaya.visible = false;
+    return;
+  }
+  chhaya.visible = true;
+  const br = bracketSamples(path, now - CHHAYA_DELAY_MS);
+  if (br !== null) {
+    const dx = br.b.x - br.a.x;
+    const dy = br.b.y - br.a.y;
+    if (dx * dx + dy * dy > 1e-8) chhayaHeading = Math.atan2(dx, -dy); // heading 0 = −y
+  }
+  chhaya.position.set(at.x, 0, at.y);
+  chhaya.rotation.y = -chhayaHeading; // same convention as the avatar
+}
+
 function tryFrost(now: number): void {
   const target = fogTarget(allMirrors, player);
   if (!target || breath < FOG_COST) return;
@@ -230,12 +265,21 @@ function frame(now: number): void {
         FIXED_STEP,
       ),
     );
-    if (!floorFailed)
+    // Chhaya walks the player's path, 6s late — record only while the run is
+    // active; after clear/fail she stands wherever the path ended.
+    if (run.startedAt !== null && run.clearedAt === null && !floorFailed)
+      path = recordPath(path, player.x, player.y, now);
+    if (!floorFailed) {
       for (const e of echoes)
         if (Math.hypot(e.x - player.x, e.y - player.y) < CONTACT_RADIUS) failFloor('caught');
+      const at = sampleDelayed(path, now);
+      if (at !== null && Math.hypot(at.x - player.x, at.y - player.y) < CONTACT_RADIUS)
+        failFloor('caught');
+    }
     accumulator -= FIXED_STEP;
   }
   echoes.forEach((e, i) => syncEchoMesh(echoMeshes[i]!, e));
+  updateChhaya(now);
   hud.setChips({
     timerMs: runElapsedMs(run, now),
     streak: meta.streak.count,
@@ -292,6 +336,7 @@ if (import.meta.env.DEV) {
     bestFor: (s: string) => meta.best[s] ?? null,
     breath: () => breath,
     echoes: () => echoes.map((e) => ({ id: e.id, x: e.x, y: e.y, mode: e.mode })),
+    chhaya: () => sampleDelayed(path, performance.now()),
     beacons: () => ({ captured: capturedBeacons, total: totalBeacons }),
     fogTarget: () => fogTarget(allMirrors, player)?.id ?? null,
     mirrorRefs: () => allMirrors.map((m) => ({ ...m })),
