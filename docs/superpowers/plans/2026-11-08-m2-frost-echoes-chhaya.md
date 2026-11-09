@@ -28,7 +28,7 @@
 **Interfaces:**
 - Consumes/Produces: `wallSegments()` / `wallSegmentsNearCells()` signatures unchanged — pure perf change.
 
-- [ ] **Step 1: Failing test** (append to `tests/unit/grid.test.ts`)
+- [x] **Step 1: Failing test** (append to `tests/unit/grid.test.ts`)
 
 ```ts
 it('wallSegments is cached and invalidated by wall changes', () => {
@@ -43,12 +43,12 @@ it('wallSegments is cached and invalidated by wall changes', () => {
 });
 ```
 
-- [ ] **Step 2: RED** — `npm test -- grid` (toBe fails: new array each call).
+- [x] **Step 2: RED** — `npm test -- grid` (toBe fails: new array each call).
 
-- [ ] **Step 3: Implement** — in `FloorGrid`: add `private segCache: WallSegment[] | null = null;`; `wallSegments()` returns `this.segCache ??= buildSegments()` (extract the existing body to a private `buildSegments()`); in `setWallBit`, after any mutation: `this.segCache = null;`.
+- [x] **Step 3: Implement** — in `FloorGrid`: add `private segCache: WallSegment[] | null = null;`; `wallSegments()` returns `this.segCache ??= buildSegments()` (extract the existing body to a private `buildSegments()`); in `setWallBit`, after any mutation: `this.segCache = null;`.
 
-- [ ] **Step 4: GREEN + gates.**
-- [ ] **Step 5: Commit** — `perf(m2): cache wall segments, invalidate on mutation`
+- [x] **Step 4: GREEN + gates.**
+- [x] **Step 5: Commit** — `perf(m2): cache wall segments, invalidate on mutation`
 
 ---
 
@@ -82,7 +82,7 @@ Placement rules (deterministic from `createRng(floor.seed + ':objects')`):
 
 All positions in meters (cell centers / mirror offsets) except spawns/anchors = cell centers.
 
-- [ ] **Step 1: Failing tests** (`tests/unit/floorobjects.test.ts`)
+- [x] **Step 1: Failing tests** (`tests/unit/floorobjects.test.ts`)
 
 ```ts
 // SPDX-License-Identifier: Apache-2.0
@@ -126,10 +126,10 @@ describe('generateFloorObjects', () => {
 
 (Note: `await import` inside the test — use a top-level `import { bfsDistances }` instead when writing the file.)
 
-- [ ] **Step 2: RED.**
-- [ ] **Step 3: Implement** per placement rules; export a `mirrorSpotFor(grid, x, y): { x: number; z: number; rotY: number; dir: Dir } | null` internal helper (exported for reuse by tests/T7).
-- [ ] **Step 4: GREEN + gates.**
-- [ ] **Step 5: Commit** — `feat(m2): deterministic floor objects — mirrors, beacons, spawns, anchors`
+- [x] **Step 2: RED.**
+- [x] **Step 3: Implement** per placement rules; export a `mirrorSpotFor(grid, x, y): { x: number; z: number; rotY: number; dir: Dir } | null` internal helper (exported for reuse by tests/T7).
+- [x] **Step 4: GREEN + gates.**
+- [x] **Step 5: Commit** — `feat(m2): deterministic floor objects — mirrors, beacons, spawns, anchors`
 
 ---
 
@@ -155,7 +155,7 @@ export function updateBreath(breath: number, dtS: number, spent: boolean): numbe
 
 main.ts wiring: runtime array from T2 mirrors; `F` keydown + HUD button → if `breath >= FOG_COST` and `fogTarget` → `applyFog`, `breath -= FOG_COST`, if beacon → captured++, HUD beacons update + SHARD_BEACON shards pending (awarded at clear by T6 — store `pendingShards` counter in house state, T6). Hero standing mirrors at entrance/exit: fog visual = `mesh.material` swap to `MeshStandardMaterial({ color: 0x39415f, roughness: 1 })` while fogged (restore RT material after). Non-RT standing/beacon mirrors: `createMirrorMesh(kind)` — reflective-look `MeshStandardMaterial({ color: 0x8fb8c8, metalness: 0.9, roughness: 0.15 })`, beacon adds emissive teal; fog swaps to the matte material, capture adds emissive 0x2ec4b6 pulse-free. Beacon fog is permanent (no restore).
 
-- [ ] **Step 1: Failing tests** (`tests/unit/frost.test.ts`)
+- [x] **Step 1: Failing tests** (`tests/unit/frost.test.ts`)
 
 ```ts
 // SPDX-License-Identifier: Apache-2.0
@@ -194,10 +194,10 @@ describe('frost', () => {
 });
 ```
 
-- [ ] **Step 2: RED.**
-- [ ] **Step 3: Implement** `frost.ts` + constants + HUD/CSS/main wiring (frost button id `mh-frost`, breath bar `mh-breath`/`mh-breath-fill`).
-- [ ] **Step 4: GREEN + gates + e2e (existing 6 still pass).**
-- [ ] **Step 5: Commit** — `feat(m2): frost lantern — fog, breath, beacon capture`
+- [x] **Step 2: RED.**
+- [x] **Step 3: Implement** `frost.ts` + constants + HUD/CSS/main wiring (frost button id `mh-frost`, breath bar `mh-breath`/`mh-breath-fill`).
+- [x] **Step 4: GREEN + gates + e2e (existing 6 still pass).**
+- [x] **Step 5: Commit** — `feat(m2): frost lantern — fog, breath, beacon capture`
 
 ---
 
@@ -236,7 +236,7 @@ export function syncEchoMesh(mesh: THREE.Group, e: EchoState): void;
 
 main.ts: echo meshes synced per frame; contact `hypot < CONTACT_RADIUS` → fail ('caught'). Echos render on layer 0 (visible in mirrors too).
 
-- [ ] **Step 1: Failing tests** — los (same-cell true; through-wall false; open corridor true; corner diagonal), flowField (distances from target; flowStep descends; unreachable −1), echo (init counts; sensesPlayer true via shared visible mirror, false when fogged, false when no mirror; patrol→chase on sense at interval; chase→patrol after CHASE_MEMORY_MS without sense; confused condition with 2 fogged near + 0 unfogged; movement advances toward next flow cell).
+- [x] **Step 1: Failing tests** — los (same-cell true; through-wall false; open corridor true; corner diagonal), flowField (distances from target; flowStep descends; unreachable −1), echo (init counts; sensesPlayer true via shared visible mirror, false when fogged, false when no mirror; patrol→chase on sense at interval; chase→patrol after CHASE_MEMORY_MS without sense; confused condition with 2 fogged near + 0 unfogged; movement advances toward next flow cell).
 
 ```ts
 // tests/unit/echo.test.ts (core shape)
@@ -256,9 +256,9 @@ it('senses through a shared visible mirror; fogging blinds it', () => {
 
 (Write the full test file with a helper that opens an entire row of a 5×5 grid so positions are mirror-visible; keep positions within SENSE_RANGE=13 so a 5×5 (20m) grid row works.)
 
-- [ ] **Step 2: RED.** **Step 3: Implement** los/flowField/echo/echoView + main wiring (spawn on floor objects, update in fixed-step loop, contact → fail handled by T6's `failFloor` — until T6, log-only placeholder `onFail('caught')` no-op).
-- [ ] **Step 4: GREEN + gates + e2e (6/6).**
-- [ ] **Step 5: Commit** — `feat(m2): echoes — mirror-sight sensing, flow-field pursuit, confusion`
+- [x] **Step 2: RED.** **Step 3: Implement** los/flowField/echo/echoView + main wiring (spawn on floor objects, update in fixed-step loop, contact → fail handled by T6's `failFloor` — until T6, log-only placeholder `onFail('caught')` no-op).
+- [x] **Step 4: GREEN + gates + e2e (6/6).**
+- [x] **Step 5: Commit** — `feat(m2): echoes — mirror-sight sensing, flow-field pursuit, confusion`
 
 ---
 
@@ -280,9 +280,9 @@ export function sampleDelayed(samples: PathSample[], now: number, delayMs = 6000
 
 main.ts: record only while the floor run is active (started, not cleared/failed); Chhaya mesh follows `sampleDelayed`; heading from movement delta; contact → fail ('caught'). Chhaya hidden until first sample expires (6s of grace at floor start).
 
-- [ ] **Step 1: Failing tests** — record trims and caps; sampleDelayed null-before, exact-at-sample, interpolated-mid, follows-after.
-- [ ] **Step 2: RED.** **Step 3: Implement.** **Step 4: GREEN + gates + e2e.**
-- [ ] **Step 5: Commit** — `feat(m2): chhaya — six-second shadow on the player's path`
+- [x] **Step 1: Failing tests** — record trims and caps; sampleDelayed null-before, exact-at-sample, interpolated-mid, follows-after.
+- [x] **Step 2: RED.** **Step 3: Implement.** **Step 4: GREEN + gates + e2e.**
+- [x] **Step 5: Commit** — `feat(m2): chhaya — six-second shadow on the player's path`
 
 ---
 
@@ -315,9 +315,9 @@ main.ts flows:
 - **Clear:** existing exit check now requires `exitUnlocked`; on clear award `SHARD_BEACON * capturedThisRun (already counted in pendingShards) + shardsForClear(...)` → `awardShards(meta, total)` + saveMeta; exit marker dims red while locked (emissive 0x5c2a2a) / gold when unlocked.
 - HUD: `mh-anger`/`mh-anger-fill` bar, `mh-beacons` chip `🪞 c/t`, `mh-shards` chip `◆ n`, `showFail(reason)`, `hint(text|null)` (`mh-hint` line for passage prompts).
 
-- [ ] **Step 1: Failing tests** — applyCrack accumulation + once-per-mirror; isCollapse at 100 (7 cracks); beaconsCaptured/exitUnlocked; shardsForClear (perfect/stuck bonus combos); awardShards additive from undefined.
-- [ ] **Step 2: RED.** **Step 3: Implement** + wiring. **Step 4: GREEN + gates + e2e (6/6).**
-- [ ] **Step 5: Commit** — `feat(m2): house anger, fail/restart, beacon-gated exit, shards`
+- [x] **Step 1: Failing tests** — applyCrack accumulation + once-per-mirror; isCollapse at 100 (7 cracks); beaconsCaptured/exitUnlocked; shardsForClear (perfect/stuck bonus combos); awardShards additive from undefined.
+- [x] **Step 2: RED.** **Step 3: Implement** + wiring. **Step 4: GREEN + gates + e2e (6/6).**
+- [x] **Step 5: Commit** — `feat(m2): house anger, fail/restart, beacon-gated exit, shards`
 
 ---
 
@@ -339,9 +339,9 @@ export function tryPushDoor(mirrors: MirrorRef[], player: PlayerState): MirrorRe
 
 main.ts: `Space` near true mirror → teleport (also snap chhaya? NO — Chhaya follows the recorded path through the door naturally; that's the fun) + hint text `Space — step through` when in range; `E` near silvered door → `grid.setOpen` on the door's wall edge (cell + facing dir derived from rotY: the walled dir it was placed against — recompute from `mirrorSpotFor` or store `wallDir` in MirrorRef — ADD `wallDir: Dir | null` to MirrorRef in T2 for silvered/standing), animate door sliding 1.2m along the wall over 0.4s, +0 shards (secret found flag → include in perfect bonus? keep simple: no shard), hint `E — push`.
 
-- [ ] **Step 1: Failing tests** — positionIsLegal (cell center true; 0.3m from a wall plane false); tryTeleport (in-range true mirror → pair position + reversed heading; out of range null; illegal destination null — construct by hand with a grid + custom mirrors); tryPushDoor (range + kind gating).
-- [ ] **Step 2: RED.** **Step 3: Implement** (extend `MirrorRef` with `wallDir: Dir | null` — update T2 module + its tests accordingly, defaulting standing/silvered to their wall dir, others null). **Step 4: GREEN + gates + e2e.**
-- [ ] **Step 5: Commit** — `feat(m2): true mirror step-through, silvered push-doors, teleport legality`
+- [x] **Step 1: Failing tests** — positionIsLegal (cell center true; 0.3m from a wall plane false); tryTeleport (in-range true mirror → pair position + reversed heading; out of range null; illegal destination null — construct by hand with a grid + custom mirrors); tryPushDoor (range + kind gating).
+- [x] **Step 2: RED.** **Step 3: Implement** (extend `MirrorRef` with `wallDir: Dir | null` — update T2 module + its tests accordingly, defaulting standing/silvered to their wall dir, others null). **Step 4: GREEN + gates + e2e.**
+- [x] **Step 5: Commit** — `feat(m2): true mirror step-through, silvered push-doors, teleport legality`
 
 ---
 
@@ -373,7 +373,7 @@ addAnger(n: number): void;
 4. `m2: full win flow records shards and best` — capture all beacons (warp+F ×3), warp to exit marker (expose via `mirrorAt('exit')`? exit is a marker not mirror — expose `exitPos()` in hook too), wait → cleared overlay visible, `shards() >= 15` (3×SHARD_BEACON), `bestFor(seed)` not null.
 Also: add a console-error collector to every test (new and existing): `const errors: string[] = []; page.on('console', (msg) => { if (msg.type() === 'error') errors.push(msg.text()); }); ... expect(errors).toEqual([]);` — plus keep the existing pageerror listener pattern.
 
-- [ ] **Step 1: Extend hook.** **Step 2: Write tests.** **Step 3: `npm run e2e` → 10/10 (fix only genuine regressions; report flakiness honestly).** **Step 4: Gates.** **Step 5: Commit** — `test(m2): e2e — frost/capture, caught, collapse, full win`
+- [x] **Step 1: Extend hook.** **Step 2: Write tests.** **Step 3: `npm run e2e` → 10/10 (fix only genuine regressions; report flakiness honestly).** **Step 4: Gates.** **Step 5: Commit** — `test(m2): e2e — frost/capture, caught, collapse, full win`
 
 ---
 
@@ -382,11 +382,11 @@ Also: add a console-error collector to every test (new and existing): `const err
 **Files:**
 - Modify: `README.md`, `src/ui/faq.ts` (4 new Q/As: fogging & Echo sight; House Anger; beacons & the exit; Chhaya), `.github/workflows/ci.yml` (permissions + concurrency), `public/_headers` (immutable assets)
 
-- [ ] **Step 1: CI hardening** — ci.yml: top-level `permissions: { contents: read }`; `concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }`. `_headers` append: `/assets/*` with `Cache-Control: public, max-age=31536000, immutable`.
-- [ ] **Step 2: FAQ** — add 4 entries (after 'What hunts me'): fogging mechanics, anger/collapse, beacon gating, Chhaya delay — copy consistent with §4.
-- [ ] **Step 3: README** — How to play M2: fog (F), beacons, anger, Chhaya, passages (Space/E), fail/restart, shards.
-- [ ] **Step 4: Local acceptance checklist** — gates + 10/10 e2e; manual notes for feel (echo speed, fog duration); bundle < 3 MB gz.
-- [ ] **Step 5: Commit** — `docs(m2): how to play, FAQ entries, CI hardening`
+- [x] **Step 1: CI hardening** — ci.yml: top-level `permissions: { contents: read }`; `concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }`. `_headers` append: `/assets/*` with `Cache-Control: public, max-age=31536000, immutable`.
+- [x] **Step 2: FAQ** — add 4 entries (after 'What hunts me'): fogging mechanics, anger/collapse, beacon gating, Chhaya delay — copy consistent with §4.
+- [x] **Step 3: README** — How to play M2: fog (F), beacons, anger, Chhaya, passages (Space/E), fail/restart, shards.
+- [x] **Step 4: Local acceptance checklist** — gates + 10/10 e2e; manual notes for feel (echo speed, fog duration); bundle < 3 MB gz.
+- [x] **Step 5: Commit** — `docs(m2): how to play, FAQ entries, CI hardening`
 
 ## Plan Self-Review (authoring time)
 
