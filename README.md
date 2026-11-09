@@ -2,7 +2,7 @@
 
 A 100-floor, first-person mirror-maze escape game. You descend a century-old palace of glass where reflections deceive you — and the things hunting you. Free, open source, runs in any modern browser, saves live only on your device.
 
-**Status:** m3 — the maze in four views, a lantern that bargains, and a score that breathes with the house. See "Run it" below.
+**Status:** m4 — the Tier-1 campaign: ten floors down to the Dwaar threshold hall, a save that travels, installable offline play, and a bilingual HUD (नमस्ते). See "Run it" below.
 
 - [Design blueprint (step001)](docs/superpowers/specs/2026-11-08-mirror-house-design.md)
 - [Prompt/request history](docs/prompts-history/README.md)
@@ -26,6 +26,14 @@ npm run e2e          # playwright smoke (first run: npx playwright install chrom
 
 Every floor is one loop: **frost every 🪞 beacon mirror, then reach the gold stair door** — before the glass catches you. Two to five minutes, sharable by seed, fully offline.
 
+### The descent — floors, the Dwaar, the Truth-Shard
+
+You start on floor 1 of a ten-floor tier and go down. Clearing a floor turns its exit into the **Stair Door**: walking in holds a beat behind a `descending…` banner, then the next floor arms — the ramp adds Echoes and beacons, braids the maze tighter, and shortens Chhaya's leash. The **floor chip** in the HUD's chip row says where you stand: `L01`…`L09` on the ramp, `L10 · DWAAR I ✦` for the tier's threshold.
+
+Floor 5 has a visitor: **Taal**, the beat-walker — a gold-lantern silhouette lurching in time with the music (wall-clock phase, so he keeps the beat even muted). His touch is a temper, not a kill: +20 anger per touch, 1.5 s between touches, and he never takes the floor from you.
+
+Floor 10 is the **Dwaar** — Chhaya's threshold hall, a fixed hand-authored 13×13 labyrinth instead of a procedural floor. Clear it and you claim **✦ Truth-Shard I**: the tier screen counts your floors and banked shards, then offers ↻ Play again (a fresh random base, a new ten-floor spine) or Stay — a free walk through the hall you earned. Your position in the house is saved; close the tab mid-tier and you resume on the floor you left.
+
 ### Frost — the only attack you get (`F`)
 
 The Frost Lantern breathes on the mirror you face (press `F` or the **❄ Frost** button): the glass fogs over for 25 seconds and its reflection dies. Echoes see you only through clear glass, so a fogged mirror is a door you just closed in their face — fog enough eyes around one Echo and it stalls, confused, slowly spinning. Each breath spends about a third of your lantern's air; it refills in four seconds.
@@ -48,9 +56,9 @@ Three fully playable ways to walk — switch anytime with the buttons at the top
 
 Sprinting body-first into a mirror cracks it: +15 anger, once per pane. Seven cracks — 100 anger — and the mirrors collapse: the floor fails and instantly re-arms, and the shards you had banked on it are forfeit. Walking never cracks anything. When glass is near, arrive at a walk.
 
-### Chhaya — the six-second shadow
+### Chhaya — the shadow behind you
 
-Chhaya walks your exact path, exactly six seconds behind. Never retrace your steps — you will meet yourself — and never linger where you have been. A True Mirror hop puts you somewhere your trail never went.
+Chhaya walks your exact path, seven seconds behind on floor 1 — and closer with every floor you descend (4.6 s by floor 9, 4 s in the Dwaar). Never retrace your steps — you will meet yourself — and never linger where you have been. A True Mirror hop puts you somewhere your trail never went.
 
 ### Passages — `Space` and `E`
 
@@ -71,7 +79,7 @@ The music is generated live in your browser — raga-inspired classical-fusion, 
 
 ### URL options
 
-- `?seed=CODE` — play a specific floor. Codes are 1–16 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no easily-confused letters). The same code always builds the same maze, so a code shared is a floor shared.
+- `?seed=CODE` — play a specific campaign. Codes are 1–16 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no easily-confused letters). The code is the campaign's base: the same code always builds the same ten floors, so a code shared is a tier shared. (Dev builds also accept `&floor=N` to jump straight to a floor.)
 - `?look=coat-glass` — dress your surveyor; you'll meet the result in the mirrors. The separator may be `-` or `.`, unknown parts fall back to the default `indigo-gold`. All 12 combinations are valid:
 
   | coat \ glass         | gold          | teal          | white          |
@@ -83,15 +91,28 @@ The music is generated live in your browser — raga-inspired classical-fusion, 
 
 ### Timer, Daily, streak, best
 
-The run timer starts on your first input and stops when you reach the stair door. Clearing a floor records your **best time** for that seed (fastest kept) and grows your **streak** — clear at least one floor every consecutive day to keep it alive. The **★ Daily** button loads the seed derived from today's date: everyone playing the Daily walks the same floor that day.
+The run timer starts on your first input and stops when you reach the stair door. Clearing a floor records your **best time** for that floor — every floor of a base is its own bucket (`BASE:floor`), so floor 3 never competes with floor 7 — and grows your **streak** — clear at least one floor every consecutive day to keep it alive. The **★ Daily** button loads the seed derived from today's date: everyone playing the Daily starts the same ten-floor spine that day.
 
 ### FAQ
 
-The **? FAQ** button (top right) or the `H` key opens 18 questions in-game: how to move, the views and the tactical map, how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, who Aaina is and what her hints cost, where the music comes from, what seeds are, the Daily, where your data lives, and what's coming next (the deeper Sentinels of the floors below).
+The **? FAQ** button (top right) or the `H` key opens 21 questions in-game: how to move, the views and the tactical map, how the floors and descending work (Dwaar included, and why Taal only makes you angrier), how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, who Aaina is and what her hints cost, where the music comes from, what seeds are, the Daily, where your data lives and what the export file is, whether it works offline and in which languages, and what's coming next (the deeper Sentinels of the floors below).
 
-### Your data stays on your device
+### Your data stays on your device — and can travel
 
-Best times, streak, and input mode are kept in your browser's local storage under a single key (`mirrorhouse.meta.v1`). No accounts, no servers, no telemetry — nothing leaves your machine. Clear the key (or all storage) and the game boots fresh with sensible defaults.
+Everything persistent — your look, input mode, mute, language, shards, streak, best times, and your floor in the campaign — lives in one IndexedDB record inside your own browser. No accounts, no servers, no telemetry; nothing leaves your machine unless you carry it yourself. (A legacy localStorage save from earlier milestones migrates itself once on boot.)
+
+- **💾 export** — writes your whole save as pretty JSON to `mirror-house-save.json` (a save dialog where the browser supports one, a plain download otherwise).
+- **📂 import** — picks a save file back up. It is validated strictly — field by field, version checked — before anything is stored; a tampered or truncated file is rejected with a toast, never executed. The page then reloads onto the imported save.
+
+A rejected or corrupt stored save reads as absent: the game boots fresh with sensible defaults rather than trusting junk.
+
+### Install it — it works offline
+
+Mirror House is a PWA. On the production build, use your browser's *Install app* / *Add to Home Screen* action: it gets its own window, its own icon (the gold lantern), and a service worker caches the shell and assets — installed once, it loads and plays with the network cut. The whole game ships as a single ~161 KB (gzipped) bundle, so the first load is quick and the offline copy is small.
+
+### नमस्ते — English and Hindi
+
+The HUD speaks two languages: the **🌐 button** cycles English ↔ हिंदी (its label names the language you would switch to), `?lang=hi` forces it from the URL, and your choice is remembered. Buttons, chips, overlays and hint prompts are localized; Aaina's dialogue, the FAQ answers and the lore stay English for now — they are content, and the content pipeline owns them.
 
 > Screenshots of the tier-one art direction — palette, procedural textures, hero mirrors, the surveyor's reflection — will be added here after the art pass is reviewed.
 

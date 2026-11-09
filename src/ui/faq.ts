@@ -12,6 +12,10 @@ export const FAQ: readonly FaqEntry[] = [
     a: 'A 100-floor escape through a century-old palace of mirrors. Floors are 2–5 minute tactical puzzles: fog the glass, outthink what hunts you, reach the stair door. You start at the top — level 1 — and descend.',
   },
   {
+    q: 'How do the floors work — what am I descending?',
+    a: "Ten floors make Tier 1. Clearing a floor turns its exit into the Stair Door: walk in, the house holds a breath behind a descending… banner, and the next floor arms — more Echoes, more beacons, a tighter maze, and Chhaya closer behind (7 s on floor 1, 4.6 s by floor 9). The floor chip in the HUD row — L01, L02… — says where you stand. Floor 5 belongs to Taal, the beat-walker: his touch adds 20 anger, once per second and a half, and never kills — a temper, not an executioner. Floor 10 is the Dwaar (L10 · DWAAR I ✦), Chhaya's fixed threshold hall — clear it to claim Truth-Shard I and finish the tier. Your floor is saved: close the tab mid-tier and you resume exactly where you stood.",
+  },
+  {
     q: 'How do I move?',
     a: 'Three modes, all fully playable alone — switch with the buttons at top right. Keys: WASD + mouse look (hybrid). Keys only: arrows or Q/E turn. Mouse only: hold left button to walk toward the cursor, hold right to sprint.',
   },
@@ -37,7 +41,11 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'Where is my data stored?',
-    a: "On your device, in your browser's local storage. No accounts, no servers, no telemetry — nothing leaves your machine. Ever.",
+    a: "On your device, in your browser's IndexedDB — one record holding your look, your settings, your language, shards, streak, best times and your floor in the campaign. No accounts, no servers, no telemetry — nothing leaves your machine. Ever.",
+  },
+  {
+    q: 'What do the 💾 and 📂 buttons do?',
+    a: 'They carry your save. 💾 exports the whole record as readable JSON — mirror-house-save.json — to keep as a backup or move to another device. 📂 imports one back: the file is validated field by field before anything is stored, and a wrong or tampered file is rejected — "Save file rejected" — never executed. Importing reloads the game onto the restored save.',
   },
   {
     q: 'Who is the lantern voice?',
@@ -49,7 +57,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What hunts me?',
-    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya already prowl the maze; the deeper Sentinels wake in later milestones.',
+    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya prowl from floor 1; Taal keeps the beat on floor 5; the deeper Sentinels wake in later milestones.',
   },
   {
     q: 'How do I fog mirrors — and why bother?',
@@ -76,6 +84,10 @@ export const FAQ: readonly FaqEntry[] = [
     a: 'Nobody — it is generated live in your browser: raga-inspired classical-fusion, fully original, no samples. It begins with your first input and follows the house, sharpening as anger and pursuit climb. M or the 🔊 button mutes it, and the choice is remembered.',
   },
   {
+    q: 'Can I install it? Does it work offline? What languages?',
+    a: 'Yes on all three. On the published build, your browser’s Install app / Add to Home Screen action gives Mirror House its own window and icon, and a service worker keeps a copy of the game — installed once, it loads and plays with the network off. The HUD speaks English and Hindi: the 🌐 button cycles between them (or ?lang=hi in the URL) and your choice is remembered. Aaina’s dialogue and these answers stay English for now — the content pipeline owns them.',
+  },
+  {
     q: 'I found a bug.',
     a: 'Thank you — please file it at github.com/seolithdev01/mirror-house/issues with your seed code; the layout reproduces itself.',
   },
@@ -86,7 +98,7 @@ export function buildFaqOverlay(): {
   toggle(): void;
   setLang(lang: Lang): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 18
+  // M4/T6 — the heading and the close button are chrome (localized); the 21
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   const root = document.createElement('div');

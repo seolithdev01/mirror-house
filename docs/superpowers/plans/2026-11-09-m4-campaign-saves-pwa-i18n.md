@@ -64,8 +64,8 @@ DWAAR_LAYOUT (hand-authored symmetric threshold hall — outer ring corridor, ce
 ```
 (`dwaarGrid` derives open cells; a FloorGrid built from it opens edges between adjacent open cells only.)
 
-- [ ] **Step 1: Failing tests** — ramp values pinned for all 10 floors; floorSeed/descend/completeTier/bestKey; isDwaar; DWAAR_LAYOUT: 13×13, symmetric under 180° rotation, all open cells connected (BFS), entrance/exit pickable (top-left-ish open cell far from bottom-right-ish via the existing `farthestCell` logic in maze.ts — export reuse or re-BFS here).
-- [ ] **Step 2: RED → implement → GREEN. Step 3: Gates. Step 4: Commit** — `feat(m4): campaign model — floor ramp, dwaar hall layout, tier completion`
+- [x] **Step 1: Failing tests** — ramp values pinned for all 10 floors; floorSeed/descend/completeTier/bestKey; isDwaar; DWAAR_LAYOUT: 13×13, symmetric under 180° rotation, all open cells connected (BFS), entrance/exit pickable (top-left-ish open cell far from bottom-right-ish via the existing `farthestCell` logic in maze.ts — export reuse or re-BFS here).
+- [x] **Step 2: RED → implement → GREEN. Step 3: Gates. Step 4: Commit** — `feat(m4): campaign model — floor ramp, dwaar hall layout, tier completion`
 
 ---
 
@@ -82,9 +82,9 @@ DWAAR_LAYOUT (hand-authored symmetric threshold hall — outer ring corridor, ce
 4. Chhaya delay per floor from `floorParams` (override the CHHAYA_DELAY_MS default at call site — `sampleDelayed(path, now, delayMs)` already takes delay param; Dwaar 4000).
 5. HUD floor chip `L02 · DWAAR I` (tier label; Dwaar floor shows `DWAAR I ✦`); `campaign()` hook added (DEV).
 
-- [ ] **Step 1: Implement maze floorFromGrid + main/hud wiring (tests: campaign unit already pins model; add `floorFromGrid` test — connectivity + entrance/exit determinism).**
-- [ ] **Step 2: Gates + e2e 15/15 (existing tests run floor 1 by default — URL seed now means base; verify no existing e2e depended on `seed()` returning bare base... the win-flow test asserts `bestFor(seed)` — hook `seed()` returns current floor seed which equals `${base}:1`; the test's `bestFor(h.seed)` pattern still works).**
-- [ ] **Step 3: Commit** — `feat(m4): descend the house — floor progression, dwaar I, truth-shard`
+- [x] **Step 1: Implement maze floorFromGrid + main/hud wiring (tests: campaign unit already pins model; add `floorFromGrid` test — connectivity + entrance/exit determinism).**
+- [x] **Step 2: Gates + e2e 15/15 (existing tests run floor 1 by default — URL seed now means base; verify no existing e2e depended on `seed()` returning bare base... the win-flow test asserts `bestFor(seed)` — hook `seed()` returns current floor seed which equals `${base}:1`; the test's `bestFor(h.seed)` pattern still works).**
+- [x] **Step 3: Commit** — `feat(m4): descend the house — floor progression, dwaar I, truth-shard`
 
 ---
 
@@ -108,9 +108,9 @@ export function updateTaal(t: TaalState, anchors: ReadonlyArray<{ x: number; y: 
 
 Rules: spawns only on `campaign.floor === TAAL_FLOOR`; contact (< CONTACT_RADIUS) → `applyCrack`-style anger **+20** (no death, no shard); cooldown 1.5s per contact; visible gold lantern pulse synced to `beatPulse`. He is a teaser, not a killer — FAQ copy says so later.
 
-- [ ] **Step 1: Failing tests** — beatPulse cycle pinned at several timestamps incl. wrap; updateTaal advances toward anchor with pulsing speed (seeded dt steps, assert position monotone toward anchor on even ticks, near-frozen on odd); contact cooldown logic (pure fn `taalTouch(cooldownUntil, now)` gate).
-- [ ] **Step 2: RED → implement → GREEN; wire (spawn on floor 5, anger contact, lantern emissive pulse).**
-- [ ] **Step 3: Gates + e2e 15/15. Step 4: Commit** — `feat(m4): taal cameo — the beat-walker tests floor 5`
+- [x] **Step 1: Failing tests** — beatPulse cycle pinned at several timestamps incl. wrap; updateTaal advances toward anchor with pulsing speed (seeded dt steps, assert position monotone toward anchor on even ticks, near-frozen on odd); contact cooldown logic (pure fn `taalTouch(cooldownUntil, now)` gate).
+- [x] **Step 2: RED → implement → GREEN; wire (spawn on floor 5, anger contact, lantern emissive pulse).**
+- [x] **Step 3: Gates + e2e 15/15. Step 4: Commit** — `feat(m4): taal cameo — the beat-walker tests floor 5`
 
 ---
 
@@ -139,9 +139,9 @@ export function serializeSave(s: SaveData): string;             // JSON with tra
 
 Export: 💾 button → File System Access API `showSaveFilePicker` when available, else `<a download="mirror-house-save.json">`; Import: 📂 → `showOpenFilePicker`/`<input type=file>` → text → `validateSave` → `idbPut` → `location.reload()`. Import failure → HUD hint `Save file rejected`. Boot order: URL params override save; migration runs when IDB null && localStorage `mirrorhouse.meta.v1` present (then LEAVE localStorage untouched — belt and braces).
 
-- [ ] **Step 1: Failing tests** — validateSave accepts good/hates malformed (wrong v, negative shards, proto junk `{"__proto__":...}` as plain obj — JSON.parse never yields proto, assert type checks); migrateMeta maps every field; mergeCampaign immutability; serializeSave round-trips through validateSave.
-- [ ] **Step 2: RED → implement → GREEN; wire boot + buttons + write-throughs.**
-- [ ] **Step 3: Gates + e2e 15/15 (boot is now async — hook registration must happen after save load; keep `waitForFunction` working). Step 4: Commit** — `feat(m4): save chain — IDB v2, v1 migration, export/import`
+- [x] **Step 1: Failing tests** — validateSave accepts good/hates malformed (wrong v, negative shards, proto junk `{"__proto__":...}` as plain obj — JSON.parse never yields proto, assert type checks); migrateMeta maps every field; mergeCampaign immutability; serializeSave round-trips through validateSave.
+- [x] **Step 2: RED → implement → GREEN; wire boot + buttons + write-throughs.**
+- [x] **Step 3: Gates + e2e 15/15 (boot is now async — hook registration must happen after save load; keep `waitForFunction` working). Step 4: Commit** — `feat(m4): save chain — IDB v2, v1 migration, export/import`
 
 ---
 
@@ -153,9 +153,9 @@ Export: 💾 button → File System Access API `showSaveFilePicker` when availab
 
 sw.js (hand-rolled, ~50 lines): `CACHE = 'mh-v4'`; install → precache `['/', '/index.html', '/manifest.webmanifest', '/icon.svg']` + `skipWaiting`; activate → delete caches ≠ CACHE + `clients.claim`; fetch → same-origin GET only: `/assets/` → cache-first; navigations → network-first, fallback cache '/' ; else pass through. No eval, no remote.
 
-- [ ] **Step 1: Manifest (name, short_name, start_url '/', display standalone, background/theme #0b1026, icons: icon.svg any+maskable 512x512 purpose) + icon.svg + sw.js.**
-- [ ] **Step 2: Wire registration (PROD only). Step 3: New e2e** — `m4: offline reload serves from SW`: build+preview server (Playwright webServer currently runs dev — add a second config or run `npm run preview` on port 4173 in the test via `process` — simplest: this test spawns nothing new; use `page.context().setOffline(true)` after load on the DEV server… SW doesn't register in dev. Pragmatic: e2e asserts `manifest.webmanifest` linked + SW registration guarded (eval `navigator.serviceWorker` present, registration null in dev); the REAL offline test is a manual acceptance step. Record honestly.) Gates + e2e.
-- [ ] **Step 4: Commit** — `feat(m4): pwa — manifest, icon, runtime-cache service worker`
+- [x] **Step 1: Manifest (name, short_name, start_url '/', display standalone, background/theme #0b1026, icons: icon.svg any+maskable 512x512 purpose) + icon.svg + sw.js.**
+- [x] **Step 2: Wire registration (PROD only). Step 3: New e2e** — `m4: offline reload serves from SW`: build+preview server (Playwright webServer currently runs dev — add a second config or run `npm run preview` on port 4173 in the test via `process` — simplest: this test spawns nothing new; use `page.context().setOffline(true)` after load on the DEV server… SW doesn't register in dev. Pragmatic: e2e asserts `manifest.webmanifest` linked + SW registration guarded (eval `navigator.serviceWorker` present, registration null in dev); the REAL offline test is a manual acceptance step. Record honestly.) Gates + e2e.
+- [x] **Step 4: Commit** — `feat(m4): pwa — manifest, icon, runtime-cache service worker`
 
 ---
 
@@ -177,8 +177,8 @@ export function t(lang: Lang, key: string): string; // en fallback for missing h
 
 Hindi: proper Devanagari (e.g., streak `लय`, best `सर्वश्रेष्ठ`, timer `समय`, shards `शीशे के टुकड़े`→ too long, use `कौर`? Keep short: shards `◆`, label `बचे शार्ड`… author carefully, chip labels stay compact). Apply everywhere listed; language switch: `?lang=hi` demo + saved on change via a small 🌐 button cycling en/hi.
 
-- [ ] **Step 1: Failing tests** — key parity (every en key exists in hi, same count), resolveLang priority cases, t() lookup + en-fallback path.
-- [ ] **Step 2: RED → implement tables + apply. Step 3: Gates + e2e 15/15 (+ quick manual note on hi render). Step 4: Commit** — `feat(m4): i18n — hindi + english ui chrome`
+- [x] **Step 1: Failing tests** — key parity (every en key exists in hi, same count), resolveLang priority cases, t() lookup + en-fallback path.
+- [x] **Step 2: RED → implement tables + apply. Step 3: Gates + e2e 15/15 (+ quick manual note on hi render). Step 4: Commit** — `feat(m4): i18n — hindi + english ui chrome`
 
 ---
 
@@ -192,7 +192,7 @@ Hindi: proper Devanagari (e.g., streak `लय`, best `सर्वश्रे�
 2. `m4: save round-trip persists progress` — after descending, `page.reload()` → hook `campaign().floor === 2` (resumed from IDB, no URL seed).
 3. `m4: hindi chrome via ?lang=hi` — goto `/?lang=hi&seed=...` → HUD mode button text contains Devanagari (`दोनों` or per table), chips rendered; then `?lang=en` default unaffected.
 
-- [ ] **Step 1: Chip + pointer-lock fixes. Step 2: Tests. Step 3: e2e 18/18 + gates. Step 4: Commit** — `fix(m4): unified shards chip, pointer-lock exit on map, progression e2e`
+- [x] **Step 1: Chip + pointer-lock fixes. Step 2: Tests. Step 3: e2e 18/18 + gates. Step 4: Commit** — `fix(m4): unified shards chip, pointer-lock exit on map, progression e2e`
 
 ---
 
@@ -201,7 +201,7 @@ Hindi: proper Devanagari (e.g., streak `लय`, best `सर्वश्रे�
 **Files:**
 - Modify: `docs/STATE_MACHINES.md` (Campaign machine row §11: states data+flags, descend/completeTier transitions, owner campaign.ts; save = versioned document policy note), spec §13.2 M4 → delivered, `README.md` (campaign, save/export, offline install, नमस्ते note), `src/ui/faq.ts` (+3: floors & descending; where data lives/export; offline/install + languages), plan ticks
 
-- [ ] **Step 1:** docs from shipped source; **Step 2:** gates + 18/18 + bundle check (<3MB gz); **Step 3: Commit** — `docs(m4): machines registry, spec delivery, how to descend`
+- [x] **Step 1:** docs from shipped source; **Step 2:** gates + 18/18 + bundle check (<3MB gz); **Step 3: Commit** — `docs(m4): machines registry, spec delivery, how to descend`
 
 ## Plan Self-Review
 

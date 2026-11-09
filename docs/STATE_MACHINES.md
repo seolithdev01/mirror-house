@@ -15,7 +15,7 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 174 unit tests + 15 Playwright tests, and the machine modules' own
+  suite is 242 unit tests + 19 Playwright tests, and the machine modules' own
   suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
@@ -36,6 +36,7 @@ a single value with named transitions.
 | 8   | **ViewMode**       | `focus` · `quad` · `overhead` · `tactical`  | `src/game/viewMode.ts`                   | Pure machine (M3/T3); `tactical` is the pause view              |
 | 9   | **Aaina overlay**  | `closed` · `open{tab}`                      | `src/ui/aaina.ts`                        | Diegetic panel — does **not** pause                             |
 | 10  | **AudioEngine**    | `idle` · `running`                          | `src/audio/engine.ts`                    | Starts on first gesture; `muted` is a flag, not a state         |
+| 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete` | `src/game/campaign.ts`                   | Pure data + transitions (M4/T1); `tierComplete` terminal for beta |
 
 ---
 
@@ -231,6 +232,44 @@ frame; the scheduler smooths toward it (0.12 lerp per 50 ms wake-up).
 
 ---
 
+## 11. Campaign — `src/game/campaign.ts`
+
+Pure data, not a phase machine (M4/T1): the spine is
+`{ seedBase, floor, tierComplete }` and every transition returns a fresh
+object — callers (`main.ts`) rebind their `campaign` binding; nothing mutates
+in place.
+
+| From                    | Event                                     | To                                                                          |
+| ----------------------- | ----------------------------------------- | --------------------------------------------------------------------------- |
+| —                       | `newCampaign(seedBase)`                   | `{ seedBase, floor: 1, tierComplete: false }`                                |
+| any                     | `descend(c)` — the Stair Door was paid    | `{ ...c, floor: floor + 1 }` — `tierComplete` is never touched here          |
+| `floor === DWAAR_FLOOR` | `completeTier(c)` — Truth-Shard claim     | `{ ...c, tierComplete: true }`                                               |
+| any other floor         | `completeTier(c)`                         | unchanged, **by reference** — the shard is claimed in the hall only          |
+
+**The tier.** Floors 1–9 are procedural — `generateFloor` seeded by
+`floorSeed(c) = seedBase:floor`, braided and stocked by `floorParams`; floor
+10 is fixed: the hand-authored 13×13 `DWAAR_LAYOUT` threshold hall
+(`dwaarGrid()` derives its open cells, `maze.floorFromGrid` builds the grid).
+`floorParams` pins the whole ramp: echoes `min(5, 2 + floor − 1)` with the
+Dwaar fixed at 4; beacons 2, 2, 3, 3, 3, 4, 4, 4, 4, 4; braid
+`0.12 + 0.01·(floor − 1)`; Chhaya delay `max(4500, 7000 − 300·(floor − 1))`,
+Dwaar 4000.
+
+**Invariants.** `tierComplete` flips true only inside `completeTier` and only
+on the Dwaar floor; nothing ever clears it (terminal for the beta — the tier
+screen's ↻ Play again starts a `newCampaign` on a fresh random base instead of
+reopening the tier). `floor` lives in 1..`TIER_ONE_FLOORS`: the Dwaar floor
+completes the tier rather than descending, and `floorParams` clamps its input
+regardless. Taal's floor-5 cameo reads `campaign.floor` in `main.ts` — he is
+spawn-side data, not campaign state.
+
+**Derived:** `floorSeed`/`bestKey` (`seedBase:floor` — every floor is its own
+best-time bucket), `isDwaar(floor)`, the `floorParams` ramp, and the HUD floor
+chip (`L02` on the ramp; the threshold floor names the tier — `L10 · DWAAR I
+✦`, localized `स्तर`/`द्वार` in Hindi).
+
+---
+
 ## Look-alikes — deliberately _not_ machines
 
 | Thing                 | Why not                                                                                                                                    |
@@ -246,7 +285,7 @@ frame; the scheduler smooths toward it (0.12 lerp per 50 ms wake-up).
 | **`visited` / pings** | Fog-of-war data (M3/T4): a `Set` of explored cells plus a decaying ping array (`pingOpacity`). Written by the fixed step, read by the map. |
 | **Waypoints**         | Tactical-view data: ivory cell marks (max `WAYPOINT_MAX`), click-toggled, first `Esc` cleared. A list with a cap, not a lifecycle.         |
 | **Pointer lock**      | Owned by the browser. We observe; we do not model.                                                                                         |
-| **Meta save `v1`**    | A versioning policy, not a machine: `loadMeta` validates `v === 1` and falls back to defaults; migrations arrive with the M4 save chain.   |
+| **IDB save `v2`**     | A versioning policy, not a machine (M4/T4, the meta-v1 row grown up): `validateSave` gates `v === 2` strictly — an imported or stored save is untrusted bytes until every field checks out, and a corrupt record reads as absent so boot falls through to defaults; `migrateMeta` maps the localStorage v1 era once (progress fresh, lang `en`); `mergeCampaign` is the campaign write-through; `idbGet`/`idbPut` degrade to null/no-op so storage never kills a boot. |
 
 ---
 
@@ -261,9 +300,10 @@ frame; the scheduler smooths toward it (0.12 lerp per 50 ms wake-up).
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **174/174** unit ·
-**15/15** Playwright (11 from m2 and earlier, 4 new for m3: view cycle +
-tactical pause, audio gesture/mute, Aaina's hint economy, fog of war).
+`npm run typecheck` clean · `npm run lint` clean · **242/242** unit ·
+**19/19** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
+wiring, descend to floor 2, save round-trip resume, Hindi chrome via
+`?lang=hi`).
 
 ---
 
