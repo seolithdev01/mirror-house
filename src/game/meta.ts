@@ -78,3 +78,12 @@ export function recordRun(m: MetaSave, seed: string, ms: number, today: string):
 export function awardShards(m: MetaSave, gained: number): MetaSave {
   return { ...m, shards: (m.shards ?? 0) + gained };
 }
+
+/** Spend banked shards (M3/T2: Aaina's hints). Null when the balance cannot
+ *  cover it — the caller keeps the old save; balances never go negative, and
+ *  an absent count (older save) spends as an empty purse. */
+export function spendShards(m: MetaSave, n: number): MetaSave | null {
+  const banked = m.shards ?? 0;
+  if (n < 0 || banked < n) return null;
+  return { ...m, shards: banked - n };
+}

@@ -6,6 +6,8 @@ export type HudInit = {
   mode: InputMode;
   onMode(m: InputMode): void;
   onFaq(): void;
+  /** M3/T2 — opens/closes Aaina's dialogue panel ([Q] does the same). */
+  onAaina(): void;
   onDaily(): void;
   onFrost(): void;
 };
@@ -57,6 +59,11 @@ export function createHud(init: HudInit): Hud {
   faq.id = 'mh-faq';
   faq.textContent = '? FAQ';
   faq.addEventListener('click', () => init.onFaq());
+  const aaina = document.createElement('button');
+  aaina.type = 'button';
+  aaina.id = 'mh-aaina';
+  aaina.textContent = '💬 Aaina';
+  aaina.addEventListener('click', () => init.onAaina());
   const daily = document.createElement('button');
   daily.type = 'button';
   daily.id = 'mh-daily';
@@ -95,7 +102,7 @@ export function createHud(init: HudInit): Hud {
   const hint = document.createElement('div');
   hint.id = 'mh-hint';
   hint.hidden = true;
-  root.append(modes, faq, daily, frost, chips, breath, anger, cleared, fail, hint);
+  root.append(modes, faq, aaina, daily, frost, chips, breath, anger, cleared, fail, hint);
   document.body.appendChild(root);
 
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;

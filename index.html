@@ -46,6 +46,31 @@
       #mh-faq-box summary { cursor: pointer; color: #2ec4b6; }
       #mh-faq-box button { margin-top: 14px; background: #1d2440; color: #f2e9d8;
         border: 1px solid #2a3560; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+      /* Aaina (M3) — the FAQ's diegetic sister: same box styling, docked beside
+         the maze instead of a centered pause, so the floor stays visible and
+         live while the lantern talks. */
+      #mh-aaina-overlay { position: fixed; left: 8px; top: 76px; bottom: 8px;
+        width: min(400px, 92vw); z-index: 20; display: flex; pointer-events: auto; }
+      #mh-aaina-overlay[hidden] { display: none; }
+      #mh-aaina-box { flex: 1; overflow: auto; background: rgba(11,16,38,.94);
+        border: 1px solid #2a3560; border-radius: 10px; padding: 16px 20px; color: #f2e9d8;
+        font: 14px/1.6 system-ui; display: flex; flex-direction: column; gap: 10px; }
+      #mh-aaina-box h2 { margin: 0; color: #d9a441; font-size: 17px; }
+      #mh-aaina-tabs { display: flex; gap: 6px; }
+      #mh-aaina-tabs button { background: #1d2440; color: #f2e9d8; border: 1px solid #2a3560;
+        border-radius: 6px; padding: 4px 12px; cursor: pointer; }
+      #mh-aaina-tabs button.active { border-color: #2ec4b6; color: #2ec4b6; }
+      #mh-aaina-box details { border-bottom: 1px solid #1d2440; padding: 6px 0; }
+      #mh-aaina-box summary { cursor: pointer; color: #2ec4b6; }
+      #mh-aaina-hint-text { white-space: pre-wrap; }
+      #mh-aaina-buy { align-self: flex-start; background: #1d2440; color: #f2e9d8;
+        border: 1px solid #2a3560; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+      #mh-aaina-buy:disabled { opacity: .45; cursor: default; }
+      #mh-aaina-lore-count { color: #d9a441; margin: 0; }
+      #mh-aaina-lore-list p { margin: 6px 0; }
+      #mh-aaina-lore-list p.locked { color: #6b7280; font-style: italic; }
+      #mh-aaina-close { align-self: flex-start; background: #1d2440; color: #f2e9d8;
+        border: 1px solid #2a3560; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
     </style>
   </head>
   <body>

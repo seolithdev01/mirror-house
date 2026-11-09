@@ -13,6 +13,13 @@ import {
 import { InputCollector, keysToMoveInput, mouseOnlyInput, type InputMode } from './engine/input';
 import { Dir } from './engine/grid';
 import { createAvatar, createChhaya, updateAvatar } from './game/avatar';
+import {
+  hintCost,
+  loreUnlockedCount,
+  nextHint,
+  type HintContext,
+  type HintKind,
+} from './game/aaina';
 import { bracketSamples, recordPath, sampleDelayed, type PathSample } from './game/chhaya';
 import { initEchoes, updateEcho } from './game/echo';
 import { createEchoMesh, syncEchoMesh } from './game/echoView';
@@ -48,7 +55,15 @@ import {
 } from './game/houseState';
 import { parseLook } from './game/look';
 import { generateFloor, TIER_ONE } from './game/maze';
-import { awardShards, dailySeed, loadMeta, recordRun, saveMeta, todayStamp } from './game/meta';
+import {
+  awardShards,
+  dailySeed,
+  loadMeta,
+  recordRun,
+  saveMeta,
+  spendShards,
+  todayStamp,
+} from './game/meta';
 import {
   createMirrorMesh,
   createSilveredDoor,
@@ -69,6 +84,7 @@ import {
 } from './game/passages';
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
+import { buildAainaOverlay } from './ui/aaina';
 import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
 
@@ -175,6 +191,13 @@ const visuals: MirrorBinding[] = allMirrors.map((m) => {
 let house = initHouseState();
 let breath = 1;
 
+// Aaina's hint economy (M3/T2). hintsUsed is a per-floor counter — it resets
+// with the floor, so a new attempt prices hints from ◆ 5 again. purchasedHint
+// is the line she last sold this floor; it clears when the situation changes
+// (nextHint's kind moves on) — derived data, not a machine.
+let hintsUsed = 0;
+let purchasedHint: { kind: HintKind; text: string } | null = null;
+
 // M2 echoes: hollow reflections hunting through the mirrors above. They see
 // via allMirrors/mirrorRuntime, walk the flow field, and touch-fail the run.
 // Layer-0 glass figures — visible to the player AND inside every mirror pass.
@@ -210,6 +233,8 @@ function resetFloor(now: number): void {
   chhaya.visible = false;
   house = { ...initHouseState(), attempts: house.attempts + 1 };
   breath = 1;
+  hintsUsed = 0; // a fresh attempt prices Aaina's hints from the base again
+  purchasedHint = null;
   player = spawnPlayer(floor);
   input.snapshotAndReset(); // drain mouseDx banked during the freeze — no giant first turn
   hud.hideFail();
@@ -250,8 +275,54 @@ function updateChhaya(now: number): void {
 }
 
 /**
+ * Aaina's live view of the floor (M3/T2). chhayaNear = her delayed sample
+ * exists on an active floor within 6 m of the player; chasing = echoes that
+ * currently hunt. The panel is diegetic — the feed runs while you walk.
+ */
+function aainaContext(): HintContext {
+  const bc = beaconsCaptured(allMirrors, mirrorRuntime);
+  const at = sampleDelayed(path, performance.now());
+  return {
+    beaconsLeft: bc.total - bc.captured,
+    anger: house.anger,
+    chhayaNear: at !== null && active(phase) && Math.hypot(at.x - player.x, at.y - player.y) < 6,
+    chasing: echoes.filter((e) => e.mode === 'chase').length,
+    exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
+    hintsUsed,
+  };
+}
+
+/** Per-frame panel refresh while she is open: preview kind, price, purse, lore. */
+function refreshAaina(): void {
+  const hint = nextHint(aainaContext());
+  if (purchasedHint !== null && purchasedHint.kind !== hint.kind) purchasedHint = null;
+  aaina.updateHint({
+    kind: hint.kind,
+    cost: hintCost(hintsUsed),
+    shards: meta.shards ?? 0,
+    revealedText: purchasedHint === null ? null : purchasedHint.text,
+  });
+  aaina.updateLore(loreUnlockedCount(Object.keys(meta.best).length));
+}
+
+/** Buy the offered hint: banked shards only (pending floor shards cannot pay),
+ *  saved at once, hintsUsed up — the next hint this floor costs more. */
+function buyHint(): void {
+  const hint = nextHint(aainaContext());
+  const spent = spendShards(meta, hintCost(hintsUsed));
+  if (spent === null) return; // unaffordable — the Buy button is disabled; this is the guard
+  meta = spent;
+  saveMeta(meta);
+  hintsUsed += 1;
+  purchasedHint = { kind: hint.kind, text: hint.text };
+  hud.setChips({ shards: meta.shards ?? 0 });
+}
+
+/**
  * Verbs (frost, step-through, push) need a live floor AND no overlay in front
  * of it: the FAQ is a pause, and a key pressed while reading it must not act.
+ * Aaina is deliberately absent here — she is diegetic, so verbs stay live
+ * while she talks.
  */
 function canAct(): boolean {
   return active(phase) && faq.root.hidden === true;
@@ -293,6 +364,7 @@ const input = new InputCollector();
 input.attach(window);
 let mode: InputMode = meta.mode;
 const faq = buildFaqOverlay();
+const aaina = buildAainaOverlay({ onBuyHint: buyHint });
 const hud = createHud({
   mode,
   onMode: (m) => {
@@ -302,6 +374,7 @@ const hud = createHud({
     saveMeta(meta);
   },
   onFaq: () => faq.toggle(),
+  onAaina: () => aaina.toggle(),
   onDaily: () => {
     const d = dailySeed(todayStamp());
     window.location.search = `?seed=${d}`;
@@ -319,6 +392,11 @@ canvas.addEventListener('click', () => {
 });
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyH' && !e.repeat) faq.toggle();
+});
+// Aaina toggles on [Q]. She is NOT a pause: the floor keeps simulating while
+// she is open (see the fixed step below for the one input she does claim).
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyQ' && !e.repeat) aaina.toggle();
 });
 // Frost is a keydown press, not a held key (e.repeat guard) — same trigger as the HUD button.
 window.addEventListener('keydown', (e) => {
@@ -414,10 +492,19 @@ function frame(now: number): void {
   } else if (simActive) {
     accumulator += elapsed;
     while (accumulator >= FIXED_STEP && active(phase)) {
+      let snap = input.snapshotAndReset();
+      // Diegetic, not a pause: movement stays live while Aaina talks, but Q is
+      // hers while she is open — drop ONLY its turn-left contribution from the
+      // frame's input (E and the arrows keep turning). Consequence, accepted
+      // for v1: a Q tap opens her, so keyboard/hybrid left-nudge is E/arrows'
+      // job now — mouse look in hybrid is unaffected.
+      if (!aaina.root.hidden && snap.keys.has('KeyQ')) {
+        const keys = new Set(snap.keys);
+        keys.delete('KeyQ');
+        snap = { keys, mouseDx: snap.mouseDx };
+      }
       const inputFrame =
-        mode === 'mouse'
-          ? mouseOnlyInput(input.mouseState())
-          : keysToMoveInput(input.snapshotAndReset(), mode);
+        mode === 'mouse' ? mouseOnlyInput(input.mouseState()) : keysToMoveInput(snap, mode);
       player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
       const inputActive =
         inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
@@ -480,6 +567,7 @@ function frame(now: number): void {
   });
   hud.setBreath(breath);
   hud.setAnger(house.anger / ANGER_MAX);
+  if (!aaina.root.hidden) refreshAaina(); // she reads the floor while you walk it
   syncFogVisuals(now);
   // Door machine: an opening door advances on frame time, then rests open for
   // the rest of the floor — no further hints, no further pushes.
