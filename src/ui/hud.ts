@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { FOG_COST } from '../engine/constants';
 import type { InputMode } from '../engine/input';
+import { fill, t, type Lang } from './i18n';
 
 export type HudInit = {
   mode: InputMode;
@@ -20,6 +21,8 @@ export type HudInit = {
   onExport(): void;
   /** M4/T4 — 📂: pick a file, validate, store, reload. */
   onImport(): void;
+  /** M4/T6 — the 🌐 button: cycle the UI language (en ↔ hi). */
+  onLang(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -53,6 +56,9 @@ export interface Hud {
   /** M4/T4 — a short-lived notice (import rejections, export confirmations).
    *  Separate from hint(): the frame loop rewrites hint() every frame. */
   toast(text: string): void;
+  /** M4/T6 — re-label every chrome string this HUD owns (buttons, chips,
+   *  overlays) in the new language; values recompose from cached state. */
+  setLang(lang: Lang): void;
   root: HTMLElement;
 }
 
@@ -65,6 +71,10 @@ function chip(label: string, id: string): HTMLElement {
 }
 
 export function createHud(init: HudInit): Hud {
+  // M4/T6 — every chrome string this HUD owns flows through t(); setLang()
+  // flips the value and relabels in place. 'en' until the first setLang()
+  // (main calls one at boot, so the paint is right from frame one).
+  let lang: Lang = 'en';
   const root = document.createElement('div');
   root.id = 'hud';
   const modes = document.createElement('div');
@@ -74,59 +84,59 @@ export function createHud(init: HudInit): Hud {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.mode = m;
-    b.textContent = m === 'keyboard' ? '⌨ Keys' : m === 'mouse' ? '🖱 Mouse' : '⌨+🖱 Both';
+    b.textContent = t(lang, `mode.${m}`);
     b.addEventListener('click', () => init.onMode(m));
     buttons[m] = b;
     modes.appendChild(b);
   }
+  // M4/T6 — 🌐 cycles en ↔ hi next to the mode buttons; its label names the
+  // language it switches TO (हिं while English, EN while Hindi).
+  const langBtn = document.createElement('button');
+  langBtn.type = 'button';
+  langBtn.id = 'mh-lang';
+  langBtn.addEventListener('click', () => init.onLang());
+  modes.appendChild(langBtn);
   const faq = document.createElement('button');
   faq.type = 'button';
   faq.id = 'mh-faq';
-  faq.textContent = '? FAQ';
   faq.addEventListener('click', () => init.onFaq());
   const aaina = document.createElement('button');
   aaina.type = 'button';
   aaina.id = 'mh-aaina';
-  aaina.textContent = '💬 Aaina';
   aaina.addEventListener('click', () => init.onAaina());
   const daily = document.createElement('button');
   daily.type = 'button';
   daily.id = 'mh-daily';
-  daily.textContent = '★ Daily';
   daily.addEventListener('click', () => init.onDaily());
   const frost = document.createElement('button');
   frost.type = 'button';
   frost.id = 'mh-frost';
-  frost.textContent = '❄ Frost';
   frost.addEventListener('click', () => init.onFrost());
   const mute = document.createElement('button');
   mute.type = 'button';
   mute.id = 'mh-mute';
-  mute.textContent = '🔊 Sound';
   mute.addEventListener('click', () => init.onMute());
   // M4/T4 — the save chain's front door: export the IDB save, import one back.
   const exportBtn = document.createElement('button');
   exportBtn.type = 'button';
   exportBtn.id = 'mh-export';
   exportBtn.textContent = '💾';
-  exportBtn.title = 'Export save file';
   exportBtn.addEventListener('click', () => init.onExport());
   const importBtn = document.createElement('button');
   importBtn.type = 'button';
   importBtn.id = 'mh-import';
   importBtn.textContent = '📂';
-  importBtn.title = 'Import save file';
   importBtn.addEventListener('click', () => init.onImport());
   const chips = document.createElement('div');
   chips.id = 'mh-chips';
   chips.append(
-    chip('👁 Focus', 'view'),
-    chip('L01', 'floor'),
-    chip('🔥 0', 'streak'),
-    chip('⏱ —', 'best'),
-    chip('⏳ 0.0s', 'timer'),
-    chip('🪞 0/0', 'beacons'),
-    chip('💠 0', 'shards'),
+    chip('', 'view'),
+    chip('', 'floor'),
+    chip('', 'streak'),
+    chip('', 'best'),
+    chip('', 'timer'),
+    chip('', 'beacons'),
+    chip('', 'shards'),
   );
   const breath = document.createElement('div');
   breath.id = 'mh-breath';
@@ -181,23 +191,19 @@ export function createHud(init: HudInit): Hud {
   const tierBox = document.createElement('div');
   tierBox.id = 'mh-tier-box';
   const tierTitle = document.createElement('h2');
-  tierTitle.textContent = '✦ Truth-Shard I claimed — Tier I complete';
   const tierStats = document.createElement('p');
   const tierButtons = document.createElement('div');
   tierButtons.id = 'mh-tier-buttons';
   const playAgain = document.createElement('button');
   playAgain.type = 'button';
   playAgain.id = 'mh-tier-again';
-  playAgain.textContent = '↻ Play again';
   playAgain.addEventListener('click', () => init.onPlayAgain());
   const stay = document.createElement('button');
   stay.type = 'button';
   stay.id = 'mh-tier-stay';
-  stay.textContent = 'Stay — wander the hall';
   stay.addEventListener('click', () => init.onStay());
   const tierNote = document.createElement('p');
   tierNote.id = 'mh-tier-note';
-  tierNote.textContent = 'The shard is already banked — staying is a free walk.';
   tierButtons.append(playAgain, stay);
   tierBox.append(tierTitle, tierStats, tierButtons, tierNote);
   tier.appendChild(tierBox);
@@ -206,6 +212,67 @@ export function createHud(init: HudInit): Hud {
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
   let hintText: string | null = null; // last shown hint (hint() early-returns on repeats)
   let toastTimer = 0; // the toast's own hide timer (re-toast restarts the clock)
+  // M4/T6 — the last values fed to the value-bearing setters, so setLang() can
+  // recompose every label-bearing surface (chips, mute, tier) without main
+  // re-feeding them. Derived display state, not a second truth: the values'
+  // owners still write them.
+  let muted = false;
+  let lastTierStats: { floors: number; shards: number } | null = null;
+  const lastChips: {
+    streak?: number;
+    bestMs?: number | null;
+    timerMs?: number | null;
+    beacons?: { captured: number; total: number };
+    shards?: number;
+  } = {};
+
+  const chipText = (id: string, text: string): void => {
+    const el = document.getElementById(`mh-${id}`);
+    if (el !== null) el.textContent = text;
+  };
+  /** Compose the five value chips from the cache — called by setChips (merge
+   *  first) and by setLang (relabel with the values already on screen). */
+  function renderChips(): void {
+    if (lastChips.streak !== undefined)
+      chipText('streak', `🔥 ${t(lang, 'chip.streak')} ${lastChips.streak}`);
+    if (lastChips.bestMs !== undefined)
+      chipText(
+        'best',
+        `⏱ ${t(lang, 'chip.best')} ${lastChips.bestMs == null ? '—' : fmt(lastChips.bestMs)}`,
+      );
+    if (lastChips.timerMs !== undefined)
+      chipText(
+        'timer',
+        `⏳ ${t(lang, 'chip.timer')} ${lastChips.timerMs == null ? '—' : fmt(lastChips.timerMs)}`,
+      );
+    if (lastChips.beacons !== undefined)
+      chipText(
+        'beacons',
+        `🪞 ${t(lang, 'chip.beacons')} ${lastChips.beacons.captured}/${lastChips.beacons.total}`,
+      );
+    if (lastChips.shards !== undefined)
+      chipText('shards', `💠 ${t(lang, 'chip.shards')} ${lastChips.shards}`);
+  }
+
+  /** One place that knows every static chrome label — boot and setLang(). */
+  function relabelStatic(): void {
+    for (const m of Object.keys(buttons)) buttons[m]!.textContent = t(lang, `mode.${m}`);
+    langBtn.textContent = t(lang, lang === 'en' ? 'btn.langHi' : 'btn.langEn');
+    langBtn.title = t(lang, 'btn.langTitle');
+    faq.textContent = t(lang, 'btn.faq');
+    aaina.textContent = t(lang, 'btn.aaina');
+    daily.textContent = t(lang, 'btn.daily');
+    frost.textContent = t(lang, 'btn.frost');
+    mute.textContent = t(lang, muted ? 'btn.muted' : 'btn.mute');
+    exportBtn.title = t(lang, 'btn.export');
+    importBtn.title = t(lang, 'btn.import');
+    tierTitle.textContent = t(lang, 'overlay.tierTitle');
+    playAgain.textContent = t(lang, 'misc.playAgain');
+    stay.textContent = t(lang, 'misc.stay');
+    tierNote.textContent = t(lang, 'overlay.tierNote');
+  }
+  relabelStatic();
+
   const setMode = (mode: InputMode) => {
     for (const m of Object.keys(buttons)) buttons[m]!.classList.toggle('active', m === mode);
   };
@@ -213,21 +280,8 @@ export function createHud(init: HudInit): Hud {
   return {
     setMode,
     setChips: (c) => {
-      if (c.streak !== undefined)
-        (document.getElementById('mh-streak') as HTMLElement).textContent = `🔥 ${c.streak}`;
-      if (c.bestMs !== undefined)
-        (document.getElementById('mh-best') as HTMLElement).textContent = `⏱ ${
-          c.bestMs == null ? '—' : fmt(c.bestMs)
-        }`;
-      if (c.timerMs !== undefined)
-        (document.getElementById('mh-timer') as HTMLElement).textContent = `⏳ ${
-          c.timerMs == null ? '—' : fmt(c.timerMs)
-        }`;
-      if (c.beacons !== undefined)
-        (document.getElementById('mh-beacons') as HTMLElement).textContent =
-          `🪞 ${c.beacons.captured}/${c.beacons.total}`;
-      if (c.shards !== undefined)
-        (document.getElementById('mh-shards') as HTMLElement).textContent = `💠 ${c.shards}`;
+      Object.assign(lastChips, c);
+      renderChips();
     },
     setBreath: (v) => {
       const clamped = Math.max(0, Math.min(1, v));
@@ -242,29 +296,32 @@ export function createHud(init: HudInit): Hud {
       (document.getElementById('mh-view') as HTMLElement).textContent = `👁 ${label}`;
     },
     setMuted: (m) => {
-      mute.textContent = m ? '🔇 Muted' : '🔊 Sound';
+      muted = m;
+      mute.textContent = t(lang, m ? 'btn.muted' : 'btn.mute');
     },
     setFloor: (label) => {
       (document.getElementById('mh-floor') as HTMLElement).textContent = label;
     },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;
-      cleared.textContent = isBest
-        ? `✨ Floor cleared in ${fmt(ms)} — new best!`
-        : `Floor cleared in ${fmt(ms)} (best ${bestMs == null ? '—' : fmt(bestMs)})`;
+      cleared.textContent = fill(t(lang, isBest ? 'overlay.clearedBest' : 'overlay.cleared'), {
+        s: fmt(ms),
+        best: bestMs == null ? '—' : fmt(bestMs),
+      });
     },
     hideCleared: () => {
       cleared.hidden = true;
     },
     showDescend: () => {
-      descend.textContent = 'descending…';
+      descend.textContent = t(lang, 'overlay.descend');
       descend.hidden = false;
     },
     hideDescend: () => {
       descend.hidden = true;
     },
     showTierComplete: (stats) => {
-      tierStats.textContent = `${stats.floors} floors cleared · ${stats.shards} shards banked`;
+      lastTierStats = stats;
+      tierStats.textContent = fill(t(lang, 'overlay.tierStats'), stats);
       tier.hidden = false;
     },
     hideTier: () => {
@@ -290,6 +347,14 @@ export function createHud(init: HudInit): Hud {
       toastTimer = window.setTimeout(() => {
         toast.hidden = true;
       }, 2500);
+    },
+    setLang: (next) => {
+      if (next === lang) return;
+      lang = next;
+      relabelStatic();
+      renderChips();
+      if (lastTierStats !== null && !tier.hidden)
+        tierStats.textContent = fill(t(lang, 'overlay.tierStats'), lastTierStats);
     },
     root,
   };

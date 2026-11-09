@@ -119,6 +119,11 @@
         border-radius: 6px;
         padding: 4px 10px;
       }
+      /* M4/T6 — chips are single-line in every language; long labels move the
+         row wider instead of wrapping mid-chip. */
+      .mh-chip {
+        white-space: nowrap;
+      }
       #mh-cleared {
         background: rgba(11, 16, 38, 0.92);
         border: 1px solid #d9a441;

@@ -10,6 +10,7 @@
 import type { HintKind } from '../game/aaina';
 import { LORE } from '../game/aaina';
 import { FAQ } from './faq';
+import { fill, t, type Lang } from './i18n';
 
 export type AainaTab = 'ask' | 'hint' | 'lore';
 
@@ -35,6 +36,9 @@ export interface AainaOverlay {
   setTab(tab: AainaTab): void;
   updateHint(view: AainaHintView): void;
   updateLore(unlocked: number): void;
+  /** M4/T6 — re-label the TAB buttons + close button. Her words stay English:
+   *  the dialogue is content, not chrome (the content pipeline owns it). */
+  setLang(lang: Lang): void;
 }
 
 /** How she names each situation in the preview line ("I can tell you about: …"). */
@@ -72,17 +76,20 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
     hint: document.createElement('button'),
     lore: document.createElement('button'),
   };
+  // M4/T6 — the three TAB labels are chrome (localized); her heading, the FAQ
+  // verbatim, hint lines and lore are content and stay English.
+  let lang: Lang = 'en';
   const labels: Record<AainaTab, string> = { ask: 'Ask', hint: 'Hint', lore: 'Lore' };
-  for (const t of ['ask', 'hint', 'lore'] as const) {
-    panels[t].id = `mh-aaina-${t}`;
-    panels[t].hidden = true;
-    const b = tabBtns[t];
+  for (const tabId of ['ask', 'hint', 'lore'] as const) {
+    panels[tabId].id = `mh-aaina-${tabId}`;
+    panels[tabId].hidden = true;
+    const b = tabBtns[tabId];
     b.type = 'button';
-    b.id = `mh-aaina-tab-${t}`;
-    b.textContent = labels[t];
-    b.addEventListener('click', () => setTab(t));
+    b.id = `mh-aaina-tab-${tabId}`;
+    b.textContent = labels[tabId];
+    b.addEventListener('click', () => setTab(tabId));
     tabs.appendChild(b);
-    box.appendChild(panels[t]);
+    box.appendChild(panels[tabId]);
   }
   box.insertBefore(tabs, panels.ask);
 
@@ -116,13 +123,21 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
   const close = document.createElement('button');
   close.type = 'button';
   close.id = 'mh-aaina-close';
-  close.textContent = '✕ Close (Q)';
   close.addEventListener('click', () => {
     root.hidden = true;
   });
   box.appendChild(close);
   root.appendChild(box);
   document.body.appendChild(root);
+
+  function relabel(): void {
+    for (const tabId of ['ask', 'hint', 'lore'] as const) {
+      labels[tabId] = t(lang, `tab.${tabId}`);
+      tabBtns[tabId].textContent = labels[tabId];
+    }
+    close.textContent = fill(t(lang, 'misc.close'), { key: 'Q' });
+  }
+  relabel();
 
   let tab: AainaTab = 'ask';
   function setTab(next: AainaTab): void {
@@ -188,5 +203,10 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
     setTab,
     updateHint,
     updateLore,
+    setLang: (next) => {
+      if (next === lang) return;
+      lang = next;
+      relabel();
+    },
   };
 }

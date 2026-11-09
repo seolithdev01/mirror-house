@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
+import { fill, t, type Lang } from './i18n';
+
 export interface FaqEntry {
   q: string;
   a: string;
@@ -79,14 +81,20 @@ export const FAQ: readonly FaqEntry[] = [
   },
 ];
 
-export function buildFaqOverlay(): { root: HTMLElement; toggle(): void } {
+export function buildFaqOverlay(): {
+  root: HTMLElement;
+  toggle(): void;
+  setLang(lang: Lang): void;
+} {
+  // M4/T6 — the heading and the close button are chrome (localized); the 18
+  // entries are content and stay English (the content pipeline owns them).
+  let lang: Lang = 'en';
   const root = document.createElement('div');
   root.id = 'mh-faq-overlay';
   root.hidden = true;
   const box = document.createElement('div');
   box.id = 'mh-faq-box';
   const h = document.createElement('h2');
-  h.textContent = 'Mirror House — FAQ';
   box.appendChild(h);
   for (const { q, a } of FAQ) {
     const d = document.createElement('details');
@@ -99,7 +107,6 @@ export function buildFaqOverlay(): { root: HTMLElement; toggle(): void } {
   }
   const close = document.createElement('button');
   close.type = 'button';
-  close.textContent = '✕ Close (H)';
   close.addEventListener('click', () => {
     root.hidden = true;
   });
@@ -109,10 +116,20 @@ export function buildFaqOverlay(): { root: HTMLElement; toggle(): void } {
     if (e.target === root) root.hidden = true;
   });
   document.body.appendChild(root);
+  function relabel(): void {
+    h.textContent = t(lang, 'faq.title');
+    close.textContent = fill(t(lang, 'misc.close'), { key: 'H' });
+  }
+  relabel();
   return {
     root,
     toggle: () => {
       root.hidden = !root.hidden;
+    },
+    setLang: (next) => {
+      if (next === lang) return;
+      lang = next;
+      relabel();
     },
   };
 }

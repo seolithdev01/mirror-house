@@ -98,14 +98,7 @@ import {
   type TaalState,
 } from './game/taal';
 import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
-import {
-  awardShards,
-  dailySeed,
-  META_KEY,
-  recordRun,
-  spendShards,
-  todayStamp,
-} from './game/meta';
+import { awardShards, dailySeed, META_KEY, recordRun, spendShards, todayStamp } from './game/meta';
 import {
   defaultSave,
   idbGet,
@@ -149,6 +142,7 @@ import {
 import { buildAainaOverlay } from './ui/aaina';
 import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
+import { fill, resolveLang, t, type Lang } from './ui/i18n';
 import { createOverhead, pingOpacity } from './ui/overhead';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
@@ -231,6 +225,14 @@ const scene = new THREE.Scene();
 const VOID_COLOR = 0x0b1026; // the night the house floats in — background, fog, map-mode clear
 scene.background = new THREE.Color(VOID_COLOR);
 scene.fog = new THREE.Fog(VOID_COLOR, 2, 26);
+// M4/T6 — the UI language resolves once at boot: `?lang=` (the demo path)
+// beats the saved choice beats a hi-* browser, else English. The resolved
+// value becomes the saved one (the look pattern below), so `?lang=hi` sticks.
+let lang: Lang = resolveLang(save.lang, urlParams.get('lang'), navigator.language);
+if (save.lang !== lang) {
+  save = { ...save, lang };
+  persist();
+}
 // M4/T4 — the URL `?look=` still wins for this visit; otherwise the saved
 // look returns. The resolved name becomes the saved one (parseLook heals a
 // junk name to indigo-gold), so a URL choice or self-heal persists.
@@ -340,7 +342,7 @@ function failFloor(reason: FailReason): void {
   const next = failRun(phase, reason, performance.now());
   if (next === phase) return; // re-fail during the freeze, or the fail-after-clear race
   phase = next;
-  hud.showFail(reason === 'collapse' ? 'The mirrors collapsed' : 'Caught by the glass');
+  hud.showFail(t(lang, reason === 'collapse' ? 'overlay.failCollapse' : 'overlay.failCaught'));
 }
 
 function resetFloor(now: number): void {
@@ -504,12 +506,10 @@ const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
 // (focus → quad → overhead → focus). tactical is T4's Esc pause — unreachable
 // by [V], but its predicates gate the loop already (isTactical pauses sim).
 let view: ViewMode = 'focus';
-const VIEW_LABEL: Record<ViewMode, string> = {
-  focus: 'Focus',
-  quad: 'Quad',
-  overhead: 'Overhead',
-  tactical: 'Tactical',
-};
+/** The view chip's label — M4/T6: one source in the string table per mode. */
+function viewLabel(v: ViewMode): string {
+  return t(lang, `view.${v}`);
+}
 
 // QUAD side rig: three cameras at the player's eye, yawed by a fixed offset
 // from the heading (left = −π/2, right = +π/2, back = π). Each pane is w/2 ×
@@ -544,7 +544,10 @@ const hud = createHud({
     // debounced write NOW or the reload eats it.
     persist(true);
     const d = dailySeed(todayStamp());
-    window.location.search = `?seed=${d}`;
+    // keep the UI language across the jump (M4/T6) — the URL param is the
+    // highest-priority resolver, so an unnamed lang would fall to the save's
+    const params = `?seed=${d}${lang === 'hi' ? '&lang=hi' : ''}`;
+    window.location.search = params;
   },
   onFrost: () => tryFrost(performance.now()),
   onMute: () => toggleMute(),
@@ -553,8 +556,31 @@ const hud = createHud({
   // M4/T4 — the save chain's front door: 💾 export / 📂 import.
   onExport: () => void exportSave(),
   onImport: () => void importSave(),
+  // M4/T6 — the 🌐 button: en ↔ hi, saved at once, chrome re-rendered now.
+  onLang: () => cycleLang(),
 });
-hud.setMuted(audio.muted); // the 🔊/🔇 label matches the boot preference
+
+/** M4/T6 — one fn that re-feeds every localized surface the HUD/overlays own.
+ *  The HUD's own setLang relabels its buttons/chips from cached values; the
+ *  setters below re-send the strings main composes (view chip, floor chip,
+ *  mute label). The per-frame hint line re-localizes on its next frame. */
+function refreshChrome(): void {
+  hud.setLang(lang);
+  aaina.setLang(lang);
+  faq.setLang(lang);
+  hud.setMode(mode);
+  hud.setView(viewLabel(view));
+  hud.setFloor(floorChipLabel(campaign));
+  hud.setMuted(audio.muted);
+}
+
+function cycleLang(): void {
+  lang = lang === 'en' ? 'hi' : 'en';
+  save = { ...save, lang };
+  persist();
+  refreshChrome();
+}
+refreshChrome(); // the boot paint: labels, chips and the 🔊 state in `lang`
 
 // ---- Campaign floor lifecycle (M4/T2) --------------------------------------
 // The Stair Door flow: clearing floors 1–9 holds 0.8s behind a `descending…`
@@ -587,10 +613,11 @@ function teardownFloor(): void {
   floorDisposers = [];
 }
 
-/** The floor chip: `L02` on the ramp; the threshold floor names the tier. */
+/** The floor chip: `L02` on the ramp; the threshold floor names the tier.
+ *  M4/T6: the `L`/`स्तर` prefix and the `DWAAR`/`द्वार` name localize. */
 function floorChipLabel(c: Campaign): string {
-  const tag = `L${String(c.floor).padStart(2, '0')}`;
-  return isDwaar(c.floor) ? `${tag} · DWAAR I ✦` : tag;
+  const tag = `${t(lang, 'chip.floor')}${String(c.floor).padStart(2, '0')}`;
+  return isDwaar(c.floor) ? `${tag} · ${t(lang, 'chip.dwaar')} I ✦` : tag;
 }
 
 /** Build the campaign's current floor. Floors 1–9 come from the procedural
@@ -857,7 +884,7 @@ async function exportSave(): Promise<void> {
       const writable = await handle.createWritable();
       await writable.write(text);
       await writable.close();
-      hud.toast('Save exported');
+      hud.toast(t(lang, 'toast.exported'));
       return;
     } catch (e) {
       if (isAbort(e)) return; // changed their mind — not an error
@@ -870,7 +897,7 @@ async function exportSave(): Promise<void> {
   a.download = SAVE_FILE_NAME;
   a.click();
   URL.revokeObjectURL(url);
-  hud.toast('Save exported');
+  hud.toast(t(lang, 'toast.exported'));
 }
 
 /** Ask the user for one file and read its text; null = cancelled/none. */
@@ -911,12 +938,12 @@ async function importSave(): Promise<void> {
   try {
     parsed = JSON.parse(text) as unknown;
   } catch {
-    hud.toast('Save file rejected');
+    hud.toast(t(lang, 'toast.rejected'));
     return;
   }
   const next = validateSave(parsed);
   if (next === null) {
-    hud.toast('Save file rejected');
+    hud.toast(t(lang, 'toast.rejected'));
     return;
   }
   // Cancel any pending debounced write FIRST — it would clobber the imported
@@ -951,7 +978,7 @@ function setViewMode(next: ViewMode): void {
   const mapShowing = showsOverhead(next);
   overheadCanvas.style.display = mapShowing ? 'block' : 'none';
   if (!mapShowing) overhead.clear();
-  hud.setView(VIEW_LABEL[next]);
+  hud.setView(viewLabel(next));
 }
 window.addEventListener('keydown', (e) => {
   if (e.code === VIEW_KEY && !e.repeat) setViewMode(cycleView(view));
@@ -1333,24 +1360,20 @@ function frame(now: number): void {
   // Tactical pause note (T4) outranks the passage prompts — the verbs are
   // gated off while paused, so naming their keys would only mislead.
   if (isTactical(view)) {
-    hud.hint(
-      waypoints.length > 0
-        ? 'Tactical — click toggles waypoints · Esc clears them'
-        : 'Tactical pause — Esc resumes',
-    );
+    hud.hint(waypoints.length > 0 ? t(lang, 'hint.tacticalMarks') : t(lang, 'hint.tacticalResume'));
   } else if (active(phase)) {
     // Passage hints (T7), in precedence order: step-through, push-door, the
     // sealed-exit explanation, then the tactical invite — the prompt always
     // names the key that works.
     if (tryTeleport(allMirrors, player, floor.grid) !== null) {
-      hud.hint('Space — step through');
+      hud.hint(t(lang, 'hint.step'));
     } else if (tryPushDoor(activeDoorMirrors(), player) !== null) {
-      hud.hint('E — push');
+      hud.hint(t(lang, 'hint.push'));
     } else if (!unlocked && Math.hypot(player.x - exitCenter.cx, player.y - exitCenter.cy) < 3) {
       const bc = beaconsCaptured(allMirrors, mirrorRuntime);
-      hud.hint(`The stair door is sealed — frost the beacons (${bc.captured}/${bc.total})`);
+      hud.hint(fill(t(lang, 'hint.sealed'), { n: bc.captured, total: bc.total }));
     } else if (view === 'overhead') {
-      hud.hint('T — tactical pause'); // the chip that names the map's other door
+      hud.hint(t(lang, 'hint.tactical')); // the chip that names the map's other door
     } else {
       hud.hint(null);
     }
@@ -1432,6 +1455,7 @@ if (import.meta.env.DEV) {
       tierComplete: campaign.tierComplete,
     }),
     look: () => look.name,
+    lang: () => lang, // M4/T6 — the live UI language (🌐 cycles it)
     mode: () => mode,
     view: () => view, // M3/T3 — which ViewMode is showing ([V] cycles)
     viewMode: () => view, // M3/T6 — the same value under its exact hook name
