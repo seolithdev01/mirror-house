@@ -114,8 +114,9 @@ async function captureNextBeacon(page: Page): Promise<void> {
   });
   await page.waitForFunction(
     () =>
-      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__
-        .breath() >= 0.34,
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.breath() >= 0.34,
   );
   await page.evaluate(
     ({ sx, sz, heading }) => {
@@ -139,14 +140,14 @@ test('loads a seeded floor, moves with W, no page errors', async ({ page }) => {
 
   await expect(page.locator('#game')).toBeVisible();
   await ready(page);
-  const before = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+  const before = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
   await page.keyboard.down('KeyW');
   await page.waitForTimeout(600);
   await page.keyboard.up('KeyW');
-  const after = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+  const after = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
 
   // spawn faces an open direction, so 0.6 s of walking must cover ground
@@ -158,12 +159,12 @@ test('loads a seeded floor, moves with W, no page errors', async ({ page }) => {
 test('same seed renders the same spawn', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=SAMESAME');
-  const p = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+  const p = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
   await page.reload();
-  const q = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+  const q = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
   expect(q).toEqual(p);
   expect(errors).toEqual([]);
@@ -267,22 +268,33 @@ test('m2: frost captures a beacon and unlocks gating', async ({ page }) => {
   await captureNextBeacon(page);
   const mid = await page.evaluate(() => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-    return { left: h.beaconsLeft(), captured: h.mirrors().captured, unlocked: h.house().exitUnlocked };
+    return {
+      left: h.beaconsLeft(),
+      captured: h.mirrors().captured,
+      unlocked: h.house().exitUnlocked,
+    };
   });
   expect(mid.captured).toBe(1);
   expect(mid.left).toBe(total - 1);
   if (total > 1) expect(mid.unlocked).toBe(false);
 
   // capture the rest — ordering comes from mirrorAt('beacon'), never assumed
-  while ((await page.evaluate(() => {
-    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-    return h.beaconsLeft();
-  })) > 0) {
+  while (
+    (await page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.beaconsLeft();
+    })) > 0
+  ) {
     await captureNextBeacon(page);
   }
   const end = await page.evaluate(() => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-    return { left: h.beaconsLeft(), captured: h.mirrors().captured, fogged: h.mirrors().fogged, unlocked: h.house().exitUnlocked };
+    return {
+      left: h.beaconsLeft(),
+      captured: h.mirrors().captured,
+      fogged: h.mirrors().fogged,
+      unlocked: h.house().exitUnlocked,
+    };
   });
   expect(end.left).toBe(0);
   expect(end.captured).toBe(total);
@@ -301,21 +313,19 @@ test('m2: caught by an echo restarts the floor', async ({ page }) => {
   });
   await page.waitForFunction(
     () =>
-      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.enemyCount() >
-      0,
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.enemyCount() > 0,
   );
   const pos = await page.evaluate(() => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     return h.enemyPos(0);
   });
   expect(pos).not.toBeNull();
-  await page.evaluate(
-    (p: { x: number; y: number }) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-      h.warp(p.x, p.y);
-    },
-    pos!,
-  );
+  await page.evaluate((p: { x: number; y: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(p.x, p.y);
+  }, pos!);
   await expect(page.locator('#mh-fail')).toBeVisible();
   await expect(page.locator('#mh-fail')).toHaveText('Caught by the glass');
   // FAIL_FREEZE_MS is 1200ms; +margin → resetFloor has re-armed the floor
@@ -381,13 +391,10 @@ test('m2: full win flow records shards and best', async ({ page }) => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     return h.exitPos();
   });
-  await page.evaluate(
-    (e: { x: number; z: number }) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-      h.warp(e.x, e.z);
-    },
-    exit,
-  );
+  await page.evaluate((e: { x: number; z: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(e.x, e.z);
+  }, exit);
   await expect(page.locator('#mh-cleared')).toBeVisible({ timeout: 5000 });
   const after = await page.evaluate((s: string) => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;

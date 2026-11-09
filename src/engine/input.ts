@@ -2,7 +2,10 @@
 import { KEY_TURN_PER_STEP, MOUSE_TURN_PER_STEP, TURN_SENSITIVITY } from './constants';
 import type { MoveInput } from '../game/player';
 
-export interface KeyboardSnapshot { keys: ReadonlySet<string>; mouseDx: number }
+export interface KeyboardSnapshot {
+  keys: ReadonlySet<string>;
+  mouseDx: number;
+}
 
 export type InputMode = 'keyboard' | 'mouse' | 'hybrid';
 
@@ -29,18 +32,32 @@ export function keysToMoveInput(snap: KeyboardSnapshot, mode: InputMode = 'hybri
   const mouseTurn = snap.mouseDx * TURN_SENSITIVITY;
   if (mode === 'keyboard') {
     const arrowTurn = (has('ArrowRight') ? 1 : 0) - (has('ArrowLeft') ? 1 : 0);
-    return { forward, strafe: 0, sprint, turn: mouseTurn + (keyTurn + arrowTurn) * KEY_TURN_PER_STEP };
+    return {
+      forward,
+      strafe: 0,
+      sprint,
+      turn: mouseTurn + (keyTurn + arrowTurn) * KEY_TURN_PER_STEP,
+    };
   }
   const strafe = (has('KeyD', 'ArrowRight') ? 1 : 0) - (has('KeyA', 'ArrowLeft') ? 1 : 0);
   return { forward, strafe, sprint, turn: mouseTurn + keyTurn * KEY_TURN_PER_STEP };
 }
 
-export interface MouseState { leftDown: boolean; rightDown: boolean; cursorNorm: number }
+export interface MouseState {
+  leftDown: boolean;
+  rightDown: boolean;
+  cursorNorm: number;
+}
 
 export function mouseOnlyInput(m: MouseState): MoveInput {
   const mag = Math.abs(m.cursorNorm);
   const steer = mag < 0.15 ? 0 : Math.sign(m.cursorNorm) * Math.min(1, (mag - 0.15) / 0.5);
-  return { forward: m.leftDown ? 1 : 0, strafe: 0, sprint: m.rightDown, turn: steer * MOUSE_TURN_PER_STEP };
+  return {
+    forward: m.leftDown ? 1 : 0,
+    strafe: 0,
+    sprint: m.rightDown,
+    turn: steer * MOUSE_TURN_PER_STEP,
+  };
 }
 
 export class InputCollector {

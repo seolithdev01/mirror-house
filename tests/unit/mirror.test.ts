@@ -16,9 +16,12 @@ describe('mirrorSpots', () => {
       // wall-mounted: offset from cell center is CELL/2 - 0.12 along one axis, 0 on the other
       const dx = Math.abs(s.x - cx);
       const dz = Math.abs(s.z - cy);
-      expect(Math.abs(dx - (4 / 2 - 0.12)) < 1e-6 || Math.abs(dz - (4 / 2 - 0.12)) < 1e-6).toBe(true);
+      expect(Math.abs(dx - (4 / 2 - 0.12)) < 1e-6 || Math.abs(dz - (4 / 2 - 0.12)) < 1e-6).toBe(
+        true,
+      );
       // facing back into the cell: normal points from mirror toward cell center
-      const nx = Math.sin(s.rotY), nz = Math.cos(s.rotY);
+      const nx = Math.sin(s.rotY),
+        nz = Math.cos(s.rotY);
       expect(nx * (cx - s.x) + nz * (cy - s.z)).toBeGreaterThan(0.9);
     }
     expect(mirrorSpots(generateFloor({ ...TIER_ONE, seed: 'MIRROR' }))).toEqual(spots);

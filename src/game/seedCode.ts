@@ -8,7 +8,10 @@ export function isValidSeed(raw: string): boolean {
 }
 
 export function normalizeSeed(raw: string): string {
-  return raw.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, SEED_MAX);
+  return raw
+    .toUpperCase()
+    .replace(/[^A-Z2-9]/g, '')
+    .slice(0, SEED_MAX);
 }
 
 export function randomSeed(): string {

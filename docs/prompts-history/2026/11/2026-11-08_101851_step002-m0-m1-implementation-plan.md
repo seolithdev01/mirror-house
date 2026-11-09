@@ -1,10 +1,10 @@
 # step002 — M0–M1 implementation plan (spec approved)
 
-| | |
-|---|---|
-| **Step** | #step002 |
-| **Local time** | 2026-11-08 10:18:51 |
-| **Status** | Plan written + self-reviewed; execution approach question pending |
+|                |                                                                   |
+| -------------- | ----------------------------------------------------------------- |
+| **Step**       | #step002                                                          |
+| **Local time** | 2026-11-08 10:18:51                                               |
+| **Status**     | Plan written + self-reviewed; execution approach question pending |
 
 ## Request (verbatim)
 
@@ -17,6 +17,7 @@
 Step002 was authored with the writing-plans skill: a 12-task, TDD, bite-sized implementation plan for milestones M0–M1, saved to `docs/superpowers/plans/2026-11-08-m0-m1-scaffold-maze-focus.md`.
 
 **Task map:**
+
 1. Project scaffold (Vite + TS strict + ESLint flat + Prettier + Vitest, hand-rolled — no `create-vite` in a non-empty repo)
 2. CI (lint/typecheck/test/build/e2e) + Cloudflare Pages deploy via wrangler-action + CSP `_headers` — includes the one-time human prerequisite (wrangler login, Pages project, API token, GitHub secrets)
 3. Deterministic RNG (xmur3 + mulberry32) — pure, fully tested

@@ -24,21 +24,36 @@
 ### Task 1: Palette + procedural textures + scene recolor
 
 **Files:**
+
 - Create: `src/game/palette.ts`, `src/game/textures.ts`
 - Modify: `src/game/floorScene.ts` (accept palette + textures), `src/main.ts` (fog/lantern/marker colors), `tests/unit/floorscene.test.ts` (unchanged assertions must still pass)
 - Test: `tests/unit/palette.test.ts`
 
 **Interfaces:**
+
 - Consumes: `FloorGrid`, `buildFloorScene(floor)` (M1).
 - Produces:
 
 ```ts
-export interface TierPalette { void: number; floorBase: number; floorLines: number; teal: number; ivory: number; gold: number; rose: number; wallTop: number; wallBottom: number; lantern: number; entrance: number; exit: number }
+export interface TierPalette {
+  void: number;
+  floorBase: number;
+  floorLines: number;
+  teal: number;
+  ivory: number;
+  gold: number;
+  rose: number;
+  wallTop: number;
+  wallBottom: number;
+  lantern: number;
+  entrance: number;
+  exit: number;
+}
 export const TIER_ONE_PALETTE: TierPalette;
 export function floorAccent(gx: number, gy: number): number; // pure per-cell accent
 // textures.ts — browser-only, node returns null
 export function makeFloorTexture(): HTMLCanvasElement | null; // 6x6-cell atlas, 64px cells
-export function makeWallTexture(): HTMLCanvasElement | null;  // vertical gradient + band
+export function makeWallTexture(): HTMLCanvasElement | null; // vertical gradient + band
 export function buildFloorScene(floor: Floor, palette?: TierPalette): FloorSceneResult; // palette defaults to TIER_ONE_PALETTE
 ```
 
@@ -82,16 +97,33 @@ describe('palette', () => {
 ```ts
 // SPDX-License-Identifier: Apache-2.0
 export interface TierPalette {
-  void: number; floorBase: number; floorLines: number; teal: number; ivory: number;
-  gold: number; rose: number; wallTop: number; wallBottom: number; lantern: number;
-  entrance: number; exit: number;
+  void: number;
+  floorBase: number;
+  floorLines: number;
+  teal: number;
+  ivory: number;
+  gold: number;
+  rose: number;
+  wallTop: number;
+  wallBottom: number;
+  lantern: number;
+  entrance: number;
+  exit: number;
 }
 
 export const TIER_ONE_PALETTE: TierPalette = {
-  void: 0x0b1026, floorBase: 0x1d2440, floorLines: 0x2a3560,
-  teal: 0x2ec4b6, ivory: 0xf2e9d8, gold: 0xd9a441, rose: 0xc2548a,
-  wallTop: 0x9c8f7a, wallBottom: 0x5c5346, lantern: 0xffd9a0,
-  entrance: 0x2ec4b6, exit: 0xd9a441,
+  void: 0x0b1026,
+  floorBase: 0x1d2440,
+  floorLines: 0x2a3560,
+  teal: 0x2ec4b6,
+  ivory: 0xf2e9d8,
+  gold: 0xd9a441,
+  rose: 0xc2548a,
+  wallTop: 0x9c8f7a,
+  wallBottom: 0x5c5346,
+  lantern: 0xffd9a0,
+  entrance: 0x2ec4b6,
+  exit: 0xd9a441,
 };
 
 /** Deterministic per-cell floor accent on a 6x6 lattice: gold grid lines on every 6th
@@ -156,7 +188,11 @@ export function makeWallTexture(): HTMLCanvasElement | null {
   return canvas;
 }
 
-export function canvasTexture(canvas: HTMLCanvasElement | null, repeatX: number, repeatY: number): THREE.CanvasTexture | null {
+export function canvasTexture(
+  canvas: HTMLCanvasElement | null,
+  repeatX: number,
+  repeatY: number,
+): THREE.CanvasTexture | null {
   if (!canvas) return null;
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
@@ -168,6 +204,7 @@ export function canvasTexture(canvas: HTMLCanvasElement | null, repeatX: number,
 ```
 
 Modify `src/game/floorScene.ts`:
+
 - signature: `export function buildFloorScene(floor: Floor, palette: TierPalette = TIER_ONE_PALETTE): FloorSceneResult`
 - wall material: if `makeWallTexture()` non-null → `new THREE.MeshStandardMaterial({ map: canvasTexture(makeWallTexture(), 1, 1), roughness: 0.95 })` shared by both instanced meshes; else keep `color: palette.wallBottom`
 - floor: `map: canvasTexture(makeFloorTexture(), floor.grid.width / 6, floor.grid.height / 6)` with `color: 0xffffff` when textured, else `color: palette.floorBase`
@@ -185,24 +222,36 @@ Modify `src/main.ts` (three lines): `scene.background`/`scene.fog` color → `0x
 ### Task 2: Avatar + configurable look
 
 **Files:**
+
 - Create: `src/game/look.ts`, `src/game/avatar.ts`
 - Modify: `src/main.ts` (create avatar, update per frame, expose look in debug hook)
 - Test: `tests/unit/look.test.ts`
 
 **Interfaces:**
+
 - Produces:
 
 ```ts
 // look.ts
-export interface AvatarLook { coat: number; glass: number }
-export const COATS: Record<string, number>;   // indigo 0x2b3a67, teal 0x1f7a70, rose 0x8a3a5c, ivory 0xcfc4ae
+export interface AvatarLook {
+  coat: number;
+  glass: number;
+}
+export const COATS: Record<string, number>; // indigo 0x2b3a67, teal 0x1f7a70, rose 0x8a3a5c, ivory 0xcfc4ae
 export const GLASSES: Record<string, number>; // gold 0xffc46b, teal 0x7de8dc, white 0xf5f2e8
 export const DEFAULT_LOOK_NAME = 'indigo-gold';
 export function parseLook(raw: string | null): { coat: number; glass: number; name: string }; // "teal-white" | "teal.white"
 // avatar.ts
 export const AVATAR_LAYER = 1;
 export function createAvatar(look: AvatarLook): THREE.Group; // model faces -z at rotation 0 (matches camera at heading 0)
-export function updateAvatar(avatar: THREE.Group, x: number, y: number, heading: number, moving: boolean, t: number): void;
+export function updateAvatar(
+  avatar: THREE.Group,
+  x: number,
+  y: number,
+  heading: number,
+  moving: boolean,
+  t: number,
+): void;
 ```
 
 - [x] **Step 1: Failing tests** (`tests/unit/look.test.ts`)
@@ -214,13 +263,25 @@ import { COATS, GLASSES, parseLook } from '../../src/game/look';
 
 describe('parseLook', () => {
   it('parses known names with - or . separators', () => {
-    expect(parseLook('teal-white')).toEqual({ coat: COATS['teal'], glass: GLASSES['white'], name: 'teal-white' });
-    expect(parseLook('rose.gold')).toEqual({ coat: COATS['rose'], glass: GLASSES['gold'], name: 'rose-gold' });
+    expect(parseLook('teal-white')).toEqual({
+      coat: COATS['teal'],
+      glass: GLASSES['white'],
+      name: 'teal-white',
+    });
+    expect(parseLook('rose.gold')).toEqual({
+      coat: COATS['rose'],
+      glass: GLASSES['gold'],
+      name: 'rose-gold',
+    });
   });
   it('defaults unknown parts and null input', () => {
     expect(parseLook(null).name).toBe('indigo-gold');
     expect(parseLook('banana-gold').name).toBe('indigo-gold');
-    expect(parseLook('teal-banana')).toEqual({ coat: COATS['teal'], glass: GLASSES['gold'], name: 'teal-gold' });
+    expect(parseLook('teal-banana')).toEqual({
+      coat: COATS['teal'],
+      glass: GLASSES['gold'],
+      name: 'teal-gold',
+    });
   });
 });
 ```
@@ -233,14 +294,24 @@ describe('parseLook', () => {
 
 ```ts
 // SPDX-License-Identifier: Apache-2.0
-export interface AvatarLook { coat: number; glass: number }
-export interface ResolvedLook extends AvatarLook { name: string }
+export interface AvatarLook {
+  coat: number;
+  glass: number;
+}
+export interface ResolvedLook extends AvatarLook {
+  name: string;
+}
 
 export const COATS: Record<string, number> = {
-  indigo: 0x2b3a67, teal: 0x1f7a70, rose: 0x8a3a5c, ivory: 0xcfc4ae,
+  indigo: 0x2b3a67,
+  teal: 0x1f7a70,
+  rose: 0x8a3a5c,
+  ivory: 0xcfc4ae,
 };
 export const GLASSES: Record<string, number> = {
-  gold: 0xffc46b, teal: 0x7de8dc, white: 0xf5f2e8,
+  gold: 0xffc46b,
+  teal: 0x7de8dc,
+  white: 0xf5f2e8,
 };
 export const DEFAULT_LOOK_NAME = 'indigo-gold';
 
@@ -287,7 +358,11 @@ export function createAvatar(look: AvatarLook): THREE.Group {
   arm.rotation.z = -0.45;
   const lanternBox = new THREE.Mesh(
     new THREE.BoxGeometry(0.14, 0.2, 0.14),
-    new THREE.MeshStandardMaterial({ color: look.glass, emissive: look.glass, emissiveIntensity: 1.4 }),
+    new THREE.MeshStandardMaterial({
+      color: look.glass,
+      emissive: look.glass,
+      emissiveIntensity: 1.4,
+    }),
   );
   lanternBox.position.set(0.44, 0.82, -0.24);
   g.add(body, head, arm, lanternBox);
@@ -295,20 +370,30 @@ export function createAvatar(look: AvatarLook): THREE.Group {
   return g;
 }
 
-export function updateAvatar(avatar: THREE.Group, x: number, y: number, heading: number, moving: boolean, t: number): void {
+export function updateAvatar(
+  avatar: THREE.Group,
+  x: number,
+  y: number,
+  heading: number,
+  moving: boolean,
+  t: number,
+): void {
   avatar.position.set(x, moving ? Math.sin(t * 9) * 0.04 : 0, y);
   avatar.rotation.y = -heading;
 }
 ```
 
 Modify `src/main.ts`:
+
 - `import { parseLook } from './game/look';` + `import { createAvatar, updateAvatar } from './game/avatar';`
 - after `scene.add(buildFloorScene(floor).group);`:
+
 ```ts
 const look = parseLook(new URLSearchParams(window.location.search).get('look'));
 const avatar = createAvatar(look);
 scene.add(avatar);
 ```
+
 - in the fixed-step block, after `player = movePlayer(...)`: `updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);` where `inputActive` is the input's forward/strafe/turn non-zero (capture from the MoveInput you just built — restructure: `const inputFrame = keysToMoveInput(...); player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP); const inputActive = inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0; updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);`
 - debug hook: add `look: look.name`.
 
@@ -321,16 +406,22 @@ scene.add(avatar);
 ### Task 3: Hero mirrors — planar RT reflection (see yourself)
 
 **Files:**
+
 - Create: `src/game/mirror.ts`
 - Modify: `src/main.ts` (instantiate mirrors, update every other frame, expose `mirrors` count in debug hook)
 - Test: `tests/unit/mirror.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Floor`/`FloorGrid` (M1), `AVATAR_LAYER` (Task 2).
 - Produces:
 
 ```ts
-export interface MirrorSpot { x: number; z: number; rotY: number }
+export interface MirrorSpot {
+  x: number;
+  z: number;
+  rotY: number;
+}
 export function mirrorSpots(floor: Floor): MirrorSpot[]; // entrance + exit cell, wall-mounted, facing into the cell
 export class HeroMirror {
   constructor(spot: MirrorSpot, tint?: number);
@@ -361,9 +452,12 @@ describe('mirrorSpots', () => {
       // wall-mounted: offset from cell center is CELL/2 - 0.12 along one axis, 0 on the other
       const dx = Math.abs(s.x - cx);
       const dz = Math.abs(s.z - cy);
-      expect(Math.abs(dx - (4 / 2 - 0.12)) < 1e-6 || Math.abs(dz - (4 / 2 - 0.12)) < 1e-6).toBe(true);
+      expect(Math.abs(dx - (4 / 2 - 0.12)) < 1e-6 || Math.abs(dz - (4 / 2 - 0.12)) < 1e-6).toBe(
+        true,
+      );
       // facing back into the cell: normal points from mirror toward cell center
-      const nx = Math.sin(s.rotY), nz = Math.cos(s.rotY);
+      const nx = Math.sin(s.rotY),
+        nz = Math.cos(s.rotY);
       expect(nx * (cx - s.x) + nz * (cy - s.z)).toBeGreaterThan(0.9);
     }
     expect(mirrorSpots(generateFloor({ ...TIER_ONE, seed: 'MIRROR' }))).toEqual(spots);
@@ -383,7 +477,11 @@ import { Dir, DIR_VECTOR } from '../engine/grid';
 import type { Floor } from './maze';
 import { AVATAR_LAYER } from './avatar';
 
-export interface MirrorSpot { x: number; z: number; rotY: number }
+export interface MirrorSpot {
+  x: number;
+  z: number;
+  rotY: number;
+}
 
 /** Deterministic wall-mounted spots: first walled direction of the entrance and exit cells. */
 export function mirrorSpots(floor: Floor): MirrorSpot[] {
@@ -425,7 +523,11 @@ export class HeroMirror {
     this.cam.layers.enable(AVATAR_LAYER); // the avatar is visible ONLY here and in other mirror passes
   }
 
-  update(renderer: THREE.WebGLRenderer, scene: THREE.Scene, mainCam: THREE.PerspectiveCamera): void {
+  update(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    mainCam: THREE.PerspectiveCamera,
+  ): void {
     const pos = new THREE.Vector3();
     mainCam.getWorldPosition(pos);
     const d = this.plane.distanceToPoint(pos);
@@ -457,6 +559,7 @@ export class HeroMirror {
 ```
 
 Modify `src/main.ts`:
+
 - `import { HeroMirror, mirrorSpots } from './game/mirror';`
 - after avatar creation: `const mirrors = mirrorSpots(floor).map((s) => new HeroMirror(s)); mirrors.forEach((m) => scene.add(m.mesh));`
 - in `frame()`, before `renderer.render(...)`: `mirrors.forEach((m, i) => { if (frameIndex % 2 === i % 2) m.update(renderer, scene, camera); });` with a `frameIndex++` counter (mirrors update on alternate frames — perf budget).
@@ -472,11 +575,13 @@ Modify `src/main.ts`:
 ### Task 4: Input modes (keyboard-only / mouse-only / hybrid) + HUD buttons
 
 **Files:**
+
 - Create: `src/ui/hud.ts`
 - Modify: `src/engine/input.ts`, `src/main.ts`, `index.html` (hud CSS)
 - Test: `tests/unit/input.test.ts` (extend), `tests/unit/hudmode.test.ts` (pure part only if any — else none)
 
 **Interfaces:**
+
 - Consumes: `keysToMoveInput` (M1), constants.
 - Produces:
 
@@ -486,11 +591,20 @@ export type InputMode = 'keyboard' | 'mouse' | 'hybrid';
 export const KEY_TURN_PER_STEP = 0.045;
 export const MOUSE_TURN_PER_STEP = 0.06;
 export function keysToMoveInput(snap: KeyboardSnapshot, mode?: InputMode): MoveInput; // mode-aware
-export interface MouseState { leftDown: boolean; rightDown: boolean; cursorNorm: number } // cursorNorm -1..1 viewport
+export interface MouseState {
+  leftDown: boolean;
+  rightDown: boolean;
+  cursorNorm: number;
+} // cursorNorm -1..1 viewport
 export function mouseOnlyInput(m: MouseState): MoveInput;
 // InputCollector gains: mouseState(): MouseState
 // hud.ts
-export type HudInit = { mode: InputMode; onMode(m: InputMode): void; onFaq(): void; onDaily(): void };
+export type HudInit = {
+  mode: InputMode;
+  onMode(m: InputMode): void;
+  onFaq(): void;
+  onDaily(): void;
+};
 export interface Hud {
   setMode(mode: InputMode): void;
   setChips(chips: { streak?: number; bestMs?: number | null; timerMs?: number | null }): void;
@@ -512,7 +626,9 @@ describe('input modes', () => {
     const right = map({ keys: new Set(['ArrowRight']), mouseDx: 0 }, 'keyboard');
     expect(right.turn).toBeCloseTo(KEY_TURN_PER_STEP);
     expect(right.strafe).toBe(0);
-    expect(map({ keys: new Set(['KeyQ']), mouseDx: 0 }, 'keyboard').turn).toBeCloseTo(-KEY_TURN_PER_STEP);
+    expect(map({ keys: new Set(['KeyQ']), mouseDx: 0 }, 'keyboard').turn).toBeCloseTo(
+      -KEY_TURN_PER_STEP,
+    );
     const both = map({ keys: new Set(['ArrowRight', 'KeyD']), mouseDx: 0 }, 'keyboard');
     expect(both.strafe).toBe(0);
   });
@@ -523,11 +639,18 @@ describe('input modes', () => {
   });
   it('mouse-only: hold left = walk steering toward cursor; right = sprint; center deadzone', () => {
     expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: 0 })).toEqual({
-      forward: 1, strafe: 0, sprint: false, turn: 0,
+      forward: 1,
+      strafe: 0,
+      sprint: false,
+      turn: 0,
     });
-    expect(mouseOnlyInput({ leftDown: true, rightDown: true, cursorNorm: 0.65 }).turn).toBeCloseTo(MOUSE_TURN_PER_STEP);
+    expect(mouseOnlyInput({ leftDown: true, rightDown: true, cursorNorm: 0.65 }).turn).toBeCloseTo(
+      MOUSE_TURN_PER_STEP,
+    );
     expect(mouseOnlyInput({ leftDown: false, rightDown: false, cursorNorm: 1 }).forward).toBe(0);
-    expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: -0.9 }).turn).toBeCloseTo(-MOUSE_TURN_PER_STEP);
+    expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: -0.9 }).turn).toBeCloseTo(
+      -MOUSE_TURN_PER_STEP,
+    );
     expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: 0.1 }).turn).toBe(0); // deadzone
   });
 });
@@ -552,18 +675,32 @@ export function keysToMoveInput(snap: KeyboardSnapshot, mode: InputMode = 'hybri
   const mouseTurn = snap.mouseDx * TURN_SENSITIVITY;
   if (mode === 'keyboard') {
     const arrowTurn = (has('ArrowRight') ? 1 : 0) - (has('ArrowLeft') ? 1 : 0);
-    return { forward, strafe: 0, sprint, turn: mouseTurn + (keyTurn + arrowTurn) * KEY_TURN_PER_STEP };
+    return {
+      forward,
+      strafe: 0,
+      sprint,
+      turn: mouseTurn + (keyTurn + arrowTurn) * KEY_TURN_PER_STEP,
+    };
   }
   const strafe = (has('KeyD', 'ArrowRight') ? 1 : 0) - (has('KeyA', 'ArrowLeft') ? 1 : 0);
   return { forward, strafe, sprint, turn: mouseTurn + keyTurn * KEY_TURN_PER_STEP };
 }
 
-export interface MouseState { leftDown: boolean; rightDown: boolean; cursorNorm: number }
+export interface MouseState {
+  leftDown: boolean;
+  rightDown: boolean;
+  cursorNorm: number;
+}
 
 export function mouseOnlyInput(m: MouseState): MoveInput {
   const mag = Math.abs(m.cursorNorm);
   const steer = mag < 0.15 ? 0 : Math.sign(m.cursorNorm) * Math.min(1, (mag - 0.15) / 0.5);
-  return { forward: m.leftDown ? 1 : 0, strafe: 0, sprint: m.rightDown, turn: steer * MOUSE_TURN_PER_STEP };
+  return {
+    forward: m.leftDown ? 1 : 0,
+    strafe: 0,
+    sprint: m.rightDown,
+    turn: steer * MOUSE_TURN_PER_STEP,
+  };
 }
 ```
 
@@ -613,16 +750,21 @@ export function createHud(init: HudInit): Hud {
     modes.appendChild(b);
   }
   const faq = document.createElement('button');
-  faq.type = 'button'; faq.id = 'mh-faq'; faq.textContent = '? FAQ';
+  faq.type = 'button';
+  faq.id = 'mh-faq';
+  faq.textContent = '? FAQ';
   faq.addEventListener('click', () => init.onFaq());
   const daily = document.createElement('button');
-  daily.type = 'button'; daily.id = 'mh-daily'; daily.textContent = '★ Daily';
+  daily.type = 'button';
+  daily.id = 'mh-daily';
+  daily.textContent = '★ Daily';
   daily.addEventListener('click', () => init.onDaily());
   const chips = document.createElement('div');
   chips.id = 'mh-chips';
   chips.append(chip('🔥 0', 'streak'), chip('⏱ —', 'best'), chip('⏳ 0.0s', 'timer'));
   const cleared = document.createElement('div');
-  cleared.id = 'mh-cleared'; cleared.hidden = true;
+  cleared.id = 'mh-cleared';
+  cleared.hidden = true;
   root.append(modes, faq, daily, chips, cleared);
   document.body.appendChild(root);
 
@@ -634,9 +776,13 @@ export function createHud(init: HudInit): Hud {
   return {
     setMode,
     setChips: (c) => {
-      if (c.streak !== undefined) (document.getElementById('mh-streak') as HTMLElement).textContent = `🔥 ${c.streak}`;
-      if (c.bestMs !== undefined) (document.getElementById('mh-best') as HTMLElement).textContent = `⏱ ${c.bestMs == null ? '—' : fmt(c.bestMs)}`;
-      if (c.timerMs !== undefined) (document.getElementById('mh-timer') as HTMLElement).textContent = `⏳ ${fmt(c.timerMs)}`;
+      if (c.streak !== undefined)
+        (document.getElementById('mh-streak') as HTMLElement).textContent = `🔥 ${c.streak}`;
+      if (c.bestMs !== undefined)
+        (document.getElementById('mh-best') as HTMLElement).textContent =
+          `⏱ ${c.bestMs == null ? '—' : fmt(c.bestMs)}`;
+      if (c.timerMs !== undefined)
+        (document.getElementById('mh-timer') as HTMLElement).textContent = `⏳ ${fmt(c.timerMs)}`;
     },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;
@@ -644,7 +790,9 @@ export function createHud(init: HudInit): Hud {
         ? `✨ Floor cleared in ${fmt(ms)} — new best!`
         : `Floor cleared in ${fmt(ms)} (best ${bestMs == null ? '—' : fmt(bestMs)})`;
     },
-    hideCleared: () => { cleared.hidden = true; },
+    hideCleared: () => {
+      cleared.hidden = true;
+    },
     root,
   };
 }
@@ -653,17 +801,53 @@ export function createHud(init: HudInit): Hud {
 `index.html` `<style>` — append:
 
 ```css
-#hud { position: fixed; top: 8px; right: 8px; z-index: 10; display: flex; flex-direction: column;
-  align-items: flex-end; gap: 6px; font: 13px/1.4 system-ui; color: #f2e9d8; pointer-events: none; }
-#hud button { pointer-events: auto; cursor: pointer; background: rgba(11,16,38,.8); color: #f2e9d8;
-  border: 1px solid #2a3560; border-radius: 6px; padding: 4px 10px; margin-left: 4px; }
-#hud button.active { border-color: #2ec4b6; color: #2ec4b6; }
-#mh-chips { display: flex; gap: 8px; background: rgba(11,16,38,.7); border-radius: 6px; padding: 4px 10px; }
-#mh-cleared { background: rgba(11,16,38,.92); border: 1px solid #d9a441; color: #f2e9d8;
-  border-radius: 8px; padding: 10px 16px; font-size: 15px; pointer-events: none; }
+#hud {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  font: 13px/1.4 system-ui;
+  color: #f2e9d8;
+  pointer-events: none;
+}
+#hud button {
+  pointer-events: auto;
+  cursor: pointer;
+  background: rgba(11, 16, 38, 0.8);
+  color: #f2e9d8;
+  border: 1px solid #2a3560;
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-left: 4px;
+}
+#hud button.active {
+  border-color: #2ec4b6;
+  color: #2ec4b6;
+}
+#mh-chips {
+  display: flex;
+  gap: 8px;
+  background: rgba(11, 16, 38, 0.7);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+#mh-cleared {
+  background: rgba(11, 16, 38, 0.92);
+  border: 1px solid #d9a441;
+  color: #f2e9d8;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 15px;
+  pointer-events: none;
+}
 ```
 
 `src/main.ts`:
+
 - `import { createHud } from './ui/hud';` + InputMode/mouseOnlyInput imports
 - `let mode: InputMode = 'hybrid';` and `const hud = createHud({ mode, onMode: (m) => { mode = m; hud.setMode(m); }, onFaq: () => {}, onDaily: () => {} });` (FAQ/daily wired in Tasks 5–6 — empty callbacks now, exact names reserved)
 - pointer lock only in hybrid: wrap the existing click listener → `canvas.addEventListener('click', () => { if (mode === 'hybrid') { const lock = canvas.requestPointerLock() as unknown as { catch?: (cb: () => void) => void } | undefined; lock?.catch?.(() => {}); } });` (move the guard from Task M1's fix into the mode check)
@@ -678,30 +862,42 @@ export function createHud(init: HudInit): Hud {
 ### Task 5: Floor run, meta save, timer, streak, daily seed
 
 **Files:**
+
 - Create: `src/game/floorRun.ts`, `src/game/meta.ts`
 - Modify: `src/main.ts` (timer/exit/overlay/daily/streak wiring), `src/ui/hud.ts` (no change expected)
 - Test: `tests/unit/meta.test.ts`, `tests/unit/floorrun.test.ts`
 
 **Interfaces:**
+
 - Consumes: `SEED_ALPHABET`, `xmur3` (M1), `InputMode` (Task 4), hud.
 - Produces:
 
 ```ts
 // floorRun.ts
 export const EXIT_RADIUS = 1.6;
-export interface FloorRun { seed: string; startedAt: number | null; clearedAt: number | null }
+export interface FloorRun {
+  seed: string;
+  startedAt: number | null;
+  clearedAt: number | null;
+}
 export function createFloorRun(seed: string): FloorRun;
 export function isAtExit(px: number, py: number, exitCx: number, exitCy: number): boolean;
 export function runElapsedMs(run: FloorRun, now: number): number; // 0 before start
 // meta.ts
-export interface MetaSave { v: 1; lookName: string; mode: InputMode; best: Record<string, number>; streak: { count: number; lastDay: string } }
+export interface MetaSave {
+  v: 1;
+  lookName: string;
+  mode: InputMode;
+  best: Record<string, number>;
+  streak: { count: number; lastDay: string };
+}
 export const META_KEY = 'mirrorhouse.meta.v1';
 export function defaultMeta(mode?: InputMode): MetaSave;
-export function loadMeta(): MetaSave;        // try/catch, validates v===1, else defaultMeta()
+export function loadMeta(): MetaSave; // try/catch, validates v===1, else defaultMeta()
 export function saveMeta(m: MetaSave): void; // try/catch silent
-export function todayStamp(d?: Date): string;         // 'YYYY-MM-DD' local
+export function todayStamp(d?: Date): string; // 'YYYY-MM-DD' local
 export function nextStreak(count: number, lastDay: string, today: string): number;
-export function dailySeed(stamp: string): string;     // 6 chars from SEED_ALPHABET
+export function dailySeed(stamp: string): string; // 6 chars from SEED_ALPHABET
 export function recordRun(m: MetaSave, seed: string, ms: number, today: string): MetaSave; // min best + streak tick
 ```
 
@@ -734,7 +930,14 @@ describe('floorRun', () => {
 ```ts
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
-import { dailySeed, defaultMeta, nextStreak, recordRun, todayStamp, SEED_ALPHABET } from '../../src/game/meta';
+import {
+  dailySeed,
+  defaultMeta,
+  nextStreak,
+  recordRun,
+  todayStamp,
+  SEED_ALPHABET,
+} from '../../src/game/meta';
 
 describe('meta', () => {
   it('nextStreak: same day keeps, yesterday increments, gap resets to 1', () => {
@@ -777,7 +980,11 @@ describe('meta', () => {
 // SPDX-License-Identifier: Apache-2.0
 export const EXIT_RADIUS = 1.6;
 
-export interface FloorRun { seed: string; startedAt: number | null; clearedAt: number | null }
+export interface FloorRun {
+  seed: string;
+  startedAt: number | null;
+  clearedAt: number | null;
+}
 
 export function createFloorRun(seed: string): FloorRun {
   return { seed, startedAt: null, clearedAt: null };
@@ -872,9 +1079,10 @@ export function recordRun(m: MetaSave, seed: string, ms: number, today: string):
 ```
 
 `src/main.ts` wiring:
+
 - imports; `let meta = loadMeta(); let run = createFloorRun(seed); const exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);`
 - hud init: `mode` starts as `meta.mode`; `onMode` also does `meta = { ...meta, mode: m }; saveMeta(meta);`
-- daily: `onDaily: () => { const d = dailySeed(todayStamp()); window.location.search = \`?seed=${d}\`; }` (and append `&look=${...}`? No — keep look in URL only if user set it; acceptable to drop).
+- daily: `onDaily: () => { const d = dailySeed(todayStamp()); window.location.search = \`?seed=${d}\`; }`(and append`&look=${...}`? No — keep look in URL only if user set it; acceptable to drop).
 - in the fixed-step block after movement: if `run.startedAt === null && inputActive` → `run.startedAt = now;`
 - after the step loop each frame: `hud.setChips({ timerMs: runElapsedMs(run, now), streak: meta.streak.count, bestMs: meta.best[seed] ?? null });`
 - exit check (once per frame, when `run.clearedAt === null && run.startedAt !== null`): `if (isAtExit(player.x, player.y, exitCenter.cx, exitCenter.cy)) { run.clearedAt = now; const ms = runElapsedMs(run, now); const wasBest = meta.best[seed]; meta = recordRun(meta, seed, ms, todayStamp()); saveMeta(meta); hud.showCleared(ms, meta.best[seed] ?? null, wasBest === undefined || ms < wasBest); }`
@@ -889,31 +1097,72 @@ export function recordRun(m: MetaSave, seed: string, ms: number, today: string):
 ### Task 6: FAQ screen
 
 **Files:**
+
 - Create: `src/ui/faq.ts`
 - Modify: `src/main.ts` (wire `onFaq` + [H] key toggle), `index.html` (faq CSS)
 
 **Interfaces:**
+
 - Produces: `export function buildFaqOverlay(): { root: HTMLElement; toggle(): void; }` — `<details>` list, built with `document.createElement` (no innerHTML).
 
 - [x] **Step 1: Implement** (`src/ui/faq.ts`)
 
 ```ts
 // SPDX-License-Identifier: Apache-2.0
-export interface FaqEntry { q: string; a: string }
+export interface FaqEntry {
+  q: string;
+  a: string;
+}
 
 export const FAQ: readonly FaqEntry[] = [
-  { q: 'What is Mirror House?', a: 'A 100-floor escape through a century-old palace of mirrors. Floors are 2–5 minute tactical puzzles: fog the glass, outthink what hunts you, reach the stair door. You start at the top — level 1 — and descend.' },
-  { q: 'How do I move?', a: 'Three modes, all fully playable alone — switch with the buttons at top right. Keys: WASD + mouse look (hybrid). Keys only: arrows or Q/E turn. Mouse only: hold left button to walk toward the cursor, hold right to sprint.' },
-  { q: 'Why do I see myself in the mirrors?', a: 'Because it is the point. Your reflection is you — coat and lantern are yours to configure (try ?look=teal-white in the URL). In later floors, the house will try to fake it.' },
-  { q: 'What is a seed?', a: 'Every floor layout is generated deterministically from its seed code — the same seed always builds the same maze. Share a code and a friend walks your exact floor.' },
-  { q: 'What is the Daily?', a: 'A seed derived from today\'s date — everyone on Earth gets the same floor each day. One a day keeps the streak alive.' },
-  { q: 'What are the streak and best time?', a: 'Streak counts consecutive days you cleared a floor. Best time is your fastest clear of the current seed. Both live only on your device.' },
-  { q: 'Where is my data stored?', a: 'On your device, in your browser\'s local storage. No accounts, no servers, no telemetry — nothing leaves your machine. Ever.' },
-  { q: 'Who is the lantern voice?', a: 'Aaina — a shard of the palace\'s first true mirror. She guides, hints, and occasionally judges. She arrives with the next milestone.' },
-  { q: 'What hunts me in later floors?', a: 'Echoes — hollow reflections of past guests — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. Not yet. They come with the mirrors.' },
-  { q: 'Is it free? Is it open source?', a: 'Yes and yes: MIT-style freedom under Apache-2.0 for code, CC-BY 4.0 for art and words. The repo is public on GitHub.' },
-  { q: 'Who made the music?', a: 'Nobody yet — it arrives soon, generated live in your browser: Indian classical-fusion, fully original, no samples.' },
-  { q: 'I found a bug.', a: 'Thank you — please file it at github.com/seolithdev01/mirror-house/issues with your seed code; the layout reproduces itself.' },
+  {
+    q: 'What is Mirror House?',
+    a: 'A 100-floor escape through a century-old palace of mirrors. Floors are 2–5 minute tactical puzzles: fog the glass, outthink what hunts you, reach the stair door. You start at the top — level 1 — and descend.',
+  },
+  {
+    q: 'How do I move?',
+    a: 'Three modes, all fully playable alone — switch with the buttons at top right. Keys: WASD + mouse look (hybrid). Keys only: arrows or Q/E turn. Mouse only: hold left button to walk toward the cursor, hold right to sprint.',
+  },
+  {
+    q: 'Why do I see myself in the mirrors?',
+    a: 'Because it is the point. Your reflection is you — coat and lantern are yours to configure (try ?look=teal-white in the URL). In later floors, the house will try to fake it.',
+  },
+  {
+    q: 'What is a seed?',
+    a: 'Every floor layout is generated deterministically from its seed code — the same seed always builds the same maze. Share a code and a friend walks your exact floor.',
+  },
+  {
+    q: 'What is the Daily?',
+    a: "A seed derived from today's date — everyone on Earth gets the same floor each day. One a day keeps the streak alive.",
+  },
+  {
+    q: 'What are the streak and best time?',
+    a: 'Streak counts consecutive days you cleared a floor. Best time is your fastest clear of the current seed. Both live only on your device.',
+  },
+  {
+    q: 'Where is my data stored?',
+    a: "On your device, in your browser's local storage. No accounts, no servers, no telemetry — nothing leaves your machine. Ever.",
+  },
+  {
+    q: 'Who is the lantern voice?',
+    a: "Aaina — a shard of the palace's first true mirror. She guides, hints, and occasionally judges. She arrives with the next milestone.",
+  },
+  {
+    q: 'What hunts me in later floors?',
+    a: 'Echoes — hollow reflections of past guests — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. Not yet. They come with the mirrors.',
+  },
+  {
+    q: 'Is it free? Is it open source?',
+    a: 'Yes and yes: MIT-style freedom under Apache-2.0 for code, CC-BY 4.0 for art and words. The repo is public on GitHub.',
+  },
+  {
+    q: 'Who made the music?',
+    a: 'Nobody yet — it arrives soon, generated live in your browser: Indian classical-fusion, fully original, no samples.',
+  },
+  {
+    q: 'I found a bug.',
+    a: 'Thank you — please file it at github.com/seolithdev01/mirror-house/issues with your seed code; the layout reproduces itself.',
+  },
 ];
 
 export function buildFaqOverlay(): { root: HTMLElement; toggle(): void } {
@@ -937,28 +1186,71 @@ export function buildFaqOverlay(): { root: HTMLElement; toggle(): void } {
   const close = document.createElement('button');
   close.type = 'button';
   close.textContent = '✕ Close (H)';
-  close.addEventListener('click', () => { root.hidden = true; });
+  close.addEventListener('click', () => {
+    root.hidden = true;
+  });
   box.appendChild(close);
   root.appendChild(box);
-  root.addEventListener('click', (e) => { if (e.target === root) root.hidden = true; });
+  root.addEventListener('click', (e) => {
+    if (e.target === root) root.hidden = true;
+  });
   document.body.appendChild(root);
-  return { root, toggle: () => { root.hidden = !root.hidden; } };
+  return {
+    root,
+    toggle: () => {
+      root.hidden = !root.hidden;
+    },
+  };
 }
 ```
 
 `index.html` style append:
 
 ```css
-#mh-faq-overlay { position: fixed; inset: 0; z-index: 20; background: rgba(5,8,20,.82);
-  display: grid; place-items: center; }
-#mh-faq-overlay[hidden] { display: none; }
-#mh-faq-box { max-width: 640px; max-height: 82vh; overflow: auto; background: #0b1026;
-  border: 1px solid #2a3560; border-radius: 10px; padding: 20px 26px; color: #f2e9d8; font: 14px/1.6 system-ui; }
-#mh-faq-box h2 { margin: 0 0 12px; color: #d9a441; font-size: 18px; }
-#mh-faq-box details { border-bottom: 1px solid #1d2440; padding: 8px 0; }
-#mh-faq-box summary { cursor: pointer; color: #2ec4b6; }
-#mh-faq-box button { margin-top: 14px; background: #1d2440; color: #f2e9d8;
-  border: 1px solid #2a3560; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+#mh-faq-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(5, 8, 20, 0.82);
+  display: grid;
+  place-items: center;
+}
+#mh-faq-overlay[hidden] {
+  display: none;
+}
+#mh-faq-box {
+  max-width: 640px;
+  max-height: 82vh;
+  overflow: auto;
+  background: #0b1026;
+  border: 1px solid #2a3560;
+  border-radius: 10px;
+  padding: 20px 26px;
+  color: #f2e9d8;
+  font: 14px/1.6 system-ui;
+}
+#mh-faq-box h2 {
+  margin: 0 0 12px;
+  color: #d9a441;
+  font-size: 18px;
+}
+#mh-faq-box details {
+  border-bottom: 1px solid #1d2440;
+  padding: 8px 0;
+}
+#mh-faq-box summary {
+  cursor: pointer;
+  color: #2ec4b6;
+}
+#mh-faq-box button {
+  margin-top: 14px;
+  background: #1d2440;
+  color: #f2e9d8;
+  border: 1px solid #2a3560;
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
 ```
 
 `src/main.ts`: `const faq = buildFaqOverlay();` → hud init `onFaq: () => faq.toggle()`; keydown listener: `window.addEventListener('keydown', (e) => { if (e.code === 'KeyH' && !e.repeat) faq.toggle(); });`
@@ -972,6 +1264,7 @@ export function buildFaqOverlay(): { root: HTMLElement; toggle(): void } {
 ### Task 7: E2E coverage for step003 + debug-hook extension
 
 **Files:**
+
 - Modify: `src/main.ts` (extend hook: `look`, `mode`, `mirrors`, `avatarPresent`, `streak`, `bestFor(seed)`), `tests/e2e/smoke.spec.ts` (add tests)
 
 **Interfaces — final debug hook shape (all tasks depend on exact names):**
@@ -980,11 +1273,11 @@ export function buildFaqOverlay(): { root: HTMLElement; toggle(): void } {
 window.__MIRROR_HOUSE_DEBUG__ = {
   getPlayer: () => ({ x, y, heading }),
   seed: string,
-  look: string,            // e.g. 'teal-white'
-  mode: InputMode,         // current input mode
-  setModeRef: () => mode,  // not needed — mode already exposed via closure re-read
+  look: string, // e.g. 'teal-white'
+  mode: InputMode, // current input mode
+  setModeRef: () => mode, // not needed — mode already exposed via closure re-read
   mirrors: number,
-  avatarPresent: boolean,  // scene contains the avatar group
+  avatarPresent: boolean, // scene contains the avatar group
   streak: () => number,
   bestFor: (seed: string) => number | null,
 };
@@ -1019,11 +1312,15 @@ interface DebugHook {
   bestFor(seed: string): number | null;
 }
 const hook = (page: import('@playwright/test').Page) =>
-  page.evaluate(() => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__);
+  page.evaluate(
+    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__,
+  );
 
 test('step003: look param, mirrors at spawn, avatar present', async ({ page }) => {
   await page.goto('/?seed=MIRROR&look=teal-white');
-  await page.waitForFunction(() => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__);
+  await page.waitForFunction(
+    () => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__,
+  );
   const h = await hook(page);
   expect(h.look()).toBe('teal-white');
   expect(h.mirrors).toBeGreaterThanOrEqual(2);
@@ -1032,7 +1329,9 @@ test('step003: look param, mirrors at spawn, avatar present', async ({ page }) =
 
 test('step003: mode buttons switch input mode', async ({ page }) => {
   await page.goto('/?seed=MODES');
-  await page.waitForFunction(() => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__);
+  await page.waitForFunction(
+    () => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__,
+  );
   await page.locator('#hud button[data-mode="keyboard"]').click();
   expect((await hook(page)).mode()).toBe('keyboard');
   await page.locator('#hud button[data-mode="mouse"]').click();
@@ -1041,7 +1340,9 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
 
 test('step003: FAQ opens with 12 entries and H toggles', async ({ page }) => {
   await page.goto('/?seed=FAQ');
-  await page.waitForFunction(() => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__);
+  await page.waitForFunction(
+    () => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__,
+  );
   await page.locator('#mh-faq').click();
   await expect(page.locator('#mh-faq-box details')).toHaveCount(12);
   await page.keyboard.press('KeyH'); // closes
@@ -1062,6 +1363,7 @@ Note: the M1 hook exposed `seed` as a plain field and `getPlayer` — keep those
 ### Task 8: Close-out — README, plan ticks, merge prep
 
 **Files:**
+
 - Modify: `README.md`, this plan (tick boxes), `docs/prompts-history/` (controller does the archive)
 
 - [x] **Step 1: README updates** — controls section (three modes), `?look=coat-glass` table (4 coats × 3 glasses), Daily/streak/best explanation, FAQ button mention, art-direction screenshot placeholder note. Status line: "step003 — playable mirror-maze walker with self-reflection."

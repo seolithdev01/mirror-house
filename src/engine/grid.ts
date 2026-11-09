@@ -1,15 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 import { CELL_SIZE } from './constants';
 
-export const enum Dir { North = 0, East = 1, South = 2, West = 3 }
+export const enum Dir {
+  North = 0,
+  East = 1,
+  South = 2,
+  West = 3,
+}
 export const WALL_BIT: readonly number[] = [1, 2, 4, 8]; // bit per Dir
 export const OPPOSITE: readonly Dir[] = [Dir.South, Dir.West, Dir.North, Dir.East];
 export const DIR_VECTOR: readonly { dx: number; dy: number }[] = [
-  { dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 },
+  { dx: 0, dy: -1 },
+  { dx: 1, dy: 0 },
+  { dx: 0, dy: 1 },
+  { dx: -1, dy: 0 },
 ];
 
-export interface CellIndex { x: number; y: number }
-export interface WallSegment { x1: number; y1: number; x2: number; y2: number }
+export interface CellIndex {
+  x: number;
+  y: number;
+}
+export interface WallSegment {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
 
 export class FloorGrid {
   readonly width: number;
@@ -27,7 +43,9 @@ export class FloorGrid {
     return x >= 0 && y >= 0 && x < this.width && y < this.height;
   }
 
-  private idx(x: number, y: number): number { return y * this.width + x; }
+  private idx(x: number, y: number): number {
+    return y * this.width + x;
+  }
 
   hasWall(x: number, y: number, dir: Dir): boolean {
     return (this.walls[this.idx(x, y)]! & WALL_BIT[dir]!) !== 0;
@@ -49,7 +67,8 @@ export class FloorGrid {
 
   neighborIndex(x: number, y: number, dir: Dir): CellIndex | null {
     const v = DIR_VECTOR[dir]!;
-    const nx = x + v.dx, ny = y + v.dy;
+    const nx = x + v.dx,
+      ny = y + v.dy;
     return this.inBounds(nx, ny) ? { x: nx, y: ny } : null;
   }
 
@@ -94,8 +113,10 @@ export class FloorGrid {
     for (let y = 0; y < this.height; y++)
       for (let x = 0; x < this.width; x++) {
         const { cx, cy } = this.cellCenter(x, y);
-        const left = cx - CELL_SIZE / 2, right = cx + CELL_SIZE / 2;
-        const top = cy - CELL_SIZE / 2, bottom = cy + CELL_SIZE / 2;
+        const left = cx - CELL_SIZE / 2,
+          right = cx + CELL_SIZE / 2;
+        const top = cy - CELL_SIZE / 2,
+          bottom = cy + CELL_SIZE / 2;
         if (this.hasWall(x, y, Dir.North)) segs.push({ x1: left, y1: top, x2: right, y2: top });
         if (this.hasWall(x, y, Dir.West)) segs.push({ x1: left, y1: top, x2: left, y2: bottom });
         if (x === this.width - 1 && this.hasWall(x, y, Dir.East))
@@ -109,7 +130,8 @@ export class FloorGrid {
   wallSegmentsNearCells(gx: number, gy: number): WallSegment[] {
     const all = this.wallSegments();
     return all.filter((s) => {
-      const midX = (s.x1 + s.x2) / 2, midY = (s.y1 + s.y2) / 2;
+      const midX = (s.x1 + s.x2) / 2,
+        midY = (s.y1 + s.y2) / 2;
       const c = this.cellAt(midX, midY);
       return Math.abs(c.x - gx) <= 1 && Math.abs(c.y - gy) <= 1;
     });

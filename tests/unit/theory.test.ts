@@ -117,7 +117,9 @@ describe('intensityFrom', () => {
   const base = { anger: 0, chasing: 0, failing: false, cleared: false };
 
   it('cleared floors to a calm 0.1 regardless of other inputs', () => {
-    expect(intensityFrom({ ...base, anger: ANGER_MAX, chasing: 1, failing: true, cleared: true })).toBe(0.1);
+    expect(
+      intensityFrom({ ...base, anger: ANGER_MAX, chasing: 1, failing: true, cleared: true }),
+    ).toBe(0.1);
   });
 
   it('failing spikes to 1', () => {

@@ -6,7 +6,11 @@ import {
   mouseOnlyInput,
   withoutKey,
 } from '../../src/engine/input';
-import { KEY_TURN_PER_STEP, MOUSE_TURN_PER_STEP, TURN_SENSITIVITY } from '../../src/engine/constants';
+import {
+  KEY_TURN_PER_STEP,
+  MOUSE_TURN_PER_STEP,
+  TURN_SENSITIVITY,
+} from '../../src/engine/constants';
 
 const snap = (keys: string[], mouseDx = 0) => ({ keys: new Set(keys), mouseDx });
 
@@ -38,7 +42,9 @@ describe('input modes', () => {
     const right = map({ keys: new Set(['ArrowRight']), mouseDx: 0 }, 'keyboard');
     expect(right.turn).toBeCloseTo(KEY_TURN_PER_STEP);
     expect(right.strafe).toBe(0);
-    expect(map({ keys: new Set(['KeyQ']), mouseDx: 0 }, 'keyboard').turn).toBeCloseTo(-KEY_TURN_PER_STEP);
+    expect(map({ keys: new Set(['KeyQ']), mouseDx: 0 }, 'keyboard').turn).toBeCloseTo(
+      -KEY_TURN_PER_STEP,
+    );
     const both = map({ keys: new Set(['ArrowRight', 'KeyD']), mouseDx: 0 }, 'keyboard');
     expect(both.strafe).toBe(0);
   });
@@ -49,11 +55,18 @@ describe('input modes', () => {
   });
   it('mouse-only: hold left = walk steering toward cursor; right = sprint; center deadzone', () => {
     expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: 0 })).toEqual({
-      forward: 1, strafe: 0, sprint: false, turn: 0,
+      forward: 1,
+      strafe: 0,
+      sprint: false,
+      turn: 0,
     });
-    expect(mouseOnlyInput({ leftDown: true, rightDown: true, cursorNorm: 0.65 }).turn).toBeCloseTo(MOUSE_TURN_PER_STEP);
+    expect(mouseOnlyInput({ leftDown: true, rightDown: true, cursorNorm: 0.65 }).turn).toBeCloseTo(
+      MOUSE_TURN_PER_STEP,
+    );
     expect(mouseOnlyInput({ leftDown: false, rightDown: false, cursorNorm: 1 }).forward).toBe(0);
-    expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: -0.9 }).turn).toBeCloseTo(-MOUSE_TURN_PER_STEP);
+    expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: -0.9 }).turn).toBeCloseTo(
+      -MOUSE_TURN_PER_STEP,
+    );
     expect(mouseOnlyInput({ leftDown: true, rightDown: false, cursorNorm: 0.1 }).turn).toBe(0); // deadzone
   });
 });

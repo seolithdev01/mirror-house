@@ -26,7 +26,7 @@ export function nextMelodySemi(
   scale: readonly number[],
   prevSemi: number,
   intensity: number,
-  octave: number
+  octave: number,
 ): number {
   const iv = Math.min(1, Math.max(0, intensity));
   // Extended degree ladder one octave either side of the window, so the walk

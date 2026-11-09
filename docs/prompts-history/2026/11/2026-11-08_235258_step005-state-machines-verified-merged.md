@@ -1,10 +1,10 @@
 # step005 — state-machine refactor verified, completed, merged
 
-| | |
-|---|---|
-| **Step** | continuation of the state-machines request (step004 archive covers the parallel session's landing; this records the controller-side verification + completion) |
-| **Local time** | 2026-11-08 23:52:58 |
-| **Status** | Complete — merged to `main` (tag `m2.2`), pushed, deployed live |
+|                |                                                                                                                                                                |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Step**       | continuation of the state-machines request (step004 archive covers the parallel session's landing; this records the controller-side verification + completion) |
+| **Local time** | 2026-11-08 23:52:58                                                                                                                                            |
+| **Status**     | Complete — merged to `main` (tag `m2.2`), pushed, deployed live                                                                                                |
 
 ## Response record
 

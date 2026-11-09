@@ -1,15 +1,32 @@
 // SPDX-License-Identifier: Apache-2.0
 export interface TierPalette {
-  void: number; floorBase: number; floorLines: number; teal: number; ivory: number;
-  gold: number; rose: number; wallTop: number; wallBottom: number; lantern: number;
-  entrance: number; exit: number;
+  void: number;
+  floorBase: number;
+  floorLines: number;
+  teal: number;
+  ivory: number;
+  gold: number;
+  rose: number;
+  wallTop: number;
+  wallBottom: number;
+  lantern: number;
+  entrance: number;
+  exit: number;
 }
 
 export const TIER_ONE_PALETTE: TierPalette = {
-  void: 0x0b1026, floorBase: 0x1d2440, floorLines: 0x2a3560,
-  teal: 0x2ec4b6, ivory: 0xf2e9d8, gold: 0xd9a441, rose: 0xc2548a,
-  wallTop: 0x9c8f7a, wallBottom: 0x5c5346, lantern: 0xffd9a0,
-  entrance: 0x2ec4b6, exit: 0xd9a441,
+  void: 0x0b1026,
+  floorBase: 0x1d2440,
+  floorLines: 0x2a3560,
+  teal: 0x2ec4b6,
+  ivory: 0xf2e9d8,
+  gold: 0xd9a441,
+  rose: 0xc2548a,
+  wallTop: 0x9c8f7a,
+  wallBottom: 0x5c5346,
+  lantern: 0xffd9a0,
+  entrance: 0x2ec4b6,
+  exit: 0xd9a441,
 };
 
 /** Deterministic per-cell floor accent on a 6x6 lattice: gold grid lines on every 6th row/column,

@@ -12,16 +12,16 @@
 
 An inventory of eight stateful systems, seven of them implicit or undocumented:
 
-| # | Machine | Where it lived before |
-|---|---|---|
-| 1 | Run phase | Already extracted to `GamePhase` (commit `acc82bb`), verified here |
-| 2 | Mirror sight/display | Re-derived inline in `main.ts#syncFogVisuals` from `captured` / `foggedUntil` |
-| 3 | Door lifecycle | A `Set` of opened ids **plus** an array of animation start times — two truths that could disagree |
-| 4 | Echo mode | A pure machine in `echo.ts`, but undocumented sub-state (field cache, chase memory, `stuckAwarded` latch) |
-| 5 | Pending shards | A number in `HouseState` with bank/forfeit rules spread across `main.ts` and `meta.ts` |
-| 6 | Input mode | Enum + pointer-lock side effect + persisted meta |
-| 7 | FAQ overlay | A DOM `hidden` flag that **nothing read** — the cause of walking while reading |
-| — | Look-alikes | Breath, anger, timer, hints, Chhaya visibility, cracked glass, pointer lock — documented as *not* machines |
+| #   | Machine              | Where it lived before                                                                                      |
+| --- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 1   | Run phase            | Already extracted to `GamePhase` (commit `acc82bb`), verified here                                         |
+| 2   | Mirror sight/display | Re-derived inline in `main.ts#syncFogVisuals` from `captured` / `foggedUntil`                              |
+| 3   | Door lifecycle       | A `Set` of opened ids **plus** an array of animation start times — two truths that could disagree          |
+| 4   | Echo mode            | A pure machine in `echo.ts`, but undocumented sub-state (field cache, chase memory, `stuckAwarded` latch)  |
+| 5   | Pending shards       | A number in `HouseState` with bank/forfeit rules spread across `main.ts` and `meta.ts`                     |
+| 6   | Input mode           | Enum + pointer-lock side effect + persisted meta                                                           |
+| 7   | FAQ overlay          | A DOM `hidden` flag that **nothing read** — the cause of walking while reading                             |
+| —   | Look-alikes          | Breath, anger, timer, hints, Chhaya visibility, cracked glass, pointer lock — documented as _not_ machines |
 
 ## What was decided
 
@@ -36,7 +36,7 @@ Two deviations, both recorded:
 
 ## What broke on the way
 
-The first wiring inverted the overlay test: `!faq.root.hidden` is false when the overlay is *closed* (`hidden === true` means not shown). Five existing e2e tests caught it immediately — no unit test could have, because the bug was in the frame gate. Fixed to `faq.root.hidden === true`; 11/11 after.
+The first wiring inverted the overlay test: `!faq.root.hidden` is false when the overlay is _closed_ (`hidden === true` means not shown). Five existing e2e tests caught it immediately — no unit test could have, because the bug was in the frame gate. Fixed to `faq.root.hidden === true`; 11/11 after.
 
 ## Verification (actually run)
 

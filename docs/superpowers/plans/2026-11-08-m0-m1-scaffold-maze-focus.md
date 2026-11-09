@@ -4,7 +4,7 @@
 
 **Goal:** Ship M0 (repo scaffold, CI, Cloudflare Pages deploy) and M1 (deterministic seeded maze generation, Wolfenstein-style flat-grid movement with collision, first-person FOCUS view) — a walking simulator through infinite reproducible mirror-maze floors.
 
-**Architecture:** Hand-rolled TypeScript + Vite + three.js (no game engine, no UI framework). Pure deterministic core (`src/engine`, `src/game`) with zero DOM dependencies, unit-tested in Node; a thin `src/main.ts` bootstrap owns the canvas, input events, fixed-timestep loop, and diagnostics overlay. Grid cells are 4 m; walls are bitflags on cells; world origin sits at the grid center (grid *y* maps to three.js *z*).
+**Architecture:** Hand-rolled TypeScript + Vite + three.js (no game engine, no UI framework). Pure deterministic core (`src/engine`, `src/game`) with zero DOM dependencies, unit-tested in Node; a thin `src/main.ts` bootstrap owns the canvas, input events, fixed-timestep loop, and diagnostics overlay. Grid cells are 4 m; walls are bitflags on cells; world origin sits at the grid center (grid _y_ maps to three.js _z_).
 
 **Tech Stack:** TypeScript 5 (strict), Vite, three.js, Vitest, Playwright, ESLint (flat config, typescript-eslint), Prettier, GitHub Actions, Cloudflare Pages via `wrangler-action`.
 
@@ -29,9 +29,11 @@
 ### Task 1: Project scaffold (M0)
 
 **Files:**
+
 - Create: `package.json`, `tsconfig.json`, `eslint.config.js`, `.prettierrc`, `index.html`, `src/main.ts`, `tests/unit/sanity.test.ts`, `vitest.config.ts`, `.gitignore` (exists — verify covers `dist/`, `node_modules/`, `playwright-report/`, `test-results/`)
 
 **Interfaces:**
+
 - Produces: npm scripts `dev`, `build`, `preview`, `typecheck`, `test`, `test:watch`, `lint`, `format`, `e2e` used by every later task and by CI.
 
 - [ ] **Step 1: Write package.json + configs + index.html**
@@ -113,13 +115,32 @@ export default defineConfig({
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mirror House</title>
     <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #05060a; }
-      #game { display: block; width: 100vw; height: 100vh; }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #05060a;
+      }
+      #game {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
       #diagnostics {
-        position: fixed; top: 8px; left: 8px; z-index: 10;
-        font: 12px/1.5 ui-monospace, monospace; color: #9fb4c8;
-        background: rgba(5, 6, 10, 0.7); padding: 6px 10px; border-radius: 6px;
-        pointer-events: none; white-space: pre;
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        z-index: 10;
+        font:
+          12px/1.5 ui-monospace,
+          monospace;
+        color: #9fb4c8;
+        background: rgba(5, 6, 10, 0.7);
+        padding: 6px 10px;
+        border-radius: 6px;
+        pointer-events: none;
+        white-space: pre;
       }
     </style>
   </head>
@@ -177,16 +198,19 @@ git commit -m "chore(m0): vite+ts scaffold, eslint/prettier, vitest sanity"
 ### Task 2: CI + Cloudflare Pages deploy (M0)
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`, `public/_headers`, `public/404.html`
 
 **Interfaces:**
+
 - Consumes: npm scripts from Task 1.
 - Produces: CI green badge requirement; production deploys of `dist/` on push to `main`; preview deploys per PR via CI artifact (wrangler previews) or `vite preview` — CI check is the gate.
 
 **One-time user prerequisite (do before Step 1, needs the human):**
+
 1. `npx wrangler login`
 2. `npx wrangler pages project create mirror-house --production-branch main`
-3. Cloudflare dashboard → My Profile → API Tokens → *Create Token* → template **Cloudflare Pages — Edit**.
+3. Cloudflare dashboard → My Profile → API Tokens → _Create Token_ → template **Cloudflare Pages — Edit**.
 4. Add GitHub repo secrets: `CF_API_TOKEN` (the token) and `CLOUDFLARE_ACCOUNT_ID` (shown on any domain overview page, right sidebar).
 
 - [ ] **Step 1: Write `public/_headers`**
@@ -204,9 +228,26 @@ git commit -m "chore(m0): vite+ts scaffold, eslint/prettier, vitest sanity"
 
 ```html
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Mirror House — lost in the glass</title>
-<style>body{background:#05060a;color:#9fb4c8;font:16px/1.6 system-ui;display:grid;place-items:center;height:100vh;margin:0}</style>
-</head><body><p>This corridor does not exist. <a style="color:#c8d8e8" href="/">Back to the entrance</a></p></body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mirror House — lost in the glass</title>
+    <style>
+      body {
+        background: #05060a;
+        color: #9fb4c8;
+        font: 16px/1.6 system-ui;
+        display: grid;
+        place-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <p>This corridor does not exist. <a style="color:#c8d8e8" href="/">Back to the entrance</a></p>
+  </body>
+</html>
 ```
 
 - [ ] **Step 3: Write `.github/workflows/ci.yml`**
@@ -275,19 +316,21 @@ GitHub Actions all green on `main`; production URL loads; PR opened from a branc
 ### Task 3: Deterministic RNG (`src/engine/rng.ts`)
 
 **Files:**
+
 - Create: `src/engine/rng.ts`
 - Test: `tests/unit/rng.test.ts`
 
 **Interfaces:**
+
 - Produces (used by Tasks 5, 6):
 
 ```ts
 export interface Rng {
-  next(): number;                        // uniform [0,1)
-  int(maxExclusive: number): number;     // uniform integer 0..maxExclusive-1
-  chance(p: number): boolean;            // true with probability p
-  pick<T>(items: readonly T[]): T;       // uniform choice
-  shuffle<T>(items: readonly T[]): T[];  // new array, deterministic permutation
+  next(): number; // uniform [0,1)
+  int(maxExclusive: number): number; // uniform integer 0..maxExclusive-1
+  chance(p: number): boolean; // true with probability p
+  pick<T>(items: readonly T[]): T; // uniform choice
+  shuffle<T>(items: readonly T[]): T[]; // new array, deterministic permutation
 }
 export function createRng(seed: string): Rng;
 ```
@@ -428,28 +471,44 @@ git commit -m "feat(m1): deterministic rng (xmur3+mulberry32)"
 ### Task 4: Grid model (`src/engine/grid.ts`)
 
 **Files:**
+
 - Create: `src/engine/constants.ts`, `src/engine/grid.ts`
 - Test: `tests/unit/grid.test.ts`
 
 **Interfaces:**
+
 - Produces (used by Tasks 5–10):
 
 ```ts
-export const enum Dir { North = 0, East = 1, South = 2, West = 3 }
-export interface CellIndex { x: number; y: number }
-export interface WallSegment { x1: number; y1: number; x2: number; y2: number } // meters, axis-aligned
+export const enum Dir {
+  North = 0,
+  East = 1,
+  South = 2,
+  West = 3,
+}
+export interface CellIndex {
+  x: number;
+  y: number;
+}
+export interface WallSegment {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+} // meters, axis-aligned
 export class FloorGrid {
-  constructor(width: number, height: number);       // all walls present
-  readonly width: number; readonly height: number;
+  constructor(width: number, height: number); // all walls present
+  readonly width: number;
+  readonly height: number;
   inBounds(x: number, y: number): boolean;
   hasWall(x: number, y: number, dir: Dir): boolean;
-  setOpen(x: number, y: number, dir: Dir): void;    // removes wall on both sides
+  setOpen(x: number, y: number, dir: Dir): void; // removes wall on both sides
   neighborIndex(x: number, y: number, dir: Dir): CellIndex | null;
   canWalk(x: number, y: number, dir: Dir): boolean; // neighbor exists && no wall
-  deadEndCount(): number;                            // cells with 3 walls
+  deadEndCount(): number; // cells with 3 walls
   cellCenter(x: number, y: number): { cx: number; cy: number }; // world meters, origin at grid center
-  cellAt(px: number, py: number): CellIndex;         // world meters -> cell
-  wallSegments(): WallSegment[];                     // unique edges, exact spans
+  cellAt(px: number, py: number): CellIndex; // world meters -> cell
+  wallSegments(): WallSegment[]; // unique edges, exact spans
   wallSegmentsNearCells(gx: number, gy: number): WallSegment[]; // 3x3 neighborhood
 }
 ```
@@ -485,7 +544,7 @@ describe('FloorGrid', () => {
   it('canWalk requires neighbor and no wall', () => {
     const g = new FloorGrid(5, 5);
     expect(g.canWalk(0, 0, Dir.North)).toBe(false); // out of bounds
-    expect(g.canWalk(2, 2, Dir.East)).toBe(false);  // wall
+    expect(g.canWalk(2, 2, Dir.East)).toBe(false); // wall
     g.setOpen(2, 2, Dir.East);
     expect(g.canWalk(2, 2, Dir.East)).toBe(true);
   });
@@ -546,15 +605,31 @@ export const FIXED_STEP = 1 / 120; // seconds
 // SPDX-License-Identifier: Apache-2.0
 import { CELL_SIZE } from './constants';
 
-export const enum Dir { North = 0, East = 1, South = 2, West = 3 }
+export const enum Dir {
+  North = 0,
+  East = 1,
+  South = 2,
+  West = 3,
+}
 export const WALL_BIT: readonly number[] = [1, 2, 4, 8]; // bit per Dir
 export const OPPOSITE: readonly Dir[] = [Dir.South, Dir.West, Dir.North, Dir.East];
 export const DIR_VECTOR: readonly { dx: number; dy: number }[] = [
-  { dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 },
+  { dx: 0, dy: -1 },
+  { dx: 1, dy: 0 },
+  { dx: 0, dy: 1 },
+  { dx: -1, dy: 0 },
 ];
 
-export interface CellIndex { x: number; y: number }
-export interface WallSegment { x1: number; y1: number; x2: number; y2: number }
+export interface CellIndex {
+  x: number;
+  y: number;
+}
+export interface WallSegment {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
 
 export class FloorGrid {
   readonly width: number;
@@ -571,7 +646,9 @@ export class FloorGrid {
     return x >= 0 && y >= 0 && x < this.width && y < this.height;
   }
 
-  private idx(x: number, y: number): number { return y * this.width + x; }
+  private idx(x: number, y: number): number {
+    return y * this.width + x;
+  }
 
   hasWall(x: number, y: number, dir: Dir): boolean {
     return (this.walls[this.idx(x, y)]! & WALL_BIT[dir]!) !== 0;
@@ -592,7 +669,8 @@ export class FloorGrid {
 
   neighborIndex(x: number, y: number, dir: Dir): CellIndex | null {
     const v = DIR_VECTOR[dir]!;
-    const nx = x + v.dx, ny = y + v.dy;
+    const nx = x + v.dx,
+      ny = y + v.dy;
     return this.inBounds(nx, ny) ? { x: nx, y: ny } : null;
   }
 
@@ -632,8 +710,10 @@ export class FloorGrid {
     for (let y = 0; y < this.height; y++)
       for (let x = 0; x < this.width; x++) {
         const { cx, cy } = this.cellCenter(x, y);
-        const left = cx - CELL_SIZE / 2, right = cx + CELL_SIZE / 2;
-        const top = cy - CELL_SIZE / 2, bottom = cy + CELL_SIZE / 2;
+        const left = cx - CELL_SIZE / 2,
+          right = cx + CELL_SIZE / 2;
+        const top = cy - CELL_SIZE / 2,
+          bottom = cy + CELL_SIZE / 2;
         if (this.hasWall(x, y, Dir.North)) segs.push({ x1: left, y1: top, x2: right, y2: top });
         if (this.hasWall(x, y, Dir.West)) segs.push({ x1: left, y1: top, x2: left, y2: bottom });
         if (x === this.width - 1 && this.hasWall(x, y, Dir.East))
@@ -647,7 +727,8 @@ export class FloorGrid {
   wallSegmentsNearCells(gx: number, gy: number): WallSegment[] {
     const all = this.wallSegments();
     return all.filter((s) => {
-      const midX = (s.x1 + s.x2) / 2, midY = (s.y1 + s.y2) / 2;
+      const midX = (s.x1 + s.x2) / 2,
+        midY = (s.y1 + s.y2) / 2;
       const c = this.cellAt(midX, midY);
       return Math.abs(c.x - gx) <= 1 && Math.abs(c.y - gy) <= 1;
     });
@@ -669,20 +750,31 @@ git commit -m "feat(m1): floor grid model, wall bitmasks, world-space segments"
 ### Task 5: Seeded maze generation (`src/game/maze.ts`)
 
 **Files:**
+
 - Create: `src/game/maze.ts`
 - Test: `tests/unit/maze.test.ts`
 
 **Interfaces:**
+
 - Consumes: `createRng` (Task 3), `FloorGrid`/`Dir` (Task 4).
 - Produces (used by Tasks 7, 9, 10):
 
 ```ts
 export interface FloorParams {
-  seed: string; width: number; height: number;
-  braid: number;   // 0..1 chance to open each dead end
-  rooms: number; roomMin: number; roomMax: number; // cells; rooms carved open
+  seed: string;
+  width: number;
+  height: number;
+  braid: number; // 0..1 chance to open each dead end
+  rooms: number;
+  roomMin: number;
+  roomMax: number; // cells; rooms carved open
 }
-export interface Floor { seed: string; grid: FloorGrid; entrance: CellIndex; exit: CellIndex }
+export interface Floor {
+  seed: string;
+  grid: FloorGrid;
+  entrance: CellIndex;
+  exit: CellIndex;
+}
 export const TIER_ONE: FloorParams; // seed filled per-run; 15x15, braid .15, rooms 3, 2..4
 export function generateFloor(params: FloorParams): Floor;
 export function bfsDistances(grid: FloorGrid, start: CellIndex): Int32Array; // -1 unreachable
@@ -696,7 +788,9 @@ import { describe, expect, it } from 'vitest';
 import { bfsDistances, generateFloor, TIER_ONE, type FloorParams } from '../../src/game/maze';
 
 const params = (seed: string, over: Partial<FloorParams> = {}): FloorParams => ({
-  ...TIER_ONE, seed, ...over,
+  ...TIER_ONE,
+  seed,
+  ...over,
 });
 
 describe('generateFloor', () => {
@@ -880,10 +974,12 @@ git commit -m "feat(m1): seeded maze gen — backtracker, braiding, rooms, farth
 ### Task 6: Seed codes (`src/game/seedCode.ts`)
 
 **Files:**
+
 - Create: `src/game/seedCode.ts`
 - Test: `tests/unit/seedcode.test.ts`
 
 **Interfaces:**
+
 - Produces (used by Task 10): `isValidSeed(raw): boolean`, `normalizeSeed(raw): string`, `randomSeed(): string` (8 chars, Web Crypto).
 
 - [ ] **Step 1: Write failing tests** (`tests/unit/seedcode.test.ts`)
@@ -938,7 +1034,10 @@ export function isValidSeed(raw: string): boolean {
 }
 
 export function normalizeSeed(raw: string): string {
-  return raw.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, SEED_MAX);
+  return raw
+    .toUpperCase()
+    .replace(/[^A-Z2-9]/g, '')
+    .slice(0, SEED_MAX);
 }
 
 export function randomSeed(): string {
@@ -964,18 +1063,34 @@ git commit -m "feat(m1): seed share codes, normalize + crypto random"
 ### Task 7: Player movement + collision (`src/game/player.ts`)
 
 **Files:**
+
 - Create: `src/game/player.ts`
 - Test: `tests/unit/player.test.ts`
 
 **Interfaces:**
+
 - Consumes: `FloorGrid`, `WallSegment` (Task 4), speed/radius/dt constants (Task 4), `Floor` (Task 5).
 - Produces (used by Tasks 8, 10):
 
 ```ts
-export interface PlayerState { x: number; y: number; heading: number } // meters, radians
-export interface MoveInput { forward: number; strafe: number; sprint: boolean; turn: number }
+export interface PlayerState {
+  x: number;
+  y: number;
+  heading: number;
+} // meters, radians
+export interface MoveInput {
+  forward: number;
+  strafe: number;
+  sprint: boolean;
+  turn: number;
+}
 export function spawnPlayer(floor: Floor): PlayerState; // entrance center, faces first open dir
-export function movePlayer(p: PlayerState, input: MoveInput, grid: FloorGrid, dtRaw: number): PlayerState;
+export function movePlayer(
+  p: PlayerState,
+  input: MoveInput,
+  grid: FloorGrid,
+  dtRaw: number,
+): PlayerState;
 ```
 
 - [ ] **Step 1: Write failing tests** (`tests/unit/player.test.ts`)
@@ -999,7 +1114,12 @@ describe('movePlayer', () => {
   });
 
   it('sprints east with strafe input', () => {
-    const p = movePlayer(atCenter(), { forward: 0, strafe: 1, sprint: true, turn: 0 }, grid, 1 / 120);
+    const p = movePlayer(
+      atCenter(),
+      { forward: 0, strafe: 1, sprint: true, turn: 0 },
+      grid,
+      1 / 120,
+    );
     expect(p.x).toBeCloseTo(SPRINT_SPEED / 120);
   });
 
@@ -1025,7 +1145,12 @@ describe('movePlayer', () => {
   });
 
   it('applies turn to heading', () => {
-    const p = movePlayer(atCenter(), { forward: 0, strafe: 0, sprint: false, turn: 0.5 }, grid, 1 / 120);
+    const p = movePlayer(
+      atCenter(),
+      { forward: 0, strafe: 0, sprint: false, turn: 0.5 },
+      grid,
+      1 / 120,
+    );
     expect(p.heading).toBeCloseTo(0.5);
   });
 });
@@ -1054,28 +1179,45 @@ describe('spawnPlayer', () => {
 ```ts
 // SPDX-License-Identifier: Apache-2.0
 import { Dir, FloorGrid, type WallSegment } from '../engine/grid';
-import {
-  MAX_STEP_DT, PLAYER_RADIUS, SPRINT_SPEED, WALK_SPEED,
-} from '../engine/constants';
+import { MAX_STEP_DT, PLAYER_RADIUS, SPRINT_SPEED, WALK_SPEED } from '../engine/constants';
 import type { Floor } from './maze';
 
-export interface PlayerState { x: number; y: number; heading: number }
-export interface MoveInput { forward: number; strafe: number; sprint: boolean; turn: number }
+export interface PlayerState {
+  x: number;
+  y: number;
+  heading: number;
+}
+export interface MoveInput {
+  forward: number;
+  strafe: number;
+  sprint: boolean;
+  turn: number;
+}
 
 export function spawnPlayer(floor: Floor): PlayerState {
   const { cx, cy } = floor.grid.cellCenter(floor.entrance.x, floor.entrance.y);
   const openOrder: Array<[Dir, number]> = [
-    [Dir.North, 0], [Dir.East, Math.PI / 2], [Dir.South, Math.PI], [Dir.West, (3 * Math.PI) / 2],
+    [Dir.North, 0],
+    [Dir.East, Math.PI / 2],
+    [Dir.South, Math.PI],
+    [Dir.West, (3 * Math.PI) / 2],
   ];
   let heading = 0;
   for (const [dir, h] of openOrder)
-    if (floor.grid.canWalk(floor.entrance.x, floor.entrance.y, dir)) { heading = h; break; }
+    if (floor.grid.canWalk(floor.entrance.x, floor.entrance.y, dir)) {
+      heading = h;
+      break;
+    }
   return { x: cx, y: cy, heading };
 }
 
 /** Clamp movement along one axis against blocking wall planes. */
 function clampAxis(
-  value: number, delta: number, other: number, segs: readonly WallSegment[], axisIsX: boolean,
+  value: number,
+  delta: number,
+  other: number,
+  segs: readonly WallSegment[],
+  axisIsX: boolean,
 ): number {
   let best = value + delta;
   if (delta === 0) return value;
@@ -1094,13 +1236,18 @@ function clampAxis(
 }
 
 export function movePlayer(
-  p: PlayerState, input: MoveInput, grid: FloorGrid, dtRaw: number,
+  p: PlayerState,
+  input: MoveInput,
+  grid: FloorGrid,
+  dtRaw: number,
 ): PlayerState {
   const dt = Math.min(dtRaw, MAX_STEP_DT);
   const heading = p.heading + input.turn;
   const speed = input.sprint ? SPRINT_SPEED : WALK_SPEED;
-  const fx = Math.sin(heading), fy = -Math.cos(heading); // heading 0 = north (-y)
-  const rx = Math.cos(heading), ry = Math.sin(heading);  // right vector
+  const fx = Math.sin(heading),
+    fy = -Math.cos(heading); // heading 0 = north (-y)
+  const rx = Math.cos(heading),
+    ry = Math.sin(heading); // right vector
   const dx = (fx * input.forward + rx * input.strafe) * speed * dt;
   const dy = (fy * input.forward + ry * input.strafe) * speed * dt;
   const cell = grid.cellAt(p.x, p.y);
@@ -1127,18 +1274,23 @@ git commit -m "feat(m1): wolf3d movement — strafe-run, wall clamp+slide, tunne
 ### Task 8: Keyboard + mouse input (`src/engine/input.ts`)
 
 **Files:**
+
 - Create: `src/engine/input.ts`
 - Test: `tests/unit/input.test.ts`
 
 **Interfaces:**
+
 - Consumes: `MoveInput` (Task 7), `TURN_SENSITIVITY` (Task 4).
 - Produces (used by Task 10):
 
 ```ts
-export interface KeyboardSnapshot { keys: ReadonlySet<string>; mouseDx: number }
+export interface KeyboardSnapshot {
+  keys: ReadonlySet<string>;
+  mouseDx: number;
+}
 export function keysToMoveInput(snap: KeyboardSnapshot): MoveInput;
 export class InputCollector {
-  attach(win: Window): () => void;   // installs listeners; returns detach
+  attach(win: Window): () => void; // installs listeners; returns detach
   snapshotAndReset(): KeyboardSnapshot; // keys now + mouse dx since last call
 }
 ```
@@ -1186,7 +1338,10 @@ describe('keysToMoveInput', () => {
 import { TURN_SENSITIVITY } from './constants';
 import type { MoveInput } from '../game/player';
 
-export interface KeyboardSnapshot { keys: ReadonlySet<string>; mouseDx: number }
+export interface KeyboardSnapshot {
+  keys: ReadonlySet<string>;
+  mouseDx: number;
+}
 
 export function keysToMoveInput(snap: KeyboardSnapshot): MoveInput {
   const has = (...codes: string[]) => codes.some((c) => snap.keys.has(c));
@@ -1240,15 +1395,20 @@ git commit -m "feat(m1): keyboard/mouse input mapping with pointer-lock yaw"
 ### Task 9: three.js floor scene (`src/game/floorScene.ts`)
 
 **Files:**
+
 - Create: `src/game/floorScene.ts`
 - Test: `tests/unit/floorscene.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Floor` (Task 5), wall constants (Task 4).
 - Produces (used by Task 10):
 
 ```ts
-export interface FloorSceneResult { group: THREE.Group; wallInstanceCount: number }
+export interface FloorSceneResult {
+  group: THREE.Group;
+  wallInstanceCount: number;
+}
 export function buildFloorScene(floor: Floor): FloorSceneResult;
 ```
 
@@ -1282,7 +1442,10 @@ import { CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS } from '../engine/constants';
 import type { WallSegment } from '../engine/grid';
 import type { Floor } from './maze';
 
-export interface FloorSceneResult { group: THREE.Group; wallInstanceCount: number }
+export interface FloorSceneResult {
+  group: THREE.Group;
+  wallInstanceCount: number;
+}
 
 function instancedWalls(segs: WallSegment[], horizontal: boolean): THREE.InstancedMesh {
   const geo = horizontal
@@ -1352,9 +1515,11 @@ git commit -m "feat(m1): grid->three scene, instanced walls, entrance/exit marke
 ### Task 10: FOCUS view bootstrap (`src/main.ts`)
 
 **Files:**
+
 - Modify: `src/main.ts` (replace placeholder entirely)
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 5–9.
 - Produces: running game; dev hook `window.__MIRROR_HOUSE_DEBUG__ = { getPlayer(): PlayerState; seed: string }` (dev builds only); URL `?seed=CODE` selects the floor.
 
@@ -1424,7 +1589,8 @@ function frame(now: number): void {
     fps = Math.round((frames * 1000) / (now - fpsClock));
     frames = 0;
     fpsClock = now;
-    diagnostics.textContent = `seed ${seed}  fps ${fps}\n` +
+    diagnostics.textContent =
+      `seed ${seed}  fps ${fps}\n` +
       `pos ${player.x.toFixed(1)}, ${player.y.toFixed(1)}  heading ${player.heading.toFixed(2)}`;
   }
   requestAnimationFrame(frame);
@@ -1460,9 +1626,11 @@ git commit -m "feat(m1): FOCUS view — fixed-step loop, lantern light, diagnost
 ### Task 11: Playwright smoke test (M1 gate)
 
 **Files:**
+
 - Create: `playwright.config.ts`, `tests/e2e/smoke.spec.ts`
 
 **Interfaces:**
+
 - Consumes: dev server + `__MIRROR_HOUSE_DEBUG__` hook (Task 10).
 
 - [ ] **Step 1: Write config** (`playwright.config.ts`)
@@ -1504,14 +1672,14 @@ test('loads a seeded floor, moves with W, no page errors', async ({ page }) => {
   await page.waitForFunction(
     () => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__ !== undefined,
   );
-  const before = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+  const before = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
   await page.keyboard.down('KeyW');
   await page.waitForTimeout(600);
   await page.keyboard.up('KeyW');
-  const after = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+  const after = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
 
   // spawn faces an open direction, so 0.6 s of walking must cover ground
@@ -1522,12 +1690,12 @@ test('loads a seeded floor, moves with W, no page errors', async ({ page }) => {
 
 test('same seed renders the same spawn', async ({ page }) => {
   await page.goto('/?seed=SAMESAME');
-  const p = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+  const p = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
   await page.reload();
-  const q = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+  const q = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
   );
   expect(q).toEqual(p);
 });
@@ -1550,11 +1718,12 @@ git commit -m "test(m1): playwright smoke — load, walk, determinism, no errors
 ### Task 12: M0–M1 acceptance close-out
 
 **Files:**
+
 - Modify: `README.md` (quickstart), this plan (tick boxes)
 
 - [x] **Step 1: README quickstart section** — add under "How this repo works":
 
-```markdown
+````markdown
 ## Run it
 
 ```bash
@@ -1563,7 +1732,9 @@ npm run dev          # http://localhost:5173 — add ?seed=YOURCODE for a specif
 npm test             # unit tests (deterministic maze/rng/movement)
 npm run e2e          # playwright smoke (first run: npx playwright install chromium)
 ```
-```
+````
+
+````
 
 - [x] **Step 2: Acceptance checklist (verify + fix before tagging)**
 
@@ -1580,7 +1751,7 @@ npm run e2e          # playwright smoke (first run: npx playwright install chrom
 git add README.md && git commit -m "docs(m1): quickstart + acceptance verified"
 git tag m1
 git push --tags origin main
-```
+````
 
 ---
 

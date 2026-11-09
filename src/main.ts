@@ -727,8 +727,7 @@ function frame(now: number): void {
         // loseMemoryAt, so a changed value marks this tick's check — ping at
         // the echo's position. The throttle lives inside updateEcho, so this
         // never double-fires within its SENSE_INTERVAL_MS cadence.
-        if (next.loseMemoryAt !== e.loseMemoryAt)
-          pings.push({ x: next.x, y: next.y, at: now });
+        if (next.loseMemoryAt !== e.loseMemoryAt) pings.push({ x: next.x, y: next.y, at: now });
         // Stuck bounty: first confusion banks the award flag for this run.
         return next.mode === 'confused' && !next.stuckAwarded
           ? { ...next, stuckAwarded: true }

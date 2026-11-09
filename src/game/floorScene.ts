@@ -17,7 +17,11 @@ export interface FloorSceneResult {
   hideWallEdge(cellX: number, cellY: number, dir: Dir): boolean;
 }
 
-function instancedWalls(segs: WallSegment[], horizontal: boolean, mat: THREE.MeshStandardMaterial): THREE.InstancedMesh {
+function instancedWalls(
+  segs: WallSegment[],
+  horizontal: boolean,
+  mat: THREE.MeshStandardMaterial,
+): THREE.InstancedMesh {
   const geo = horizontal
     ? new THREE.BoxGeometry(CELL_SIZE + WALL_THICKNESS, WALL_HEIGHT, WALL_THICKNESS)
     : new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, CELL_SIZE + WALL_THICKNESS);
@@ -39,7 +43,10 @@ function marker(x: number, y: number, color: number): THREE.Mesh {
   return mesh;
 }
 
-export function buildFloorScene(floor: Floor, palette: TierPalette = TIER_ONE_PALETTE): FloorSceneResult {
+export function buildFloorScene(
+  floor: Floor,
+  palette: TierPalette = TIER_ONE_PALETTE,
+): FloorSceneResult {
   const segs = floor.grid.wallSegments();
   const horizontal = segs.filter((s) => s.y1 === s.y2);
   const vertical = segs.filter((s) => s.x1 === s.x2);

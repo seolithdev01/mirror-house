@@ -34,11 +34,11 @@ The Frost Lantern breathes on the mirror you face (press `F` or the **❄ Frost*
 
 Three fully playable ways to walk — switch anytime with the buttons at the top right. Your choice is remembered between sessions.
 
-| HUD button | Mode | How it works |
-| --- | --- | --- |
-| ⌨ Keys | Keyboard only | `W`/`S` or `↑`/`↓` walk, `←`/`→` or `Q`/`E` turn, `Shift` sprint. No mouse needed. |
-| 🖱 Mouse | Mouse only | Hold the **left button** to walk, hold the **right button** to sprint, steer by moving the cursor left or right of center. |
-| ⌨+🖱 Both | Hybrid (default) | `WASD` move and strafe, mouse to look (click the view to capture the pointer), `Q`/`E` also turn, `Shift` sprint. |
+| HUD button | Mode             | How it works                                                                                                               |
+| ---------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| ⌨ Keys     | Keyboard only    | `W`/`S` or `↑`/`↓` walk, `←`/`→` or `Q`/`E` turn, `Shift` sprint. No mouse needed.                                         |
+| 🖱 Mouse    | Mouse only       | Hold the **left button** to walk, hold the **right button** to sprint, steer by moving the cursor left or right of center. |
+| ⌨+🖱 Both   | Hybrid (default) | `WASD` move and strafe, mouse to look (click the view to capture the pointer), `Q`/`E` also turn, `Shift` sprint.          |
 
 ### House Anger — don't sprint into the glass
 
@@ -55,19 +55,19 @@ Chhaya walks your exact path, exactly six seconds behind. Never retrace your ste
 
 ### Shards
 
-Scored per cleared floor: 5 per beacon captured, +25 for a flawless floor (nothing cracked), +10 per Echo you confused at least once. Beacon shards bank as *pending* and are only paid out when you actually clear — get caught or collapse and they are forfeit. Your banked total (💠 chip) lives on your device beside your streak.
+Scored per cleared floor: 5 per beacon captured, +25 for a flawless floor (nothing cracked), +10 per Echo you confused at least once. Beacon shards bank as _pending_ and are only paid out when you actually clear — get caught or collapse and they are forfeit. Your banked total (💠 chip) lives on your device beside your streak.
 
 ### URL options
 
 - `?seed=CODE` — play a specific floor. Codes are 1–16 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no easily-confused letters). The same code always builds the same maze, so a code shared is a floor shared.
 - `?look=coat-glass` — dress your surveyor; you'll meet the result in the mirrors. The separator may be `-` or `.`, unknown parts fall back to the default `indigo-gold`. All 12 combinations are valid:
 
-  | coat \ glass | gold | teal | white |
-  | --- | --- | --- | --- |
+  | coat \ glass         | gold          | teal          | white          |
+  | -------------------- | ------------- | ------------- | -------------- |
   | **indigo** (default) | `indigo-gold` | `indigo-teal` | `indigo-white` |
-  | **teal** | `teal-gold` | `teal-teal` | `teal-white` |
-  | **rose** | `rose-gold` | `rose-teal` | `rose-white` |
-  | **ivory** | `ivory-gold` | `ivory-teal` | `ivory-white` |
+  | **teal**             | `teal-gold`   | `teal-teal`   | `teal-white`   |
+  | **rose**             | `rose-gold`   | `rose-teal`   | `rose-white`   |
+  | **ivory**            | `ivory-gold`  | `ivory-teal`  | `ivory-white`  |
 
 ### Timer, Daily, streak, best
 

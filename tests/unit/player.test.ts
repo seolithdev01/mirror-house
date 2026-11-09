@@ -16,7 +16,12 @@ describe('movePlayer', () => {
   });
 
   it('sprints east with strafe input', () => {
-    const p = movePlayer(atCenter(), { forward: 0, strafe: 1, sprint: true, turn: 0 }, grid, 1 / 120);
+    const p = movePlayer(
+      atCenter(),
+      { forward: 0, strafe: 1, sprint: true, turn: 0 },
+      grid,
+      1 / 120,
+    );
     expect(p.x).toBeCloseTo(SPRINT_SPEED / 120);
   });
 
@@ -42,7 +47,12 @@ describe('movePlayer', () => {
   });
 
   it('applies turn to heading', () => {
-    const p = movePlayer(atCenter(), { forward: 0, strafe: 0, sprint: false, turn: 0.5 }, grid, 1 / 120);
+    const p = movePlayer(
+      atCenter(),
+      { forward: 0, strafe: 0, sprint: false, turn: 0.5 },
+      grid,
+      1 / 120,
+    );
     expect(p.heading).toBeCloseTo(0.5);
   });
 });

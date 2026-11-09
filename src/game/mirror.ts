@@ -13,7 +13,11 @@ import type { MirrorKind } from './floorObjects';
 import type { MirrorVisual } from './frost';
 import { AVATAR_LAYER } from './avatar';
 
-export interface MirrorSpot { x: number; z: number; rotY: number }
+export interface MirrorSpot {
+  x: number;
+  z: number;
+  rotY: number;
+}
 
 /** Fog visual state shared by RT hero mirrors and cheap mirror meshes (M2 frost).
  *  Aliased to frost's `MirrorVisual` rather than re-declared: the renderer and
@@ -87,7 +91,8 @@ export function createMirrorMesh(kind: MirrorKind): CheapMirror {
     setFog(next: MirrorFogState): void {
       if (next === state) return;
       state = next;
-      mesh.material = next === 'captured' ? capturedMaterial : next === 'fogged' ? foggedMaterial : base;
+      mesh.material =
+        next === 'captured' ? capturedMaterial : next === 'fogged' ? foggedMaterial : base;
     },
     // Tint only the per-instance base material — the fogged/captured materials
     // are shared, and a crack outlives frost anyway (it shows once fog lifts).
@@ -151,7 +156,11 @@ export class HeroMirror implements FogVisual, CrackVisual {
     this.rtMaterial.color.setHex(cracked ? CRACK_TINT : this.baseTint);
   }
 
-  update(renderer: THREE.WebGLRenderer, scene: THREE.Scene, mainCam: THREE.PerspectiveCamera): void {
+  update(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    mainCam: THREE.PerspectiveCamera,
+  ): void {
     if (this.fogged) return; // matte glass shows no reflection — skip the RT pass entirely
     const pos = new THREE.Vector3();
     mainCam.getWorldPosition(pos);

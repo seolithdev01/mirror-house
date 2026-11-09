@@ -2,16 +2,16 @@
 
 **Step:** #step001 · **Date:** 2026-11-08 · **Status:** Draft for review — nothing gets built until you approve or edit this.
 
-Working title: **Mirror House** (distinctive brand candidate: *Sheesh Mahal: Mirror House* or *AINA* — see §11.5).
+Working title: **Mirror House** (distinctive brand candidate: _Sheesh Mahal: Mirror House_ or _AINA_ — see §11.5).
 
 ## 0. Decisions log (defaults taken — override any of these before step002)
 
-| # | Decision | Confirmed 2026-11-08 | Rationale |
-|---|----------|----------------------|-----------|
-| D1 | License | **Apache-2.0 (code) + CC-BY 4.0 (art, music, docs)** | Permissive with an explicit patent grant; attribution preserved; venue packs can carry separate trademark licenses |
-| D2 | Beta platform | **Web PWA + Android (Play Store) + iOS (App Store)** via Capacitor, web core on Cloudflare Pages | Store presence from day one from the same web codebase; adds ~3 weeks and store-account costs to the plan (§8, §13) |
-| D3 | Monetization lead | **Venue pilot inside beta** — one real local venture's sponsored floor ships in the beta; donations run alongside | Proves the local-venture model at launch; partner dependency mitigated (§14) |
-| D4 | Music at beta | **Procedural synth score via Web Audio** | Zero asset-licensing risk, tiny bundle, beat-synced gameplay (Taal, traps); composed originals can layer in later |
+| #   | Decision          | Confirmed 2026-11-08                                                                                              | Rationale                                                                                                           |
+| --- | ----------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| D1  | License           | **Apache-2.0 (code) + CC-BY 4.0 (art, music, docs)**                                                              | Permissive with an explicit patent grant; attribution preserved; venue packs can carry separate trademark licenses  |
+| D2  | Beta platform     | **Web PWA + Android (Play Store) + iOS (App Store)** via Capacitor, web core on Cloudflare Pages                  | Store presence from day one from the same web codebase; adds ~3 weeks and store-account costs to the plan (§8, §13) |
+| D3  | Monetization lead | **Venue pilot inside beta** — one real local venture's sponsored floor ships in the beta; donations run alongside | Proves the local-venture model at launch; partner dependency mitigated (§14)                                        |
+| D4  | Music at beta     | **Procedural synth score via Web Audio**                                                                          | Zero asset-licensing risk, tiny bundle, beat-synced gameplay (Taal, traps); composed originals can layer in later   |
 
 ---
 
@@ -25,43 +25,47 @@ You wake on the roof garden of a 100-year-old, 100-storey palace of mirrors. The
 - **Money & data:** free, open source, no accounts, no telemetry — your save data lives only on your device, exportable as a file.
 
 ### Player promise
+
 1. Every death is my mistake, and I can retry instantly.
-2. Mirrors are the puzzle *and* the weapon — I don't break glass, I blind it.
+2. Mirrors are the puzzle _and_ the weapon — I don't break glass, I blind it.
 3. The four Sentinels each think differently; learning their minds is the skill.
 4. Ten floors at a time I feel smarter; every ten floors the house changes the rules.
 5. The guide in my lantern talks back, but knowledge costs shards — I choose what to ask.
-6. *I can see myself in the glass* — my reflection is mine and configurable; the house can't fake it yet. *(confirmed step003)*
+6. _I can see myself in the glass_ — my reflection is mine and configurable; the house can't fake it yet. _(confirmed step003)_
 
 ---
 
 ## 2. Backstory & story arc
 
 ### 2.1 The premise
-A century ago a master glazier — the records only call him **the Glazier** — built the **Sheesh Mahal**, a hundred-storey palace of mirrors, commissioned to "hold beauty forever." When his daughter drowned, he went mad with a craftsman's grief: if he could not keep her, he would keep *reflections* of everyone. Every guest who ever entered had their reflection peeled off and pressed into a mirror. The guests left; the copies stayed. The house learned to prefer the copies — they never leave, never age, never stop admiring the glass.
+
+A century ago a master glazier — the records only call him **the Glazier** — built the **Sheesh Mahal**, a hundred-storey palace of mirrors, commissioned to "hold beauty forever." When his daughter drowned, he went mad with a craftsman's grief: if he could not keep her, he would keep _reflections_ of everyone. Every guest who ever entered had their reflection peeled off and pressed into a mirror. The guests left; the copies stayed. The house learned to prefer the copies — they never leave, never age, never stop admiring the glass.
 
 You are **the Surveyor** — a heritage architect sent to appraise the palace before demolition. The house decides you are its best catch in a hundred years. The roof door becomes a mirror.
 
 ### 2.2 The helper: Aaina
-**Aaina** (Hindi: *mirror*) is a shard of the Glazier's first and only *true* mirror — the one he cracked on purpose when he realized copies were lying to him. She lives in your lantern. She is the only voice in the house that tells the truth, and she knows it. She answers questions about mechanics and lore, and sells contextual hints for **shards** — deeper answers unlock as your player level rises (your demonstrated mastery buys you trust). At beta she is a hand-authored dialogue tree; an optional LLM-backed Aaina (opt-in, private) is a post-beta experiment.
+
+**Aaina** (Hindi: _mirror_) is a shard of the Glazier's first and only _true_ mirror — the one he cracked on purpose when he realized copies were lying to him. She lives in your lantern. She is the only voice in the house that tells the truth, and she knows it. She answers questions about mechanics and lore, and sells contextual hints for **shards** — deeper answers unlock as your player level rises (your demonstrated mastery buys you trust). At beta she is a hand-authored dialogue tree; an optional LLM-backed Aaina (opt-in, private) is a post-beta experiment.
 
 ### 2.3 The three-act descent (100 floors)
 
-| Act | Floors | Arc |
-|-----|--------|-----|
-| **I — The Trap** | 1–40 (Tiers 1–4) | Learn the house's rules. Meet Aaina. Discover the Echoes are former guests' peeled reflections. First truth: *the house keeps people by copying them.* |
-| **II — The Deception** | 41–80 (Tiers 5–8) | The house starts impersonating *you* — mirror-you decoys that enemies protect and you may be mistaken for. Allies behind glass may be copies. Second truth: *the house can no longer tell originals from copies — including itself.* |
-| **III — The Ground Door** | 81–100 (Tiers 9–10) | The Foundations have no mirrors at all — nothing to hide behind, nothing to hide *behind you*. The door opens only for someone carrying all **ten Truth-Shards** (one per tier, from each Sentinel hall) — proof of being an original. | 
+| Act                       | Floors              | Arc                                                                                                                                                                                                                                    |
+| ------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **I — The Trap**          | 1–40 (Tiers 1–4)    | Learn the house's rules. Meet Aaina. Discover the Echoes are former guests' peeled reflections. First truth: _the house keeps people by copying them._                                                                                 |
+| **II — The Deception**    | 41–80 (Tiers 5–8)   | The house starts impersonating _you_ — mirror-you decoys that enemies protect and you may be mistaken for. Allies behind glass may be copies. Second truth: _the house can no longer tell originals from copies — including itself._   |
+| **III — The Ground Door** | 81–100 (Tiers 9–10) | The Foundations have no mirrors at all — nothing to hide behind, nothing to hide _behind you_. The door opens only for someone carrying all **ten Truth-Shards** (one per tier, from each Sentinel hall) — proof of being an original. |
 
-**Endings (post-beta):** *Escape* (any completion), *True Escape* (all ten shards — the house lets go), and a hidden *Stay* ending (you choose the glass). Beta delivers Act I's opening fully polished.
+**Endings (post-beta):** _Escape_ (any completion), _True Escape_ (all ten shards — the house lets go), and a hidden _Stay_ ending (you choose the glass). Beta delivers Act I's opening fully polished.
 
 ### 2.4 Themes
+
 Identity, imitation vs. original, grief as craftsmanship, descent as self-examination. The descent literally goes down while the story digs deeper — the building is the antagonist's mind.
 
 ---
 
 ## 3. Purpose & positioning
 
-- **For players:** bite-sized tactical escape puzzles wrapped in an FPS body — for people who liked the *idea* of Pac-Man's thinking ghosts but wanted agency and depth, and DOOM's pace without the gore.
+- **For players:** bite-sized tactical escape puzzles wrapped in an FPS body — for people who liked the _idea_ of Pac-Man's thinking ghosts but wanted agency and depth, and DOOM's pace without the gore.
 - **For the project:** an open-source showpiece (code + original procedural art/audio) that becomes a platform local ventures can sponsor with their own themed floors.
 - **Explicitly not:** gore horror, a twitch shooter, a live-service game, a data-harvesting game.
 
@@ -70,6 +74,7 @@ Identity, imitation vs. original, grief as craftsmanship, descent as self-examin
 ## 4. Core gameplay
 
 ### 4.1 The floor loop (2–5 minutes)
+
 1. **Enter** the floor (stairwell landing). Beacon count and exit location shown.
 2. **Scout** — FOCUS view + OVERHEAD map (fog of war: only visited/seen cells).
 3. **Capture objectives** — snuff/frost the floor's **Beacon mirrors** (1–4 per floor; the "capture/defeat" objective).
@@ -77,57 +82,62 @@ Identity, imitation vs. original, grief as craftsmanship, descent as self-examin
 5. **Exit** — the Stair Door unlocks when all beacons are captured. Optional: rescue a trapped reflection-NPC for bonus shards.
 
 ### 4.2 The Frost Lantern (core verb)
+
 You carry the Glazier's **Frost Lantern**. Aim at any standing mirror and fog it (a "breath" on the glass) for 20–30 seconds:
+
 - A fogged mirror **reflects nothing** — enemies that see only through mirrors lose you in that zone.
 - Fully fogging all mirrors in an enclosed room creates a **mirror box**: enemies inside become confused, wander, collide, and get **stuck** — your trap.
 - The lantern has a **breath meter** (recharges); fogging is your only "attack" on the environment.
 
 ### 4.3 Mirror rules (the physics of deception)
-| Mirror type | Behavior |
-|---|---|
-| **Standing mirrors** (most) | Reflective; fogable; cracking (melee/sprinting into them) raises **House Anger** |
-| **True Mirrors** (1–2 per floor) | Unfogable, always honest; **step through** to teleport to their paired mirror — routing puzzles; Sentinels cannot use them |
-| **Silvered doors** | Secret mirror-finished doors (the Wolfenstein push-wall lineage): push to reveal hidden rooms, shortcuts, or ready-made trap boxes; found by their tell — they frost *unevenly* |
-| **Beacon mirrors** | Objectives; frost to capture; emit light enemies gather around |
-| **Sentinel Glass** | The tethered panes a Sentinel patrols among; fogging these *angers* that Sentinel |
 
-- **House Anger:** rises when you crack mirrors; at full anger a mirror wall **collapses** — the floor soft-fails (instant restart). *You never want to collapse mirrors* — exactly as briefed. Collapse is a fail-state, not a tool.
-- **Deceptions against you:** angled mirrors show corridors that don't exist; some reflections render *you* slightly delayed (fake player = decoy bait); in Tier 4+, distorting mirrors displace your apparent position to enemy mirror-sight.
+| Mirror type                      | Behavior                                                                                                                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Standing mirrors** (most)      | Reflective; fogable; cracking (melee/sprinting into them) raises **House Anger**                                                                                                |
+| **True Mirrors** (1–2 per floor) | Unfogable, always honest; **step through** to teleport to their paired mirror — routing puzzles; Sentinels cannot use them                                                      |
+| **Silvered doors**               | Secret mirror-finished doors (the Wolfenstein push-wall lineage): push to reveal hidden rooms, shortcuts, or ready-made trap boxes; found by their tell — they frost _unevenly_ |
+| **Beacon mirrors**               | Objectives; frost to capture; emit light enemies gather around                                                                                                                  |
+| **Sentinel Glass**               | The tethered panes a Sentinel patrols among; fogging these _angers_ that Sentinel                                                                                               |
+
+- **House Anger:** rises when you crack mirrors; at full anger a mirror wall **collapses** — the floor soft-fails (instant restart). _You never want to collapse mirrors_ — exactly as briefed. Collapse is a fail-state, not a tool.
+- **Deceptions against you:** angled mirrors show corridors that don't exist; some reflections render _you_ slightly delayed (fake player = decoy bait); in Tier 4+, distorting mirrors displace your apparent position to enemy mirror-sight.
 
 ### 4.4 Enemies
 
 **Echoes (the zombies).** Hollow reflections of past guests, glassy and slow. Patrol set paths; lethal on contact; shatter into glass (no gore) when lured into a trap or the Stair Door seals behind you. **They see only through mirrors** — in mirror-dead space they are blind.
 
-**The four Sentinels** — the Glazier's apprentices, bound into glass. Each thinks differently (pursuit *personalities*, not copied characters — original names are common Hindi words tied to their mechanic):
+**The four Sentinels** — the Glazier's apprentices, bound into glass. Each thinks differently (pursuit _personalities_, not copied characters — original names are common Hindi words tied to their mechanic):
 
-| Sentinel | Meaning | Behavior | Player counter |
-|---|---|---|---|
-| **Chhaya** | *shadow* | Follows a recording of your path, ~6 seconds behind — your own trail made hostile; the Prince of Persia shadow-through-the-mirror moment, made systemic | Break line-of-path through fog zones and True-Mirror hops |
-| **Taal** | *rhythm/beat* | Patrols on the music's beat; stationary between beats, bursts on them; gets faster as the tier's track intensifies | Time movement to the soundtrack — the audio *is* the telegraph |
-| **Gher** | *to encircle* | Doesn't chase; moves to seal off the exit or corridor you're heading toward | Feint toward one exit, take another; fog the door-side mirrors so it can't watch you |
-| **Aavart** | *cycle/whirl* | Predicts your destination from direction and speed and cuts the corner to ambush | Change pace, use True Mirrors mid-route, let Chhaya's ghost-trail bait it |
+| Sentinel   | Meaning       | Behavior                                                                                                                                                | Player counter                                                                       |
+| ---------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Chhaya** | _shadow_      | Follows a recording of your path, ~6 seconds behind — your own trail made hostile; the Prince of Persia shadow-through-the-mirror moment, made systemic | Break line-of-path through fog zones and True-Mirror hops                            |
+| **Taal**   | _rhythm/beat_ | Patrols on the music's beat; stationary between beats, bursts on them; gets faster as the tier's track intensifies                                      | Time movement to the soundtrack — the audio _is_ the telegraph                       |
+| **Gher**   | _to encircle_ | Doesn't chase; moves to seal off the exit or corridor you're heading toward                                                                             | Feint toward one exit, take another; fog the door-side mirrors so it can't watch you |
+| **Aavart** | _cycle/whirl_ | Predicts your destination from direction and speed and cuts the corner to ambush                                                                        | Change pace, use True Mirrors mid-route, let Chhaya's ghost-trail bait it            |
 
 Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → Tier 4 Aavart → Tiers 5–10 escalate combinations, speeds, sense ranges, and tier mechanics. Each tier ends in a **Dwaar** (threshold) — that tier's lead Sentinel in a handcrafted duel-hall, guarding the floor's **Truth-Shard**.
 
 ### 4.5 Economy & progression
+
 - **Shards** (score/currency): from beacons, trapped enemies, perfect floors (zero cracks), rescued NPCs.
 - Spend on **Aaina hints** (contextual to your current floor state) and lore unlocks.
 - **Player level** (mastery, not grind): unlocks deeper Aaina answers and cosmetic lantern glasses.
 - Per-tier and per-floor best times kept **locally**; shareable **seed codes** let friends play the exact same floor layout.
 
 ### 4.6 Difficulty architecture (10 tiers × 10 floors)
-| Tier | Floors | Setting | New mechanic | Music mood |
-|---|---|---|---|---|
-| 1 | 1–10 | The Glass Gallery | Frost Lantern, Echoes, Chhaya | Dawn-hope raga (Bhairav-family mood) |
-| 2 | 11–20 | Hall of Ancestors | Taal; portrait mirrors show *other* floors | Reverent, slow pulse |
-| 3 | 21–30 | Reflecting Gardens | Water-mirrors (can't fog water — ripple them), Gher | Pastoral, flute-lead |
-| 4 | 31–40 | Carnival of Faces | Distorting mirrors displace your mirror-image, Aavart | Playful, mischievous groove |
-| 5 | 41–50 | The Flood Halls | Rising water halves mirror height; Act II begins | Submerged, filtered |
-| 6 | 51–60 | The Furnace Wings | Heat fogs mirrors at range but cracks spread faster | Urgent, percussive |
-| 7 | 61–70 | The Whisper Library | Sound-based Echoes (they hear, not see) | Sparse, whispered |
-| 8 | 71–80 | The Frozen Atrium | All mirrors pre-fogged — *you* unfog to lure | Austere, cold strings |
-| 9 | 81–90 | The Warden's Warrens | All four Sentinels hunt together | Dread, low drone |
-| 10 | 91–100 | The Foundations | No mirrors at all — pure maze, the Glazier himself | Resolve; silence between notes |
+
+| Tier | Floors | Setting              | New mechanic                                          | Music mood                           |
+| ---- | ------ | -------------------- | ----------------------------------------------------- | ------------------------------------ |
+| 1    | 1–10   | The Glass Gallery    | Frost Lantern, Echoes, Chhaya                         | Dawn-hope raga (Bhairav-family mood) |
+| 2    | 11–20  | Hall of Ancestors    | Taal; portrait mirrors show _other_ floors            | Reverent, slow pulse                 |
+| 3    | 21–30  | Reflecting Gardens   | Water-mirrors (can't fog water — ripple them), Gher   | Pastoral, flute-lead                 |
+| 4    | 31–40  | Carnival of Faces    | Distorting mirrors displace your mirror-image, Aavart | Playful, mischievous groove          |
+| 5    | 41–50  | The Flood Halls      | Rising water halves mirror height; Act II begins      | Submerged, filtered                  |
+| 6    | 51–60  | The Furnace Wings    | Heat fogs mirrors at range but cracks spread faster   | Urgent, percussive                   |
+| 7    | 61–70  | The Whisper Library  | Sound-based Echoes (they hear, not see)               | Sparse, whispered                    |
+| 8    | 71–80  | The Frozen Atrium    | All mirrors pre-fogged — _you_ unfog to lure          | Austere, cold strings                |
+| 9    | 81–90  | The Warden's Warrens | All four Sentinels hunt together                      | Dread, low drone                     |
+| 10   | 91–100 | The Foundations      | No mirrors at all — pure maze, the Glazier himself    | Resolve; silence between notes       |
 
 ### 4.7 Movement & trap language (Wolfenstein feet, Prince of Persia hands)
 
@@ -136,60 +146,68 @@ The two lineages split cleanly: **locomotion is Wolfenstein 3D** — flat grid, 
 - **Stances:** sprint (fast, loud, cracks what you run over) · walk · creep (silent) · **careful-step** (auto edge-stop at ledges and pressure glass — the Prince's cautious step).
 - **Committed verbs:** the Frost Lantern breath has a wind-up and recovery; the True Mirror step is a committed step-through you cannot cancel. Arcade feet, deliberate hands.
 - **Trap families (all glass, all timing, learn-by-dying like PoP):**
-  - *Swinging glass blades* — synced to the tier track's beat; the safe window is the music itself.
-  - *Pressure-crack floors* — glass tiles that fracture under sprint; careful-step or creep across (fall = instant floor restart).
-  - *Guillotine mirror doors* — slam on the track's pattern; frost their side-panels to jam them open.
-  - *Pendulum shard chimes* — passive lures: ring them to pull Echoes off your route.
+  - _Swinging glass blades_ — synced to the tier track's beat; the safe window is the music itself.
+  - _Pressure-crack floors_ — glass tiles that fracture under sprint; careful-step or creep across (fall = instant floor restart).
+  - _Guillotine mirror doors_ — slam on the track's pattern; frost their side-panels to jam them open.
+  - _Pendulum shard chimes_ — passive lures: ring them to pull Echoes off your route.
 
 ---
 
 ## 5. UX / UI
 
 ### 5.1 View modes (the DOOM-ish multi-viewport promise, made affordable)
-| Mode | What you see | When | Cost |
-|---|---|---|---|
-| **FOCUS** | Full-screen first-person + micro-map strip | Default, combat, mobile default | 1 full render |
-| **QUAD** | Front / left / right / back views in four panes + small map | Sweep a room, Sentinel math, tense corridors | Main pane full; side panes half-res on alternate frames |
-| **OVERHEAD** | Whole floor, 2D tactical map, fog of war, enemy last-known pings | Planning, routing, post-death study | 2D canvas — no 3D cost |
-| **TACTICAL** | Paused OVERHEAD + route sketching | Puzzles, accessibility (play at your pace) | None (game paused) |
 
-One key cycles FOCUS→QUAD→OVERHEAD (V / gamepad select / mobile triple-tap). Sentinels always announced by silhouette + sound *first*, color second (colorblind-safe by design).
+| Mode         | What you see                                                     | When                                         | Cost                                                    |
+| ------------ | ---------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------- |
+| **FOCUS**    | Full-screen first-person + micro-map strip                       | Default, combat, mobile default              | 1 full render                                           |
+| **QUAD**     | Front / left / right / back views in four panes + small map      | Sweep a room, Sentinel math, tense corridors | Main pane full; side panes half-res on alternate frames |
+| **OVERHEAD** | Whole floor, 2D tactical map, fog of war, enemy last-known pings | Planning, routing, post-death study          | 2D canvas — no 3D cost                                  |
+| **TACTICAL** | Paused OVERHEAD + route sketching                                | Puzzles, accessibility (play at your pace)   | None (game paused)                                      |
+
+One key cycles FOCUS→QUAD→OVERHEAD (V / gamepad select / mobile triple-tap). Sentinels always announced by silhouette + sound _first_, color second (colorblind-safe by design).
 
 ### 5.2 HUD
+
 - Top-left: floor + tier (`L07 · DWAAR I`), House Anger meter.
 - Top-right: shards.
 - Bottom-left: health as glass panes; Frost Lantern breath meter.
 - Bottom-right: beacon counter, minimap toggle, view-mode key hint.
-- **Aaina button** ([Q]) — dialogue wheel: *Ask / Hint / Lore*. Subtitled always.
+- **Aaina button** ([Q]) — dialogue wheel: _Ask / Hint / Lore_. Subtitled always.
 
 ### 5.3 Controls
-| Input | Scheme |
-|---|---|
+
+| Input            | Scheme                                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
 | Keyboard + mouse | WASD + mouse look; F frost; V view; Q Aaina; Shift creep (quiet) vs sprint (loud); Space True-Mirror step |
-| Gamepad | Twin sticks; face buttons mirror the scheme; standard mapping, remappable |
-| Touch | Left virtual stick; right half drag-look; frost/sprint/view as thumb buttons; QUAD panes tap-to-enlarge |
+| Gamepad          | Twin sticks; face buttons mirror the scheme; standard mapping, remappable                                 |
+| Touch            | Left virtual stick; right half drag-look; frost/sprint/view as thumb buttons; QUAD panes tap-to-enlarge   |
 
 ### 5.4 Onboarding & failure
+
 - Floor 1 teaches exactly one verb per room (move → look → fog → trap an Echo) — no text dumps; Aaina speaks one line per room, subtitled.
 - Death = floor restart in <2s with the **same seed** (the puzzle stays honest); optional reroll for a fresh layout.
 - Every Dwaar is a checkpoint; saves are automatic.
 
 ### 5.5 Accessibility (beta table stakes)
-Reduced-flash mode (mirror glints are core aesthetic — this mode is mandatory, not optional) · colorblind-safe Sentinel identity (silhouette + audio motif) · full captions/subtitles · remappable inputs · text scale · one-handed desktop scheme · TACTICAL pause mode doubles as a cognitive-accessibility mode · no timed QTEs ever · **three input modes — keyboard-only, mouse-only, hybrid — each fully playable alone, with on-screen mode buttons** *(confirmed step003)*.
+
+Reduced-flash mode (mirror glints are core aesthetic — this mode is mandatory, not optional) · colorblind-safe Sentinel identity (silhouette + audio motif) · full captions/subtitles · remappable inputs · text scale · one-handed desktop scheme · TACTICAL pause mode doubles as a cognitive-accessibility mode · no timed QTEs ever · **three input modes — keyboard-only, mouse-only, hybrid — each fully playable alone, with on-screen mode buttons** _(confirmed step003)_.
 
 ### 5.6 Art direction (step003)
+
 Tier 1 palette: deep indigo void/fog, warm ivory-plaster walls, a patterned floor in teal/ivory/gold/rose (procedural canvas textures — zero external assets), teal entrance marker, gold exit marker, warm lantern light. The M1 gray-box look was a placeholder, not the identity.
 
 ### 5.7 Meta layer, device-local (step003 lite; full dashboard in M4)
+
 FAQ screen (rule-based; later doubles as Aaina's knowledge base) · best time per seed (local) · daily-play streak · date-derived daily-challenge seed button · run timer with floor-cleared overlay. Retention is measured **on-device only** — no telemetry, ever; the privacy promise outranks growth metrics.
 
 ---
 
 ## 6. Audio identity (original, Indian classical-fusion)
 
-**Philosophy:** the Rahman-ish quality — classical Indian melody and warmth fused with modern arrangement and groove — lives in *orchestration idioms* (drone, raga melody with glides, tabla-family rhythm, string pads, big breathy reverb), never in imitated melodies or sampled recordings. All music is **generated live by code** at beta: fully original, zero licensing surface, and adaptive to threat.
+**Philosophy:** the Rahman-ish quality — classical Indian melody and warmth fused with modern arrangement and groove — lives in _orchestration idioms_ (drone, raga melody with glides, tabla-family rhythm, string pads, big breathy reverb), never in imitated melodies or sampled recordings. All music is **generated live by code** at beta: fully original, zero licensing surface, and adaptive to threat.
 
 ### 6.1 The procedural engine (Web Audio)
+
 - **Drone:** tanpura-style additive drone, one root per tier.
 - **Melody:** a raga-mood scale-walker per tier (see §4.6) with **meend**-style pitch glides and grace notes; density and register rise with threat.
 - **Rhythm:** synthesized tabla-family percussion (FM dayan/bayan patches); **Taal's patrols literally sync to this track** — the soundtrack is a gameplay channel.
@@ -197,9 +215,11 @@ FAQ screen (rule-based; later doubles as Aaina's knowledge base) · best time pe
 - **Mix:** intensity layers keyed to House Anger, Sentinel proximity, and floor completion.
 
 ### 6.2 SFX (all synthesized)
+
 Glass chimes, frost hiss, mirror hairline crack tick, footstep textures per surface, Sentinel motifs (one instrument each), Stair Door seal thunk, Aaina's bell.
 
 ### 6.3 Roadmap
+
 Post-beta: invite community composers to record **original** tier themes (CLA + CC-BY 4.0, provenance-tracked) layered as alternates. Never: samples, borrowed melodies, or any artist's name in marketing (§11.2).
 
 ---
@@ -207,12 +227,14 @@ Post-beta: invite community composers to record **original** tier themes (CLA + 
 ## 7. Technical architecture — what works and how
 
 ### 7.1 Stack
+
 - **TypeScript (strict) + Vite** build; **three.js** (WebGL2, WebGL1 fallback) renderer; **Web Audio** for all sound; **IndexedDB** (via idb-keyval) for saves; hand-rolled service worker for PWA offline.
 - No engine (Godot-web wasm is 30–50MB — wrong for a snappy CF Pages static site); no frontend framework (UI is a small state→DOM layer).
 - **Tests:** Vitest units (maze generation, PRNG determinism, AI senses, save migrations, economy math); Playwright smoke (load → move → fog a mirror → save → export). CI: GitHub Actions → lint, test, build, deploy.
 - **State machines:** all lifecycle behaviour is modeled as explicit discriminated-union state machines with pure transition functions, one owning module each, documented in [STATE_MACHINES.md](../../STATE_MACHINES.md). New features add machines, not scattered flags.
 
 ### 7.2 Repo layout (from step002)
+
 ```
 src/engine/    grid, ecs-lite, prng, pathfinding, input, save
 src/game/      maze-gen, mirrors, enemies, lantern, floors, tiers, economy
@@ -226,37 +248,43 @@ docs/          specs, plans, prompts-history
 ```
 
 ### 7.3 Determinism & content scale (how "100 floors" is actually built)
+
 - Every floor = `seed → archetype × variation`. Ten tier archetypes, parameterized (size 15×15 → 25×25 cells, mirror density, corridor styles, mechanic sets). **Not 100 handcrafted floors** — that's the classic death march; instead 10 handcrafted Dwaar halls + deterministic seeded generation with quality-gated parameters (always solvable, always fair: capture-objective placement validated by solver at generation time).
 - PRNG: xmur3 hash + mulberry32; seeds are shareable codes.
 
 ### 7.4 Rendering & performance budgets
-| Budget | Target |
-|---|---|
+
+| Budget         | Target                                                                                    |
+| -------------- | ----------------------------------------------------------------------------------------- |
 | Initial bundle | ≤ 3 MB gzipped (three.js ~170KB gz tree-shaken + app + fonts; audio adds ~0 — procedural) |
-| Framerate | 60 fps mid desktop / 30 fps low-tier Android |
-| Memory | < 300 MB heap |
+| Framerate      | 60 fps mid desktop / 30 fps low-tier Android                                              |
+| Memory         | < 300 MB heap                                                                             |
 
 Geometry stays Wolfenstein-constrained — uniform wall height, axis-aligned walls on the grid — so draw calls are tiny and the QUAD viewport budget holds even on low-end mobile.
 
 Mirror techniques (the expensive fantasy, made cheap):
-- **Avatar & self-reflection (step003):** a low-poly Surveyor avatar (configurable coat + lantern glass colors) on a dedicated render layer — invisible to the first-person camera, visible to mirror cameras — so the player sees *themselves* in glass. The signature shot of the game.
+
+- **Avatar & self-reflection (step003):** a low-poly Surveyor avatar (configurable coat + lantern glass colors) on a dedicated render layer — invisible to the first-person camera, visible to mirror cameras — so the player sees _themselves_ in glass. The signature shot of the game.
 - **Hero mirrors** (True Mirrors, 1–2/floor): planar render-to-texture portals @ 512px, wall-mounted at deterministic spots (entrance/exit cells), global clip plane at the mirror surface during the RT pass.
-- **Standing mirrors:** cheap SSR-lite pass on high preset; baked cubemap on low; **fogged = swap to matte material — near-zero cost** (the core mechanic is a performance *win*: fogging makes the scene cheaper).
+- **Standing mirrors:** cheap SSR-lite pass on high preset; baked cubemap on low; **fogged = swap to matte material — near-zero cost** (the core mechanic is a performance _win_: fogging makes the scene cheaper).
 - Instanced meshes for walls/mirrors; vertex-baked AO; one dynamic light (your lantern) + emissives.
 - QUAD side-panes half-res on alternate frames; OVERHEAD is a 2D canvas overlay, never a 3D render.
 - Quality presets (low/mid/high) auto-selected from device pixel ratio + rolling FPS, user-overridable.
 
 ### 7.5 AI
+
 - Flow-field pathfinding per floor (grid-sized, recomputed only on fog changes — microseconds).
 - Echo senses: mirror-reflected line-of-sight only.
 - Sentinel senses: short direct cone + mirror-sight + hearing (sprint vs creep) — each personality is a scoring function over the same sense data (cheap, debuggable, testable).
 
 ### 7.6 Saves — "all data on your devices," for real
+
 - IndexedDB, one profile: settings, progress (tier/floor/checkpoint), shards, Aaina unlocks, best times.
 - `schemaVersion` + migration chain; corrupt/foreign files rejected gracefully, never executed.
-- **Export/import** a single `.json` save file (File System Access API, download fallback) — device migration without accounts. Loading screen states it plainly: *your data never leaves this device.*
+- **Export/import** a single `.json` save file (File System Access API, download fallback) — device migration without accounts. Loading screen states it plainly: _your data never leaves this device._
 
 ### 7.7 Cloudflare Pages deployment
+
 - Static asset output; `_headers` with strict CSP (`default-src 'self'`, `frame-ancestors 'none'`), immutable hashed assets.
 - GitHub integration: PR → preview URL, `main` → production. Free tier comfortably covers beta.
 - Post-beta optional Worker: **opt-in** leaderboard (alias + score only; server-validated replays; no PII).
@@ -265,12 +293,12 @@ Mirror techniques (the expensive fantasy, made cheap):
 
 ## 8. Cross-platform
 
-| Surface | Story at beta |
-|---|---|
-| Desktop browsers | Chrome / Edge / Firefox / Safari 16+; KBM + gamepad |
-| Android | Chrome; PWA install; touch controls |
-| iOS | Safari 16.4+; Add to Home Screen; touch controls |
-| Native stores | **In beta (D2)** — Capacitor wrappers for Google Play and the App Store, cut from the same web build in M6. Requires: Apple Developer ($99/yr) + Google Play ($25 one-time) accounts, IARC rating questionnaire, static privacy-policy URL (already planned) |
+| Surface          | Story at beta                                                                                                                                                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Desktop browsers | Chrome / Edge / Firefox / Safari 16+; KBM + gamepad                                                                                                                                                                                                          |
+| Android          | Chrome; PWA install; touch controls                                                                                                                                                                                                                          |
+| iOS              | Safari 16.4+; Add to Home Screen; touch controls                                                                                                                                                                                                             |
+| Native stores    | **In beta (D2)** — Capacitor wrappers for Google Play and the App Store, cut from the same web build in M6. Requires: Apple Developer ($99/yr) + Google Play ($25 one-time) accounts, IARC rating questionnaire, static privacy-policy URL (already planned) |
 
 i18n: English + Hindi at beta (theme-true and audience-true), i18n layer from day one. All numeric/audio cues language-independent.
 
@@ -279,7 +307,7 @@ i18n: English + Hindi at beta (theme-true and audience-true), i18n layer from da
 ## 9. Monetization (open-source compatible, honest)
 
 1. **Donations at beta** — GitHub Sponsors + Ko-Fi link in README and credits screen.
-2. **Venue floors (the local-venture tie-in — one real pilot ships *inside the beta*, D3):** a sponsor's themed floor ships as a **venue pack** — a versioned JSON manifest + assets loaded optionally, never merged into core. Legal shape: venue grants the project a license to use its trademarks *inside its own pack only*; core game stays MIT/CC-BY; packs may be distributed under their own terms. A venue-pack review checklist (brand safety, content rating, accessibility) gates publication. The format is designed in from step002 so this never needs re-architecture.
+2. **Venue floors (the local-venture tie-in — one real pilot ships _inside the beta_, D3):** a sponsor's themed floor ships as a **venue pack** — a versioned JSON manifest + assets loaded optionally, never merged into core. Legal shape: venue grants the project a license to use its trademarks _inside its own pack only_; core game stays MIT/CC-BY; packs may be distributed under their own terms. A venue-pack review checklist (brand safety, content rating, accessibility) gates publication. The format is designed in from step002 so this never needs re-architecture.
 3. **Supporter cosmetics** (lantern glasses, Aaina voice packs) post-beta — sold as donation perks, accepting that anything open-licensed can be forked; the perk is the support, not the lock.
 4. **Merch** print-on-demand if the brand lands.
 5. **Never:** ads, paywalled core floors, energy systems, crypto/NFT, selling player data (there is none).
@@ -299,50 +327,56 @@ i18n: English + Hindi at beta (theme-true and audience-true), i18n layer from da
 ## 11. Compliance & IP hygiene (no infringement, by construction)
 
 ### 11.1 Distance from the inspirations
-- **Pac-Man:** the brief's ghost names (one of which, as typed, is also an ethnic slur in common English — worth a clean break on its own) are replaced wholesale. What we keep is unprotectable *genre thinking*: pursuit personalities. What we never touch: names, character designs, trade dress. Our Sentinels are lantern-headed figures in glass armor — tall, humanoid, mirrored masks; visually and narratively unrelated to any ghost IP.
+
+- **Pac-Man:** the brief's ghost names (one of which, as typed, is also an ethnic slur in common English — worth a clean break on its own) are replaced wholesale. What we keep is unprotectable _genre thinking_: pursuit personalities. What we never touch: names, character designs, trade dress. Our Sentinels are lantern-headed figures in glass armor — tall, humanoid, mirrored masks; visually and narratively unrelated to any ghost IP.
 - **DOOM:** the pace and confidence, nothing else. No assets, names, HUD layouts, or level homages. Public copy says "retro-FPS-inspired," never "DOOM-like."
-- **Wolfenstein 3D & Prince of Persia (lineage refined in step001 review):** mechanics only — the flat-grid corridor feel, push-wall secrets (our silvered doors), PoP's deliberate timed-trap rhythm, and the shadow-through-the-mirror *idea* (Chhaya, Act II decoys). Never: names, characters, settings, guard/Prince likenesses, or art.
-- Rule of thumb recorded for all contributors: *mechanics may be inspired; expression must be original.*
+- **Wolfenstein 3D & Prince of Persia (lineage refined in step001 review):** mechanics only — the flat-grid corridor feel, push-wall secrets (our silvered doors), PoP's deliberate timed-trap rhythm, and the shadow-through-the-mirror _idea_ (Chhaya, Act II decoys). Never: names, characters, settings, guard/Prince likenesses, or art.
+- Rule of thumb recorded for all contributors: _mechanics may be inspired; expression must be original._
 
 ### 11.2 Music originality
+
 Ragas and Indian classical orchestration are traditional, public-domain frameworks — safe to build on. Never: samples, transcriptions, or imitations of any living composer's melodies; never any artist's name in marketing copy (publicity-rights hygiene). Community compositions require a CLA and provenance record.
 
 ### 11.3 Licenses
+
 Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Third-party deps permissive-only (MIT/Apache-2.0/BSD/ISC). `PROVENANCE.md` is the single source of truth.
 
 ### 11.4 Privacy, safety, ratings
-- **Privacy by emptiness:** no accounts, no cookies, no telemetry → GDPR, India's DPDP Act 2023, and COPPA burdens are met by *not collecting anything*. A one-screen privacy note says exactly that.
+
+- **Privacy by emptiness:** no accounts, no cookies, no telemetry → GDPR, India's DPDP Act 2023, and COPPA burdens are met by _not collecting anything_. A one-screen privacy note says exactly that.
 - **Content:** stylized fantasy violence — enemies are glass and shatter; no gore, no human likeness harm. Self-assessed 10+ (aligns to PEGI 7 / ESRB E10+ if ever wrapped for stores).
 - **Photosensitivity:** glint/flash warning at first launch + mandatory reduced-flash mode.
 
 ### 11.5 Trademark (pre-beta to-do)
-"Mirror House" alone is generic — run a clearance search before public launch; candidates: *Sheesh Mahal: Mirror House*, *AINA: The Mirror House*. Check the matching Cloudflare Pages subdomain and, if it matters, an IN/US trademark filing. (Names inside the game — Aaina, Chhaya, Taal, Gher, Aavart — are common words used descriptively; still verified at search time.)
+
+"Mirror House" alone is generic — run a clearance search before public launch; candidates: _Sheesh Mahal: Mirror House_, _AINA: The Mirror House_. Check the matching Cloudflare Pages subdomain and, if it matters, an IN/US trademark filing. (Names inside the game — Aaina, Chhaya, Taal, Gher, Aavart — are common words used descriptively; still verified at search time.)
 
 ---
 
 ## 12. What will NOT work — and what we do instead
 
-| ❌ Won't work | Why | ✅ Instead |
-|---|---|---|
-| 100 handcrafted floors | Content death march; untestable | 10 tier archetypes × seeded variation + 10 handcrafted Dwaar halls, solver-validated |
-| Real planar reflections on every mirror | GPU budget gone in one corridor | 1–2 hero RT mirrors per floor; SSR-lite/cubemaps elsewhere; fogged = matte (cheaper *and* the mechanic) |
-| Four full-res live 3D viewports on mobile | Melts low-end GPUs | QUAD side-panes at half-res on alternate frames; OVERHEAD is 2D canvas |
-| Recorded orchestral OST at beta | Cost, time, licensing paperwork | Procedural Web Audio score; community originals with CLAs later |
-| LLM-powered helper NPC at beta | Breaks offline/local promise; cost; privacy | Hand-authored dialogue tree + hint economy; LLM post-beta as opt-in |
-| Accounts & cloud saves | Contradicts the core promise | Device-local IndexedDB + file export/import |
-| Server leaderboards at beta | Server surface, moderation, privacy | Local best times + shareable seed codes; opt-in Worker board post-beta |
-| Multiplayer | Scope catastrophe for a solo-built beta | Single-player; maybe async ghost-racing (seed + replay) later |
-| Breaking mirrors as combat | Brief explicitly forbids collapse as a tool | Mirrors unbreakable; collapse = soft-fail; frost is the only "attack" |
-| Store-first development | Review cycles are punishing on unfinished builds | Web core ships continuously to CF Pages; Capacitor wraps cut from the same build in M6 — stores never block the web beta |
-| Analytics SDKs | Privacy promise | None; feedback link + local diagnostics page the player can export |
-| Open-world free movement | Kills determinism, AI cost, snappiness | Grid maze — fast, fair, testable |
-| Platforming: jumping, vertical aim | Wrong lineage for a grid escape game; complicates mobile controls and determinism | Flat Wolfenstein 3D-style grid — PoP timing lives in traps and committed interactions, not jumps |
+| ❌ Won't work                             | Why                                                                               | ✅ Instead                                                                                                               |
+| ----------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 100 handcrafted floors                    | Content death march; untestable                                                   | 10 tier archetypes × seeded variation + 10 handcrafted Dwaar halls, solver-validated                                     |
+| Real planar reflections on every mirror   | GPU budget gone in one corridor                                                   | 1–2 hero RT mirrors per floor; SSR-lite/cubemaps elsewhere; fogged = matte (cheaper _and_ the mechanic)                  |
+| Four full-res live 3D viewports on mobile | Melts low-end GPUs                                                                | QUAD side-panes at half-res on alternate frames; OVERHEAD is 2D canvas                                                   |
+| Recorded orchestral OST at beta           | Cost, time, licensing paperwork                                                   | Procedural Web Audio score; community originals with CLAs later                                                          |
+| LLM-powered helper NPC at beta            | Breaks offline/local promise; cost; privacy                                       | Hand-authored dialogue tree + hint economy; LLM post-beta as opt-in                                                      |
+| Accounts & cloud saves                    | Contradicts the core promise                                                      | Device-local IndexedDB + file export/import                                                                              |
+| Server leaderboards at beta               | Server surface, moderation, privacy                                               | Local best times + shareable seed codes; opt-in Worker board post-beta                                                   |
+| Multiplayer                               | Scope catastrophe for a solo-built beta                                           | Single-player; maybe async ghost-racing (seed + replay) later                                                            |
+| Breaking mirrors as combat                | Brief explicitly forbids collapse as a tool                                       | Mirrors unbreakable; collapse = soft-fail; frost is the only "attack"                                                    |
+| Store-first development                   | Review cycles are punishing on unfinished builds                                  | Web core ships continuously to CF Pages; Capacitor wraps cut from the same build in M6 — stores never block the web beta |
+| Analytics SDKs                            | Privacy promise                                                                   | None; feedback link + local diagnostics page the player can export                                                       |
+| Open-world free movement                  | Kills determinism, AI cost, snappiness                                            | Grid maze — fast, fair, testable                                                                                         |
+| Platforming: jumping, vertical aim        | Wrong lineage for a grid escape game; complicates mobile controls and determinism | Flat Wolfenstein 3D-style grid — PoP timing lives in traps and committed interactions, not jumps                         |
 
 ---
 
 ## 13. Beta plan
 
 ### 13.1 Beta scope (one vertical slice, complete)
+
 - **Tier 1, floors 1–10 + Dwaar I duel** (Chhaya hall) — full loop, story beats, Aaina dialogue tree (~40 Q&A nodes), hint economy.
 - Frost Lantern, mirror-box traps, Echoes + Chhaya + Taal cameo, True Mirrors, House Anger.
 - Silvered-door secrets + one PoP-style timed trap family (beat-synced swinging glass blades).
@@ -353,36 +387,39 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 - Saves + export/import; PWA offline; quality presets; CF Pages production URL.
 
 ### 13.2 Milestones (part-time, ~13 weeks)
-| M | Weeks | Deliverable | Acceptance |
-|---|---|---|---|
-| M0 | 1 | Repo scaffold, CI, empty deploy to CF Pages | PR preview + prod URL live; lint/test/build green |
-| M1 | 2–3 | Grid + movement + seeded maze-gen + FOCUS view | Deterministic floors from seed; 60fps mid desktop |
-| M2 | 4–5 | Mirrors + frost + Echoes + Chhaya + traps | One playable floor loop, winnable and losable |
-| M3 | 6–7 | QUAD/OVERHEAD/TACTICAL + HUD + Aaina v1 + audio engine | All views ≤ budget; hint economy works |
-| M4 | 8–9 | Tier 1 content (10 floors + Dwaar I), saves, PWA, i18n | Playtest 5 strangers complete Tier 1 unaided |
-| M5 | 10–11 | Polish, a11y pass, perf presets, beta hardening | Exit criteria below all green; web beta launches here |
-| M6 | 12–13 | Capacitor store builds, listings, IARC ratings; venue pilot pack published; full launch | Android + iOS pass review; venue pack live with partner sign-off; beta live on web + both stores |
+
+| M   | Weeks | Deliverable                                                                             | Acceptance                                                                                       |
+| --- | ----- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| M0  | 1     | Repo scaffold, CI, empty deploy to CF Pages                                             | PR preview + prod URL live; lint/test/build green                                                |
+| M1  | 2–3   | Grid + movement + seeded maze-gen + FOCUS view                                          | Deterministic floors from seed; 60fps mid desktop                                                |
+| M2  | 4–5   | Mirrors + frost + Echoes + Chhaya + traps                                               | One playable floor loop, winnable and losable                                                    |
+| M3  | 6–7   | QUAD/OVERHEAD/TACTICAL + HUD + Aaina v1 + audio engine                                  | All views ≤ budget; hint economy works                                                           |
+| M4  | 8–9   | Tier 1 content (10 floors + Dwaar I), saves, PWA, i18n                                  | Playtest 5 strangers complete Tier 1 unaided                                                     |
+| M5  | 10–11 | Polish, a11y pass, perf presets, beta hardening                                         | Exit criteria below all green; web beta launches here                                            |
+| M6  | 12–13 | Capacitor store builds, listings, IARC ratings; venue pilot pack published; full launch | Android + iOS pass review; venue pack live with partner sign-off; beta live on web + both stores |
 
 ### 13.3 Exit criteria
+
 No crash in 2h soak on mid desktop + one Android · floor restart < 2s · export/import round-trips · offline install verified on Android + desktop · reduced-flash pass · 5/5 external playtesters reach floor 10 without developer help · Lighthouse a11y ≥ 90 · privacy + license + provenance files present · Android + iOS builds pass store review · venue pilot live with partner sign-off.
 
 ### 13.4 Launch & feedback
+
 Production on CF Pages (custom subdomain) **first** — the web beta never waits on store review — then Google Play and App Store releases, source public on GitHub, announcement to 2–3 playtest communities; feedback via GitHub issues + a form link; "diagnostics export" button for bug reports (local counters only, user-attached).
 
 ---
 
 ## 14. Risks
 
-| Risk | Mitigation |
-|---|---|
-| Low-end mobile perf | Quality presets from M1; fog-makes-it-cheaper mechanic; OVERHEAD fallback |
-| Scope creep (the 100-floor fantasy) | §12 anti-list is contractual; beta = Tier 1 only |
-| Solo-dev burnout | 10-week timeboxes; milestone gates; cutlines documented |
-| Original-music quality risk | Tier 1 mood playable by M3 (early); community-composed path exists |
-| "Mirror House" name collision | Trademark search scheduled pre-launch; distinctive fallbacks chosen |
-| Difficulty tuning (Sentinels) | Personalities are pure scoring functions — data-tunable; seed-explorer tool for batch playtest simulation |
+| Risk                                    | Mitigation                                                                                                       |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Low-end mobile perf                     | Quality presets from M1; fog-makes-it-cheaper mechanic; OVERHEAD fallback                                        |
+| Scope creep (the 100-floor fantasy)     | §12 anti-list is contractual; beta = Tier 1 only                                                                 |
+| Solo-dev burnout                        | 10-week timeboxes; milestone gates; cutlines documented                                                          |
+| Original-music quality risk             | Tier 1 mood playable by M3 (early); community-composed path exists                                               |
+| "Mirror House" name collision           | Trademark search scheduled pre-launch; distinctive fallbacks chosen                                              |
+| Difficulty tuning (Sentinels)           | Personalities are pure scoring functions — data-tunable; seed-explorer tool for batch playtest simulation        |
 | Venue partner on the critical path (D3) | Recruit two candidates by M2; the venue floor is an optional pack — beta launches regardless, pilot fast-follows |
-| Store review surprises (D2) | Web beta on CF Pages launches on schedule; store releases follow within days of any review fix |
+| Store review surprises (D2)             | Web beta on CF Pages launches on schedule; store releases follow within days of any review fix                   |
 
 ---
 
@@ -392,4 +429,4 @@ Production on CF Pages (custom subdomain) **first** — the web beta never waits
 2. On approval → **step002: implementation plan** (writing-plans skill) for M0–M1: repo scaffold, CI, CF Pages deploy, grid + seeded maze + FOCUS-view tech spike.
 3. Parallel quick task at step002: trademark name search note + venue-pack schema draft.
 
-*Prepared as #step001. Every request/response pair for this project is archived under `docs/prompts-history/`.*
+_Prepared as #step001. Every request/response pair for this project is archived under `docs/prompts-history/`._

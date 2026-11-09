@@ -1,10 +1,10 @@
 # step003 — colors, avatar + self-reflection, input modes, FAQ, meta-lite
 
-| | |
-|---|---|
-| **Step** | #step003 |
-| **Local time** | 2026-11-08 16:07:56 |
-| **Status** | Complete — merged to `main` (tag `m1.1`), pushed, deployed live |
+|                |                                                                 |
+| -------------- | --------------------------------------------------------------- |
+| **Step**       | #step003                                                        |
+| **Local time** | 2026-11-08 16:07:56                                             |
+| **Status**     | Complete — merged to `main` (tag `m1.1`), pushed, deployed live |
 
 ## Request (verbatim)
 

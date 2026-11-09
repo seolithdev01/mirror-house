@@ -21,6 +21,7 @@
 ### Task 1: `GamePhase` — the master machine
 
 **Files:**
+
 - Modify: `src/game/floorRun.ts` (evolve into the phase machine; keep `isAtExit`/`EXIT_RADIUS`), `src/main.ts` (adopt it), `tests/unit/floorrun.test.ts` (rewrite for the machine)
 
 **Interfaces — final shape (Consumes: `FAIL_FREEZE_MS`; Produces for everything else):**
@@ -33,15 +34,20 @@ export type GamePhase =
   | { kind: 'failing'; reason: FailReason; startedAt: number; failedAt: number; resetAt: number }
   | { kind: 'cleared'; startedAt: number; clearedAt: number };
 
-export function createFloorRun(): GamePhase;                       // { kind: 'ready' }
-export function active(p: GamePhase): boolean;                     // ready || running — simulation & input live
-export function startRun(p: GamePhase, now: number): GamePhase;    // ready→running; idempotent otherwise
-export function failRun(p: GamePhase, reason: FailReason, now: number, freezeMs?: number): GamePhase;
+export function createFloorRun(): GamePhase; // { kind: 'ready' }
+export function active(p: GamePhase): boolean; // ready || running — simulation & input live
+export function startRun(p: GamePhase, now: number): GamePhase; // ready→running; idempotent otherwise
+export function failRun(
+  p: GamePhase,
+  reason: FailReason,
+  now: number,
+  freezeMs?: number,
+): GamePhase;
 // running→failing (failedAt=now, resetAt=now+freezeMs); ready→failing (startedAt=now);
 // failing→failing keeps ORIGINAL resetAt (re-fail during freeze is a no-op); cleared→no-op (race unrepresentable)
-export function clearRun(p: GamePhase, now: number): GamePhase;    // running→cleared; else no-op
+export function clearRun(p: GamePhase, now: number): GamePhase; // running→cleared; else no-op
 export function tickFail(p: GamePhase, now: number): { phase: GamePhase; shouldReset: boolean }; // failing & now≥resetAt → { ready, true }
-export function runElapsedMs(p: GamePhase, now: number): number;   // ready 0; running now−startedAt; failing failedAt−startedAt; cleared clearedAt−startedAt
+export function runElapsedMs(p: GamePhase, now: number): number; // ready 0; running now−startedAt; failing failedAt−startedAt; cleared clearedAt−startedAt
 export function isAtExit(px: number, py: number, exitCx: number, exitCy: number): boolean; // unchanged
 export const EXIT_RADIUS = 1.6; // unchanged
 ```
@@ -57,6 +63,7 @@ export const EXIT_RADIUS = 1.6; // unchanged
 ### Task 2: Mirror visual state + door phase
 
 **Files:**
+
 - Modify: `src/game/frost.ts`, `src/game/passages.ts`, `src/main.ts`, `src/engine/constants.ts` (`DOOR_SLIDE_MS=400`), tests
 
 **Interfaces:**
@@ -70,7 +77,11 @@ export function mirrorVisual(m: MirrorRuntime, now: number): MirrorVisual; // ca
 
 // passages.ts — typed door lifecycle
 export type DoorPhase = 'closed' | 'opening' | 'open';
-export interface DoorAnim { id: number; phase: DoorPhase; t: number }
+export interface DoorAnim {
+  id: number;
+  phase: DoorPhase;
+  t: number;
+}
 export function stepDoor(d: DoorAnim, dtS: number): DoorAnim; // opening: t += dtS*1000/DOOR_SLIDE_MS, → 'open' at t≥1; others unchanged
 ```
 
@@ -85,9 +96,11 @@ export function stepDoor(d: DoorAnim, dtS: number): DoorAnim; // opening: t += d
 ### Task 3: Unified input gate + Chhaya phase + e2e
 
 **Files:**
+
 - Modify: `src/main.ts`, `tests/e2e/smoke.spec.ts` (add 1 test → 11 total)
 
 **Behavior (the three sanctioned changes):**
+
 1. `const simActive = active(phase) && faqHidden;` — when `!simActive`, still call `input.snapshotAndReset()` every frame (drain-and-discard; kills the mouseDx build-up class everywhere, making the T8 reset-drain redundant — remove it); skip player/enemy/Chhaya/contact/door-step simulation... doors may keep animating (cosmetic, matches today's freeze behavior). Verbs (F/Space/E/H) still handled when `phase.kind !== 'failing'`.
 2. `faqOpen` tracked from the overlay's `hidden` property each frame (no new state — derived).
 3. Chhaya mesh visible iff `sampleDelayed(...) !== null && active(phase)` (hides on cleared/failing; hook `chhayaPos()` unchanged — it reports the sample regardless).
@@ -102,10 +115,12 @@ export function stepDoor(d: DoorAnim, dtS: number): DoorAnim; // opening: t += d
 ### Task 4: STATE_MACHINES.md + spec policy + close-out
 
 **Files:**
+
 - Create: `docs/STATE_MACHINES.md`
 - Modify: `docs/superpowers/specs/2026-11-08-mirror-house-design.md` (§7.1 policy line), `README.md` (one line under How this repo works)
 
 **STATE_MACHINES.md contents (the AX map):**
+
 - The policy: "Every stateful system is an explicit machine: one discriminated union (`kind`), pure transition functions, one owning module, registered here. Resources (breath/anger/shards) and derived values (timer, hints) are NOT machines — say which you're adding."
 - Per machine (GamePhase, MirrorVisual + cracked-orthogonal, Echo mode + sub-states (target/field cache, stuckAwarded latch), Chhaya (derived visibility rule), DoorPhase, InputMode (side-effects list), pending-shards (banked/forfeited rule)): states, transitions, owner module, invariants, what's derived vs stored.
 - Non-machines section: resources, derived displays, browser-owned pointer lock, meta v1 versioning policy.

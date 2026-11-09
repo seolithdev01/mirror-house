@@ -1,10 +1,10 @@
 # step001 — Mirror House brief → design blueprint
 
-| | |
-|---|---|
-| **Step** | #step001 |
-| **Local time** | 2026-11-08 09:19:43 |
-| **Status** | Response delivered; spec awaiting user review |
+|                |                                               |
+| -------------- | --------------------------------------------- |
+| **Step**       | #step001                                      |
+| **Local time** | 2026-11-08 09:19:43                           |
+| **Status**     | Response delivered; spec awaiting user review |
 
 ## Request (verbatim)
 
@@ -23,9 +23,9 @@
 
 Git was initialized fresh on `main` (the directory was empty; the parent workspace repo is unrelated). This exchange is being archived per your convention, and the convention itself is documented so every future step follows it automatically.
 
-**The game in one breath:** you are the Surveyor, trapped on the roof of a 100-storey, 100-year-old palace of mirrors. You descend floor by floor (level 1 = top). Your only weapon is the **Frost Lantern** — you don't break mirrors, you *fog* them: a fogged mirror reflects nothing, so enemies that see through glass go blind, wander into fully-fogged "mirror boxes," and get stuck. **Aaina**, a truth-telling shard-spirit in your lantern, is the helper NPC — she answers questions and sells hints for **shards** (points), with deeper answers unlocking as your mastery level rises. Four **Sentinels** — Chhaya (shadows your past path), Taal (moves on the music's beat), Gher (seals your exits), Aavart (predicts and ambushes) — escalate every 10 floors through ten themed tiers, from the Glass Gallery down to the mirrorless Foundations. Views: FOCUS, QUAD (front/left/right/back), OVERHEAD tactical map, and a paused TACTICAL mode. Audio is a fully original, live-generated Indian classical-fusion score (raga-mood per tier, tabla-style percussion that Taal literally patrols to). All IP-distant: original names, original designs, no samples, no borrowed melodies — "inspired-by idioms, never imitations."
+**The game in one breath:** you are the Surveyor, trapped on the roof of a 100-storey, 100-year-old palace of mirrors. You descend floor by floor (level 1 = top). Your only weapon is the **Frost Lantern** — you don't break mirrors, you _fog_ them: a fogged mirror reflects nothing, so enemies that see through glass go blind, wander into fully-fogged "mirror boxes," and get stuck. **Aaina**, a truth-telling shard-spirit in your lantern, is the helper NPC — she answers questions and sells hints for **shards** (points), with deeper answers unlocking as your mastery level rises. Four **Sentinels** — Chhaya (shadows your past path), Taal (moves on the music's beat), Gher (seals your exits), Aavart (predicts and ambushes) — escalate every 10 floors through ten themed tiers, from the Glass Gallery down to the mirrorless Foundations. Views: FOCUS, QUAD (front/left/right/back), OVERHEAD tactical map, and a paused TACTICAL mode. Audio is a fully original, live-generated Indian classical-fusion score (raga-mood per tier, tabla-style percussion that Taal literally patrols to). All IP-distant: original names, original designs, no samples, no borrowed melodies — "inspired-by idioms, never imitations."
 
-**What won't work is as load-bearing as what will** — 12 explicit cuts with replacements (§12 of the spec): no 100 handcrafted floors (seeded archetypes + 10 handcrafted threshold halls), no everywhere-planar reflections (hero-mirror portals + cheap fakes; fogging makes rendering *cheaper*), no full-res quad viewports on mobile (half-res alternate frames; the overhead map is 2D), no LLM helper or accounts or telemetry at beta (offline/local promise), no native stores at beta (PWA), no breaking mirrors (collapse is a fail-state, frost is the only attack).
+**What won't work is as load-bearing as what will** — 12 explicit cuts with replacements (§12 of the spec): no 100 handcrafted floors (seeded archetypes + 10 handcrafted threshold halls), no everywhere-planar reflections (hero-mirror portals + cheap fakes; fogging makes rendering _cheaper_), no full-res quad viewports on mobile (half-res alternate frames; the overhead map is 2D), no LLM helper or accounts or telemetry at beta (offline/local promise), no native stores at beta (PWA), no breaking mirrors (collapse is a fail-state, frost is the only attack).
 
 **Beta = Tier 1 (floors 1–10 + first threshold duel), ~10 part-time weeks, milestones M0–M5**, deployed on Cloudflare Pages with device-local saves and file export/import.
 

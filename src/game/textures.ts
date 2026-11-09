@@ -46,7 +46,11 @@ export function makeWallTexture(): HTMLCanvasElement | null {
   return canvas;
 }
 
-export function canvasTexture(canvas: HTMLCanvasElement | null, repeatX: number, repeatY: number): THREE.CanvasTexture | null {
+export function canvasTexture(
+  canvas: HTMLCanvasElement | null,
+  repeatX: number,
+  repeatY: number,
+): THREE.CanvasTexture | null {
   if (!canvas) return null;
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;

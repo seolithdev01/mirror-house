@@ -1,10 +1,10 @@
 # M2 — Frost Lantern, Echoes, Chhaya, House Anger, passages (merged, live)
 
-| | |
-|---|---|
-| **Step** | M2 milestone (user: "go") |
-| **Local time** | 2026-11-08 23:05:31 |
-| **Status** | Complete — merged to `main` (tag `m2`), pushed, deployed live |
+|                |                                                               |
+| -------------- | ------------------------------------------------------------- |
+| **Step**       | M2 milestone (user: "go")                                     |
+| **Local time** | 2026-11-08 23:05:31                                           |
+| **Status**     | Complete — merged to `main` (tag `m2`), pushed, deployed live |
 
 ## Request (verbatim)
 
@@ -17,6 +17,7 @@
 M2 executed per plan `docs/superpowers/plans/2026-11-08-m2-frost-echoes-chhaya.md` — 9 tasks + final review + one fix wave, every task reviewed. **The game now has its core loop, machine-proven winnable and losable (10/10 e2e incl. a scripted full win and both fail paths).**
 
 **What's new in the game:**
+
 - **Frost Lantern (F)** — fog standing mirrors (25s) to blind enemy sight; breath meter recharges; **beacon mirrors** (3/floor, teal) capture permanently when frosted — capture all three to unlock the gold exit door.
 - **Echoes** (4/floor) — glass figures that see you ONLY through un-fogged mirrors (reflected line-of-sight), patrol on flow fields, chase on sight, and get **confused/stuck** when their local mirrors are all fogged (the trap mechanic, +10 shards each).
 - **Chhaya** — a dark copy of the player replaying your exact path 6 seconds behind. Break your line-of-path or use a True Mirror.

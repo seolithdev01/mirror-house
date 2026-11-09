@@ -130,10 +130,22 @@ export function createOverhead(canvas: HTMLCanvasElement): {
         const y0 = L.oy + y * L.cell;
         const x1 = x0 + L.cell;
         const y1 = y0 + L.cell;
-        if (grid.hasWall(x, y, 0)) { ctx.moveTo(x0, y0); ctx.lineTo(x1, y0); } // N
-        if (grid.hasWall(x, y, 1)) { ctx.moveTo(x1, y0); ctx.lineTo(x1, y1); } // E
-        if (grid.hasWall(x, y, 2)) { ctx.moveTo(x0, y1); ctx.lineTo(x1, y1); } // S
-        if (grid.hasWall(x, y, 3)) { ctx.moveTo(x0, y0); ctx.lineTo(x0, y1); } // W
+        if (grid.hasWall(x, y, 0)) {
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x1, y0);
+        } // N
+        if (grid.hasWall(x, y, 1)) {
+          ctx.moveTo(x1, y0);
+          ctx.lineTo(x1, y1);
+        } // E
+        if (grid.hasWall(x, y, 2)) {
+          ctx.moveTo(x0, y1);
+          ctx.lineTo(x1, y1);
+        } // S
+        if (grid.hasWall(x, y, 3)) {
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x0, y1);
+        } // W
       }
     ctx.stroke();
 

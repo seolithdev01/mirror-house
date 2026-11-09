@@ -24,6 +24,7 @@
 ### Task 1: Audio theory (pure) + engine (WebAudio)
 
 **Files:**
+
 - Create: `src/audio/theory.ts`, `src/audio/engine.ts`
 - Modify: `src/engine/constants.ts` (audio constants: `AUDIO_ROOT_HZ = 110`, `AUDIO_GAIN_CEILING = 0.5`)
 - Test: `tests/unit/theory.test.ts`
@@ -34,19 +35,30 @@
 // theory.ts — pure, deterministic given rng
 export const TIER_ONE_SCALE: readonly number[]; // semitone offsets, Ahir-Bhairav-inspired: [0,1,4,5,7,8,11]
 export const TIER_TWO_SCALE: readonly number[]; // Durga-inspired pentatonic: [0,2,4,7,9]
-export function midiToHz(semi: number): number;                        // 440 * 2^((semi-69)/12)
-export function nextMelodySemi(rng: Rng, scale: readonly number[], prevSemi: number, intensity: number, octave: number): number;
+export function midiToHz(semi: number): number; // 440 * 2^((semi-69)/12)
+export function nextMelodySemi(
+  rng: Rng,
+  scale: readonly number[],
+  prevSemi: number,
+  intensity: number,
+  octave: number,
+): number;
 // weighted walk: step −2..+2 scale degrees, wider leaps at higher intensity; clamps inside [octave, octave+12]
 export function beatAccents(tickIndex: number, intensity: number): { low: boolean; high: boolean };
 // 8-tick cycle (teental-ish): low (dhin) on ticks 0,4 (+2 at intensity>0.6); high (ta) on odd ticks scaled by intensity
-export function intensityFrom(input: { anger: number; chasing: number; failing: boolean; cleared: boolean }): number;
+export function intensityFrom(input: {
+  anger: number;
+  chasing: number;
+  failing: boolean;
+  cleared: boolean;
+}): number;
 // cleared→0.1; failing→1; else min(0.95, 0.2 + anger/ANGER_MAX*0.4 + chasing*0.2)
 ```
 
 ```ts
 // engine.ts — browser-only; node-safe stubs (typeof window guard returns inert engine)
 export interface AudioEngine {
-  start(): void;                 // idempotent; resumes/creates AudioContext (call on first gesture)
+  start(): void; // idempotent; resumes/creates AudioContext (call on first gesture)
   setIntensity(x: number): void; // 0..1, clamped, smoothed internally
   setMuted(m: boolean): void;
   readonly started: boolean;
@@ -66,6 +78,7 @@ Engine internals (keep compact): scheduler `setInterval` 50ms with 120ms lookahe
 ### Task 2: Aaina v1 — pure hint economy + dialogue overlay
 
 **Files:**
+
 - Create: `src/game/aaina.ts`, `src/ui/aaina.ts`
 - Modify: `src/main.ts` (wire: [Q], HUD 💬 button, shard spends, floor-state feed), `src/ui/hud.ts` (Aaina button), `src/game/meta.ts` (`spendShards(m, n): MetaSave | null` — null when insufficient), `index.html` (CSS reuses FAQ overlay styles — new ids `mh-aaina-*`)
 - Test: `tests/unit/aaina.test.ts`
@@ -74,9 +87,19 @@ Engine internals (keep compact): scheduler `setInterval` 50ms with 120ms lookahe
 
 ```ts
 // aaina.ts — pure
-export interface HintContext { beaconsLeft: number; anger: number; chhayaNear: boolean; chasing: number; exitUnlocked: boolean; hintsUsed: number }
+export interface HintContext {
+  beaconsLeft: number;
+  anger: number;
+  chhayaNear: boolean;
+  chasing: number;
+  exitUnlocked: boolean;
+  hintsUsed: number;
+}
 export type HintKind = 'exit' | 'beacons' | 'chhaya' | 'chase' | 'anger' | 'stuck';
-export interface Hint { kind: HintKind; text: string }
+export interface Hint {
+  kind: HintKind;
+  text: string;
+}
 export const HINTS: Record<HintKind, string>; // in-voice guidance lines, one per kind
 export function nextHint(ctx: HintContext): Hint;
 // priority: beaconsLeft>0 && anger<ANGER_MAX → beacons; exitUnlocked → exit; chasing>0 → chase;
@@ -86,7 +109,7 @@ export function loreUnlockedCount(bestSeeds: number): number; // 0→0, ≥1→2
 export const LORE: readonly string[]; // 6 short lore paragraphs (the Glazier, Aaina's origin, the Echoes, Chhaya, the Sentinels, the Ground Door)
 ```
 
-Overlay (`src/ui/aaina.ts`): like the FAQ overlay (`createElement` only): three tabs — **Ask** (renders the existing `FAQ` array from `src/ui/faq.ts` — import and reuse), **Hint** (shows `nextHint` preview KIND only until purchased — e.g. "I can tell you about: *the beacons* — cost ◆ 10" + Buy button; disabled when unaffordable; on buy: reveals text, spends shards, increments `hintsUsed`), **Lore** (LORE entries, locked ones show "🔒 Clears floors to hear more"). State machine: closed/open with tab — closed→open(tab: ask)→open(tab: hint)…→closed. [Q] or HUD button toggles; opening pauses nothing (unlike FAQ it is diegetic — the lantern talks while you walk; do NOT gate simulation).
+Overlay (`src/ui/aaina.ts`): like the FAQ overlay (`createElement` only): three tabs — **Ask** (renders the existing `FAQ` array from `src/ui/faq.ts` — import and reuse), **Hint** (shows `nextHint` preview KIND only until purchased — e.g. "I can tell you about: _the beacons_ — cost ◆ 10" + Buy button; disabled when unaffordable; on buy: reveals text, spends shards, increments `hintsUsed`), **Lore** (LORE entries, locked ones show "🔒 Clears floors to hear more"). State machine: closed/open with tab — closed→open(tab: ask)→open(tab: hint)…→closed. [Q] or HUD button toggles; opening pauses nothing (unlike FAQ it is diegetic — the lantern talks while you walk; do NOT gate simulation).
 
 - [ ] **Step 1: Failing tests** (`tests/unit/aaina.test.ts`): priority chain all six orderings (hand-built contexts); escalating cost (0→5, 1→10, 3→20); `spendShards` success/insufficient(null); lore unlock thresholds 0/1/3/6.
 - [ ] **Step 2: RED → implement → GREEN. Step 3: wire main.ts** (context from live state: `beaconsLeft()`, `anger()`, chhayaNear = active sample within 6m, chasing = echo count mode==='chase', exitUnlocked; hint purchase → `meta = spendShards(...)` + saveMeta + HUD shards chip; `hintsUsed` per-floor, reset in `resetFloor`).
@@ -97,6 +120,7 @@ Overlay (`src/ui/aaina.ts`): like the FAQ overlay (`createElement` only): three 
 ### Task 3: ViewMode machine + QUAD view
 
 **Files:**
+
 - Create: `src/game/viewMode.ts`
 - Modify: `src/main.ts` (V key cycle; scissor quad render), `tests/unit/` new `viewmode.test.ts`, `src/ui/hud.ts` (view chip)
 
@@ -104,9 +128,9 @@ Overlay (`src/ui/aaina.ts`): like the FAQ overlay (`createElement` only): three 
 
 ```ts
 export type ViewMode = 'focus' | 'quad' | 'overhead' | 'tactical';
-export function cycleView(v: ViewMode): ViewMode;   // focus→quad→overhead→focus; tactical→focus
+export function cycleView(v: ViewMode): ViewMode; // focus→quad→overhead→focus; tactical→focus
 export function exitTactical(v: ViewMode): ViewMode; // tactical→focus; others unchanged
-export function isTactical(v: ViewMode): boolean;    // pauses simulation
+export function isTactical(v: ViewMode): boolean; // pauses simulation
 export function showsOverhead(v: ViewMode): boolean; // overhead | tactical
 ```
 
@@ -121,6 +145,7 @@ QUAD rendering (main.ts): keep the existing full render for 'focus'; for 'quad' 
 ### Task 4: OVERHEAD map + TACTICAL pause
 
 **Files:**
+
 - Create: `src/ui/overhead.ts`
 - Modify: `src/main.ts` (visited-cell tracking, ping feed, wiring), `src/engine/constants.ts` (`PING_TTL_MS = 4000`)
 
@@ -129,11 +154,16 @@ QUAD rendering (main.ts): keep the existing full render for 'focus'; for 'quad' 
 ```ts
 // overhead.ts — 2D canvas, browser-only
 export interface OverheadDrawInput {
-  grid: FloorGrid; visited: ReadonlySet<number>; player: { x: number; y: number; heading: number };
+  grid: FloorGrid;
+  visited: ReadonlySet<number>;
+  player: { x: number; y: number; heading: number };
   mirrors: Array<{ x: number; z: number; kind: string; captured: boolean }>;
-  exit: { cx: number; cy: number; unlocked: boolean }; entrance: { cx: number; cy: number };
-  pings: Array<{ x: number; y: number; at: number }>; chhaya: { x: number; y: number } | null;
-  waypoints: ReadonlyArray<{ x: number; y: number }>; now: number;
+  exit: { cx: number; cy: number; unlocked: boolean };
+  entrance: { cx: number; cy: number };
+  pings: Array<{ x: number; y: number; at: number }>;
+  chhaya: { x: number; y: number } | null;
+  waypoints: ReadonlyArray<{ x: number; y: number }>;
+  now: number;
 }
 export function createOverhead(canvas: HTMLCanvasElement): {
   draw(input: OverheadDrawInput): void;
@@ -155,9 +185,11 @@ TACTICAL: `simActive` gains `&& !isTactical(viewMode)` (movement/enemies/Chhaya 
 ### Task 5: M3 polish wave (deferred M2 findings)
 
 **Files:**
+
 - Modify: `src/game/frost.ts` + `src/game/passages.ts` + `src/game/echo.ts` + `src/engine/input.ts` + `src/main.ts` + tests
 
 Exactly four fixes:
+
 1. **Frost LOS** (M2 final review Minor 1): `fogTarget(mirrors, player, grid)` gains `losClear(player → mirror center)` (signature change — update call sites + tests; kind/range/cone unchanged).
 2. **In-cell echo pursuit** (Minor 3): in `updateEcho` chase mode, when the echo's cell === target cell, move toward the PLAYER's exact position (not cell center) while memory is alive — pass player pos through (already a param).
 3. **E-key dual-use** (Minor): when the door hint is showing (`hint` text === push-hint), suppress that keydown's turn contribution — implement in main.ts by consuming the event: `if (doorHintActive && e.code === 'KeyE') { pushDoor(); return; }` before the input collector sees it... input is polled, not event-driven — instead: in the fixed step, when `doorHintActive`, zero out `inputFrame.turn`'s KeyE share by... simplest honest fix: `keysToMoveInput` can't know; do it in main: if doorHintActive, recompute turn without keyTurn for that step. Implement minimal: `if (doorHintActive) inputFrame = { ...inputFrame, turn: inputFrame.turn < 0 ? Math.max(0, inputFrame.turn + KEY_TURN_PER_STEP) : inputFrame.turn };` — no: turn is mouseDx + keyTurn combined. Cleaner: when doorHintActive and KeyE is held, subtract KEY_TURN_PER_STEP once per step from turn. Document in STATE_MACHINES input row.
@@ -170,11 +202,13 @@ Exactly four fixes:
 ### Task 6: Audio + views + Aaina wiring, e2e, hook
 
 **Files:**
+
 - Modify: `src/main.ts` (audio intensity feed + gesture start + [M] mute + meta.muted persist; V/T keys; overhead wiring), `tests/e2e/smoke.spec.ts`, `src/ui/hud.ts` (🔊 button)
 
 **Hook additions (additive, exact names):** `viewMode(): ViewMode`, `audioState(): { started: boolean; muted: boolean; intensity: number }`, `grantShards(n: number): void` (dev), `aaina(): { open: boolean; hintCost: number; lastHint: string | null }`, `visitedCount(): number`.
 
 **New e2e (11 → 15):**
+
 1. `m3: V cycles views and T pauses` — press V twice → viewMode quad → overhead; T → tactical + `getPlayer()` frozen while holding W (position unchanged 500ms); Esc → focus + movement resumes.
 2. `m3: audio starts on gesture and mutes` — press any key → `audioState().started === true`; [M] → muted true; again → false. (No audio-output assertion — state only; console-clean.)
 3. `m3: aaina hint economy` — `grantShards(20)` → open aaina ([Q]) → Hint tab → buy (cost 5) → `aaina().lastHint` non-null and shards 15; buy again (cost 10) → 5.
@@ -188,6 +222,7 @@ Exactly four fixes:
 ### Task 7: Close-out — docs, machines registry, acceptance
 
 **Files:**
+
 - Modify: `docs/STATE_MACHINES.md` (rows: ViewMode machine with pause predicate in the input gate; Aaina overlay closed/open(tab); AudioEngine idle→running(→muted as flag); look-alikes: intensity (derived), hintsUsed (per-floor counter), visited/pings (data), waypoints), `docs/superpowers/specs/2026-11-08-mirror-house-design.md` (§13.2 M3 → delivered), `README.md` (views, Aaina, audio, new keys), `src/ui/faq.ts` (2 new entries: view modes; Aaina/hints)
 
 - [ ] **Step 1:** registry + spec + README + FAQ; verify STATE_MACHINES rows against shipped source (no aspirational rows — the step005 lesson).

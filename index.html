@@ -5,77 +5,286 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mirror House</title>
     <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; background: #05060a; }
-      #game { display: block; width: 100vw; height: 100vh; }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #05060a;
+      }
+      #game {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
       /* Overhead/tactical map (M3/T4) — a 2D canvas over the paused 3D stage.
          display:none unless the view mode is overhead/tactical (main.ts owns
          the toggle); above #game, below the HUD and diagnostics. */
-      #overhead { position: fixed; inset: 0; z-index: 5; width: 100vw; height: 100vh;
-        display: none; background: #05060a; cursor: crosshair; }
-      #diagnostics {
-        position: fixed; top: 8px; left: 8px; z-index: 10;
-        font: 12px/1.5 ui-monospace, monospace; color: #9fb4c8;
-        background: rgba(5, 6, 10, 0.7); padding: 6px 10px; border-radius: 6px;
-        pointer-events: none; white-space: pre;
+      #overhead {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        width: 100vw;
+        height: 100vh;
+        display: none;
+        background: #05060a;
+        cursor: crosshair;
       }
-      #hud { position: fixed; top: 8px; right: 8px; z-index: 10; display: flex; flex-direction: column;
-        align-items: flex-end; gap: 6px; font: 13px/1.4 system-ui; color: #f2e9d8; pointer-events: none; }
-      #hud button { pointer-events: auto; cursor: pointer; background: rgba(11,16,38,.8); color: #f2e9d8;
-        border: 1px solid #2a3560; border-radius: 6px; padding: 4px 10px; margin-left: 4px; }
-      #hud button.active { border-color: #2ec4b6; color: #2ec4b6; }
-      #hud button:disabled { opacity: .45; cursor: default; }
-      #mh-breath { width: 150px; height: 10px; margin-right: 4px; background: rgba(11,16,38,.8);
-        border: 1px solid #2a3560; border-radius: 5px; overflow: hidden; }
-      #mh-breath-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #9fd8ff, #d7f1ff);
-        transition: width .15s linear; }
-      #mh-anger { width: 150px; height: 10px; margin-right: 4px; background: rgba(11,16,38,.8);
-        border: 1px solid #2a3560; border-radius: 5px; overflow: hidden; }
-      #mh-anger-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #7a2f35, #e07a5f);
-        transition: width .15s linear; }
-      #mh-chips { display: flex; gap: 8px; background: rgba(11,16,38,.7); border-radius: 6px; padding: 4px 10px; }
-      #mh-cleared { background: rgba(11,16,38,.92); border: 1px solid #d9a441; color: #f2e9d8;
-        border-radius: 8px; padding: 10px 16px; font-size: 15px; pointer-events: none; }
-      #mh-fail { background: rgba(26,10,14,.92); border: 1px solid #b33939; color: #f2e9d8;
-        border-radius: 8px; padding: 10px 16px; font-size: 15px; pointer-events: none; }
-      #mh-fail[hidden] { display: none; }
-      #mh-hint { background: rgba(11,16,38,.85); border: 1px solid #2a3560; color: #f2e9d8;
-        border-radius: 6px; padding: 4px 10px; font-size: 13px; max-width: 360px; pointer-events: none; }
-      #mh-hint[hidden] { display: none; }
-      #mh-faq-overlay { position: fixed; inset: 0; z-index: 20; background: rgba(5,8,20,.82);
-        display: grid; place-items: center; }
-      #mh-faq-overlay[hidden] { display: none; }
-      #mh-faq-box { max-width: 640px; max-height: 82vh; overflow: auto; background: #0b1026;
-        border: 1px solid #2a3560; border-radius: 10px; padding: 20px 26px; color: #f2e9d8; font: 14px/1.6 system-ui; }
-      #mh-faq-box h2 { margin: 0 0 12px; color: #d9a441; font-size: 18px; }
-      #mh-faq-box details { border-bottom: 1px solid #1d2440; padding: 8px 0; }
-      #mh-faq-box summary { cursor: pointer; color: #2ec4b6; }
-      #mh-faq-box button { margin-top: 14px; background: #1d2440; color: #f2e9d8;
-        border: 1px solid #2a3560; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+      #diagnostics {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        z-index: 10;
+        font:
+          12px/1.5 ui-monospace,
+          monospace;
+        color: #9fb4c8;
+        background: rgba(5, 6, 10, 0.7);
+        padding: 6px 10px;
+        border-radius: 6px;
+        pointer-events: none;
+        white-space: pre;
+      }
+      #hud {
+        position: fixed;
+        top: 8px;
+        right: 8px;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        font: 13px/1.4 system-ui;
+        color: #f2e9d8;
+        pointer-events: none;
+      }
+      #hud button {
+        pointer-events: auto;
+        cursor: pointer;
+        background: rgba(11, 16, 38, 0.8);
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 4px 10px;
+        margin-left: 4px;
+      }
+      #hud button.active {
+        border-color: #2ec4b6;
+        color: #2ec4b6;
+      }
+      #hud button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      #mh-breath {
+        width: 150px;
+        height: 10px;
+        margin-right: 4px;
+        background: rgba(11, 16, 38, 0.8);
+        border: 1px solid #2a3560;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      #mh-breath-fill {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #9fd8ff, #d7f1ff);
+        transition: width 0.15s linear;
+      }
+      #mh-anger {
+        width: 150px;
+        height: 10px;
+        margin-right: 4px;
+        background: rgba(11, 16, 38, 0.8);
+        border: 1px solid #2a3560;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      #mh-anger-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #7a2f35, #e07a5f);
+        transition: width 0.15s linear;
+      }
+      #mh-chips {
+        display: flex;
+        gap: 8px;
+        background: rgba(11, 16, 38, 0.7);
+        border-radius: 6px;
+        padding: 4px 10px;
+      }
+      #mh-cleared {
+        background: rgba(11, 16, 38, 0.92);
+        border: 1px solid #d9a441;
+        color: #f2e9d8;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 15px;
+        pointer-events: none;
+      }
+      #mh-fail {
+        background: rgba(26, 10, 14, 0.92);
+        border: 1px solid #b33939;
+        color: #f2e9d8;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 15px;
+        pointer-events: none;
+      }
+      #mh-fail[hidden] {
+        display: none;
+      }
+      #mh-hint {
+        background: rgba(11, 16, 38, 0.85);
+        border: 1px solid #2a3560;
+        color: #f2e9d8;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 13px;
+        max-width: 360px;
+        pointer-events: none;
+      }
+      #mh-hint[hidden] {
+        display: none;
+      }
+      #mh-faq-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: rgba(5, 8, 20, 0.82);
+        display: grid;
+        place-items: center;
+      }
+      #mh-faq-overlay[hidden] {
+        display: none;
+      }
+      #mh-faq-box {
+        max-width: 640px;
+        max-height: 82vh;
+        overflow: auto;
+        background: #0b1026;
+        border: 1px solid #2a3560;
+        border-radius: 10px;
+        padding: 20px 26px;
+        color: #f2e9d8;
+        font: 14px/1.6 system-ui;
+      }
+      #mh-faq-box h2 {
+        margin: 0 0 12px;
+        color: #d9a441;
+        font-size: 18px;
+      }
+      #mh-faq-box details {
+        border-bottom: 1px solid #1d2440;
+        padding: 8px 0;
+      }
+      #mh-faq-box summary {
+        cursor: pointer;
+        color: #2ec4b6;
+      }
+      #mh-faq-box button {
+        margin-top: 14px;
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+      }
       /* Aaina (M3) — the FAQ's diegetic sister: same box styling, docked beside
          the maze instead of a centered pause, so the floor stays visible and
          live while the lantern talks. */
-      #mh-aaina-overlay { position: fixed; left: 8px; top: 76px; bottom: 8px;
-        width: min(400px, 92vw); z-index: 20; display: flex; pointer-events: auto; }
-      #mh-aaina-overlay[hidden] { display: none; }
-      #mh-aaina-box { flex: 1; overflow: auto; background: rgba(11,16,38,.94);
-        border: 1px solid #2a3560; border-radius: 10px; padding: 16px 20px; color: #f2e9d8;
-        font: 14px/1.6 system-ui; display: flex; flex-direction: column; gap: 10px; }
-      #mh-aaina-box h2 { margin: 0; color: #d9a441; font-size: 17px; }
-      #mh-aaina-tabs { display: flex; gap: 6px; }
-      #mh-aaina-tabs button { background: #1d2440; color: #f2e9d8; border: 1px solid #2a3560;
-        border-radius: 6px; padding: 4px 12px; cursor: pointer; }
-      #mh-aaina-tabs button.active { border-color: #2ec4b6; color: #2ec4b6; }
-      #mh-aaina-box details { border-bottom: 1px solid #1d2440; padding: 6px 0; }
-      #mh-aaina-box summary { cursor: pointer; color: #2ec4b6; }
-      #mh-aaina-hint-text { white-space: pre-wrap; }
-      #mh-aaina-buy { align-self: flex-start; background: #1d2440; color: #f2e9d8;
-        border: 1px solid #2a3560; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
-      #mh-aaina-buy:disabled { opacity: .45; cursor: default; }
-      #mh-aaina-lore-count { color: #d9a441; margin: 0; }
-      #mh-aaina-lore-list p { margin: 6px 0; }
-      #mh-aaina-lore-list p.locked { color: #6b7280; font-style: italic; }
-      #mh-aaina-close { align-self: flex-start; background: #1d2440; color: #f2e9d8;
-        border: 1px solid #2a3560; border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+      #mh-aaina-overlay {
+        position: fixed;
+        left: 8px;
+        top: 76px;
+        bottom: 8px;
+        width: min(400px, 92vw);
+        z-index: 20;
+        display: flex;
+        pointer-events: auto;
+      }
+      #mh-aaina-overlay[hidden] {
+        display: none;
+      }
+      #mh-aaina-box {
+        flex: 1;
+        overflow: auto;
+        background: rgba(11, 16, 38, 0.94);
+        border: 1px solid #2a3560;
+        border-radius: 10px;
+        padding: 16px 20px;
+        color: #f2e9d8;
+        font: 14px/1.6 system-ui;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      #mh-aaina-box h2 {
+        margin: 0;
+        color: #d9a441;
+        font-size: 17px;
+      }
+      #mh-aaina-tabs {
+        display: flex;
+        gap: 6px;
+      }
+      #mh-aaina-tabs button {
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 4px 12px;
+        cursor: pointer;
+      }
+      #mh-aaina-tabs button.active {
+        border-color: #2ec4b6;
+        color: #2ec4b6;
+      }
+      #mh-aaina-box details {
+        border-bottom: 1px solid #1d2440;
+        padding: 6px 0;
+      }
+      #mh-aaina-box summary {
+        cursor: pointer;
+        color: #2ec4b6;
+      }
+      #mh-aaina-hint-text {
+        white-space: pre-wrap;
+      }
+      #mh-aaina-buy {
+        align-self: flex-start;
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+      }
+      #mh-aaina-buy:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      #mh-aaina-lore-count {
+        color: #d9a441;
+        margin: 0;
+      }
+      #mh-aaina-lore-list p {
+        margin: 6px 0;
+      }
+      #mh-aaina-lore-list p.locked {
+        color: #6b7280;
+        font-style: italic;
+      }
+      #mh-aaina-close {
+        align-self: flex-start;
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>

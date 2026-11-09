@@ -18,7 +18,11 @@ export function createAvatar(look: AvatarLook): THREE.Group {
   arm.rotation.z = -0.45;
   const lanternBox = new THREE.Mesh(
     new THREE.BoxGeometry(0.14, 0.2, 0.14),
-    new THREE.MeshStandardMaterial({ color: look.glass, emissive: look.glass, emissiveIntensity: 1.4 }),
+    new THREE.MeshStandardMaterial({
+      color: look.glass,
+      emissive: look.glass,
+      emissiveIntensity: 1.4,
+    }),
   );
   lanternBox.position.set(0.44, 0.82, -0.24);
   g.add(body, head, arm, lanternBox);
@@ -56,7 +60,14 @@ export function createChhaya(): THREE.Group {
   return g;
 }
 
-export function updateAvatar(avatar: THREE.Group, x: number, y: number, heading: number, moving: boolean, t: number): void {
+export function updateAvatar(
+  avatar: THREE.Group,
+  x: number,
+  y: number,
+  heading: number,
+  moving: boolean,
+  t: number,
+): void {
   avatar.position.set(x, moving ? Math.sin(t * 9) * 0.04 : 0, y);
   avatar.rotation.y = -heading;
 }

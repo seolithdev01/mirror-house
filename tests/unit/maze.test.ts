@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { bfsDistances, generateFloor, TIER_ONE, type FloorParams } from '../../src/game/maze';
 
 const params = (seed: string, over: Partial<FloorParams> = {}): FloorParams => ({
-  ...TIER_ONE, seed, ...over,
+  ...TIER_ONE,
+  seed,
+  ...over,
 });
 
 describe('generateFloor', () => {
