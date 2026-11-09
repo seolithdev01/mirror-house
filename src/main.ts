@@ -82,12 +82,12 @@ import {
 } from './game/frost';
 import {
   applyCrack,
+  bankOnClear,
   beaconsCaptured,
   crackTarget,
   exitUnlocked,
   initHouseState,
   isCollapse,
-  shardsForClear,
 } from './game/houseState';
 import { parseLook } from './game/look';
 import {
@@ -648,6 +648,14 @@ function pushA11yValues(): void {
     perf: perfChoice, // M5/T4 — the full SettingsValues shape (unchanged by rebinds)
   });
 }
+/** M5/T5 — the overlays' close hints follow the live map: FAQ's and Aaina's
+ *  close labels name whatever key answers today (keyLabel(keyOf(...))), not
+ *  the static default H/I — a remap never leaves a close hint naming a dead
+ *  key. Called at boot and after every keymap write (rebind, reset). */
+function pushCloseKeys(): void {
+  faq.setCloseKey(keyLabel(keyOf('faq')));
+  aaina.setCloseKey(keyLabel(keyOf('aaina')));
+}
 const settings = buildSettingsOverlay({
   onTextScale: (scale) => {
     save = { ...save, a11y: { ...a11y(), textScale: scale } };
@@ -677,12 +685,14 @@ const settings = buildSettingsOverlay({
     save = { ...save, a11y: { ...a11y(), keyMap: map } };
     persist();
     pushA11yValues();
+    pushCloseKeys();
     return null;
   },
   onResetKeys: () => {
     save = { ...save, a11y: { ...a11y(), keyMap: { ...DEFAULT_KEYMAP } } };
     persist();
     pushA11yValues();
+    pushCloseKeys();
   },
   onClosed: () => persist(true), // a closed overlay must not ride a debounce window
 });
@@ -693,6 +703,7 @@ settings.setValues({
   keyMap: a11y().keyMap,
   perf: perfChoice, // M5/T4 — the radio reflects the live choice (DEV ?perf= included)
 });
+pushCloseKeys(); // M5/T5 — the close hints start on the saved bindings
 const hud = createHud({
   mode,
   onMode: (m) => {
@@ -772,6 +783,11 @@ function updateShardsChip(): void {
 // banking — the clear check is off while dwaarFreeWalk).
 let descendAt: number | null = null; // when the held clear turns into a descend
 let dwaarFreeWalk = false; // Stay: the cleared Dwaar is a sandbox
+// M5/T5 — the re-clear banking gate's eye: was the tier ALREADY complete when
+// this floor was entered? Captured once per buildFloor, never read live, so a
+// floor-10 resume of a finished tier banks its re-frosted beacons but never a
+// second perfect/stuck bonus (see bankOnClear).
+let tierCompleteAtEntry = false;
 
 /** Free one floor's stage resources: buildFloorScene owns all of its
  *  materials/textures (they are created per floor), so a tree walk is safe.
@@ -812,6 +828,7 @@ function floorChipLabel(c: Campaign): string {
  *  floor's first input. */
 function buildFloor(c: Campaign): void {
   teardownFloor();
+  tierCompleteAtEntry = c.tierComplete; // the re-clear gate reads entry state, never live state
   const fp = floorParams(c.floor);
   seed = floorSeed(c);
   floor = isDwaar(c.floor)
@@ -1162,7 +1179,12 @@ async function importSave(): Promise<void> {
     persistTimer = null;
   }
   await idbPut(next);
-  location.reload(); // the boot chain applies the new save from IDB
+  // M5/T5 — reload to the bare PATH, not location.reload(): a `?seed=` in the
+  // URL wins the boot race over the save, so a reload that kept it would boot
+  // the URL's floor 1 and the imported campaign would never resume. The
+  // imported save carries its own lang/perf, so nothing in the query is owed
+  // a carry-over.
+  location.assign(location.pathname); // the boot chain applies the new save from IDB
 }
 // [V] cycles the view (M3/T3), a keydown press like frost. Pixel ratio is part
 // of the mode: quad's four panes render at ratio 1, every other mode restores
@@ -1636,9 +1658,12 @@ function frame(now: number): void {
     const ms = runElapsedMs(phase, now);
     const wasBest = save.best[seed];
     save = recordRun(save, seed, ms, todayStamp());
+    // M5/T5 — bankOnClear gates the clear bonus on the tier state at floor
+    // ENTRY: a floor-10 resume of an already-complete tier pays only its
+    // re-earned beacons, never a second perfect/stuck bonus.
     save = awardShards(
       save,
-      house.shards + shardsForClear(house, echoes.filter((e) => e.stuckAwarded).length),
+      bankOnClear(house, echoes.filter((e) => e.stuckAwarded).length, tierCompleteAtEntry),
     );
     // The stake is in the purse now — zero the pending so the unified chip
     // never counts the same shards as banked AND at stake during the 0.8s hold
@@ -1896,6 +1921,15 @@ if (import.meta.env.DEV) {
     },
     exitPos: () => ({ x: exitCenter.cx, z: exitCenter.cy }),
     warp: (x: number, y: number, heading?: number) => {
+      // M5/T5 — a bad console call must not NaN the renderer: a non-finite
+      // argument poisons the avatar/camera matrices for the rest of the
+      // session, so the faucet ignores the jump entirely.
+      if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y) ||
+        (heading !== undefined && !Number.isFinite(heading))
+      )
+        return;
       player = { x, y, heading: heading ?? player.heading };
       input.snapshotAndReset(); // drop any pending mouseDx so the jump does not jitter
       updateAvatar(avatar, player.x, player.y, player.heading, false, performance.now() / 1000);

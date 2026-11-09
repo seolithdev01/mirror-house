@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { KEY_TURN_PER_STEP, MOUSE_TURN_PER_STEP, TURN_SENSITIVITY } from './constants';
 import type { MoveInput } from '../game/player';
-import { DEFAULT_KEYMAP, type KeyMap } from '../game/save';
+import { CODE_RE, DEFAULT_KEYMAP, type KeyMap } from '../game/save';
 
 export interface KeyboardSnapshot {
   keys: ReadonlySet<string>;
@@ -102,6 +102,25 @@ export function rebind(map: KeyMap, action: string, code: string): RebindResult 
   for (const [other, bound] of Object.entries(map))
     if (other !== action && bound === code) return { map, conflict: other };
   return { map: { ...map, [action]: code }, conflict: null };
+}
+
+/** The hardwired alternate families the rebind capture must refuse (M5/T5):
+ *  `Arrow*` and `Shift*`. Arrows move/turn and the shifts sprint under every
+ *  remap (see keysToMoveInput), so an action bound there would fire its verb
+ *  AND its hardwired one on the same press. Prefix-based, not enumerated
+ *  pairs, so no future arrow/shift code slips the gate. */
+const HARDWIRED_RE = /^(Arrow|Shift)/;
+
+/**
+ * The capture-side gate (M5/T5): may a pressed `e.code` become a binding?
+ * False for the hardwired alternates above and for anything failing the
+ * save's CODE_RE shape check — the same regex validateKeyMap polices — so
+ * junk is refused at the capture, before it can ever enter the save. Pure:
+ * the settings overlay calls this on the keydown; the save's own gate stays
+ * the backstop for imported files.
+ */
+export function capturableCode(code: string): boolean {
+  return CODE_RE.test(code) && !HARDWIRED_RE.test(code);
 }
 
 export interface MouseState {

@@ -184,8 +184,11 @@ function validateProgress(raw: unknown): SaveData['progress'] | null {
 /** Every KeyboardEvent.code value is PascalCase alphanumerics (`KeyW`,
  *  `ArrowUp`, `NumpadMultiply`, `F12`, `IntlYen`) starting with a capital
  *  letter. This is the SHAPE check — it rejects junk ('wasd', 'P', 'Key W')
- *  while accepting every code the capture UI can produce from a real event. */
-const CODE_RE = /^[A-Z][A-Za-z0-9]{1,23}$/;
+ *  while accepting every code the capture UI can produce from a real event.
+ *  M5/T5 exports it: the settings capture runs the SAME test on `e.code` at
+ *  capture time, so a non-code-shaped value is refused before it can ever
+ *  enter the save (the save's own gate stays the backstop for imports). */
+export const CODE_RE = /^[A-Z][A-Za-z0-9]{1,23}$/;
 
 /** The one sanctioned duplicate pair (M5/T2): turnR and push may share a code
  *  — the default KeyE — because push is contextual (the door claims the key

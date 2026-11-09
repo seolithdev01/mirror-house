@@ -37,8 +37,12 @@ export interface AainaOverlay {
   updateHint(view: AainaHintView): void;
   updateLore(unlocked: number): void;
   /** M4/T6 — re-label the TAB buttons + close button. Her words stay English:
-   *  the dialogue is content, not chrome (the content pipeline owns it). */
+   *  the dialogue is content, not chrome (the content pipeline owns them). */
   setLang(lang: Lang): void;
+  /** M5/T5 — the close hint names the LIVE aaina key (keyLabel(keyOf('aaina'))),
+   *  pushed by main at boot and after every rebind; a remap never leaves the
+   *  label naming a dead key. */
+  setCloseKey(key: string): void;
 }
 
 /** How she names each situation in the preview line ("I can tell you about: …"). */
@@ -47,7 +51,7 @@ const KIND_LABEL: Record<HintKind, string> = {
   exit: 'the open stair door',
   chase: 'the thing hunting you',
   taal: 'the one on the beat',
-  chhaya: 'your six-second shadow',
+  chhaya: 'your shadow, seconds behind',
   anger: "the house's temper",
   stuck: 'the way onward',
 };
@@ -79,6 +83,7 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
   // M4/T6 — the three TAB labels are chrome (localized); her heading, the FAQ
   // verbatim, hint lines and lore are content and stay English.
   let lang: Lang = 'en';
+  let closeKey = 'I'; // M5/T5 — the default binding until main pushes the live one
   const labels: Record<AainaTab, string> = { ask: 'Ask', hint: 'Hint', lore: 'Lore' };
   for (const tabId of ['ask', 'hint', 'lore'] as const) {
     panels[tabId].id = `mh-aaina-${tabId}`;
@@ -135,7 +140,7 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
       labels[tabId] = t(lang, `tab.${tabId}`);
       tabBtns[tabId].textContent = labels[tabId];
     }
-    close.textContent = fill(t(lang, 'misc.close'), { key: 'I' });
+    close.textContent = fill(t(lang, 'misc.close'), { key: closeKey });
   }
   relabel();
 
@@ -207,6 +212,11 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
       if (next === lang) return;
       lang = next;
       relabel();
+    },
+    setCloseKey: (key) => {
+      if (key === closeKey) return;
+      closeKey = key;
+      close.textContent = fill(t(lang, 'misc.close'), { key: closeKey });
     },
   };
 }

@@ -12,6 +12,7 @@ import type { MirrorRef } from '../../src/game/floorObjects';
 import { initMirrorRuntime, type MirrorRuntime } from '../../src/game/frost';
 import {
   applyCrack,
+  bankOnClear,
   beaconsCaptured,
   crackTarget,
   exitUnlocked,
@@ -119,6 +120,23 @@ describe('houseState', () => {
     expect(shardsForClear(clean, 2)).toBe(SHARD_PERFECT + 2 * SHARD_STUCK);
     expect(shardsForClear(cracked, 0)).toBe(0);
     expect(shardsForClear(cracked, 3)).toBe(3 * SHARD_STUCK);
+  });
+
+  // M5/T5 — the Dwaar re-clear banking gate: a resumed floor-10 (tier already
+  // complete in the save) must never bank a second clear bonus, while beacons
+  // re-frosted on that visit were re-earned and still pay.
+  it('bankOnClear: tier complete at entry forfeits the bonus, pending beacons still bank', () => {
+    const staked = { ...initHouseState(), shards: 15 }; // 3 beacons captured this attempt
+    // first clear — the tier was open at entry: beacons + perfect + stuck all bank
+    expect(bankOnClear(staked, 2, false)).toBe(15 + SHARD_PERFECT + 2 * SHARD_STUCK);
+    // re-clear — the tier was ALREADY complete at entry: beacons bank, the bonus never does
+    expect(bankOnClear(staked, 2, true)).toBe(15);
+    // a cracked re-clear is refused nothing extra (no bonus anyway) — beacons still pay
+    expect(bankOnClear({ ...staked, crackedAny: true }, 3, true)).toBe(15);
+    // the same cracked run on an open tier keeps its stuck bounties
+    expect(bankOnClear({ ...staked, crackedAny: true }, 3, false)).toBe(15 + 3 * SHARD_STUCK);
+    // an unstaked open-tier clear banks just the perfect bonus
+    expect(bankOnClear(initHouseState(), 0, false)).toBe(SHARD_PERFECT);
   });
 
   it('awardShards is additive from undefined and never mutates the input save', () => {

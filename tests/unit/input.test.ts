@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   actionFor,
+  capturableCode,
   keysToMoveInput,
   keysToMoveInput as map,
   mouseOnlyInput,
@@ -198,5 +199,37 @@ describe('rebind — conflict guard + immutability (M5/T2)', () => {
     const back = rebind(out.map, 'push', 'KeyE'); // push returns to E where turnR now sits alone
     expect(back.conflict).toBe('turnR');
     expect(back.map).toBe(out.map);
+  });
+});
+
+// ---- M5/T5 — the capture-side gate: hardwired codes and junk never bind -------
+
+describe('capturableCode — the rebind capture gate (M5/T5)', () => {
+  it('refuses the hardwired alternates: the four arrows and both shifts', () => {
+    // These fire their hardwired verbs under EVERY remap (arrows move/turn,
+    // shifts sprint — see keysToMoveInput), so a binding there would fire two
+    // actions at once; the capture refuses them before the save ever sees them.
+    for (const code of [
+      'ArrowUp',
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+      'ShiftLeft',
+      'ShiftRight',
+    ])
+      expect(capturableCode(code), code).toBe(false);
+  });
+
+  it('refuses anything not KeyboardEvent.code-shaped — junk never reaches the save', () => {
+    for (const code of ['', 'w', 'W', 'Key W', 'keyW', 'shiftLeft', 'Shift', 'Arrow', 'x'.repeat(25)])
+      expect(capturableCode(code), JSON.stringify(code)).toBe(false);
+  });
+
+  it('accepts the ordinary bindables: letters, digits, Space, Enter, F- and Numpad- codes', () => {
+    for (const code of ['KeyW', 'KeyP', 'Digit1', 'Space', 'Enter', 'F12', 'NumpadMultiply', 'IntlYen'])
+      expect(capturableCode(code), code).toBe(true);
+    // the non-hardwired modifiers stay bindable — only the shifts are alternates
+    expect(capturableCode('ControlLeft')).toBe(true);
+    expect(capturableCode('AltRight')).toBe(true);
   });
 });

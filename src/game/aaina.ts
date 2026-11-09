@@ -39,7 +39,7 @@ export const HINTS: Record<HintKind, string> = {
     'An Echo sees you through clear glass. Break its stare: fog the pane it watches through (F), or put honest stone between you. Enough frosted eyes in one place will spin it into a standstill.',
   taal: 'Taal is on this floor — the Sentinel who moves on the beat. He cannot kill you; his touch only angers the house. Cross him in the rest between the accents, when the lantern dims, and keep your count.',
   chhaya:
-    'She is close — your own footsteps, six seconds late. Never retrace your path; bend your trail instead. And if you must, step through a True Mirror (Space) to somewhere your past never walked.',
+    'She is close — your own footsteps, seconds late, and quicker the deeper you go. Never retrace your path; bend your trail instead. And if you must, step through a True Mirror (Space) to somewhere your past never walked.',
   anger:
     'The house is furious — no sprinting near glass, not one step. Every cracked pane feeds it and at a hundred it comes down. Walk, and it will forget. Slowly. It never truly forgets.',
   stuck:
@@ -82,7 +82,7 @@ export const LORE: readonly string[] = [
   // 3 — the Echoes
   'The Echoes were guests, once. They looked into the glass a little too long and a little too gratefully, and the house kept the reflection and let the rest of you go. They are blind now to everything but clear glass — fog what they watch through, and they are as lost as you feel.',
   // 4 — Chhaya
-  'Chhaya was never a guest. She is your own path, walked six seconds late. Doubling back hands you to her; a True Mirror drops you where your past never went. You cannot outrun her — nobody outruns their own footsteps. You can only stop meeting them.',
+  'Chhaya was never a guest. She is your own path, walked seconds behind you, and quicker the deeper you go. Doubling back hands you to her; a True Mirror drops you where your past never went. You cannot outrun her — nobody outruns their own footsteps. You can only stop meeting them.',
   // 5 — the Sentinels
   'Four keepers, and you have met the first. Chhaya walks your past. Taal moves on the beat — the music you hear is his footsteps, so mind the rhythm. Gher seals exits. Aavart predicts. When you meet the last of them, I will not pretend to be calm.',
   // 6 — the Ground Door

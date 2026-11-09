@@ -1,7 +1,7 @@
 {
   "name": "Mirror House",
   "short_name": "Mirror House",
-  "description": "A first-person maze of true mirrors, echoes, and the six-second shadow. Frost the beacons, find the stair door, descend.",
+  "description": "A first-person maze of true mirrors, echoes, and your shadow, seconds behind — quicker the deeper you go. Frost the beacons, find the stair door, descend.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b1026",

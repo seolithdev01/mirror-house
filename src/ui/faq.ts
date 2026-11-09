@@ -73,7 +73,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'How do I shake Chhaya?',
-    a: 'You cannot outrun your own past — she replays your exact path, six seconds behind. Never retrace your steps: doubling back walks you straight into her. Keep the trail bending so the past cannot catch the present, and step through a True Mirror (Space) to be somewhere your path never went. If she touches you, the floor fails and re-arms.',
+    a: 'You cannot outrun your own past — she replays your exact path, seconds behind, and quicker the deeper you go. Never retrace your steps: doubling back walks you straight into her. Keep the trail bending so the past cannot catch the present, and step through a True Mirror (Space) to be somewhere your path never went. If she touches you, the floor fails and re-arms.',
   },
   {
     q: 'Is it free? Is it open source?',
@@ -101,10 +101,15 @@ export function buildFaqOverlay(): {
   root: HTMLElement;
   toggle(): void;
   setLang(lang: Lang): void;
+  /** M5/T5 — the close hint names the LIVE faq key (keyLabel(keyOf('faq'))),
+   *  pushed by main at boot and after every rebind; a remap never leaves the
+   *  button naming a dead key. */
+  setCloseKey(key: string): void;
 } {
   // M4/T6 — the heading and the close button are chrome (localized); the 22
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
+  let closeKey = 'H'; // the default binding until main pushes the live one
   const root = document.createElement('div');
   root.id = 'mh-faq-overlay';
   root.hidden = true;
@@ -134,7 +139,7 @@ export function buildFaqOverlay(): {
   document.body.appendChild(root);
   function relabel(): void {
     h.textContent = t(lang, 'faq.title');
-    close.textContent = fill(t(lang, 'misc.close'), { key: 'H' });
+    close.textContent = fill(t(lang, 'misc.close'), { key: closeKey });
   }
   relabel();
   return {
@@ -146,6 +151,11 @@ export function buildFaqOverlay(): {
       if (next === lang) return;
       lang = next;
       relabel();
+    },
+    setCloseKey: (key) => {
+      if (key === closeKey) return;
+      closeKey = key;
+      close.textContent = fill(t(lang, 'misc.close'), { key: closeKey });
     },
   };
 }

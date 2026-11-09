@@ -110,3 +110,18 @@ export function exitUnlocked(mirrors: MirrorRef[], rt: MirrorRuntime[]): boolean
 export function shardsForClear(h: HouseState, stuckEnemies: number): number {
   return (h.crackedAny ? 0 : SHARD_PERFECT) + SHARD_STUCK * stuckEnemies;
 }
+
+/** M5/T5 — the Dwaar re-clear banking gate. A floor-10 resume of an
+ *  already-complete tier (the save boots with `tierComplete: true`) used to
+ *  bank a SECOND clear bonus on re-clear. Now the bonus (perfect/stuck via
+ *  shardsForClear) banks only when the tier was NOT already complete at floor
+ *  entry, while the pending beacon shards always bank — those were re-earned
+ *  on this visit. The flag is captured once per floor build (main.ts), never
+ *  read live at the clear, so the gate cannot be fooled by mid-run writes. */
+export function bankOnClear(
+  h: HouseState,
+  stuckEnemies: number,
+  tierCompleteAtEntry: boolean,
+): number {
+  return h.shards + (tierCompleteAtEntry ? 0 : shardsForClear(h, stuckEnemies));
+}

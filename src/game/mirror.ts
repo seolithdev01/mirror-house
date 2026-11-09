@@ -211,9 +211,18 @@ export class HeroMirror implements FogVisual, CrackVisual {
   }
 
   dispose(): void {
+    // M5/T5 — the M4-review leak closed: the per-instance RT MATERIAL and the
+    // true-mirror frame's material are freed with their geometries. The
+    // shared fogged/captured swap materials are never touched (setFog may have
+    // parked mesh.material on one of them; they outlive this mirror).
     this.rt.dispose();
+    this.rtMaterial.dispose();
     this.mesh.geometry.dispose();
-    for (const child of this.mesh.children) (child as THREE.Mesh).geometry.dispose(); // the true-mirror gold frame
+    for (const child of this.mesh.children) {
+      const frame = child as THREE.Mesh;
+      frame.geometry.dispose();
+      (frame.material as THREE.Material).dispose(); // the true-mirror gold frame
+    }
   }
 }
 

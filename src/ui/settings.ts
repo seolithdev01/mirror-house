@@ -14,6 +14,7 @@
 // onClosed.
 
 import { DEFAULT_KEYMAP, type KeyMap } from '../game/save';
+import { capturableCode } from '../engine/input';
 import { PERF_CHOICES, type PerfChoice } from '../game/quality';
 import { fill, t, type Lang } from './i18n';
 
@@ -258,7 +259,11 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
   // The capture eats the next keydown on the CAPTURE phase of window — first
   // in line before every bubble-phase game listener — and stops the event's
   // propagation outright, so a key bound to a verb (M mutes, H opens the FAQ)
-  // rebinds instead of firing while it is being captured.
+  // rebinds instead of firing while it is being captured. M5/T5: the capture
+  // first REFUSES what may never bind — the hardwired arrows/shifts and any
+  // code failing the save's CODE_RE shape check — with the inline message
+  // saying why; the capture stays armed, so the very next keydown can still
+  // land the rebind (Escape still cancels).
   window.addEventListener(
     'keydown',
     (e: KeyboardEvent) => {
@@ -271,6 +276,10 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
         endCapture();
         setKeyMsg(null, false);
         return;
+      }
+      if (!capturableCode(e.code)) {
+        setKeyMsg(t(lang, 'settings.keyRefused'), true);
+        return; // refused — the capture stays armed for a valid key
       }
       const conflict = init.onRebind(action, e.code); // success → main pushed setValues
       capturing = null;
