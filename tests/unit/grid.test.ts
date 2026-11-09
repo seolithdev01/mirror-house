@@ -47,6 +47,17 @@ describe('FloorGrid', () => {
     expect(g.cellAt(-8, 0)).toEqual({ x: 0, y: 2 });
   });
 
+  it('wallSegments is cached and invalidated by wall changes', () => {
+    const g = new FloorGrid(9, 9);
+    const a = g.wallSegments();
+    const b = g.wallSegments();
+    expect(b).toBe(a); // same reference — cached
+    g.setOpen(4, 4, Dir.North);
+    const c = g.wallSegments();
+    expect(c).not.toBe(a);
+    expect(c.length).toBe(a.length - 1);
+  });
+
   it('deadEndCount counts cells with exactly 3 walls', () => {
     const g = new FloorGrid(3, 3);
     g.setOpen(1, 1, Dir.North);

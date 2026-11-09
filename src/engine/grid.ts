@@ -15,6 +15,7 @@ export class FloorGrid {
   readonly width: number;
   readonly height: number;
   private readonly walls: Uint8Array;
+  private segCache: WallSegment[] | null = null;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -36,6 +37,7 @@ export class FloorGrid {
     const i = this.idx(x, y);
     const bit = WALL_BIT[dir]!;
     this.walls[i] = present ? this.walls[i]! | bit : this.walls[i]! & ~bit;
+    this.segCache = null;
   }
 
   setOpen(x: number, y: number, dir: Dir): void {
@@ -81,8 +83,13 @@ export class FloorGrid {
     return { x, y };
   }
 
-  /** Unique wall edges: N and W per cell, plus E on last column and S on last row. */
+  /** Unique wall edges: N and W per cell, plus E on last column and S on last row.
+   *  Cached — invalidated on any wall mutation via setWallBit. */
   wallSegments(): WallSegment[] {
+    return (this.segCache ??= this.buildSegments());
+  }
+
+  private buildSegments(): WallSegment[] {
     const segs: WallSegment[] = [];
     for (let y = 0; y < this.height; y++)
       for (let x = 0; x < this.width; x++) {
