@@ -11,11 +11,11 @@ export type InputMode = 'keyboard' | 'mouse' | 'hybrid';
 
 /**
  * A snapshot with one key's hold claim released — the ratified way a dual-use
- * key yields its movement share for a step (Aaina's Q while she is open, the
- * door's E while the push hint shows): drop the key before keysToMoveInput
- * sees the snapshot, so exactly that key's contribution disappears while the
- * mouse and every other key keep working. Returns the input unchanged (same
- * reference) when the key is not held.
+ * key yields its movement share for a step (Aaina's own key while she is
+ * open, the door's E while the push hint shows): drop the key before
+ * keysToMoveInput sees the snapshot, so exactly that key's contribution
+ * disappears while the mouse and every other key keep working. Returns the
+ * input unchanged (same reference) when the key is not held.
  */
 export function withoutKey(snap: KeyboardSnapshot, code: string): KeyboardSnapshot {
   if (!snap.keys.has(code)) return snap;

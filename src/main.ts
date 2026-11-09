@@ -89,7 +89,7 @@ import {
 } from './game/houseState';
 import { parseLook } from './game/look';
 import {
-  beatPulse,
+  beatGlow,
   initTaal,
   taalTouch,
   TAAL_TOUCH_ANGER,
@@ -100,13 +100,17 @@ import {
 import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
 import { awardShards, dailySeed, META_KEY, recordRun, spendShards, todayStamp } from './game/meta';
 import {
+  DEFAULT_A11Y,
+  DEFAULT_KEYMAP,
   defaultSave,
   idbGet,
   idbPut,
   mergeCampaign,
   migrateMeta,
+  normalizeSave,
   serializeSave,
   validateSave,
+  type A11ySettings,
   type SaveData,
 } from './game/save';
 import {
@@ -144,6 +148,7 @@ import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
 import { fill, resolveLang, t, type Lang } from './ui/i18n';
 import { createOverhead, pingOpacity } from './ui/overhead';
+import { buildSettingsOverlay, type TextScale } from './ui/settings';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const overheadCanvas = document.querySelector<HTMLCanvasElement>('#overhead')!;
@@ -176,7 +181,26 @@ function migrateFromMetaV1(): SaveData | null {
     return null;
   }
 }
-let save: SaveData = (await idbGet()) ?? migrateFromMetaV1() ?? defaultSave();
+// M5/T1 — normalizeSave fills the additive a11y defaults post-load: every
+// pre-M5 save (stored, exported, migrated) arrives without the block and
+// leaves this line carrying the full default one.
+let save: SaveData = normalizeSave((await idbGet()) ?? migrateFromMetaV1() ?? defaultSave());
+/** The save's a11y block, defaulted — never undefined past boot. */
+function a11y(): A11ySettings {
+  return save.a11y ?? DEFAULT_A11Y;
+}
+// M5/T1 — a11y application. Text scale is one CSS var every HUD/overlay font
+// multiplies in (index.html defaults it to 1); reduced-flash flips a body
+// class the overlay-fade CSS keys on AND steadies the pulsing lights (the
+// Taal lantern reads it per frame via beatGlow).
+function applyTextScale(scale: TextScale): void {
+  document.body.style.setProperty('--mh-text-scale', String(scale));
+}
+function applyReducedFlash(on: boolean): void {
+  document.body.classList.toggle('mh-reduced-flash', on);
+}
+applyTextScale(a11y().textScale);
+applyReducedFlash(a11y().reducedFlash);
 let campaign: Campaign = isValidSeed(urlSeed)
   ? { seedBase: urlSeed, floor: bootFloorFromUrl(), tierComplete: false } // URL wins over the save
   : {
@@ -530,6 +554,31 @@ input.attach(window);
 let mode: InputMode = save.mode;
 const faq = buildFaqOverlay();
 const aaina = buildAainaOverlay({ onBuyHint: buyHint });
+// M5/T1 — the ⚙ settings overlay: every control applies at once (text scale
+// re-sets the CSS var, reduced-flash flips the body class + the beat glow
+// flag); persistence rides the usual debounce, flushed when it closes.
+const settings = buildSettingsOverlay({
+  onTextScale: (scale) => {
+    save = { ...save, a11y: { ...a11y(), textScale: scale } };
+    applyTextScale(scale);
+    persist();
+  },
+  onReducedFlash: (on) => {
+    save = { ...save, a11y: { ...a11y(), reducedFlash: on } };
+    applyReducedFlash(on);
+    persist();
+  },
+  onCaptions: (on) => {
+    save = { ...save, a11y: { ...a11y(), captions: on } };
+    persist(); // the caption BAR is T3; the choice banks now
+  },
+  onClosed: () => persist(true), // a closed overlay must not ride a debounce window
+});
+settings.setValues({
+  textScale: a11y().textScale,
+  reducedFlash: a11y().reducedFlash,
+  captions: a11y().captions,
+});
 const hud = createHud({
   mode,
   onMode: (m) => {
@@ -559,6 +608,8 @@ const hud = createHud({
   onImport: () => void importSave(),
   // M4/T6 — the 🌐 button: en ↔ hi, saved at once, chrome re-rendered now.
   onLang: () => cycleLang(),
+  // M5/T1 — the ⚙ button.
+  onSettings: () => settings.toggle(),
 });
 
 /** M4/T6 — one fn that re-feeds every localized surface the HUD/overlays own.
@@ -569,6 +620,7 @@ function refreshChrome(): void {
   hud.setLang(lang);
   aaina.setLang(lang);
   faq.setLang(lang);
+  settings.setLang(lang);
   hud.setMode(mode);
   hud.setView(viewLabel(view));
   hud.setFloor(floorChipLabel(campaign));
@@ -973,10 +1025,15 @@ async function importSave(): Promise<void> {
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyH' && !e.repeat) faq.toggle();
 });
-// Aaina toggles on [Q]. She is NOT a pause: the floor keeps simulating while
-// she is open (see the fixed step below for the one input she does claim).
+// Aaina toggles on her own key — [I] by default (M5/T1 moved her off Q, so Q
+// and E are pure turning; a rebinding in T2 reads the same map slot). She is
+// NOT a pause: the floor keeps simulating while she is open (see the fixed
+// step below for the one input her open panel claims).
+function aainaKey(): string {
+  return a11y().keyMap.aaina ?? DEFAULT_KEYMAP.aaina ?? 'KeyI';
+}
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyQ' && !e.repeat) aaina.toggle();
+  if (e.code === aainaKey() && !e.repeat) aaina.toggle();
 });
 // Frost is a keydown press, not a held key (e.repeat guard) — same trigger as the HUD button.
 window.addEventListener('keydown', (e) => {
@@ -1205,12 +1262,12 @@ function frame(now: number): void {
     accumulator += elapsed;
     while (accumulator >= FIXED_STEP && active(phase)) {
       let snap = input.snapshotAndReset();
-      // Diegetic, not a pause: movement stays live while Aaina talks, but Q is
-      // hers while she is open — drop ONLY its turn-left contribution from the
-      // frame's input (E and the arrows keep turning). Consequence, accepted
-      // for v1: a Q tap opens her, so keyboard/hybrid left-nudge is E/arrows'
-      // job now — mouse look in hybrid is unaffected.
-      if (!aaina.root.hidden) snap = withoutKey(snap, 'KeyQ');
+      // Diegetic, not a pause: movement stays live while Aaina talks, but HER
+      // KEY is claimed while she is open (M5/T1: generalized to whatever the
+      // keyMap binds her to — [I] by default, so the claim is usually a no-op
+      // for movement and only bites if T2 rebinds her onto a movement key).
+      // The door's E claim below is the same pattern.
+      if (!aaina.root.hidden) snap = withoutKey(snap, aainaKey());
       // E's dual use, same claim via the same helper: while the push hint owns
       // E, a press that pushes the door must not also turn you off the door's
       // cone — drop its turn-right share for that step (mouse and the arrows
@@ -1298,11 +1355,13 @@ function frame(now: number): void {
   echoes.forEach((e, i) => syncEchoMesh(echoMeshes[i]!, e));
   // Taal follows his state, lantern reading the same wall-clock beat his
   // stride does — the glow lurches on the accent and dims into the rest,
-  // running even behind a pause: the beat never stops for anyone.
+  // running even behind a pause: the beat never stops for anyone. The one
+  // exception is reduced-flash (M5/T1): beatGlow feeds one constant emissive
+  // — the beat lives in his stride, never in his light.
   if (taal !== null && taalFigure !== null) {
     taalFigure.group.position.set(taal.x, 0, taal.y);
     taalFigure.group.rotation.y = -taal.heading; // same convention as the avatar
-    taalFigure.setBeat(beatPulse(now));
+    taalFigure.setBeat(beatGlow(now, a11y().reducedFlash));
   }
   updateChhaya(now);
   // Chhaya's map radar (T4): a ping every CHHAYA_PING_MS while her sample
@@ -1485,6 +1544,16 @@ if (import.meta.env.DEV) {
     look: () => look.name,
     lang: () => lang, // M4/T6 — the live UI language (🌐 cycles it)
     mode: () => mode,
+    // M5/T1 — the live a11y block (the ⚙ overlay's writes land here for e2e).
+    a11y: () => {
+      const a = a11y();
+      return {
+        reducedFlash: a.reducedFlash,
+        captions: a.captions,
+        textScale: a.textScale,
+        keyMap: { ...a.keyMap },
+      };
+    },
     view: () => view, // M3/T3 — which ViewMode is showing ([V] cycles)
     viewMode: () => view, // M3/T6 — the same value under its exact hook name
     // M3/T6 — the audio engine's observable state (started/muted) plus the

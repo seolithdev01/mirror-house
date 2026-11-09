@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Dir, FloorGrid } from '../../src/engine/grid';
 import { BEAT_TICK_MS } from '../../src/engine/constants';
 import {
+  beatGlow,
   beatPulse,
   initTaal,
   taalTouch,
@@ -49,6 +50,32 @@ describe('beatPulse — the 8-tick lurch cycle', () => {
       const pulse = beatPulse(tick * BEAT_TICK_MS);
       expect(pulse).toBe(tick % 2 === 0 ? 2.2 : 0.3); // parity survives two cycles
     }
+  });
+});
+
+// M5/T1 — reduced-flash: the lantern's GLOW (luminance) may not strobe with the
+// beat, but the beat-walk itself (stride speed) is untouched. beatGlow is the
+// emissive the frame loop feeds TaalFigure.setBeat.
+describe('beatGlow — the lantern emissive under reduced-flash (M5/T1)', () => {
+  it('with reducedFlash the glow is one constant value — no luminance pulse at any now', () => {
+    const seen = new Set<number>();
+    for (const now of [0, 250, 500, 750, 1000, 1250, 1500, 1750, 2000, 123_456]) {
+      const glow = beatGlow(now, true);
+      seen.add(glow);
+      expect(glow).toBe(beatGlow(0, true)); // constant across the whole cycle
+    }
+    expect(seen.size).toBe(1);
+  });
+
+  it('without reducedFlash the glow is the beat pulse (the default experience is unchanged)', () => {
+    expect(beatGlow(0, false)).toBe(beatPulse(0)); // 2.2 — the accent
+    expect(beatGlow(250, false)).toBe(beatPulse(250)); // 0.3 — the rest
+  });
+
+  it('the static value sits between rest and accent — a glow, not a strobe', () => {
+    expect(beatGlow(0, true)).toBeGreaterThanOrEqual(0.3);
+    expect(beatGlow(0, true)).toBeLessThanOrEqual(2.2);
+    expect(beatGlow(0, true)).toBeGreaterThan(0); // visible — the lantern never dies
   });
 });
 

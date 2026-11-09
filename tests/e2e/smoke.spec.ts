@@ -528,8 +528,9 @@ test('m3: aaina hint economy — buy, price grows, situation moves', async ({ pa
     ),
   ).toBe(20);
 
-  // open her panel ([Q]) and go to the Hint tab
-  await page.keyboard.press('KeyQ');
+  // open her panel ([I] — M5/T1 moved her off Q; Q/E are pure turning) and go
+  // to the Hint tab
+  await page.keyboard.press('KeyI');
   await expect(page.locator('#mh-aaina-overlay')).toBeVisible();
   await page.locator('#mh-aaina-tab-hint').click();
   let panel = await page.evaluate(() =>

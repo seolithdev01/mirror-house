@@ -64,8 +64,10 @@ export function createChhaya(): THREE.Group {
  *  obsidian coat (0x1a1a22) with a gold lantern, on layer 0: he stands in
  *  the world AND inside every mirror pass, like Chhaya. setBeat(pulse)
  *  drives the lantern glass's emissive with the same beatPulse that paces
- *  his stride. A per-floor figure (floor 5 only) — dispose() frees the
- *  geometry and his three materials, which belong to him alone. */
+ *  his stride; under reduced-flash (M5/T1) main feeds it one constant from
+ *  taal.ts's beatGlow — the beat lives in his stride, never in his light.
+ *  A per-floor figure (floor 5 only) — dispose() frees the geometry and his
+ *  three materials, which belong to him alone. */
 export interface TaalFigure {
   group: THREE.Group;
   setBeat: (pulse: number) => void;
@@ -95,7 +97,9 @@ export function createTaal(): TaalFigure {
   return {
     group: g,
     setBeat: (pulse: number) => {
-      glass.emissiveIntensity = pulse; // flare 2.2 on the accent, dim 0.3 on the rest
+      // flare 2.2 on the accent, dim 0.3 on the rest — or the constant
+      // beatGlow feeds when the player asked for reduced flashing (M5/T1)
+      glass.emissiveIntensity = pulse;
     },
     dispose: () => {
       g.traverse((o) => {

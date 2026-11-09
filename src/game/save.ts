@@ -7,7 +7,9 @@ import { isValidSeed, randomSeed } from './seedCode';
 
 /** The IDB save, generation 2 (M4/T4). Everything the game persists lives in
  *  this one record — meta v1's fields plus the language tag and the campaign
- *  progress — stored under the single key `main` of the `save` store. */
+ *  progress — stored under the single key `main` of the `save` store.
+ *  M5/T1: `a11y` is ADDITIVE — optional in validation (pre-M5 saves carry no
+ *  such key and must keep validating), defaulted post-load by normalizeSave. */
 export interface SaveData {
   v: 2;
   lookName: string;
@@ -18,10 +20,58 @@ export interface SaveData {
   best: Record<string, number>;
   streak: { count: number; lastDay: string };
   progress: { seedBase: string; floor: number; tierComplete: boolean };
+  /** Absent in pre-M5 saves; present in every save this build exports. */
+  a11y?: A11ySettings;
+}
+
+/** action name → KeyboardEvent.code. Readonly on purpose: rebinding (T2)
+ *  copies; nothing mutates the default in place. */
+export type KeyMap = Readonly<Record<string, string>>;
+
+/** The 15 actions and their default codes (M5/T1, authoritative from the plan).
+ *  Aaina moved from KeyQ to KeyI — her own key, Q/E stay pure turning. The one
+ *  sanctioned dual: turnR and push share KeyE (push is contextual — the door
+ *  claims E only while the push hint shows, via withoutKey). */
+export const DEFAULT_KEYMAP: KeyMap = {
+  forward: 'KeyW',
+  back: 'KeyS',
+  left: 'KeyA',
+  right: 'KeyD',
+  sprint: 'ShiftLeft',
+  turnL: 'KeyQ',
+  turnR: 'KeyE',
+  frost: 'KeyF',
+  view: 'KeyV',
+  aaina: 'KeyI',
+  push: 'KeyE',
+  stepThrough: 'Space',
+  faq: 'KeyH',
+  mute: 'KeyM',
+  tactical: 'KeyT',
+};
+
+/** The default accessibility block — nothing on unless asked for, 1× text. */
+export const DEFAULT_A11Y: A11ySettings = {
+  reducedFlash: false,
+  captions: false,
+  textScale: 1,
+  keyMap: DEFAULT_KEYMAP,
+};
+
+/** M5/T1 — the accessibility settings. reducedFlash steadies every pulsing
+ *  light; captions feeds the caption bar (T3); textScale drives the
+ *  `--mh-text-scale` CSS var; keyMap is the code→action binding table (T2). */
+export interface A11ySettings {
+  reducedFlash: boolean;
+  captions: boolean;
+  textScale: 1 | 1.25 | 1.5;
+  keyMap: KeyMap;
 }
 
 const MODES: readonly string[] = ['keyboard', 'mouse', 'hybrid'];
 const LANGS: readonly string[] = ['en', 'hi'];
+const TEXT_SCALES: readonly number[] = [1, 1.25, 1.5];
+const KEYMAP_ACTIONS_MAX = 32; // 15 defaults + headroom for T2's growth
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const SHARDS_MAX = 1_000_000_000;
 const STREAK_COUNT_MAX = 1_000_000;
@@ -42,6 +92,7 @@ export function defaultSave(seedBase: string = randomSeed()): SaveData {
     best: {},
     streak: { count: 0, lastDay: '' },
     progress: { seedBase, floor: 1, tierComplete: false },
+    a11y: { ...DEFAULT_A11Y, keyMap: { ...DEFAULT_KEYMAP } },
   };
 }
 
@@ -121,9 +172,47 @@ function validateProgress(raw: unknown): SaveData['progress'] | null {
   return { seedBase, floor, tierComplete };
 }
 
+/** M5/T1 — the key binding table: a plain string→string map, 1..32 actions,
+ *  bounded keys and values (action names and KeyboardEvent.code shapes). An
+ *  opaque validated box for T1; T2's remap layer owns per-action semantics. */
+function validateKeyMap(raw: unknown): KeyMap | null {
+  if (!isPlainObject(raw)) return null;
+  const keys = Object.keys(raw);
+  if (keys.length === 0 || keys.length > KEYMAP_ACTIONS_MAX) return null;
+  const out: Record<string, string> = {};
+  for (const k of keys) {
+    if (!boundedString(k)) return null;
+    const v: unknown = raw[k];
+    if (!boundedString(v)) return null;
+    out[k] = v;
+  }
+  return out;
+}
+
+/** M5/T1 — exact field set, exact types, scale on the 1/1.25/1.5 ladder. */
+function validateA11y(raw: unknown): A11ySettings | null {
+  if (!isPlainObject(raw)) return null;
+  if (
+    Object.keys(raw).length !== 4 ||
+    !Object.hasOwn(raw, 'reducedFlash') ||
+    !Object.hasOwn(raw, 'captions') ||
+    !Object.hasOwn(raw, 'textScale') ||
+    !Object.hasOwn(raw, 'keyMap')
+  )
+    return null;
+  const { reducedFlash, captions, textScale, keyMap }: Record<string, unknown> = raw;
+  if (typeof reducedFlash !== 'boolean') return null;
+  if (typeof captions !== 'boolean') return null;
+  if (typeof textScale !== 'number' || !TEXT_SCALES.includes(textScale)) return null;
+  const map = validateKeyMap(keyMap);
+  if (map === null) return null;
+  return { reducedFlash, captions, textScale: textScale as A11ySettings['textScale'], keyMap: map };
+}
+
 /** Strict v2 gate: exact field set (an own `__proto__` key from JSON.parse is
- *  an unknown field and fails), exact types, bounded numbers/strings. Returns
- *  a fresh SaveData, or null for anything else. */
+ *  an unknown field and fails), exact types, bounded numbers/strings. M5/T1:
+ *  the `a11y` field is OPTIONAL — absent (every pre-M5 save) or fully valid;
+ *  anything else fails. Returns a fresh SaveData, or null for anything else. */
 export function validateSave(raw: unknown): SaveData | null {
   if (!isPlainObject(raw)) return null;
   const EXPECTED: readonly string[] = [
@@ -137,8 +226,10 @@ export function validateSave(raw: unknown): SaveData | null {
     'streak',
     'progress',
   ];
+  const hasA11y = Object.hasOwn(raw, 'a11y');
   const keys = Object.keys(raw);
-  if (keys.length !== EXPECTED.length || EXPECTED.some((k) => !Object.hasOwn(raw, k))) return null;
+  if (keys.length !== EXPECTED.length + (hasA11y ? 1 : 0)) return null;
+  if (EXPECTED.some((k) => !Object.hasOwn(raw, k))) return null;
   if (raw.v !== 2) return null;
   if (!boundedString(raw.lookName)) return null;
   if (typeof raw.mode !== 'string' || !MODES.includes(raw.mode)) return null;
@@ -157,7 +248,9 @@ export function validateSave(raw: unknown): SaveData | null {
   if (streak === null) return null;
   const progress = validateProgress(raw.progress);
   if (progress === null) return null;
-  return {
+  const a11y = hasA11y ? validateA11y(raw.a11y) : undefined;
+  if (a11y === null) return null; // present but junk — reject, never half-trust
+  const out: SaveData = {
     v: 2,
     lookName: raw.lookName,
     mode: raw.mode as InputMode,
@@ -168,6 +261,19 @@ export function validateSave(raw: unknown): SaveData | null {
     streak,
     progress,
   };
+  return a11y === undefined ? out : { ...out, a11y };
+}
+
+// ---- normalization (M5/T1) ------------------------------------------------------
+
+/** Post-load defaults for the additive a11y block: a pre-M5 save (no a11y —
+ *  stored, exported, imported before this milestone) gains the default block;
+ *  a junk block heals to the same defaults rather than crashing boot. A valid
+ *  block passes through untouched — the same object, no churn. Runs after
+ *  validateSave at boot; export keeps emitting the full shape either way. */
+export function normalizeSave(s: SaveData): SaveData {
+  if (validateA11y(s.a11y) !== null) return s;
+  return { ...s, a11y: { ...DEFAULT_A11Y, keyMap: { ...DEFAULT_KEYMAP } } };
 }
 
 // ---- migration ----------------------------------------------------------------

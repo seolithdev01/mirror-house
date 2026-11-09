@@ -49,11 +49,11 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'Who is the lantern voice?',
-    a: "Aaina — a shard of the palace's first true mirror, docked beside the maze when you press Q. She guides, hints, and occasionally judges. Her hints cost shards; her Lore tab costs cleared floors.",
+    a: "Aaina — a shard of the palace's first true mirror, docked beside the maze when you press I. She guides, hints, and occasionally judges. Her hints cost shards; her Lore tab costs cleared floors.",
   },
   {
     q: 'What does Aaina sell — and what do hints cost?',
-    a: 'Open her panel with Q (or the 💬 button) and pick the Hint tab. Hints are priced in shards: ◆5 for the first on a floor, ◆10 for the second, ◆15 after that — the price resets on a new floor. Only banked shards (the 💠 chip) can pay, never the pending ones riding the current floor. She names her subject before you buy (the beacons, the open stair door, the thing hunting you…) and will not repeat herself until the situation changes.',
+    a: 'Open her panel with I (or the 💬 button) and pick the Hint tab. Hints are priced in shards: ◆5 for the first on a floor, ◆10 for the second, ◆15 after that — the price resets on a new floor. Only banked shards (the 💠 chip) can pay, never the pending ones riding the current floor. She names her subject before you buy (the beacons, the open stair door, the thing hunting you…) and will not repeat herself until the situation changes.',
   },
   {
     q: 'What hunts me?',

@@ -18,6 +18,11 @@ export const TAAL_TOUCH_COOLDOWN_MS = 1500; // ms between touches
 export const BEAT_ACCENT = 2.2;
 export const BEAT_REST = 0.3;
 
+/** M5/T1 — the lantern's steady emissive under reduced-flash: the beat lives
+ *  in his stride, never in his glow. Between rest and accent — a glow, not a
+ *  strobe; the same value the figure's material starts at. */
+export const BEAT_STATIC = 1.4;
+
 export interface TaalState {
   x: number;
   y: number;
@@ -53,6 +58,14 @@ export function initTaal(anchors: ReadonlyArray<{ x: number; y: number }>): Taal
 export function beatPulse(nowMs: number): number {
   const tick = Math.floor(nowMs / BEAT_TICK_MS) % 8;
   return tick % 2 === 0 ? BEAT_ACCENT : BEAT_REST;
+}
+
+/** M5/T1 — the emissive the frame loop feeds TaalFigure.setBeat: the beat
+ *  pulse by default, one constant BEAT_STATIC when the player asked for
+ *  reduced flashing. The stride keeps its lurch either way — reduced-flash
+ *  steadies luminance, not motion. */
+export function beatGlow(nowMs: number, reducedFlash: boolean): number {
+  return reducedFlash ? BEAT_STATIC : beatPulse(nowMs);
 }
 
 /** May his touch land now? One anger spike per TAAL_TOUCH_COOLDOWN_MS,

@@ -23,6 +23,8 @@ export type HudInit = {
   onImport(): void;
   /** M4/T6 — the 🌐 button: cycle the UI language (en ↔ hi). */
   onLang(): void;
+  /** M5/T1 — the ⚙ button: open/close the settings overlay. */
+  onSettings(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -98,6 +100,14 @@ export function createHud(init: HudInit): Hud {
   langBtn.id = 'mh-lang';
   langBtn.addEventListener('click', () => init.onLang());
   modes.appendChild(langBtn);
+  // M5/T1 — ⚙ sits next to 🌐 and opens the settings overlay (Display:
+  // text scale; Access: reduced-flash + captions — the a11y front door).
+  const gearBtn = document.createElement('button');
+  gearBtn.type = 'button';
+  gearBtn.id = 'mh-settings';
+  gearBtn.textContent = '⚙';
+  gearBtn.addEventListener('click', () => init.onSettings());
+  modes.appendChild(gearBtn);
   const faq = document.createElement('button');
   faq.type = 'button';
   faq.id = 'mh-faq';
@@ -261,6 +271,7 @@ export function createHud(init: HudInit): Hud {
     for (const m of Object.keys(buttons)) buttons[m]!.textContent = t(lang, `mode.${m}`);
     langBtn.textContent = t(lang, lang === 'en' ? 'btn.langHi' : 'btn.langEn');
     langBtn.title = t(lang, 'btn.langTitle');
+    gearBtn.title = t(lang, 'btn.settings');
     faq.textContent = t(lang, 'btn.faq');
     aaina.textContent = t(lang, 'btn.aaina');
     daily.textContent = t(lang, 'btn.daily');

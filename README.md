@@ -69,9 +69,9 @@ Chhaya walks your exact path, seven seconds behind on floor 1 — and closer wit
 
 Scored per cleared floor: 5 per beacon captured, +25 for a flawless floor (nothing cracked), +10 per Echo you confused at least once. Beacon shards bank as _pending_ and are only paid out when you actually clear — get caught or collapse and they are forfeit. Your banked total (💠 chip) lives on your device beside your streak.
 
-### Aaina — the lantern speaks (`Q`)
+### Aaina — the lantern speaks (`I`)
 
-Press `Q` (or the 💬 button) to open Aaina's panel — the FAQ's diegetic sister, docked beside the maze. The floor keeps running while she talks. Her **Hint** tab sells knowledge for shards: ◆5 for the first hint on a floor, ◆10 for the second, ◆15 after that (the price resets on a new floor), and only banked shards — the 💠 chip — can pay, never the pending ones riding the current run. She names her subject before you buy (the beacons, the open stair door, the thing hunting you…) and will not repeat herself until the situation changes. Her **Lore** tab unlocks a memory per cleared floor; shards cannot buy those.
+Press `I` (or the 💬 button) to open Aaina's panel — the FAQ's diegetic sister, docked beside the maze. The floor keeps running while she talks. Her **Hint** tab sells knowledge for shards: ◆5 for the first hint on a floor, ◆10 for the second, ◆15 after that (the price resets on a new floor), and only banked shards — the 💠 chip — can pay, never the pending ones riding the current run. She names her subject before you buy (the beacons, the open stair door, the thing hunting you…) and will not repeat herself until the situation changes. Her **Lore** tab unlocks a memory per cleared floor; shards cannot buy those.
 
 ### Sound — alive from your first input
 

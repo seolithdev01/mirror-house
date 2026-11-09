@@ -11,6 +11,12 @@
     <link rel="apple-touch-icon" href="/icon.svg" />
     <title>Mirror House</title>
     <style>
+      /* M5/T1 — the text-scale ladder every HUD/overlay font multiplies in.
+         main.ts sets the inline body value from the save (1 | 1.25 | 1.5);
+         this default keeps a no-JS first paint at 100%. */
+      html {
+        --mh-text-scale: 1;
+      }
       html,
       body {
         margin: 0;
@@ -42,7 +48,7 @@
         left: 8px;
         z-index: 10;
         font:
-          12px/1.5 ui-monospace,
+          calc(12px * var(--mh-text-scale, 1))/1.5 ui-monospace,
           monospace;
         color: #9fb4c8;
         background: rgba(5, 6, 10, 0.7);
@@ -60,7 +66,7 @@
         flex-direction: column;
         align-items: flex-end;
         gap: 6px;
-        font: 13px/1.4 system-ui;
+        font: calc(13px * var(--mh-text-scale, 1))/1.4 system-ui;
         color: #f2e9d8;
         pointer-events: none;
       }
@@ -130,7 +136,7 @@
         color: #f2e9d8;
         border-radius: 8px;
         padding: 10px 16px;
-        font-size: 15px;
+        font-size: calc(15px * var(--mh-text-scale, 1));
         pointer-events: none;
       }
       /* M4/T2 — the brief `descending…` banner between floors (auto-hides when
@@ -141,7 +147,7 @@
         color: #f2e9d8;
         border-radius: 8px;
         padding: 10px 16px;
-        font-size: 15px;
+        font-size: calc(15px * var(--mh-text-scale, 1));
         pointer-events: none;
       }
       #mh-descend[hidden] {
@@ -166,21 +172,21 @@
         border-radius: 10px;
         padding: 24px 30px;
         color: #f2e9d8;
-        font: 15px/1.6 system-ui;
+        font: calc(15px * var(--mh-text-scale, 1))/1.6 system-ui;
         text-align: center;
         max-width: 480px;
       }
       #mh-tier-box h2 {
         margin: 0 0 10px;
         color: #d9a441;
-        font-size: 19px;
+        font-size: calc(19px * var(--mh-text-scale, 1));
       }
       #mh-tier-box p {
         margin: 6px 0;
       }
       #mh-tier-note {
         color: #9fb4c8;
-        font-size: 13px;
+        font-size: calc(13px * var(--mh-text-scale, 1));
       }
       #mh-tier-buttons {
         display: flex;
@@ -206,7 +212,7 @@
         color: #f2e9d8;
         border-radius: 8px;
         padding: 10px 16px;
-        font-size: 15px;
+        font-size: calc(15px * var(--mh-text-scale, 1));
         pointer-events: none;
       }
       #mh-fail[hidden] {
@@ -218,7 +224,7 @@
         color: #f2e9d8;
         border-radius: 6px;
         padding: 4px 10px;
-        font-size: 13px;
+        font-size: calc(13px * var(--mh-text-scale, 1));
         max-width: 360px;
         pointer-events: none;
       }
@@ -234,7 +240,7 @@
         color: #f2e9d8;
         border-radius: 8px;
         padding: 8px 14px;
-        font-size: 13px;
+        font-size: calc(13px * var(--mh-text-scale, 1));
         pointer-events: none;
       }
       #mh-toast[hidden] {
@@ -260,12 +266,12 @@
         border-radius: 10px;
         padding: 20px 26px;
         color: #f2e9d8;
-        font: 14px/1.6 system-ui;
+        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
       }
       #mh-faq-box h2 {
         margin: 0 0 12px;
         color: #d9a441;
-        font-size: 18px;
+        font-size: calc(18px * var(--mh-text-scale, 1));
       }
       #mh-faq-box details {
         border-bottom: 1px solid #1d2440;
@@ -308,7 +314,7 @@
         border-radius: 10px;
         padding: 16px 20px;
         color: #f2e9d8;
-        font: 14px/1.6 system-ui;
+        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -316,7 +322,7 @@
       #mh-aaina-box h2 {
         margin: 0;
         color: #d9a441;
-        font-size: 17px;
+        font-size: calc(17px * var(--mh-text-scale, 1));
       }
       #mh-aaina-tabs {
         display: flex;
@@ -377,6 +383,105 @@
         border-radius: 6px;
         padding: 6px 14px;
         cursor: pointer;
+      }
+      /* ⚙ Settings (M5/T1) — the FAQ overlay's modal shape. Two sections this
+         milestone: Display (text scale radio) and Access (reduced-flash +
+         captions toggles). Performance lands in T4 and Controls in T2 — no
+         stub sections until then. */
+      #mh-settings-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: rgba(5, 8, 20, 0.82);
+        display: grid;
+        place-items: center;
+      }
+      #mh-settings-overlay[hidden] {
+        display: none;
+      }
+      #mh-settings-box {
+        min-width: 300px;
+        max-width: 440px;
+        background: #0b1026;
+        border: 1px solid #2a3560;
+        border-radius: 10px;
+        padding: 20px 26px;
+        color: #f2e9d8;
+        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
+      }
+      #mh-settings-box h2 {
+        margin: 0 0 12px;
+        color: #d9a441;
+        font-size: calc(18px * var(--mh-text-scale, 1));
+      }
+      #mh-settings-box h3 {
+        margin: 12px 0 6px;
+        color: #2ec4b6;
+        font-size: calc(15px * var(--mh-text-scale, 1));
+      }
+      #mh-settings-box fieldset {
+        border: none;
+        margin: 0;
+        padding: 0;
+      }
+      #mh-settings-box legend {
+        padding: 0;
+        color: #f2e9d8;
+      }
+      #mh-settings-box label {
+        display: block;
+        margin: 4px 0;
+        cursor: pointer;
+      }
+      #mh-settings-box .mh-settings-note {
+        margin: 2px 0 8px;
+        color: #9fb4c8;
+        font-size: calc(12px * var(--mh-text-scale, 1));
+      }
+      #mh-settings-box button {
+        margin-top: 10px;
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+      }
+      /* Reduced-flash (M5/T1): with the body class on (the ⚙ Access toggle),
+         every overlay and banner fades in and out over ≥300ms instead of
+         appearing at once. A [hidden] overlay keeps its layout box but goes
+         fully transparent and inert — opacity transitions, display cannot. */
+      body.mh-reduced-flash #mh-faq-overlay,
+      body.mh-reduced-flash #mh-settings-overlay,
+      body.mh-reduced-flash #mh-tier-overlay,
+      body.mh-reduced-flash #mh-aaina-overlay,
+      body.mh-reduced-flash #mh-cleared,
+      body.mh-reduced-flash #mh-descend,
+      body.mh-reduced-flash #mh-fail,
+      body.mh-reduced-flash #mh-hint,
+      body.mh-reduced-flash #mh-toast {
+        transition: opacity 320ms ease;
+      }
+      body.mh-reduced-flash #mh-faq-overlay[hidden],
+      body.mh-reduced-flash #mh-settings-overlay[hidden],
+      body.mh-reduced-flash #mh-tier-overlay[hidden] {
+        display: grid; /* keep the box — opacity fades where display cannot */
+        opacity: 0;
+        pointer-events: none;
+      }
+      body.mh-reduced-flash #mh-aaina-overlay[hidden] {
+        display: flex;
+        opacity: 0;
+        pointer-events: none;
+      }
+      body.mh-reduced-flash #mh-cleared[hidden],
+      body.mh-reduced-flash #mh-descend[hidden],
+      body.mh-reduced-flash #mh-fail[hidden],
+      body.mh-reduced-flash #mh-hint[hidden],
+      body.mh-reduced-flash #mh-toast[hidden] {
+        display: block;
+        opacity: 0;
+        pointer-events: none;
       }
     </style>
   </head>

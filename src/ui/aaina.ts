@@ -6,7 +6,7 @@
 // keeps running (movement, echoes, Chhaya — everything) while she talks.
 // State machine: closed → open(tab: ask) → open(tab: hint)… → closed, derived
 // from `root.hidden` + the `tab` value, exactly the FAQ overlay's shape plus
-// one tab axis. Toggled by [Q] and the HUD 💬 button.
+// one tab axis. Toggled by [I] (her own key since M5/T1) and the HUD 💬 button.
 import type { HintKind } from '../game/aaina';
 import { LORE } from '../game/aaina';
 import { FAQ } from './faq';
@@ -30,7 +30,7 @@ export interface AainaInit {
 
 export interface AainaOverlay {
   root: HTMLElement;
-  /** closed→open(ask)…→closed — the [Q]/HUD toggle. */
+  /** closed→open(ask)…→closed — the [I]/HUD toggle. */
   toggle(): void;
   isOpen(): boolean;
   setTab(tab: AainaTab): void;
@@ -135,7 +135,7 @@ export function buildAainaOverlay(init: AainaInit): AainaOverlay {
       labels[tabId] = t(lang, `tab.${tabId}`);
       tabBtns[tabId].textContent = labels[tabId];
     }
-    close.textContent = fill(t(lang, 'misc.close'), { key: 'Q' });
+    close.textContent = fill(t(lang, 'misc.close'), { key: 'I' });
   }
   relabel();
 

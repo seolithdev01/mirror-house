@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_A11Y,
+  DEFAULT_KEYMAP,
   defaultSave,
   idbGet,
   idbPut,
   mergeCampaign,
   migrateMeta,
+  normalizeSave,
   serializeSave,
   validateSave,
+  type A11ySettings,
   type SaveData,
 } from '../../src/game/save';
 import type { Campaign } from '../../src/game/campaign';
@@ -172,6 +176,7 @@ describe('save: migrateMeta (v1 → v2)', () => {
       best: { 'OLDBASE:1': 9000 },
       streak: { count: 3, lastDay: '2026-11-08' },
       progress: { seedBase: s.progress.seedBase, floor: 1, tierComplete: false },
+      a11y: DEFAULT_A11Y,
     });
     expect(isValidSeed(s.progress.seedBase)).toBe(true); // a fresh campaign, not the old base
     expect(validateSave(s)).not.toBeNull();
@@ -233,6 +238,140 @@ describe('save: serializeSave', () => {
     expect(validateSave(JSON.parse(text))).toEqual(good);
   });
 });
+
+// ---- M5/T1 — a11y fields, additive and optional-in-validation ------------------
+//
+// The a11y box arrives additively: old v2 saves (stored, exported, imported
+// before M5) carry NO a11y key, validate unchanged, and gain defaults only
+// post-load via normalizeSave. New exports emit the full shape.
+
+describe('save: a11y field validation (M5/T1)', () => {
+  it('accepts an old-shape v2 save without a11y — no key synthesized, validation owns shape', () => {
+    const out = validateSave(JSON.parse(JSON.stringify(good)));
+    expect(out).toEqual(good); // byte-for-byte the pre-M5 contract
+    expect(out?.a11y).toBeUndefined(); // normalizeSave owns the defaults, not validateSave
+  });
+
+  it('accepts and echoes a full save with a11y — fresh tree, no shared structure', () => {
+    const a11y: A11ySettings = {
+      reducedFlash: true,
+      captions: true,
+      textScale: 1.25,
+      keyMap: { ...DEFAULT_KEYMAP, aaina: 'KeyP' },
+    };
+    const out = validateSave(JSON.parse(JSON.stringify({ ...good, a11y })));
+    expect(out).toEqual({ ...good, a11y });
+    expect(out?.a11y?.keyMap).not.toBe(a11y.keyMap); // a fresh box, never the input's
+  });
+
+  it('rejects malformed a11y boxes', () => {
+    const withA11y = (a11y: unknown): unknown => mutated((r) => (r.a11y = a11y));
+    const flags = { reducedFlash: false, captions: false };
+    expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: { aaina: 'KeyI' } }))).not.toBeNull();
+    expect(validateSave(withA11y(null))).toBeNull();
+    expect(validateSave(withA11y('a11y'))).toBeNull();
+    expect(validateSave(withA11y({ ...flags, textScale: 1 }))).toBeNull(); // keyMap missing
+    expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: {} }))).toBeNull(); // empty is not a map
+    expect(validateSave(withA11y({ reducedFlash: 1, captions: false, textScale: 1, keyMap: {} }))).toBeNull();
+    expect(validateSave(withA11y({ ...flags, captions: 'no', textScale: 1, keyMap: {} }))).toBeNull();
+    expect(validateSave(withA11y({ ...flags, textScale: 1.1, keyMap: {} }))).toBeNull(); // off the ladder
+    expect(validateSave(withA11y({ ...flags, textScale: '1', keyMap: {} }))).toBeNull();
+    expect(validateSave(withA11y({ ...flags, textScale: 2, keyMap: {} }))).toBeNull();
+    expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: 'wasd' }))).toBeNull();
+    expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: { aaina: 9 } }))).toBeNull();
+    expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: { '': 'KeyI' } }))).toBeNull();
+    expect(validateSave(withA11y({ ...flags, textScale: 1, keyMap: { aaina: '' } }))).toBeNull();
+    expect(
+      validateSave(withA11y({ ...flags, textScale: 1, keyMap: {}, extra: true })),
+    ).toBeNull(); // unknown field inside a11y
+  });
+
+  it('defaultSave carries the full default a11y and validates', () => {
+    const s = defaultSave('ABCDE2');
+    expect(s.a11y).toEqual(DEFAULT_A11Y);
+    expect(validateSave(s)).not.toBeNull();
+  });
+});
+
+describe('save: normalizeSave — defaults applied post-load (M5/T1)', () => {
+  it('fills the default a11y into an old-shape save (the stored/pre-M5 boot path)', () => {
+    const old = validateSave(JSON.parse(JSON.stringify(good)))!;
+    expect(old.a11y).toBeUndefined();
+    const s = normalizeSave(old);
+    expect(s.a11y).toEqual(DEFAULT_A11Y);
+    expect(s.a11y?.keyMap).toEqual(DEFAULT_KEYMAP);
+  });
+
+  it('keeps a present, valid a11y untouched — the same save object, no churn', () => {
+    const a11y: A11ySettings = { reducedFlash: true, captions: false, textScale: 1.5, keyMap: { ...DEFAULT_KEYMAP } };
+    const withA11y = { ...good, a11y };
+    const s = normalizeSave(withA11y);
+    expect(s).toBe(withA11y); // nothing to fill — identical reference
+    expect(s.a11y).toBe(a11y);
+  });
+
+  it('heals an invalid a11y to defaults (belt and braces — a hand-built save never crashes boot)', () => {
+    const junk = { ...good, a11y: { reducedFlash: 'yes', captions: 0, textScale: 9, keyMap: null } };
+    const s = normalizeSave(junk as unknown as SaveData);
+    expect(s.a11y).toEqual(DEFAULT_A11Y);
+  });
+
+  it('a normalized save serializes and validates back through the export round-trip', () => {
+    const s = normalizeSave(validateSave(JSON.parse(JSON.stringify(good)))!);
+    const text = serializeSave(s);
+    expect(JSON.parse(text)).toEqual(s); // export emits the FULL shape, a11y included
+    expect(validateSave(JSON.parse(text))).toEqual(s);
+  });
+});
+
+describe('DEFAULT_KEYMAP (M5/T1)', () => {
+  it('has exactly the 15 actions with the authoritative defaults', () => {
+    expect(Object.keys(DEFAULT_KEYMAP).length).toBe(15);
+    expect(DEFAULT_KEYMAP).toEqual({
+      forward: 'KeyW',
+      back: 'KeyS',
+      left: 'KeyA',
+      right: 'KeyD',
+      sprint: 'ShiftLeft',
+      turnL: 'KeyQ',
+      turnR: 'KeyE',
+      frost: 'KeyF',
+      view: 'KeyV',
+      aaina: 'KeyI',
+      push: 'KeyE',
+      stepThrough: 'Space',
+      faq: 'KeyH',
+      mute: 'KeyM',
+      tactical: 'KeyT',
+    });
+  });
+
+  it('codes are unique except the sanctioned E-dual (turnR + push share KeyE)', () => {
+    const byCode = new Map<string, string[]>();
+    for (const [action, code] of Object.entries(DEFAULT_KEYMAP))
+      byCode.set(code, [...(byCode.get(code) ?? []), action]);
+    const shared = [...byCode.entries()].filter(([, actions]) => actions.length > 1);
+    expect(shared.length).toBe(1); // exactly one dual key in the default map
+    const [code, actions] = shared[0]!;
+    expect(code).toBe('KeyE'); // E stays dual with the door-claim
+    expect([...actions].sort()).toEqual(['push', 'turnR']);
+  });
+
+  it('Q and E are pure turning — Aaina moved to her own key I (M5/T1 decision)', () => {
+    expect(byAction('turnL')).toBe('KeyQ');
+    expect(byAction('turnR')).toBe('KeyE');
+    expect(byAction('aaina')).toBe('KeyI'); // her own key — the Q conflict is dead
+    expect([...Object.entries(DEFAULT_KEYMAP)].filter(([, c]) => c === 'KeyQ').map(([a]) => a)).toEqual([
+      'turnL',
+    ]);
+  });
+});
+
+function byAction(action: string): string {
+  const code = (DEFAULT_KEYMAP as Record<string, string>)[action];
+  if (code === undefined) throw new Error(`unknown action ${action}`);
+  return code;
+}
 
 describe('save: idb wrapper is inert under node (no indexedDB)', () => {
   it('get resolves null and put resolves without a store', async () => {
