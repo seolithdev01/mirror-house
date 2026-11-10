@@ -54,7 +54,11 @@ export function buildFloorScene(
 
   const planeW = floor.grid.width * CELL_SIZE;
   const planeH = floor.grid.height * CELL_SIZE;
-  const floorMap = canvasTexture(makeFloorTexture(), floor.grid.width / 6, floor.grid.height / 6);
+  const floorMap = canvasTexture(
+    makeFloorTexture(palette),
+    floor.grid.width / 6,
+    floor.grid.height / 6,
+  );
   const floorPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(planeW, planeH),
     floorMap
@@ -69,7 +73,7 @@ export function buildFloorScene(
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.y = WALL_HEIGHT;
 
-  const wallCanvas = makeWallTexture();
+  const wallCanvas = makeWallTexture(palette);
   const wallMat = wallCanvas
     ? new THREE.MeshStandardMaterial({ map: canvasTexture(wallCanvas, 1, 1), roughness: 0.95 })
     : new THREE.MeshStandardMaterial({ color: palette.wallBottom, roughness: 0.9, metalness: 0.1 });

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as THREE from 'three';
-import { floorAccent, TIER_ONE_PALETTE } from './palette';
+import { floorAccent, TIER_ONE_PALETTE, type TierPalette } from './palette';
 import { createRng } from '../engine/rng';
 
 const CELL_PX = 64;
@@ -10,7 +10,14 @@ function hex(n: number): string {
   return `#${n.toString(16).padStart(6, '0')}`;
 }
 
-export function makeFloorTexture(): HTMLCanvasElement | null {
+/** rgba() string of a palette color at an alpha — the panel joints below use
+ *  it to tint with the palette's own void (tier-1: 0x0b1026 → the exact
+ *  historic 'rgba(11,16,38,0.25)', so tier-1 output stays byte-identical). */
+function rgba(n: number, alpha: number): string {
+  return `rgba(${(n >> 16) & 0xff},${(n >> 8) & 0xff},${n & 0xff},${alpha})`;
+}
+
+export function makeFloorTexture(palette: TierPalette = TIER_ONE_PALETTE): HTMLCanvasElement | null {
   if (typeof document === 'undefined') return null;
   const canvas = document.createElement('canvas');
   canvas.width = CELL_PX * LATTICE;
@@ -19,16 +26,16 @@ export function makeFloorTexture(): HTMLCanvasElement | null {
   if (!ctx) return null;
   for (let gy = 0; gy < LATTICE; gy++)
     for (let gx = 0; gx < LATTICE; gx++) {
-      ctx.fillStyle = hex(floorAccent(gx, gy));
+      ctx.fillStyle = hex(floorAccent(gx, gy, palette));
       ctx.fillRect(gx * CELL_PX, gy * CELL_PX, CELL_PX, CELL_PX);
-      ctx.strokeStyle = hex(TIER_ONE_PALETTE.void);
+      ctx.strokeStyle = hex(palette.void);
       ctx.lineWidth = 2;
       ctx.strokeRect(gx * CELL_PX + 1, gy * CELL_PX + 1, CELL_PX - 2, CELL_PX - 2);
     }
   return canvas;
 }
 
-export function makeWallTexture(): HTMLCanvasElement | null {
+export function makeWallTexture(palette: TierPalette = TIER_ONE_PALETTE): HTMLCanvasElement | null {
   if (typeof document === 'undefined') return null;
   const canvas = document.createElement('canvas');
   canvas.width = 128;
@@ -36,13 +43,13 @@ export function makeWallTexture(): HTMLCanvasElement | null {
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
   const grad = ctx.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, hex(TIER_ONE_PALETTE.wallTop));
-  grad.addColorStop(1, hex(TIER_ONE_PALETTE.wallBottom));
+  grad.addColorStop(0, hex(palette.wallTop));
+  grad.addColorStop(1, hex(palette.wallBottom));
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 128, 256);
-  ctx.fillStyle = hex(TIER_ONE_PALETTE.gold); // wainscot band
+  ctx.fillStyle = hex(palette.gold); // wainscot band
   ctx.fillRect(0, 208, 128, 6);
-  ctx.fillStyle = 'rgba(11,16,38,0.25)';
+  ctx.fillStyle = rgba(palette.void, 0.25);
   for (let x = 16; x < 128; x += 32) ctx.fillRect(x, 0, 3, 256); // faint panel joints
   return canvas;
 }

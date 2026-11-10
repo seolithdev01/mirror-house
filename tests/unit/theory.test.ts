@@ -153,4 +153,31 @@ describe('createAudioEngine (node)', () => {
     expect(engine.started).toBe(false);
     expect(engine.muted).toBe(false);
   });
+
+  // T2/T3 — the scale test seam: the engine exposes the melody walker's live
+  // scale so node can witness setScale without an AudioContext. The walker
+  // reads the swapped scale on its NEXT note (nextMelodySemi call), and the
+  // drone root is untouched by the swap.
+  it('setScale swaps the melody walker scale live (starts tier-one)', () => {
+    const engine = createAudioEngine('DURGA');
+    expect(engine.scale).toEqual(TIER_ONE_SCALE);
+    expect(() => engine.setScale(TIER_TWO_SCALE)).not.toThrow();
+    expect(engine.scale).toEqual([0, 2, 4, 7, 9]);
+    // swap is repeatable both ways — buildFloor re-sets it on every floor
+    engine.setScale(TIER_ONE_SCALE);
+    expect(engine.scale).toEqual(TIER_ONE_SCALE);
+  });
+
+  it('after a tier-two swap the walk only emits Durga members in the window', () => {
+    const rng = createRng('SWAPPED');
+    let semi = OCT;
+    // the pcs of the Durga set rooted at A (57): A B C# E F#
+    const durga = new Set([9, 11, 1, 4, 6]);
+    for (let i = 0; i < 200; i++) {
+      semi = nextMelodySemi(rng, TIER_TWO_SCALE, semi, 0.7, OCT);
+      expect(semi).toBeGreaterThanOrEqual(OCT);
+      expect(semi).toBeLessThanOrEqual(OCT + 12);
+      expect(durga.has(semi % 12)).toBe(true);
+    }
+  });
 });

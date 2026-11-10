@@ -13,8 +13,14 @@ export interface AudioEngine {
   /** 0..1, clamped; smoothed internally by the scheduler. */
   setIntensity(x: number): void;
   setMuted(m: boolean): void;
+  /** Swap the melody walker's scale live (T2/T3): the NEXT scheduled note
+   *  walks the new set; the drone root and tempo never move. */
+  setScale(scale: readonly number[]): void;
   readonly started: boolean;
   readonly muted: boolean;
+  /** The walker's current scale — the node test seam (no AudioContext needed
+   *  to witness a setScale swap). */
+  readonly scale: readonly number[];
 }
 
 const SCHEDULE_MS = 50; // scheduler wake-up
@@ -25,12 +31,25 @@ const NOTE_S_HI = 0.22; // ...at intensity 1
 const MELODY_OCTAVE_SEMI = 57; // A3 — walk window [57, 69]
 
 function inertEngine(): AudioEngine {
+  // Audio-inert, but the scale is still tracked: the node suite witnesses
+  // setScale swaps through it (the test seam documented on the interface).
+  let scale: readonly number[] = TIER_ONE_SCALE;
   return {
     start: () => {},
     setIntensity: () => {},
     setMuted: () => {},
-    started: false,
-    muted: false,
+    setScale: (s: readonly number[]) => {
+      scale = s;
+    },
+    get started() {
+      return false;
+    },
+    get muted() {
+      return false;
+    },
+    get scale() {
+      return scale;
+    },
   };
 }
 
@@ -52,6 +71,7 @@ export function createAudioEngine(seed: string): AudioEngine {
   let muted = false;
   let intensityTarget = 0.2;
   let intensity = intensityTarget;
+  let melodyScale: readonly number[] = TIER_ONE_SCALE;
   let prevSemi = MELODY_OCTAVE_SEMI;
   let tick = 0;
   let nextTickTime = 0;
@@ -151,7 +171,8 @@ export function createAudioEngine(seed: string): AudioEngine {
   }
 
   function melodyNote(t: number, period: number, iv: number): void {
-    prevSemi = nextMelodySemi(rng, TIER_ONE_SCALE, prevSemi, iv, MELODY_OCTAVE_SEMI);
+    // read the scale at note time — a setScale swap takes effect on the NEXT note
+    prevSemi = nextMelodySemi(rng, melodyScale, prevSemi, iv, MELODY_OCTAVE_SEMI);
     melodyOsc.frequency.linearRampToValueAtTime(midiToHz(prevSemi), t + 0.04);
     melodyGain.gain.setValueAtTime(Math.max(melodyGain.gain.value, 0.0001), t);
     melodyGain.gain.linearRampToValueAtTime(0.12 + 0.1 * iv, t + 0.02);
@@ -200,11 +221,17 @@ export function createAudioEngine(seed: string): AudioEngine {
       muted = m;
       if (ctx) master.gain.setTargetAtTime(m ? 0 : AUDIO_GAIN_CEILING, ctx.currentTime, 0.02);
     },
+    setScale(scale: readonly number[]) {
+      melodyScale = scale;
+    },
     get started() {
       return started;
     },
     get muted() {
       return muted;
+    },
+    get scale() {
+      return melodyScale;
     },
   };
 }

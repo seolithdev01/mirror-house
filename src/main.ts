@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { APP_VERSION } from './appVersion';
 import { createAudioEngine } from './audio/engine';
-import { intensityFrom } from './audio/theory';
+import { intensityFrom, TIER_ONE_SCALE, TIER_TWO_SCALE } from './audio/theory';
 import {
   ANGER_MAX,
   CHHAYA_PING_MS,
@@ -114,7 +114,7 @@ import {
   type TaalState,
 } from './game/taal';
 import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
-import { TIER_ONE_PALETTE } from './game/palette';
+import { paletteForTier, TIER_ONE_PALETTE } from './game/palette';
 import { awardShards, dailySeed, META_KEY, recordRun, spendShards, todayStamp } from './game/meta';
 import {
   DEFAULT_A11Y,
@@ -974,12 +974,20 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
         : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
   exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
+  // The tier dresses the stage (T2/T3): campaign floors 11–20 wear the Hall
+  // of Ancestors palette — the same floorAccent lattice re-tinted amber/brown/
+  // deep-teal, tiers 1–10 keep the night-blue tier-one set untouched. The
+  // melody walker moves with it: Durga pentatonic on tier-2 floors, swapped
+  // live (next note uses it; the drone root never moves). Venue side-floors
+  // stay tier-one dressed and keep the scale they booted with.
+  const tier = tierOf(c.floor);
+  if (pack === null) audio.setScale(tier === 2 ? TIER_TWO_SCALE : TIER_ONE_SCALE);
   // The pack's accents dress the stage: primary on the exit marker (the
   // beacon gate's unlocked tint follows), secondary on the entrance marker.
   const stage = buildFloorScene(
     floor,
     pack === null
-      ? undefined
+      ? paletteForTier(tier)
       : { ...TIER_ONE_PALETTE, exit: pack.accent.primary, entrance: pack.accent.secondary },
   );
   sceneBuilt = stage;
