@@ -15,8 +15,8 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 316 unit tests + 23 Playwright tests, and the machine modules' own
-  suites pin every transition table in this file.
+suite is 366 unit tests + 30 Playwright tests, and the machine modules' own
+suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
 
@@ -32,7 +32,7 @@ a single value with named transitions.
 | 4   | **Echo mode**      | `patrol` · `chase` · `confused`             | `src/game/echo.ts`                       | Pure machine, now documented                                    |
 | 5   | **Pending shards** | `pending` → `banked` \| `forfeited`         | `src/game/houseState.ts` + `meta.ts`     | Lifecycle, documented                                           |
 | 6   | **InputMode**      | `keyboard` · `mouse` · `hybrid`             | `src/engine/input.ts` + `main.ts`        | Configuration, not a lifecycle                                  |
-| 7   | **Input gate**     | FAQ `closed` · `open` ∥ ViewMode `tactical` | `src/ui/faq.ts` + `src/game/viewMode.ts` | Two pauses gate the loop: the FAQ overlay and the tactical view |
+| 7   | **Input gate**     | FAQ `closed` · `open` ∥ composer `closed` · `open` ∥ ViewMode `tactical` | `src/ui/faq.ts` + `src/ui/feedback.ts` + `src/game/viewMode.ts` | Three pauses gate the loop: the FAQ overlay, the 📮 feedback composer (step007/T2 — the FAQ's document-driven shape), and the tactical view |
 | 8   | **ViewMode**       | `focus` · `quad` · `overhead` · `tactical`  | `src/game/viewMode.ts`                   | Pure machine (M3/T3); `tactical` is the pause view              |
 | 9   | **Aaina overlay**  | `closed` · `open{tab}`                      | `src/ui/aaina.ts`                        | Diegetic panel — does **not** pause                             |
 | 10  | **AudioEngine**    | `idle` · `running`                          | `src/audio/engine.ts`                    | Starts on first gesture; `muted` is a flag, not a state         |
@@ -155,18 +155,21 @@ lifecycle:
 
 ---
 
-## 7. Input gate — `src/ui/faq.ts` + `src/game/viewMode.ts`
+## 7. Input gate — `src/ui/faq.ts` + `src/ui/feedback.ts` + `src/game/viewMode.ts`
 
-Two pauses, one gate. The FAQ overlay is two states derived from the element
+Three pauses, one gate. The FAQ overlay is two states derived from the element
 (`open` when `root.hidden === false`), toggled by the HUD button, the `H` key,
-the close button and a backdrop click. The tactical view (M3/T4) is a
+the close button and a backdrop click. The 📮 feedback composer (step007/T2)
+is the same document-driven dialog — `trapDialog` over `root.hidden`, no
+machine of its own — and it pauses like the FAQ because its textarea must own
+the keyboard. The tactical view (M3/T4) is a
 `ViewMode` value (`focus` · `quad` · `overhead` · `tactical` — §8 below),
 entered with `T` from overhead and left with `Esc` (after one Esc-clears
 waypoints press) or any `[V]` press.
 
 Together they are the input gate's second half:
-`simActive = active(phase) && faqHidden && !isTactical(view)` — and the same
-three terms gate the verbs through `canAct` (frost, step-through, push). This
+`simActive = active(phase) && faqHidden && feedbackHidden && !isTactical(view)` — and the same
+terms gate the verbs through `canAct` (frost, step-through, push). This
 is the machine that used to be implicit and unread — the reason you could
 walk the maze while reading the FAQ. Aaina's panel is deliberately outside
 this gate (§9): she is diegetic, so the floor keeps running while she talks —
@@ -287,6 +290,7 @@ chip (`L02` on the ramp; the threshold floor names the tier — `L10 · DWAAR I
 | **`visited` / pings** | Fog-of-war data (M3/T4): a `Set` of explored cells plus a decaying ping array (`pingOpacity`). Written by the fixed step, read by the map. |
 | **Waypoints**         | Tactical-view data: ivory cell marks (max `WAYPOINT_MAX`), click-toggled, first `Esc` cleared. A list with a cap, not a lifecycle.         |
 | **Pointer lock**      | Owned by the browser. We observe; we do not model.                                                                                         |
+| **Tester mode** (step007/T3) | A session flag, not a machine: `?test=1` (parsed once at boot; `?test=0` the explicit off) gates the diagnostics hook's availability in production and mounts the TESTER chip + one-time banner. Never persisted, nothing transitions. |
 | **IDB save `v2`**     | A versioning policy, not a machine (M4/T4, the meta-v1 row grown up): `validateSave` gates `v === 2` strictly — an imported or stored save is untrusted bytes until every field checks out, and a corrupt record reads as absent so boot falls through to defaults; `migrateMeta` maps the localStorage v1 era once (progress fresh, lang `en`); `mergeCampaign` is the campaign write-through; `idbGet`/`idbPut` degrade to null/no-op so storage never kills a boot. |
 | **⚙ Settings & the `a11y` block** (M5/T1) | A versioned configuration document, not a machine: `{ reducedFlash, captions, textScale, keyMap }` rides the IDB save — optional in `validateSave`, defaulted by `normalizeSave`, so an m4 save upgrades in place. The ⚙ overlay (`src/ui/settings.ts`) is pure chrome over the document: toggles apply at once and persist; consumers read flags, nothing transitions. |
 | **KeyMap** (M5/T2)    | A versioned configuration document: action → `KeyboardEvent.code`. `rebind(map, action, code)` is a pure function returning a fresh map plus a `conflict` name (the guard refuses a key another action owns; only the default `turnR`/`push` pair may share `E`, resolved by context — the push hint — not by state). `actionFor(code, map)` is a reverse lookup, not a transition. |
@@ -306,12 +310,15 @@ chip (`L02` on the ramp; the threshold floor names the tier — `L10 · DWAAR I
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **316/316** unit ·
-**23/23** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
+`npm run typecheck` clean · `npm run lint` clean · **366/366** unit ·
+**30/30** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
 wiring, descend to floor 2, save round-trip resume, Hindi chrome via
-`?lang=hi`; 4 new for m5: rebind forward through the settings overlay,
-`?perf=low` low path, export/import round-trip through a real file,
-warp-caught restart within 2000 ms).
+`?lang=hi`; 5 for m5: rebind forward through the settings overlay, Space
+toggles the focused ⚙ checkbox, `?perf=low` low path, export/import
+round-trip through a real file, warp-caught restart within 2000 ms; 3 for m6:
+venue demo floor, Escape peels one dialog layer, Aaina refuses hint sales on
+a venue floor; 3 for step007: the ⓘ About panel, the 📮 feedback composer,
+`?test=1` TESTER chip).
 
 ---
 

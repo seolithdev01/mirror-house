@@ -34,6 +34,31 @@ Versions follow the store line: `0.1.0` carried everything through M5,
   venue floors ("Return to your campaign to ask Aaina", en+hi); FAQ gains the
   sponsored-floor entry (25 questions).
 
+### step007 — the tester & feedback kit (2026-11-09)
+
+- **About ⓘ + launch meta** — the About panel (the small ⓘ beside 🌐, or
+  ⚙ → About: version, pitch, beta status, credits, the four launch links) and
+  the share-card meta tags (description, og/twitter, `/og-image.png`) so link
+  previews stop guessing.
+- **📮 Feedback & suggestions** — the in-game composer (top right): pick
+  🐞 Bug / 💡 Suggestion / 💙 a kind word, and the message comes pre-carried
+  with a read-only diagnostics block — version, seed (`BASE:floor`), preset,
+  language, accessibility flags, a remap *count* (never the bindings), venue,
+  user agent, the last runtime errors. Nothing is sent until you press a
+  button: it opens a prefilled GitHub issue (bug/suggestion/playtest
+  templates live in the repo) or a mailto — you see the exact text first.
+- **Tester mode `?test=1`** — session-only, never persisted, and live on the
+  deployed site: unlocks the diagnostics hook (the dev gate became "dev OR
+  tester" — one gate, three doors: dev, testers, soak) and shows the TESTER
+  chip (`TESTER · {fps} · {seed}`) plus a one-time banner; `?test=0` resets.
+- **The kit** — the tester guide with the 5-minute smoke
+  ([docs/TESTERS.md](docs/TESTERS.md)), the 31-case manual suite
+  ([docs/TEST-CASES.md](docs/TEST-CASES.md)), every URL parameter documented
+  ([docs/URL-PARAMS.md](docs/URL-PARAMS.md)), and personalized tester invites
+  (git-ignored; only the redacted
+  [template](docs/invites/TEMPLATE.example.md) is committed). 366 unit +
+  30 e2e green.
+
 ## [0.1.0] — 2026-11-08/09 — the road to beta (M0–M5)
 
 - **m0 — scaffold.** Vite+TS scaffold with eslint/prettier/vitest, CI

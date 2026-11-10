@@ -80,7 +80,7 @@ code, and there's a Daily everyone on Earth gets the same floor of.
 - Every mirror in the palace really reflects — you'll meet your own
   reflection, coat and lantern and all — and the things hunting you see you
   only through the clear panes.
-- No account, no ads, no tracking: the whole game is one ~168 KB download,
+- No account, no ads, no tracking: the whole game is one ~176 KB download,
   works offline once loaded, and the music is composed live by your browser
   (raga-inspired, no samples).
 - It's genuinely accessible — one-handed mouse mode, full key remapping,
@@ -105,7 +105,7 @@ Try floor one (2–5 minutes, that's the whole loop):
 **हुक:**
 
 - महल का हर आईना सच में परछाईं दिखाता है — आपका कोट, आपकी लालटेन, आप ही — और शिकार करने वाली चीज़ें आपको केवल साफ़ काँच से देखती हैं।
-- कोई खाता नहीं, कोई विज्ञापन नहीं, कोई ट्रैकिंग नहीं — पूरा खेल ~168 KB, एक बार लोड हो तो ऑफ़लाइन भी चलता है, और संगीत आपके ब्राउज़र में ही बनता है।
+- कोई खाता नहीं, कोई विज्ञापन नहीं, कोई ट्रैकिंग नहीं — पूरा खेल ~176 KB, एक बार लोड हो तो ऑफ़लाइन भी चलता है, और संगीत आपके ब्राउज़र में ही बनता है।
 - सच में सुगम — एक हाथ से माउस-मोड, सभी कुंजियाँ बदलना, कैप्शन, चमक कम करना, बड़े अक्षर, और पूरी मंज़िल वहाँ से खेलने लायक 2D नक्शा — हिंदी में भी।
 
 **लिंक:** <https://mirror-house-8fg.pages.dev>

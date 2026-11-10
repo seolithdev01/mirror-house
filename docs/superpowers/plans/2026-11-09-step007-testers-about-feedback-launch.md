@@ -23,7 +23,7 @@
 
 About content (en/hi): version (from a new exported APP_VERSION const = package version, injected via vite `define`), what the game is (2 lines), Beta status, credits (original & open source; music generated live), links (Source · Privacy · Provenance · License — absolute URLs), "made of 100% original glass" tagline. Dialog a11y per house style.
 
-- [ ] Tests → RED → implement → GREEN → gates + e2e (About opens via ⓘ; FAQ count bump). Commit `feat(beta): about panel + launch meta tags`.
+- [x] Tests → RED → implement → GREEN → gates + e2e (About opens via ⓘ; FAQ count bump). Commit `feat(beta): about panel + launch meta tags`.
 
 ### Task 2: Feedback & suggestions — composer + GitHub templates
 
@@ -31,23 +31,23 @@ About content (en/hi): version (from a new exported APP_VERSION const = package 
 
 Diagnostics snapshot is READ-ONLY truth from live state; the player SEES the exact body before anything opens (textarea contains it).
 
-- [ ] Tests (snapshot shape incl. error ring; URL encoding incl. newlines; mailto fallback) → RED → implement → GREEN → gates + e2e (+1: overlay opens, GitHub button href contains template+encoded body). Commit `feat(beta): feedback + suggestion composer, issue templates`.
+- [x] Tests (snapshot shape incl. error ring; URL encoding incl. newlines; mailto fallback) → RED → implement → GREEN → gates + e2e (+1: overlay opens, GitHub button href contains template+encoded body). Commit `feat(beta): feedback + suggestion composer, issue templates`.
 
 ### Task 3: Tester mode `?test=1` + overrides documentation
 
 **Files:** Modify `src/main.ts` (hook condition `DEV || testMode`; TESTER chip: small fixed chip "TESTER · {fps} · {seed}:{floor}" visible only in test mode; banner once), `docs/URL-PARAMS.md` (every param: seed, floor, look, lang, perf, venue, test — what each does, examples), `docs/TESTERS.md` (tester guide: quick start, the 5-minute smoke, pointers to TEST-CASES + feedback, "your data stays on your device", personal-seed convention) · tests for the pure flag parse.
 
-- [ ] Tests → RED → implement → GREEN → gates + e2e (+1: `?test=1` in dev shows hook + chip — assert chip text contains seed). Commit `feat(beta): tester mode, URL params + testers guide`.
+- [x] Tests → RED → implement → GREEN → gates + e2e (+1: `?test=1` in dev shows hook + chip — assert chip text contains seed). Commit `feat(beta): tester mode, URL params + testers guide`.
 
 ### Task 4: Manual test cases + invites + kickoff issue prep
 
 **Files:** Create `docs/TEST-CASES.md` (~28 cases across: Smoke 6, Campaign 8, Views 3, A11y 5, Saves 3, Audio 2, Venue 2, Mobile/Touch 2 — each: ID, steps, expected), `docs/invites/` (GIT-IGNORED: 5 personalized `invite-<tag>.md` emails + `_all.md`; tags/seed bases: TESTIS, TESTRS, TESTSK, TESTNY, TESTMJ), `.gitignore` (+`docs/invites/`), `docs/invites/TEMPLATE.example.md` (committed, redacted). gh actions at merge time (controller): labels `feedback`/`from-game`/`playtest`, kickoff issue (no emails).
 
-- [ ] Write TEST-CASES (cross-checked against real UI ids/keys from source). [ ] Invites (each: greeting, what Mirror House is in 2 lines, their personal link `…?seed=TESTXX`, the 15-min smoke pointer + full suite pointer, feedback links, deadline ask "within a week", privacy line). [ ] gitignore + template. Commit `docs(beta): manual test suite, tester invites (redacted), kickoff prep`.
+- [x] Write TEST-CASES (cross-checked against real UI ids/keys from source). [x] Invites (each: greeting, what Mirror House is in 2 lines, their personal link `…?seed=TESTXX`, the 15-min smoke pointer + full suite pointer, feedback links, deadline ask "within a week", privacy line). [x] gitignore + template. Commit `docs(beta): manual test suite, tester invites (redacted), kickoff prep`.
 
 ### Task 5: Close-out + merge + deploy
 
-- [ ] README/CHANGELOG/spec §13.4 notes; plan ticks; full gates + e2e (27→30).
+- [x] README/CHANGELOG/spec §13.4 notes; plan ticks; full gates + e2e (27→30).
 - [ ] Merge to main; controller: `gh label create` ×3, kickoff issue (public, no emails), deploy, verify live (og meta + /og-image.png 200).
 - [ ] Archive prompts-history + memory.
 

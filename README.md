@@ -115,6 +115,18 @@ The **? FAQ** button (top right) or the `H` key opens 25 questions in-game: how 
 
 The **📮 button** (top right, beside ⓘ — or the Feedback entry inside ⚙) opens a short composer: pick **🐞 Bug**, **💡 Suggestion** or **💙 a kind word**, write a title and a line or two, and the message box already carries a diagnostics block — version, language, quality preset, your seed (`BASE:floor`), the campaign base, the floor, the run phase, the venue pack if one is live, your accessibility flags, how many keys you remapped (a count, never the bindings), your browser's user agent, and the last few runtime errors this tab saw. **Nothing is sent until you press a button** — review the text, delete anything you'd rather not share, then choose **[Open GitHub issue]** (a prefilled issue at [github.com/seolithdev01/mirror-house/issues](https://github.com/seolithdev01/mirror-house/issues), where the [bug](https://github.com/seolithdev01/mirror-house/issues/new?template=bug_report.md), [suggestion](https://github.com/seolithdev01/mirror-house/issues/new?template=feature_request.md) and [playtest](https://github.com/seolithdev01/mirror-house/issues/new?template=playtest.md) templates also live for the repo-savvy) or **[Email instead]** (the same text into a mail to `itsupport01@seolith.com`). The seed is the important line: the same code always rebuilds the same floor, so a bug with a seed reproduces itself.
 
+### Beta — kick the mirrors
+
+The beta is open, and the kit for testing it ships with the repo. The **ⓘ button** (top right, beside 🌐 — or ⚙ → About) opens the About card: the version, a two-line pitch, the beta status, credits, and the four links (source · privacy · provenance · license). Testing happens on the deployed site — the URL is the whole mechanism, nothing to install and no account:
+
+- **`?test=1` — tester mode.** Session-only (never persisted) and it works on the live site, because testers should play exactly what players get: it unlocks the diagnostics machinery behind the 📮 composer's prefilled block and pins a small **TESTER chip** bottom-left (`TESTER · {fps} · {seed}`) with a one-time banner; `?test=0` is the explicit off. It changes no difficulty and unlocks none of the dev-only params.
+- **[docs/TESTERS.md](docs/TESTERS.md)** — the tester guide: your personal seed link, the 5-minute smoke path, and how to send a report worth reading.
+- **[docs/TEST-CASES.md](docs/TEST-CASES.md)** — the full manual suite: 31 cases across smoke, campaign, views, accessibility, saves, audio, the venue side-floor, and mobile/touch.
+- **[docs/URL-PARAMS.md](docs/URL-PARAMS.md)** — every URL parameter (`seed`, `look`, `lang`, `venue`, `test`, and the honestly-documented dev-only `floor`/`perf`), examples included.
+- **[docs/invites/TEMPLATE.example.md](docs/invites/TEMPLATE.example.md)** — the redacted tester-invite template; the real invites (with real addresses) are git-ignored by design and never enter the repo.
+
+Found something? The 📮 composer above is the door — it carries the diagnostics so you never have to guess what we need.
+
 ### Your data stays on your device — and can travel
 
 Everything persistent — your look, input mode, mute, language, shards, streak, best times, and your floor in the campaign — lives in one IndexedDB record inside your own browser. No accounts, no servers, no telemetry; nothing leaves your machine unless you carry it yourself. (A legacy localStorage save from earlier milestones migrates itself once on boot.) The full statement — cookies, the export file's exact contents, the CSP — is [PRIVACY.md](PRIVACY.md); where every byte of code, art, and audio comes from is [PROVENANCE.md](PROVENANCE.md); and [PLAYTEST.md](PLAYTEST.md) is the kit for running five strangers through their first floor.
@@ -126,7 +138,7 @@ A rejected or corrupt stored save reads as absent: the game boots fresh with sen
 
 ### Install it — it works offline
 
-Mirror House is a PWA. On the production build, use your browser's _Install app_ / _Add to Home Screen_ action: it gets its own window, its own icon (the gold lantern), and a service worker caches the shell and assets — installed once, it loads and plays with the network cut. The whole game ships as a single ~168 KB (gzipped) bundle, so the first load is quick and the offline copy is small.
+Mirror House is a PWA. On the production build, use your browser's _Install app_ / _Add to Home Screen_ action: it gets its own window, its own icon (the gold lantern), and a service worker caches the shell and assets — installed once, it loads and plays with the network cut. The whole game ships as a single ~176 KB (gzipped) bundle, so the first load is quick and the offline copy is small.
 
 ### नमस्ते — English and Hindi
 

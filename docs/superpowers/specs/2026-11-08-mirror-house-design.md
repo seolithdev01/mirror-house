@@ -434,6 +434,18 @@ Production on CF Pages (custom subdomain) **first** — the web beta never waits
 > operational launch-day checklist with per-item witnesses is `docs/LAUNCH.md`
 > §4; announcements, the venue pilots, and the §13.1 five-stranger playtest
 > gate remain OPEN human actions.
+>
+> **step007 close-out (2026-11-09).** The tester kit is shipped: the About ⓘ
+> panel + share-card meta, the 📮 feedback composer (user-initiated GitHub
+> issue / mailto with a read-only diagnostics block — nothing phones home;
+> the plan's "form link" resolved to GitHub issues + the composer, its
+> "diagnostics export" to the composer's prefilled block), tester mode
+> `?test=1` on the deployed site, the tester guide + 31-case manual suite +
+> URL-params doc, and personalized invites drafted with real addresses
+> git-ignored (only the redacted template is committed). Kickoff is pending
+> the user sending the invites — labels + the public kickoff issue ride the
+> merge (no addresses in it); the §13.1 five-stranger gate then runs through
+> this kit.
 
 ---
 
