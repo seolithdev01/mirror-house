@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   floorAccent,
   paletteForTier,
+  TIER_FOUR_PALETTE,
   TIER_ONE_PALETTE,
   TIER_THREE_PALETTE,
   TIER_TWO_PALETTE,
@@ -59,6 +60,8 @@ describe('palette', () => {
     expect(paletteForTier(2)).toBe(TIER_TWO_PALETTE);
     // T3/T4 — the Gardens dress tier 3 (night-blue stand-in retired)
     expect(paletteForTier(3)).toBe(TIER_THREE_PALETTE);
+    // T4/T4 — the Carnival dresses tier 4 (the tier-one stand-in retired)
+    expect(paletteForTier(4)).toBe(TIER_FOUR_PALETTE);
   });
 
   // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):
@@ -111,5 +114,40 @@ describe('palette', () => {
     // the two-tone checker flips to the brown floor pair
     expect(floorAccent(1, 1, TIER_TWO_PALETTE)).toBe(0x3a2c1c);
     expect(floorAccent(2, 1, TIER_TWO_PALETTE)).toBe(0x2a2018);
+  });
+
+  // T4/T4 — the Carnival of Faces palette (floors 31–40, spec §4.6 row 4):
+  // rose/magenta on night — the funhouse's candle-lit plum. The slot-name
+  // game reaches its punchline: the teal slot wears the carnival's magenta
+  // (the tier-one ROSE value, 0xc2548a) and the rose-diamond slot wears the
+  // candle flame (0xffb347) — the lattice diamonds glow like fairground
+  // lights over a plum-dark floor.
+  it('tier-four values are exact (Carnival of Faces: magenta/candle/plum)', () => {
+    expect(TIER_FOUR_PALETTE).toEqual({
+      void: 0x140812,
+      floorBase: 0x2e1a26,
+      floorLines: 0x402233,
+      teal: 0xc2548a, // the magenta slot — the carnival glass' rose-magenta
+      ivory: 0xf2e4ee,
+      gold: 0xd9a441,
+      rose: 0xffb347, // the candle slot — the fairground lights
+      wallTop: 0x8a6a7a,
+      wallBottom: 0x46303c,
+      lantern: 0xffd4c0,
+      entrance: 0xc2548a,
+      exit: 0xffb347,
+    });
+  });
+
+  it('floorAccent with the tier-four palette: same pattern, carnival colors', () => {
+    // the rose-diamond slot becomes the candle flame; the gold lattice holds
+    expect(floorAccent(3, 3, TIER_FOUR_PALETTE)).toBe(0xffb347);
+    expect(floorAccent(9, 3, TIER_FOUR_PALETTE)).toBe(0xffb347);
+    expect(floorAccent(6, 2, TIER_FOUR_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(2, 12, TIER_FOUR_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(0, 0, TIER_FOUR_PALETTE)).toBe(0xd9a441);
+    // the two-tone checker flips to the plum floor pair
+    expect(floorAccent(1, 1, TIER_FOUR_PALETTE)).toBe(0x402233);
+    expect(floorAccent(2, 1, TIER_FOUR_PALETTE)).toBe(0x2e1a26);
   });
 });

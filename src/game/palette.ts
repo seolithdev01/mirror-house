@@ -68,14 +68,34 @@ export const TIER_THREE_PALETTE: TierPalette = {
   exit: 0x6fae6f,
 };
 
+/** The Carnival of Faces (floors 31–40, T4): rose/magenta on night — the
+ *  funhouse's candle-lit plum. The slot-name game reaches its punchline: the
+ *  teal slot wears the carnival's magenta (the tier-one ROSE value), and the
+ *  rose-diamond slot wears the candle flame — the lattice diamonds glow like
+ *  fairground lights over a plum-dark floor. */
+export const TIER_FOUR_PALETTE: TierPalette = {
+  void: 0x140812,
+  floorBase: 0x2e1a26,
+  floorLines: 0x402233,
+  teal: 0xc2548a, // magenta — the carnival glass' rose-magenta
+  ivory: 0xf2e4ee,
+  gold: 0xd9a441,
+  rose: 0xffb347, // candle — the fairground lights (Aavart's flame glass)
+  wallTop: 0x8a6a7a,
+  wallBottom: 0x46303c,
+  lantern: 0xffd4c0,
+  entrance: 0xc2548a,
+  exit: 0xffb347,
+};
+
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
  *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
- *  retired. T4/T1: tier 4 (the Carnival of Faces) keeps the tier-one night
- *  palette FOR NOW — the carnival's rose/magenta set arrives with T4/T4's
- *  palette task, whose commit replaces this fallthrough. */
+ *  retired. T4/T4: tier 4 wears the Carnival palette — the documented
+ *  tier-one stand-in (T4/T1's fallthrough) is retired by this commit. */
 export function paletteForTier(tier: 1 | 2 | 3 | 4): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
+  if (tier === 4) return TIER_FOUR_PALETTE;
   return TIER_ONE_PALETTE;
 }
 

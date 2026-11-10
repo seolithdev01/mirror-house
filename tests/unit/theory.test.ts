@@ -8,6 +8,7 @@ import {
   intensityFrom,
   midiToHz,
   nextMelodySemi,
+  TIER_FOUR_SCALE,
   TIER_ONE_SCALE,
   TIER_THREE_SCALE,
   TIER_TWO_SCALE,
@@ -27,6 +28,13 @@ describe('scales', () => {
   // T3/T4 — the Gardens' pastoral third scale (spec §6.1 row 3: flute-lead).
   it('tier three is the pastoral pentatonic set', () => {
     expect(TIER_THREE_SCALE).toEqual([0, 2, 5, 7, 9]);
+  });
+
+  // T4/T4 — the Carnival's mischievous fourth scale (spec §6.1 row 4): the
+  // Durga frame with the major third flattened a semitone — the minor-leaning
+  // hiccup that makes the funhouse grin.
+  it('tier four is the mischievous pentatonic set', () => {
+    expect(TIER_FOUR_SCALE).toEqual([0, 2, 3, 7, 9]);
   });
 });
 
@@ -89,6 +97,20 @@ describe('nextMelodySemi', () => {
       expect(semi).toBeGreaterThanOrEqual(OCT);
       expect(semi).toBeLessThanOrEqual(OCT + 12);
       expect(pastoral.has(semi % 12)).toBe(true);
+    }
+  });
+
+  // T4/T4 — the carnival walker walks the mischievous set only: every emitted
+  // note is a tier-four member inside the window (pcs of [0,2,3,7,9]).
+  it('after a tier-four swap the walk only emits mischievous members in the window', () => {
+    const rng = createRng('CARNIVAL-WALK');
+    let semi = OCT;
+    const mischievous = new Set(TIER_FOUR_SCALE.map((s) => (OCT + s) % 12));
+    for (let i = 0; i < 200; i++) {
+      semi = nextMelodySemi(rng, TIER_FOUR_SCALE, semi, 0.7, OCT);
+      expect(semi).toBeGreaterThanOrEqual(OCT);
+      expect(semi).toBeLessThanOrEqual(OCT + 12);
+      expect(mischievous.has(semi % 12)).toBe(true);
     }
   });
 

@@ -14,6 +14,11 @@ export const TIER_TWO_SCALE: readonly number[] = [0, 2, 4, 7, 9];
  *  third — the flute's open, meadow-air contour; spec §6.1 row 3). */
 export const TIER_THREE_SCALE: readonly number[] = [0, 2, 5, 7, 9];
 
+/** Tier-four mood: the Carnival's mischievous pentatonic — the Durga frame
+ *  with the third flattened a semitone, the minor-leaning hiccup that makes
+ *  the funhouse grin (spec §6.1 row 4). */
+export const TIER_FOUR_SCALE: readonly number[] = [0, 2, 3, 7, 9];
+
 /** Standard equal-temperament MIDI-note-number → Hz. */
 export function midiToHz(semi: number): number {
   return 440 * Math.pow(2, (semi - 69) / 12);

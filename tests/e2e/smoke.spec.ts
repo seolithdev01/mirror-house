@@ -82,11 +82,13 @@ interface DebugHook {
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
   // T2/T4 — the tier the stage is dressed in (venue side-floors read 1)
-  tier(): 1 | 2 | 3;
+  tier(): 1 | 2 | 3 | 4;
   // T2/T4 — the Sentinel's exact spot for warps (null off his floors)
   taalPos(): { x: number; y: number } | null;
   // T3/T4 — the Encircler's exact spot for e2e warps (null off tier 3)
   gherPos(): { x: number; y: number } | null;
+  // T4/T4 — the Ambusher's exact spot for e2e warps (null off tier 4)
+  avartPos(): { x: number; y: number } | null;
   // M6/T1 — the venue side-floor: which pack is live (null id = campaign
   // floor) and its floor's beacon total (the pack's own count).
   venue(): { active: boolean; id: string | null; beacons: number };
@@ -1727,5 +1729,166 @@ test('t3: gher catches on contact', async ({ page }) => {
     null,
     { timeout: 2500 },
   );
+  expect(errors).toEqual([]);
+});
+
+// T4/T4 — the Carnival of Faces end to end. Floor 31 dresses tier 4: the
+// hook's tier reads 4, the chip carries the `· T4` suffix, the mischievous
+// fourth scale + the triangle voice, the distorting panes hang 2–3, and —
+// the ladder ACCUMULATES (spec §4.4) — ALL THREE Sentinels walk the carnival
+// (Taal the beat, Gher the ring, Aavart the ambush).
+test('t4: floor 31 loads the carnival', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T4RUN&floor=31');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      aavart: h.avartPos(),
+      gher: h.gherPos(),
+      taal: h.taalPos(),
+      mirrors: h.mirrors(),
+      audio: h.audioState(),
+    };
+  });
+  expect(snap.tier).toBe(4);
+  expect(snap.floor).toBe(31);
+  expect(snap.aavart, 'the Ambusher walks every tier-4 floor').not.toBeNull();
+  expect(snap.gher, 'the ladder accumulates — Gher stays on tier 4').not.toBeNull();
+  expect(snap.taal, 'the ladder accumulates — Taal stays on tier 4').not.toBeNull();
+  expect(snap.mirrors.distort, '2-3 distorting panes per tier-4 floor').toBeGreaterThanOrEqual(2);
+  // the mischievous groove: the walker carries the fourth scale back on the
+  // triangle (the seam tracks both from buildFloor, gesture or not)
+  expect(snap.audio.scale).toEqual([0, 2, 3, 7, 9]);
+  expect(snap.audio.voice).toBe('triangle');
+  await expect(page.locator('#mh-floor')).toHaveText('L31 · T4');
+  expect(errors).toEqual([]);
+});
+
+// T4/T4 — two pinned mechanics on one deterministic floor. Leg 1, the
+// Ambusher's touch is the standard caught fail: warp onto avartPos() and the
+// run fails (read+warp in ONE evaluate — he runs at 2.4 m/s, no round-trip
+// lag); the tally banks at the reset past the freeze. Leg 2, the carnival
+// glass lies: stand where a pane sees you and apparentPlayer() reads the
+// pane's displaced position (≠ the player, exactly delta·CELL); fog that
+// pane (the standing-glass geometry: 1 m off the glass, facing it, F) and
+// the house tells the truth again.
+test('t4: aavart catches + distortion displaces', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T4RUN&floor=31');
+  await ready(page);
+  const live = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.avartPos();
+  });
+  expect(live, 'the Ambusher is live on floor 31').not.toBeNull();
+  await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    const p = h.avartPos();
+    if (p !== null) h.warp(p.x, p.y);
+  });
+  // the freeze window: failed rises on the next fixed step (50ms) and holds
+  // through FAIL_FREEZE_MS — poll to see it true (post-reset it is false)
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.house()
+        .failed,
+    null,
+    { timeout: 2000 },
+  );
+  await expect(page.locator('#mh-fail')).toHaveText('Caught by the glass');
+  // the tally banks at the reset AFTER the freeze — poll for it
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.attempts() === 1,
+    null,
+    { timeout: 2500 },
+  );
+
+  // leg 2 — a clean running floor for the lie (the rebuild is deterministic:
+  // the same panes hang in the same spots)
+  await page.goto('/?seed=T4RUN&floor=31');
+  await ready(page);
+  const dm = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    const m = h.mirrorAt('distort');
+    const ref = (
+      h.mirrorRefs() as Array<{ id: number; distortDx?: number; distortDy?: number }>
+    ).find((r) => r.id === m?.id);
+    return { m, dx: ref?.distortDx ?? 0, dy: ref?.distortDy ?? 0 };
+  });
+  expect(dm.m, 'a distorting pane hangs on the carnival floor').not.toBeNull();
+  // stand at the pane's own cell center: same cell as the glass, LOS trivially
+  // clear, well inside SENSE_RANGE — the pane cannot help but see you
+  await page.evaluate((c: { cx: number; cy: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(c.cx, c.cy);
+  }, dm.m!);
+  await page.waitForFunction(
+    () => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      const p = h.getPlayer();
+      const ap = h.apparentPlayer();
+      return Math.hypot(ap.x - p.x, ap.y - p.y) > 0.01;
+    },
+    null,
+    { timeout: 2000 },
+  );
+  const seen = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { p: h.getPlayer(), ap: h.apparentPlayer() };
+  });
+  // the lie is exact: the pane's stored delta, cells to meters (CELL_SIZE 4)
+  expect(seen.ap).toEqual({ x: seen.p.x + dm.dx * 4, y: seen.p.y + dm.dy * 4 });
+
+  // fog the pane — the standing-glass capture geometry, 1 m off the glass
+  const d = Math.hypot(dm.m!.cx - dm.m!.x, dm.m!.cy - dm.m!.z); // cell center → wall
+  const sx = dm.m!.x + ((dm.m!.cx - dm.m!.x) / d) * 1.0;
+  const sz = dm.m!.z + ((dm.m!.cy - dm.m!.z) / d) * 1.0;
+  const heading = Math.atan2(dm.m!.x - sx, -(dm.m!.z - sz)); // heading 0 = north (−z)
+  await page.evaluate(
+    ({ sx, sz, heading }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      h.warp(sx, sz, heading);
+    },
+    { sx, sz, heading },
+  );
+  await page.waitForFunction(
+    (id: number) =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.fogTarget() === id,
+    dm.m!.id,
+    { timeout: 4000 },
+  );
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.breath() >= 0.34,
+    null,
+    { timeout: 10000 },
+  );
+  await page.keyboard.press('KeyF');
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.mirrors()
+        .fogged === 1,
+    null,
+    { timeout: 4000 },
+  );
+  // fogged carnival glass lies about nothing: the truth returns (and the pane
+  // was fogged, never captured — it is not a beacon). apparentPlayer carries
+  // x/y only — compare the spot, not the heading getPlayer also reports.
+  const truth = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { p: h.getPlayer(), ap: h.apparentPlayer(), mirrors: h.mirrors() };
+  });
+  expect(truth.ap).toEqual({ x: truth.p.x, y: truth.p.y });
+  expect(truth.mirrors.captured).toBe(0);
   expect(errors).toEqual([]);
 });

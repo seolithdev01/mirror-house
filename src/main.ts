@@ -2,7 +2,13 @@
 import * as THREE from 'three';
 import { APP_VERSION } from './appVersion';
 import { createAudioEngine } from './audio/engine';
-import { intensityFrom, TIER_ONE_SCALE, TIER_THREE_SCALE, TIER_TWO_SCALE } from './audio/theory';
+import {
+  intensityFrom,
+  TIER_FOUR_SCALE,
+  TIER_ONE_SCALE,
+  TIER_THREE_SCALE,
+  TIER_TWO_SCALE,
+} from './audio/theory';
 import {
   ANGER_MAX,
   AVART_SENTINEL_FLOOR,
@@ -1121,20 +1127,26 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
   // The tier dresses the stage (T2/T3): campaign floors 11–20 wear the Hall
-  // of Ancestors palette, 21–30 the Reflecting Gardens — the same
-  // floorAccent lattice re-tinted, tiers 1–10 keep the night-blue tier-one
-  // set untouched. The melody moves with it (T3/T4): Durga pentatonic on
-  // tier-2 floors, the pastoral pentatonic AND the flute voice (sine) on
-  // tier-3 — swapped live (next note uses them; the drone root never moves).
-  // T4/T1: tier 4 (floors 31–40) rides the tier-one pair for now — the
-  // mischievous fourth scale + the carnival palette land with T4/T4's
-  // dressing commit (voice already reads 'triangle', the carnival's final
-  // map). Venue side-floors stay tier-one dressed — scale AND voice: a
-  // return from a sponsored floor resets both to the tier-one pair.
+  // of Ancestors palette, 21–30 the Reflecting Gardens, 31–40 the Carnival
+  // of Faces — the same floorAccent lattice re-tinted, tiers 1–10 keep the
+  // night-blue tier-one set untouched. The melody moves with it (T3/T4):
+  // Durga pentatonic on tier-2 floors, the pastoral pentatonic AND the flute
+  // voice (sine) on tier-3, the mischievous pentatonic back on the triangle
+  // (the reed's wink) on tier-4 — swapped live (next note uses them; the
+  // drone root never moves). Venue side-floors stay tier-one dressed —
+  // scale AND voice: a return from a sponsored floor resets both to the
+  // tier-one pair.
   const tier = tierOf(c.floor);
   if (pack === null) {
-    audio.setScale(tier === 2 ? TIER_TWO_SCALE : tier === 3 ? TIER_THREE_SCALE : TIER_ONE_SCALE);
-    audio.setVoice(tier === 3 ? 'sine' : 'triangle');
+    const scaleByTier = {
+      1: TIER_ONE_SCALE,
+      2: TIER_TWO_SCALE,
+      3: TIER_THREE_SCALE,
+      4: TIER_FOUR_SCALE,
+    } as const;
+    const voiceByTier = { 1: 'triangle', 2: 'triangle', 3: 'sine', 4: 'triangle' } as const;
+    audio.setScale(scaleByTier[tier]);
+    audio.setVoice(voiceByTier[tier]);
   } else {
     audio.setScale(TIER_ONE_SCALE);
     audio.setVoice('triangle');
@@ -2632,6 +2644,8 @@ if (import.meta.env.DEV || testMode) {
     taalPos: () => (taal === null ? null : { x: taal.x, y: taal.y }),
     // T3/T4 — the Encircler's exact spot for e2e warps (null off tier 3).
     gherPos: () => (gher === null ? null : { x: gher.x, y: gher.y }),
+    // T4/T4 — the Ambusher's exact spot for e2e warps (null off tier 4).
+    avartPos: () => (aavart === null ? null : { x: aavart.x, y: aavart.y }),
     // T8 e2e hooks — scripted win/lose. `mirrors()` replaces the old hero
     // count (the step003 suite reads .total now). mirrorAt(kind) prefers the
     // first mirror of that kind not captured yet, so a capture loop walks the
