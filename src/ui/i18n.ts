@@ -98,7 +98,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'about.title': 'About Mirror House',
     'about.version': 'Version {v} · open beta',
     'about.what':
-      'A 100-floor escape through a century-old palace of mirrors. Fog the glass, outwit what hunts you, and walk down — every floor a 2–5 minute puzzle that remembers you.',
+      'A descent through a century-old palace of mirrors through a century-old palace of mirrors. Fog the glass, outwit what hunts you, and walk down — every floor a 2–5 minute puzzle that remembers you.',
     'about.beta':
       'You are playing the open beta: the first tier — floors 1 to 10, Chhaya and Taal, the Dwaar — stands complete; deeper floors, the remaining Sentinels and new venue packs are on the roadmap.',
     'about.credits':
