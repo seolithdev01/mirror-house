@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import { TIER_ONE_FLOORS } from '../engine/constants';
+import { TIER_TWO_FLOORS } from '../engine/constants';
 import type { InputMode } from '../engine/input';
 import type { Campaign } from './campaign';
 import { DEFAULT_LOOK_NAME } from './look';
@@ -175,7 +175,7 @@ function validateProgress(raw: unknown): SaveData['progress'] | null {
     return null;
   const { seedBase, floor, tierComplete }: Record<string, unknown> = raw;
   if (typeof seedBase !== 'string' || !isValidSeed(seedBase)) return null;
-  if (typeof floor !== 'number' || !Number.isInteger(floor) || floor < 1 || floor > TIER_ONE_FLOORS)
+  if (typeof floor !== 'number' || !Number.isInteger(floor) || floor < 1 || floor > TIER_TWO_FLOORS)
     return null;
   if (typeof tierComplete !== 'boolean') return null;
   return { seedBase, floor, tierComplete };

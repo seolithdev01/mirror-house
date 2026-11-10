@@ -987,9 +987,9 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // deep-teal, tiers 1–10 keep the night-blue tier-one set untouched. The
   // melody walker moves with it: Durga pentatonic on tier-2 floors, swapped
   // live (next note uses it; the drone root never moves). Venue side-floors
-  // stay tier-one dressed and keep the scale they booted with.
+  // stay tier-one dressed — scale included.
   const tier = tierOf(c.floor);
-  if (pack === null) audio.setScale(tier === 2 ? TIER_TWO_SCALE : TIER_ONE_SCALE);
+  audio.setScale(pack === null ? (tier === 2 ? TIER_TWO_SCALE : TIER_ONE_SCALE) : TIER_ONE_SCALE);
   // The pack's accents dress the stage: primary on the exit marker (the
   // beacon gate's unlocked tint follows), secondary on the entrance marker.
   const stagePalette =

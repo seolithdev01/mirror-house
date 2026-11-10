@@ -120,10 +120,10 @@ describe('save: validateSave', () => {
 
   it('rejects malformed progress', () => {
     expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 0 })))).toBeNull();
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 11 })))).toBeNull();
-    expect(
-      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 2.5 }))),
-    ).toBeNull();
+    // Tier 2 widened the legal floor range to TIER_TWO_FLOORS (20): 11 and 20
+    // are valid campaign floors; 21 is the first rejection.
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 21 })))).toBeNull();
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 2.5 })))).toBeNull();
     expect(
       validateSave(mutated((r) => (r.progress = { ...good.progress, floor: '3' }))),
     ).toBeNull();
@@ -551,5 +551,18 @@ describe('save: idb wrapper is inert under node (no indexedDB)', () => {
   it('get resolves null and put resolves without a store', async () => {
     await expect(idbGet()).resolves.toBeNull();
     await expect(idbPut(good)).resolves.toBeUndefined();
+  });
+});
+
+// SPDX-License-Identifier: Apache-2.0 (appended block)
+describe('tier-2 save round-trip (t2 final-review regression)', () => {
+  it('a floor-15 save survives serialize → validate (the mid-tier-2 reload wipe)', () => {
+    const s = defaultSave();
+    s.progress = { seedBase: 'T2KEEP', floor: 15, tierComplete: false };
+    const restored = validateSave(JSON.parse(serializeSave(s)));
+    expect(restored).not.toBeNull();
+    expect(restored?.progress.floor).toBe(15);
+    expect(validateSave(JSON.parse(serializeSave({ ...s, progress: { ...s.progress, floor: 11 } })))?.progress.floor).toBe(11);
+    expect(validateSave(JSON.parse(serializeSave({ ...s, progress: { ...s.progress, floor: 20 } })))?.progress.floor).toBe(20);
   });
 });
