@@ -9,7 +9,7 @@ interface DebugHook {
   seed: string;
   look(): string;
   mode(): string;
-  mirrors(): { total: number; fogged: number; captured: number };
+  mirrors(): { total: number; fogged: number; captured: number; portraits: number };
   avatarPresent: boolean;
   streak(): number;
   bestFor(seed: string): number | null;
@@ -66,6 +66,10 @@ interface DebugHook {
   visitedCount(): number;
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
+  // T2/T4 — the tier the stage is dressed in (venue side-floors read 1)
+  tier(): 1 | 2;
+  // T2/T4 — the Sentinel's exact spot for warps (null off his floors)
+  taalPos(): { x: number; y: number } | null;
   // M6/T1 — the venue side-floor: which pack is live (null id = campaign
   // floor) and its floor's beacon total (the pack's own count).
   venue(): { active: boolean; id: string | null; beacons: number };
@@ -1454,5 +1458,120 @@ test('m6: aaina refuses hint sales on a venue floor', async ({ page }) => {
   expect(after.shards).toBe(20); // the purse never opened
   expect(after.panel.lastHint).toBeNull(); // no line was sold
   expect(after.panel.hintCost).toBe(5); // hintsUsed never moved
+  expect(errors).toEqual([]);
+});
+
+// T2/T4 — the Hall of Ancestors end to end. `?floor=N` is the DEV-only jump
+// and needs a valid `?seed=` beside it to win the save-boot race (a bare
+// ?floor= boots the saved campaign instead). Floor 11: the hook's tier reads
+// 2, the chip carries the `· T2` suffix, Taal walks the beat, and the
+// ancestor portraits hang in the mirrors() census.
+test('t2: floor 11 loads tier two', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T2RUN&floor=11');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { tier: h.tier(), floor: h.campaign().floor, taal: h.taalPos(), mirrors: h.mirrors() };
+  });
+  expect(snap.tier).toBe(2);
+  expect(snap.floor).toBe(11);
+  expect(snap.taal, 'the Sentinel walks every tier-2 floor').not.toBeNull();
+  expect(snap.mirrors.portraits, '2-3 ancestor portraits per tier-2 floor').toBeGreaterThanOrEqual(
+    2,
+  );
+  await expect(page.locator('#mh-floor')).toHaveText('L11 · T2');
+  expect(errors).toEqual([]);
+});
+
+// T2/T4 — the Sentinel's touch is the standard caught fail: warp onto
+// taalPos() and the run fails — house().failed observed DURING the 1200ms
+// freeze (the attempt banks only at the reset past it, so attempts is never
+// read too early). Then the floor-5 cameo sanity: the same warp on his
+// cameo floor raises the house's anger and never catches.
+test('t2: sentinel taal catches; floor-5 cameo stays anger-only', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T2RUN&floor=11');
+  await ready(page);
+  const taal = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.taalPos();
+  });
+  expect(taal, 'the Sentinel is live on floor 11').not.toBeNull();
+  await page.evaluate((p: { x: number; y: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(p.x, p.y);
+  }, taal!);
+  // the freeze window: failed rises on the next fixed step (50ms) and holds
+  // through FAIL_FREEZE_MS — poll fast to see it true (post-reset it is false)
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.house()
+        .failed,
+    null,
+    { timeout: 2000 },
+  );
+  await expect(page.locator('#mh-fail')).toHaveText('Caught by the glass');
+  // the tally banks at the reset AFTER the freeze — poll for it, never a
+  // blind read inside the window
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.attempts() === 1,
+    null,
+    { timeout: 2500 },
+  );
+
+  // floor 5 — the cameo is anger-only: same beat-walker, same warp, but the
+  // touch feeds the house's anger and the run stands
+  await page.goto('/?seed=T2RUN&floor=5');
+  await ready(page);
+  expect(
+    await page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.taalPos();
+    }),
+    'the cameo still walks floor 5',
+  ).not.toBeNull();
+  // warp only once the beat-walker is clear of the echoes — a coincidental
+  // echo contact would fail this leg for the wrong reason
+  await page.waitForFunction(
+    () => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      const t = h.taalPos();
+      if (t === null) return false;
+      for (let i = 0; i < h.enemyCount(); i++) {
+        const e = h.enemyPos(i);
+        if (e !== null && Math.hypot(e.x - t.x, e.y - t.y) < 3) return false;
+      }
+      return true;
+    },
+    null,
+    { timeout: 5000 },
+  );
+  const cameo = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { taal: h.taalPos(), attempts: h.attempts(), anger: h.anger() };
+  });
+  await page.evaluate((p: { x: number; y: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(p.x, p.y);
+  }, cameo.taal!);
+  // the touch lands on the next fixed step: +TAAL_TOUCH_ANGER, no catch
+  await page.waitForFunction(
+    (a: number) =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.anger() >
+      a,
+    cameo.anger,
+    { timeout: 2000 },
+  );
+  const after = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { attempts: h.attempts(), failed: h.house().failed, anger: h.anger() };
+  });
+  expect(after.attempts, 'the cameo never catches').toBe(cameo.attempts);
+  expect(after.failed).toBe(false);
+  expect(after.anger).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });

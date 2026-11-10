@@ -322,8 +322,13 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDraw
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, PROFILES[preset].pixelRatioCap));
 const scene = new THREE.Scene();
 const VOID_COLOR = 0x0b1026; // the night the house floats in — background, fog, map-mode clear
-scene.background = new THREE.Color(VOID_COLOR);
-scene.fog = new THREE.Fog(VOID_COLOR, 2, 26);
+// T2/T4 (carried one-liners) — the void and the fog re-dress with the stage
+// palette at every buildFloor; boot pins the tier-one pair, so floors 1–10
+// render exactly as they did before the tier existed.
+const voidColor = new THREE.Color(VOID_COLOR);
+const voidFog = new THREE.Fog(VOID_COLOR, 2, 26);
+scene.background = voidColor;
+scene.fog = voidFog;
 // M4/T6 — the UI language resolves once at boot: `?lang=` (the demo path)
 // beats the saved choice beats a hi-* browser, else English. The resolved
 // value becomes the saved one (the look pattern below), so `?lang=hi` sticks.
@@ -672,6 +677,9 @@ function syncFogVisuals(now: number): void {
     v.bind.setFog(state);
   }
 }
+// The walking lantern rides the player (position set per frame below); its
+// flame re-dresses with the stage palette at buildFloor (T2/T4) — the
+// tier-one cream here is the boot default.
 const lantern = new THREE.PointLight(0xffd9a0, 22, 18, 1.8);
 scene.add(lantern, new THREE.AmbientLight(0x3a3f55, 0.7));
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
@@ -984,12 +992,18 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   if (pack === null) audio.setScale(tier === 2 ? TIER_TWO_SCALE : TIER_ONE_SCALE);
   // The pack's accents dress the stage: primary on the exit marker (the
   // beacon gate's unlocked tint follows), secondary on the entrance marker.
-  const stage = buildFloorScene(
-    floor,
+  const stagePalette =
     pack === null
       ? paletteForTier(tier)
-      : { ...TIER_ONE_PALETTE, exit: pack.accent.primary, entrance: pack.accent.secondary },
-  );
+      : { ...TIER_ONE_PALETTE, exit: pack.accent.primary, entrance: pack.accent.secondary };
+  // T2/T4 (carried one-liners) — the haze follows the stage: tier-2 halls fog
+  // warm-dark brown instead of night-blue, and the walking lantern takes the
+  // palette's flame. Tier-1 (and venue) values ARE the boot constants, so
+  // those floors render unchanged.
+  voidColor.setHex(stagePalette.void);
+  voidFog.color.setHex(stagePalette.void);
+  lantern.color.setHex(stagePalette.lantern);
+  const stage = buildFloorScene(floor, stagePalette);
   sceneBuilt = stage;
   scene.add(stage.group);
   exitMarkerMat = stage.exitMarker.material as THREE.MeshStandardMaterial;
@@ -2150,6 +2164,10 @@ if (import.meta.env.DEV || testMode) {
       floor: campaign.floor,
       tierComplete: campaign.tierComplete,
     }),
+    // T2/T4 — the tier the STAGE is dressed in (palette, scale, Sentinel): a
+    // venue side-floor reads tier 1 even mid-tier-2 — the campaign's beat
+    // stays home.
+    tier: () => (venue === null ? tierOf(campaign.floor) : 1),
     // M6/T1 — the venue side-floor: which pack is live (null id = the campaign
     // floor) and its floor's beacon count (the pack's own — the build witness).
     venue: () => ({
@@ -2242,6 +2260,8 @@ if (import.meta.env.DEV || testMode) {
             anchorIdx: taal.anchorIdx,
             cooldownUntil: taal.touchCooldownUntil,
           },
+    // T2/T4 — the Sentinel's exact spot for e2e warps (null off his floors).
+    taalPos: () => (taal === null ? null : { x: taal.x, y: taal.y }),
     // T8 e2e hooks — scripted win/lose. `mirrors()` replaces the old hero
     // count (the step003 suite reads .total now). mirrorAt(kind) prefers the
     // first mirror of that kind not captured yet, so a capture loop walks the
@@ -2252,6 +2272,9 @@ if (import.meta.env.DEV || testMode) {
         total: allMirrors.length,
         fogged: mirrorRuntime.filter((r) => isFogged(r, now)).length,
         captured: mirrorRuntime.filter((r) => r.captured).length,
+        // T2/T4 — the ancestor portrait census (kind count; tier-2 floors
+        // hang 2–3, tier-1 and venues none).
+        portraits: allMirrors.filter((m) => m.kind === 'portrait').length,
       };
     },
     beaconsLeft: () => {
