@@ -150,6 +150,7 @@ import {
 import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { autoPreset, PROFILES, type PerfChoice, type PerfPreset } from './game/quality';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
+import { parseTestMode } from './game/testMode';
 import {
   cycleView,
   exitTactical,
@@ -195,6 +196,11 @@ window.addEventListener('unhandledrejection', (e) => {
 // waitForFunction tolerates that whenever it lands.
 const urlParams = new URLSearchParams(window.location.search);
 const urlSeed = normalizeSeed(urlParams.get('seed') ?? '');
+// step007/T3 — tester mode: `?test=1` (never `0`, nothing else) unlocks the
+// diagnostics hook + the TESTER chip for THIS session in ANY build — PROD
+// included, because invited testers play the deployed game. Session-only by
+// nature: the flag lives in the URL and nothing persists it.
+const testMode = parseTestMode(window.location.search);
 function bootFloorFromUrl(): number {
   if (!import.meta.env.DEV) return 1; // the floor jump is a dev-only affordance
   const n = Number.parseInt(urlParams.get('floor') ?? '', 10);
@@ -1237,6 +1243,35 @@ function playAgain(): void {
 const bootVenueId = urlParams.get('venue');
 const bootVenuePack = bootVenueId === null ? null : await loadVenuePack(bootVenueId);
 buildFloor(campaign, bootVenuePack); // the first floor arms — chip, beacons, sealed door
+
+// step007/T3 — test mode's two surfaces, created ONLY when the flag is live,
+// so a default load never carries either element (e2e asserts the absence):
+// the TESTER chip, refreshed with fps + the live seed by the frame loop, and
+// the one-time banner that says what just unlocked.
+/** The TESTER chip: the diagnostics chip's styling docked bottom-left, its
+ *  text `TESTER · {fps} · {seed}` — the live floor seed already encodes
+ *  base:floor (`TESTMO:3`), so no separate floor field is owed. */
+function createTesterChip(): HTMLElement {
+  const chip = document.createElement('div');
+  chip.id = 'mh-tester';
+  chip.textContent = `TESTER · 0 · ${seed}`;
+  document.body.appendChild(chip);
+  return chip;
+}
+/** The one-time banner: rises with the first floor and hides itself after
+ *  6s ([hidden], never removed — the element count stays stable for e2e).
+ *  Localized like every chrome string. */
+function showTesterBanner(): void {
+  const banner = document.createElement('div');
+  banner.id = 'mh-tester-banner';
+  banner.textContent = t(lang, 'tester.banner');
+  document.body.appendChild(banner);
+  window.setTimeout(() => {
+    banner.hidden = true;
+  }, 6000);
+}
+const testerChip = testMode ? createTesterChip() : null;
+if (testMode) showTesterBanner();
 canvas.addEventListener('click', () => {
   if (mode === 'hybrid') {
     const lock = canvas.requestPointerLock() as unknown as
@@ -2003,6 +2038,9 @@ function frame(now: number): void {
     diagnostics.textContent =
       `seed ${seed}  fps ${fps}\n` +
       `pos ${player.x.toFixed(1)}, ${player.y.toFixed(1)}  heading ${player.heading.toFixed(2)}`;
+    // step007/T3 — the TESTER chip rides the same 250ms tick: fps + the live
+    // seed (base:floor on a campaign floor, the daily code on a venue floor).
+    if (testerChip !== null) testerChip.textContent = `TESTER · ${fps} · ${seed}`;
     // M5/T4 — feed the rolling 5s window; once it is full and the choice is
     // auto, the average picks the preset (sustained reads only — the boot
     // prior holds until then). A manual pin never reads this path.
@@ -2028,11 +2066,14 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   );
 }
 
-// The dev faucet exists in DEV builds and in `vite build --mode soak` builds
-// (M5/T6): the soak script drives the PREVIEW server, which serves the
-// production bundle — a soak-mode build carries the faucet there while a
-// normal production build never does.
-if (import.meta.env.DEV || import.meta.env.MODE === 'soak') {
+// step007/T3 — the faucet exists in DEV builds and, behind the session-only
+// `?test=1` flag, in ANY build — PROD included, which is the point: invited
+// testers play the deployed game and the TESTER chip + banner above tell
+// them the diagnostics are live. `?test=0` is the documented reset (see
+// docs/URL-PARAMS.md). The soak runner (M5/T6) keeps its faucet by loading
+// this same `?test=1` against its `vite build --mode soak` preview server —
+// one gate, three doors: dev, testers, soak.
+if (import.meta.env.DEV || testMode) {
   (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__ = {
     getPlayer: () => ({ ...player }),
     // The CURRENT floor's seed (`BASE:1`, `BASE:2`, …) — a getter so it stays

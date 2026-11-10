@@ -265,9 +265,9 @@ test('beta: About opens via ⓘ beside 🌐, shows version + links, stacks over 
   await expect(page.locator('#mh-about-version')).not.toContainText('{v}');
 
   // the four launch links, absolute and direct
-  const hrefs = await page.locator('#mh-about-links a').evaluateAll((els) =>
-    els.map((a) => (a as HTMLAnchorElement).getAttribute('href')),
-  );
+  const hrefs = await page
+    .locator('#mh-about-links a')
+    .evaluateAll((els) => els.map((a) => (a as HTMLAnchorElement).getAttribute('href')));
   expect(hrefs).toEqual([
     'https://github.com/seolithdev01/mirror-house',
     'https://github.com/seolithdev01/mirror-house/blob/main/PRIVACY.md',
@@ -350,7 +350,9 @@ test('beta: 📮 composer opens with diagnostics prefilled; GitHub/mailto hrefs 
   // the floor pauses behind the composer — a held W moves nobody
   const pos = () =>
     page.evaluate(() =>
-      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.getPlayer(),
     );
   const frozenAt = await pos();
   await page.keyboard.down('KeyW');
@@ -368,6 +370,51 @@ test('beta: 📮 composer opens with diagnostics prefilled; GitHub/mailto hrefs 
   await expect(page.locator('#mh-settings-overlay')).toBeVisible();
   await page.locator('#mh-settings-feedback').click();
   await expect(page.locator('#mh-feedback-overlay')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+// step007/T3 — tester mode: `?test=1` unlocks the TESTER chip + the one-time
+// banner (and the diagnostics hook in PROD — this dev-level suite always has
+// the hook, so the PROD exposure is proven by the task report's preview
+// probe; here the assertion is the tester SURFACES plus the chip's text
+// agreeing with the hook's seed getter). A default load and the explicit
+// `?test=0` reset carry NEITHER element — the tester surfaces must never
+// leak into the default experience.
+test('beta: ?test=1 shows the TESTER chip + banner; default and ?test=0 carry neither', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=TESTMO&test=1');
+  await ready(page);
+
+  // the chip names the mode, the live fps, and the seed — which already
+  // encodes base:floor (TESTMO:1) — and the hook's seed getter agrees
+  const chip = page.locator('#mh-tester');
+  await expect(chip).toBeVisible();
+  await expect(chip).toContainText('TESTER');
+  await expect(chip).toContainText('TESTMO:1');
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.seed,
+    ),
+  ).toBe('TESTMO:1');
+
+  // the one-time banner says what just unlocked
+  await expect(page.locator('#mh-tester-banner')).toBeVisible();
+  await expect(page.locator('#mh-tester-banner')).toContainText('TESTER MODE');
+
+  // a default load: no chip, no banner — the elements do not exist at all
+  await page.goto('/?seed=TESTMO');
+  await ready(page);
+  await expect(page.locator('#mh-tester')).toHaveCount(0);
+  await expect(page.locator('#mh-tester-banner')).toHaveCount(0);
+
+  // ?test=0 is the explicit reset — still nothing
+  await page.goto('/?seed=TESTMO&test=0');
+  await ready(page);
+  await expect(page.locator('#mh-tester')).toHaveCount(0);
+  await expect(page.locator('#mh-tester-banner')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

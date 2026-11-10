@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // M5/T6 — the soak runner. Builds the game in `--mode soak` (the production
-// bundle PLUS the dev faucet — see main.ts's guard), serves it through the
-// REAL preview server (`vite preview`), and plays a scripted loop against it
+// bundle), serves it through the REAL preview server (`vite preview`), loads
+// it with `?test=1` (step007/T3 — the one gate that carries the dev faucet
+// into a non-dev build), and plays a scripted loop against it
 // with Playwright's library API: walk → frost a beacon → warp into an Echo's
 // grip (fail + restart) → repeat. Every 30s it samples the JS heap
 // (performance.memory) and the renderer census (the dev hook's rendererInfo:
@@ -81,12 +82,12 @@ if (!up) {
 // ---- the game loop ------------------------------------------------------------
 const browser = await chromium.launch();
 const page = await browser.newPage();
-await page.goto(BASE);
-await page.waitForFunction(
-  () => window.__MIRROR_HOUSE_DEBUG__ !== undefined,
-  null,
-  { timeout: 30_000 },
-);
+// step007/T3 — the faucet now rides the tester flag: one gate (DEV || ?test=1)
+// for dev, testers, and this soak build alike.
+await page.goto(`${BASE}?test=1`);
+await page.waitForFunction(() => window.__MIRROR_HOUSE_DEBUG__ !== undefined, null, {
+  timeout: 30_000,
+});
 await page.keyboard.press('KeyZ'); // first gesture: start the engine (and the clock)
 await page.keyboard.press('KeyM'); // mute — the soak listens to memory, not music
 
@@ -111,12 +112,12 @@ async function cycle() {
       const d = Math.hypot(m.cx - m.x, m.cy - m.z) || 1;
       const sx = m.x + ((m.cx - m.x) / d) * 1.0;
       const sz = m.z + ((m.cy - m.z) / d) * 1.0;
-      await hook(`() => window.__MIRROR_HOUSE_DEBUG__.warp(${sx}, ${sz}, ${Math.atan2(m.x - sx, -(m.z - sz))})`);
-      await page.waitForFunction(
-        () => window.__MIRROR_HOUSE_DEBUG__.breath() >= 0.34,
-        null,
-        { timeout: 5_000 },
+      await hook(
+        `() => window.__MIRROR_HOUSE_DEBUG__.warp(${sx}, ${sz}, ${Math.atan2(m.x - sx, -(m.z - sz))})`,
       );
+      await page.waitForFunction(() => window.__MIRROR_HOUSE_DEBUG__.breath() >= 0.34, null, {
+        timeout: 5_000,
+      });
       await page.keyboard.press('KeyF');
       await sleep(400); // let the frost land in the runtime
     }
@@ -132,11 +133,9 @@ async function cycle() {
       await page.waitForFunction(() => window.__MIRROR_HOUSE_DEBUG__.house().failed, null, {
         timeout: 3_000,
       });
-      await page.waitForFunction(
-        () => !window.__MIRROR_HOUSE_DEBUG__.house().failed,
-        null,
-        { timeout: 5_000 },
-      );
+      await page.waitForFunction(() => !window.__MIRROR_HOUSE_DEBUG__.house().failed, null, {
+        timeout: 5_000,
+      });
     }
   } catch {
     console.log('[soak] warp-caught step timed out — continuing');
@@ -196,17 +195,22 @@ logRow(await sample()); // the closing sample
 
 // ---- the trend table ----------------------------------------------------------
 console.log(`\n[soak] ${cycles} cycles over ${Math.round((Date.now() - startedAt) / 1000)}s`);
-console.log('  time    heap(MB)   Δheap    geometries  textures  draw calls  triangles   fps  floor  attempts');
+console.log(
+  '  time    heap(MB)   Δheap    geometries  textures  draw calls  triangles   fps  floor  attempts',
+);
 const first = rows[0];
 const last = rows[rows.length - 1];
 for (const r of rows) {
-  const dHeap = r.heap !== null && first.heap !== null ? ((r.heap - first.heap) / 1048576).toFixed(2) : '—';
+  const dHeap =
+    r.heap !== null && first.heap !== null ? ((r.heap - first.heap) / 1048576).toFixed(2) : '—';
   console.log(
     `  ${String(r.t).padStart(4)}s  ${MB(r.heap).padStart(8)}  ${String(dHeap).padStart(7)}  ${String(r.geo).padStart(10)}  ${String(r.tex).padStart(8)}  ${String(r.calls).padStart(10)}  ${String(r.tris).padStart(10)}  ${String(r.fps ?? '—').padStart(4)}  ${String(r.floor).padStart(5)}  ${String(r.attempts).padStart(8)}`,
   );
 }
 const heapDelta =
-  first.heap !== null && last.heap !== null ? ((last.heap - first.heap) / 1048576).toFixed(2) : 'n/a';
+  first.heap !== null && last.heap !== null
+    ? ((last.heap - first.heap) / 1048576).toFixed(2)
+    : 'n/a';
 console.log(
   `\n[soak] trend: heap ${MB(first.heap)}MB → ${MB(last.heap)}MB (Δ ${heapDelta}MB), geometries ${first.geo} → ${last.geo}, textures ${first.tex} → ${last.tex} across ${rows.length} samples / ${cycles} fail-restart cycles.`,
 );

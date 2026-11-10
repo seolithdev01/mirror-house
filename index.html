@@ -75,6 +75,45 @@
         pointer-events: none;
         white-space: pre;
       }
+      /* step007/T3 — the TESTER chip (?test=1 only; main.ts creates it, so a
+         default load never carries the element): the diagnostics chip's
+         styling docked bottom-left, teal text naming its nature. */
+      #mh-tester {
+        position: fixed;
+        bottom: 8px;
+        left: 8px;
+        z-index: 10;
+        font:
+          calc(12px * var(--mh-text-scale, 1))/1.5 ui-monospace,
+          monospace;
+        color: #2ec4b6;
+        background: rgba(5, 6, 10, 0.7);
+        padding: 6px 10px;
+        border-radius: 6px;
+        pointer-events: none;
+        white-space: pre;
+      }
+      /* step007/T3 — tester mode's one-time banner: top-center, teal-edged
+         like the diagnostics family; main.ts flips [hidden] after 6s. */
+      #mh-tester-banner {
+        position: fixed;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        max-width: min(480px, 90vw);
+        background: rgba(11, 16, 38, 0.92);
+        border: 1px solid #2ec4b6;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font: calc(13px * var(--mh-text-scale, 1))/1.5 system-ui;
+        color: #f2e9d8;
+        text-align: center;
+        pointer-events: none;
+      }
+      #mh-tester-banner[hidden] {
+        display: none;
+      }
       #hud {
         position: fixed;
         top: 8px;
@@ -760,7 +799,8 @@
       body.mh-reduced-flash #mh-hint,
       body.mh-reduced-flash #mh-toast,
       body.mh-reduced-flash #mh-venue,
-      body.mh-reduced-flash #mh-captions {
+      body.mh-reduced-flash #mh-captions,
+      body.mh-reduced-flash #mh-tester-banner {
         transition: opacity 320ms ease;
       }
       body.mh-reduced-flash #mh-faq-overlay[hidden],
@@ -791,11 +831,12 @@
       body.mh-reduced-flash #mh-hint[hidden],
       body.mh-reduced-flash #mh-toast[hidden],
       body.mh-reduced-flash #mh-venue[hidden],
-      body.mh-reduced-flash #mh-captions[hidden] {
+      body.mh-reduced-flash #mh-captions[hidden],
+      body.mh-reduced-flash #mh-tester-banner[hidden] {
         display: block;
         opacity: 0;
         pointer-events: none;
-        visibility: hidden;
+        visibility: hidden; /* M5/T6 — a faded overlay owns no tab stops */
         transition:
           opacity 320ms ease,
           visibility 0s linear 320ms;

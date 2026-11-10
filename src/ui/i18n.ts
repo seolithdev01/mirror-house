@@ -180,6 +180,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'toast.exported': 'Save exported',
     'toast.rejected': 'Save file rejected',
     'faq.title': 'Mirror House — FAQ',
+    // step007/T3 — tester mode's one-time banner (?test=1; the TESTER chip
+    // itself is data like the diagnostics block — fps + seed, English-only).
+    'tester.banner': 'TESTER MODE — diagnostics unlocked for this session',
   },
   hi: {
     // इनपुट-मोड बटन
@@ -342,6 +345,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'toast.exported': 'सेव निर्यात हुआ',
     'toast.rejected': 'सेव फ़ाइल अस्वीकृत',
     'faq.title': 'मिरर हाउस — सहायता',
+    // step007/T3 — टेस्टर मोड का एक बार का बैनर (?test=1)
+    'tester.banner': 'टेस्टर मोड — इस सत्र के लिए डायग्नॉस्टिक्स खुले हैं',
   },
 };
 
