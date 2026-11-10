@@ -38,12 +38,14 @@ export function initMirrorRuntime(mirrors: MirrorRef[]): MirrorRuntime[] {
 
 /**
  * The mirror the lantern would fog right now: nearest `standing`|`beacon`|
- * `portrait` mirror within FOG_RANGE and the 60° cone around the player's
- * heading, with clear grid LOS from the player to the mirror center — frost
- * does not pass through walls. (`true`/`silvered` are never fog targets;
- * T2's portraits fog exactly like standing glass; fog state is deliberately
- * not consulted — this is a pure function of geometry, so re-fogging an
- * already-fogged mirror simply refreshes its timer.)
+ * `portrait`|`distort` mirror within FOG_RANGE and the 60° cone around the
+ * player's heading, with clear grid LOS from the player to the mirror center —
+ * frost does not pass through walls. (`true`/`silvered` are never fog
+ * targets; T2's portraits fog exactly like standing glass; T4's distorting
+ * mirrors fog like standing too — fog one and it stops lying about where you
+ * stand; fog state is deliberately not consulted — this is a pure function
+ * of geometry, so re-fogging an already-fogged mirror simply refreshes its
+ * timer.)
  */
 export function fogTarget(
   mirrors: MirrorRef[],
@@ -55,7 +57,13 @@ export function fogTarget(
   let best: MirrorRef | null = null;
   let bestDist = Infinity;
   for (const m of mirrors) {
-    if (m.kind !== 'standing' && m.kind !== 'beacon' && m.kind !== 'portrait') continue;
+    if (
+      m.kind !== 'standing' &&
+      m.kind !== 'beacon' &&
+      m.kind !== 'portrait' &&
+      m.kind !== 'distort'
+    )
+      continue;
     const dx = m.x - player.x;
     const dz = m.z - player.y;
     const dist = Math.hypot(dx, dz);
@@ -80,7 +88,10 @@ export function fogTarget(
   return best;
 }
 
-/** Beacon fog is permanent (captured); standing fog lasts FOG_DURATION_MS from `now`. */
+/** Beacon fog is permanent (captured); every other fogable glass — standing,
+ *  portraits, T4's distort — lasts FOG_DURATION_MS from `now` (a distort
+ *  mirror is NOT a beacon: fogging it restores the truth for 25 s, banks
+ *  nothing, and the pane can be re-fogged when the lie returns). */
 export function applyFog(rt: MirrorRuntime[], id: number, now: number): void {
   const m = rt.find((r) => r.id === id);
   if (!m) return;

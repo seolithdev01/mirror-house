@@ -50,6 +50,7 @@ const COLOR = {
   ping: '#e05252', // fading red
   waypoint: '#f2e9d8', // ivory dots
   water: '#3fae9a', // T3 — the standing pools (water-teal; the tier-3 accent)
+  distort: '#c2548a', // T4 — the carnival glass (the tier-4 rose)
 } as const;
 
 const MARGIN_PX = 28; // breathing room around the fitted grid
@@ -198,6 +199,27 @@ export function createOverhead(canvas: HTMLCanvasElement): {
         ctx.lineWidth = Math.max(1.5, L.cell * 0.07);
         ctx.stroke();
       }
+    }
+
+    // T4 — the distorting mirrors: a wavy rose squiggle, the carnival glass
+    // that bends everything it shows (one period of a sine across the cell).
+    for (const m of input.mirrors) {
+      if (m.kind !== 'distort') continue;
+      const bx = px(m.x);
+      const by = py(m.z);
+      const w = L.cell * 0.5;
+      ctx.strokeStyle = COLOR.distort;
+      ctx.lineWidth = Math.max(1.5, L.cell * 0.07);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let i = 0; i <= 8; i++) {
+        const t = i / 8;
+        const x = bx - w / 2 + t * w;
+        const y = by + Math.sin(t * Math.PI * 2) * L.cell * 0.12;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
     }
 
     // Chhaya — a pale hollow ring; the shadow's last known standing.

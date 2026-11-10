@@ -103,6 +103,7 @@ import {
   isCollapse,
 } from './game/houseState';
 import { parseLook } from './game/look';
+import { apparentPlayer as computeApparent } from './game/distort';
 import { diagnosticsSnapshot, keymapDiffCount, recordError, type RingError } from './game/feedback';
 import {
   DEMO_VENUE_ID,
@@ -143,6 +144,7 @@ import {
   type SaveData,
 } from './game/save';
 import {
+  createDistortMirror,
   createHeroStandIn,
   createMirrorMesh,
   createPortraitMirror,
@@ -528,6 +530,7 @@ function resetFloor(now: number): void {
   path = []; // Chhaya loses the trail; she hides on the next update
   chhaya.visible = false;
   chhayaAnnounced = false; // the new attempt's first sighting speaks again
+  distortAnnounced = false; // the new attempt's first displacement speaks again
   house = { ...initHouseState(), attempts: house.attempts + 1 };
   anger60Spoken = anger90Spoken = false; // the calmed house has nothing said
   breath = 1;
@@ -577,6 +580,10 @@ let chhayaHeading = 0;
 // M5/T3 — her caption speaks once per attempt: the first frame her delayed
 // sample exists (reset with the trail in resetFloor/buildFloor).
 let chhayaAnnounced = false;
+// T4/T3 — the carnival glass's caption speaks once per attempt: the first
+// fixed step ANY unfogged distort mirror displaces the player's apparent
+// position (reset in resetFloor/buildFloor — a new attempt re-learns the lie).
+let distortAnnounced = false;
 
 /** Chhaya walks closer as the campaign descends (M4/T2): her delay comes from
  *  the floor ramp — 7s on floor 1 down to 4.6s, 4s in the Dwaar. On a venue
@@ -1180,6 +1187,11 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
           // floor (the param is the floor of the range, the rng's int(3) the
           // rest); tier-1/2 and venues keep 0 — their rng streams untouched.
           water: tierOf(c.floor) === 3 ? 2 : 0,
+          // T4/T3 — the Carnival's distorting mirrors: 2–3 panes on every
+          // tier-4 floor (the param is the floor of the range, one rng coin
+          // the third; the draws run LAST-LAST so tiers 1–3 stay pinned);
+          // venues keep 0 — no carnival glass on a sponsored floor.
+          distort: tierOf(c.floor) === 4 ? 2 : 0,
         })
       : generateFloorObjects(floor, { ...M2_PARAMS, ...vp!.objectOverrides });
   const qp = PROFILES[preset];
@@ -1266,6 +1278,18 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       scene.add(pm.mesh);
       cheap.push(pm);
       return { bind: pm, hero: null, state: 'clear' as const };
+    }
+    if (m.kind === 'distort') {
+      // T4/T3 — the carnival glass: the standing-mirror base in the tier's
+      // rose, its plane's vertices bent once at creation (static geometry —
+      // reduced-flash safe). Fog/crack ride the same CheapMirror interface;
+      // a fogged pane swaps to the shared matte and stops lying.
+      const dm = createDistortMirror();
+      dm.mesh.position.set(m.x, 1.35, m.z);
+      dm.mesh.rotation.y = m.rotY;
+      scene.add(dm.mesh);
+      cheap.push(dm);
+      return { bind: dm, hero: null, state: 'clear' as const };
     }
     const cm = createMirrorMesh(m.kind, pack?.accent.secondary); // M6/T1 — beacon emissive accent
     cm.mesh.position.set(m.x, 1.35, m.z);
@@ -1422,6 +1446,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   path = []; // Chhaya loses the trail; she hides until the new path ages
   chhaya.visible = false;
   chhayaAnnounced = false; // the new floor's first sighting speaks again
+  distortAnnounced = false; // the new floor's first displacement speaks again
   anger60Spoken = anger90Spoken = false; // a fresh house has said nothing
   player = spawnPlayer(floor);
   visited.clear(); // the fog closes in — the new floor starts unexplored
@@ -2069,6 +2094,19 @@ function frame(now: number): void {
         waterRt[i]!.rippledAt = now;
         pushCaption('water-ripple', t(lang, 'caption.waterRipple'));
       }
+      // T4/T3 — the carnival glass lies about where you are: while ANY
+      // unfogged distort mirror sees the player (mirror↔player only — the
+      // pane lies to whoever looks), the player's APPARENT position is
+      // displaced by that pane's fixed delta. One derivation per fixed step
+      // feeds everything downstream: the echo sense check + chase cell, the
+      // map radar, and the once-per-attempt caption. Fog the seeing pane and
+      // the next step tells the truth again.
+      const apparent = computeApparent(player, allMirrors, mirrorRuntime, floor.grid, now);
+      const displaced = apparent.x !== player.x || apparent.y !== player.y;
+      if (displaced && !distortAnnounced) {
+        distortAnnounced = true;
+        pushCaption('distort', t(lang, 'caption.distort'));
+      }
       echoes = echoes.map((e) => {
         const next = updateEcho(
           e,
@@ -2080,13 +2118,17 @@ function frame(now: number): void {
           objs.patrolAnchors,
           now,
           FIXED_STEP,
+          apparent,
         );
         // Map radar (T4): a successful sense check is the only writer of
         // loseMemoryAt, so a changed value marks this tick's check — ping at
         // the echo's position. The throttle lives inside updateEcho, so this
         // never double-fires within its SENSE_INTERVAL_MS cadence.
+        // T4/T3 — while the carnival glass displaces you, the ping lands at
+        // the APPARENT spot instead: the deception itself is visible on the
+        // map (fog the pane and the radar snaps back to the truth).
         if (next.loseMemoryAt !== e.loseMemoryAt) {
-          pings.push({ x: next.x, y: next.y, at: now });
+          pings.push(displaced ? { x: apparent.x, y: apparent.y, at: now } : { x: next.x, y: next.y, at: now });
           // M5/T3 — the caption rides the SAME detection point (never a
           // recompute): one id, one line per ttl window however often the
           // per-echo sense cadence re-fires it.
@@ -2606,8 +2648,16 @@ if (import.meta.env.DEV || testMode) {
         // T3/T4 — the Gardens' standing pools (2–4 on tier-3 floors, 0
         // everywhere else — the gated rng's output, the t3 e2e's census).
         water: waterRt.length,
+        // T4/T3 — the Carnival's distorting panes (2–3 on tier-4 floors, 0
+        // everywhere else — the LAST-LAST gated rng's output).
+        distort: allMirrors.filter((m) => m.kind === 'distort').length,
       };
     },
+    // T4/T3 — where the house says the player stands right now: the true
+    // position, or the first seeing distort pane's displaced lie (≠ getPlayer
+    // while carnival glass watches you; equal again once fogged).
+    apparentPlayer: () =>
+      computeApparent(player, allMirrors, mirrorRuntime, floor.grid, performance.now()),
     beaconsLeft: () => {
       const bc = beaconsCaptured(allMirrors, mirrorRuntime);
       return bc.total - bc.captured;

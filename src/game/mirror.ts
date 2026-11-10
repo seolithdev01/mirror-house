@@ -183,6 +183,53 @@ export function createPortraitMirror(id: number): CheapMirror {
   };
 }
 
+/** T4/T3 — the distorting mirror: the carnival glass. The standing-mirror
+ *  base (same 1.5×2.4 plane family, same fog/crack interface) wearing the
+ *  tier's rose tint and a STATIC vertex-wave bend — the plane's own vertices
+ *  are displaced once at creation by a gentle sine along both axes, so the
+ *  pane reads warped with zero per-frame animation (reduced-flash safe; the
+ *  geometry never changes again). Fogged swaps to the shared matte exactly
+ *  like standing glass — a fogged pane stops lying about where you stand. */
+export const DISTORT_ROSE = 0xc2548a; // the Carnival's rose (palette.ts tier-4 teal→magenta accent)
+
+export function createDistortMirror(): CheapMirror {
+  const geo = new THREE.PlaneGeometry(1.5, 2.4, 6, 10);
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    // the bend: a gentle wave along the pane's height, skewed by its width —
+    // the funhouse ripple, frozen into the geometry
+    pos.setZ(i, Math.sin(y * 2.2 + x * 0.9) * 0.07);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals(); // the warped plane shades like warped glass
+  const base = new THREE.MeshStandardMaterial({
+    color: DISTORT_ROSE,
+    metalness: 0.7,
+    roughness: 0.3,
+  });
+  const mesh = new THREE.Mesh(geo, base);
+  let state: MirrorFogState = 'clear';
+  return {
+    mesh,
+    setFog(next: MirrorFogState): void {
+      if (next === state) return;
+      state = next;
+      // Distort mirrors never capture (not beacons): any non-clear state is
+      // the matte fogged swap.
+      mesh.material = next === 'clear' ? base : foggedMaterial;
+    },
+    setCracked(cracked: boolean): void {
+      base.color.setHex(cracked ? CRACK_TINT : DISTORT_ROSE);
+    },
+    dispose(): void {
+      geo.dispose();
+      base.dispose();
+    },
+  };
+}
+
 /** Options for the RT mirror classes of visuals: heroes render at 512, the
  *  true-mirror step-through pairs (T7) reuse the class at 256 with a gold
  *  frame so the passage reads at a glance. */

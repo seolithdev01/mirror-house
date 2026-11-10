@@ -50,14 +50,21 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 33 entries (25 + feedback, beta, the tier-2 trio, the T3 water, and the Gardens pair)', () => {
-    expect(FAQ).toHaveLength(33);
+  it('grows to 34 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass)', () => {
+    expect(FAQ).toHaveLength(34);
   });
 
   it('the report-bugs answer names the Feedback button in the top-right', () => {
     const e = FAQ.find((f) => /report a bug/i.test(f.q));
     expect(e, 'an entry about reporting bugs exists').toBeDefined();
     expect(e!.a).toContain('Feedback button in the top-right');
+  });
+
+  it('the T4 entry explains the distorting mirrors and their frost counter', () => {
+    const e = FAQ.find((f) => /distorting mirrors/i.test(f.q));
+    expect(e, 'an entry about the carnival glass exists').toBeDefined();
+    expect(e!.a).toContain('lies about WHERE you are');
+    expect(e!.a).toContain('fog'); // the counter-play is the Frost Lantern
   });
 
   it('the beta answer says what the beta is and teases the roadmap', () => {

@@ -193,6 +193,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.unmuted': 'Sound on',
     // T3/T3 — the water-mirrors: one line per ripple event
     'caption.waterRipple': 'The water ripples — its eye closes.',
+    // T4/T3 — the carnival glass: once per attempt, on the first displacement
+    'caption.distort': 'The glass shows you somewhere you are not.',
     // misc chrome
     'misc.close': '✕ Close ({key})',
     // M5/T6 — the accessible name for every ✕-only close button
@@ -375,6 +377,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.muted': 'ध्वनि मौन',
     'caption.unmuted': 'ध्वनि चालू',
     'caption.waterRipple': 'पानी में लहर उठी — उसकी आँख बंद हो गई।',
+    // T4/T3 — कार्निवल का काँच: हर कोशिश में एक बार, पहले विचलन पर
+    'caption.distort': 'शीशा आपको उस जगह दिखा रहा है, जहाँ आप नहीं हैं।',
     // शेष क्रोम
     'misc.close': '✕ बंद करें ({key})',
     // M5/T6 — केवल ✕ वाले बंद बटनों का सुगम नाम

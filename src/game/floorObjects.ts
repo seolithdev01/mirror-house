@@ -6,10 +6,10 @@
 // consume the exact same spots without dragging rendering code into placement.
 import { createRng } from '../engine/rng';
 import { Dir, DIR_VECTOR, type FloorGrid } from '../engine/grid';
-import { CELL_SIZE } from '../engine/constants';
+import { CELL_SIZE, DISTORT_MAX_CELLS } from '../engine/constants';
 import { bfsDistances, type Floor } from './maze';
 
-export type MirrorKind = 'standing' | 'beacon' | 'true' | 'silvered' | 'portrait';
+export type MirrorKind = 'standing' | 'beacon' | 'true' | 'silvered' | 'portrait' | 'distort';
 
 export interface MirrorRef {
   id: number;
@@ -21,9 +21,29 @@ export interface MirrorRef {
   cellY: number;
   pairId: number | null;
   /** The wall edge this object covers as a door (T7): standing/silvered mount
-   *  on a wall and carry their dir; beacon/true/portrait never open anything —
-   *  null (portraits mount on a wall like standing glass, but open nothing). */
+   *  on a wall and carry their dir; beacon/true/portrait/distort never open
+   *  anything — null (portraits and carnival glass mount on a wall like
+   *  standing glass, but open nothing). */
   wallDir: Dir | null;
+  /** T4/T3 — the carnival glass's fixed lie: the apparent-position delta in
+   *  CELLS (axis-aligned, 1..DISTORT_MAX_CELLS on exactly one axis), derived
+   *  per-id deterministically by `distortDelta` — the same id lies the same
+   *  way on every floor, no rng draw. Present only on kind 'distort'. */
+  distortDx?: number;
+  distortDy?: number;
+}
+
+/** The fixed lie one carnival pane tells: axis-aligned (exactly one axis
+ *  carries it), magnitude 1..DISTORT_MAX_CELLS cells, derived purely from the
+ *  mirror's id — bit 0 picks the axis, bit 1 the sign, bit 2 the extra cell —
+ *  so the delta is stable across floors, rebuilds and saves (the placement
+ *  counterpart of portraitSpec's per-id silhouette). Never zero: a distort
+ *  mirror that told the truth would be a standing mirror. */
+export function distortDelta(id: number): { dx: number; dy: number } {
+  const axisX = id % 2 === 0;
+  const sign = (id >> 1) % 2 === 0 ? 1 : -1;
+  const mag = 1 + (Math.floor(id / 4) % DISTORT_MAX_CELLS); // 1..2 cells
+  return axisX ? { dx: sign * mag, dy: 0 } : { dx: 0, dy: sign * mag };
 }
 
 export interface FloorObjects {
@@ -51,6 +71,11 @@ export interface M2Params {
    *  tiers 1–2 and venues) draws nothing — the rng stream stays
    *  byte-identical to the M2/T2 order. */
   water: number;
+  /** T4 — the FLOOR of the carnival-glass count: the rng flips one coin on
+   *  top of it, so a tier-4 ask of 2 places 2–3 distorting mirrors. Zero
+   *  (the default, tiers 1–3 and venues) draws nothing — the stream stays
+   *  byte-identical to the M2/T2/T3 order (distort draws LAST-LAST). */
+  distort: number;
 }
 
 export const M2_PARAMS: M2Params = {
@@ -60,6 +85,7 @@ export const M2_PARAMS: M2Params = {
   anchors: 6,
   portraits: 0,
   water: 0,
+  distort: 0,
 };
 
 export interface MirrorSpot {
@@ -109,8 +135,9 @@ const manhattan = (a: Candidate, b: Candidate): number => Math.abs(a.x - b.x) + 
  * guaranteed: every random draw comes from one rng consumed in a fixed order
  * (standing shuffle → [portraits: count coin + shuffle, only when
  * params.portraits > 0] → echo shuffle → anchor shuffle → [water: count
- * coin + shuffle, only when params.water > 0 — LAST, so the water draws
- * append to the stream and never perturb the tier-1/2 order]).
+ * coin + shuffle, only when params.water > 0] → [distort: count coin +
+ * shuffle, only when params.distort > 0 — LAST-LAST, so the carnival draws
+ * append to the stream and never perturb the tier-1/2/3 order]).
  *
  * Edge cases (degenerate tiny grids): every pool below may hold fewer cells
  * than the parameter asks for — we then simply place what exists and never
@@ -143,6 +170,7 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
   const used = new Set<string>();
   const place = (c: Candidate, kind: MirrorKind, pairId: number | null = null): number => {
     const id = mirrors.length;
+    const delta = kind === 'distort' ? distortDelta(id) : null;
     mirrors.push({
       id,
       kind,
@@ -153,6 +181,7 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
       cellY: c.y,
       pairId,
       wallDir: kind === 'standing' || kind === 'silvered' ? c.spot.dir : null,
+      ...(delta ? { distortDx: delta.dx, distortDy: delta.dy } : {}),
     });
     used.add(key(c.x, c.y));
     return id;
@@ -287,6 +316,19 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
       }
     }
     water = rng.shuffle(poolCells).slice(0, count);
+  }
+
+  // Rule 9 (T4/T3): the Carnival's distorting mirrors. Wall-mounted like the
+  // standing glass (fogable exactly like it — frost.ts reads the kind), the
+  // count the rng's call (the param is the floor of the range, one coin adds
+  // the third), then a shuffle of whatever cells the portraits/standing glass
+  // left. Each pane's fixed lie is NOT an rng draw — it derives from the
+  // mirror's id (distortDelta, per-id deterministic). Draws happen ONLY when
+  // params.distort > 0 (tier 4) and LAST-LAST in the stream: tiers 1–3 keep
+  // the exact M2/T2/T3 rng order — their experience is byte-identical.
+  if (params.distort > 0) {
+    const count = params.distort + rng.int(2); // 2 → 2–3 panes
+    for (const c of rng.shuffle(remaining()).slice(0, count)) place(c, 'distort');
   }
 
   return { mirrors, echoSpawns, patrolAnchors, water };

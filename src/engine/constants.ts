@@ -86,6 +86,11 @@ export const AVART_LEAD_S = 1.8; // seconds of travel projected at a full sprint
 // (the funhouse hall; Truth-Shard IV closes ACT I — spec §2.3). The campaign
 // is TERMINAL at 40: descend() is a no-op there until Act II exists.
 export const TIER_FOUR_FLOORS = 40;
+// T4/T3 — the distorting mirrors: while UNfogged carnival glass sees the
+// player, every enemy's mirror-sight reads them displaced by the mirror's
+// fixed per-id delta — axis-aligned cells, capped here. Fog the glass and the
+// house remembers where you truly stand.
+export const DISTORT_MAX_CELLS = 2;
 // T3 — the water-mirrors: standing pools are Echo eyes the lantern cannot
 // fog; the player's step is the only blindness they know.
 export const WATER_RIPPLE_MS = 10_000; // ms a rippled pool's eye stays shut

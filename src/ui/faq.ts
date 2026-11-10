@@ -85,6 +85,10 @@ export const FAQ: readonly FaqEntry[] = [
     a: "The Reflecting Gardens (floors 21–30) hold still pools of water: two to four a floor, flat teal cells that are Echo eyes like any clear glass — the hollow ones can see you through them from across the hall. You cannot fog water; the Frost Lantern breathes on glass, not lakes. Your one verb is the ripple: walk within arm's reach of a pool and the surface breaks — its eye closes for ten seconds, the caption says so, and its dot on the overhead map dims until the water stills. Cross wide, or ripple first and move while it is blind. Never trust a calm surface you have not disturbed.",
   },
   {
+    q: 'What are the distorting mirrors — the carnival glass?',
+    a: "The Carnival of Faces (floors 31–40) hangs bent panes of rose glass, two or three a floor — the wavy rose squiggle on your overhead map marks each one. While a pane can see you, it lies about WHERE you are: every Echo's mirror-sight reads you a cell or two off from your true standing, so they chase, ping and hunt the spot the glass shows instead of you. The deception is visible — watch the map's red pings bloom offset from your own arrow — and the caption warns you once. They are eyes too, so treat them like standing glass: face one and breathe the Frost Lantern (F) to fog it for 25 seconds, and the house remembers where you truly stand. Fogging can even shake a chase outright, if the Echo was following the lie.",
+  },
+  {
     q: 'How do I fog mirrors — and why bother?',
     a: "Face the glass and press F: the Frost Lantern breathes on it, and the reflection fogs over for 25 seconds. Each breath spends about a third of your lantern's air, which refills in four seconds. Fogged mirrors are blind — the Echoes see you only through clear glass — and enough frosted eyes in one place will confuse an Echo into a spinning standstill. Fog is the only attack you get.",
   },
