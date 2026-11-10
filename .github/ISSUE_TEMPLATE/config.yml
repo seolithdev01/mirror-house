@@ -1,0 +1,13 @@
+# step007/T2 — blank issues stay on (a plain "it broke" with no template is
+# still better than silence); the two links answer the questions that are not
+# issues at all: how to play, and what the game does with your data.
+blank_issues_enabled: true
+contact_links:
+  - name: Play guide
+    url: https://github.com/seolithdev01/mirror-house#how-to-play
+    about: How to move, fog the glass, and descend — the README's play guide.
+  - name: Privacy
+    url: https://github.com/seolithdev01/mirror-house/blob/main/PRIVACY.md
+    about: >-
+      What the game stores (one IndexedDB record, your device only) and what
+      the in-game feedback composer sends — nothing until you press the button.

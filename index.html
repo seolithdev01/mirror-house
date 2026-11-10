@@ -634,6 +634,111 @@
         padding: 6px 14px;
         cursor: pointer;
       }
+      /* step007/T2 — the 📮 feedback composer: the About modal's shape holding
+         a form — the kind radio (🐞/💡/💙), the short title, the body textarea
+         (prompt + diagnostics prefilled, monospace so the block reads), the
+         privacy line, and the two exit anchors. */
+      #mh-feedback-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: rgba(5, 8, 20, 0.82);
+        display: grid;
+        place-items: center;
+      }
+      #mh-feedback-overlay[hidden] {
+        display: none;
+      }
+      #mh-feedback-box {
+        min-width: 300px;
+        max-width: 560px;
+        max-height: 86vh;
+        overflow: auto;
+        background: #0b1026;
+        border: 1px solid #2a3560;
+        border-radius: 10px;
+        padding: 20px 26px;
+        color: #f2e9d8;
+        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
+      }
+      #mh-feedback-box h2 {
+        margin: 0 0 8px;
+        color: #d9a441;
+        font-size: calc(18px * var(--mh-text-scale, 1));
+      }
+      #mh-feedback-kind {
+        border: 0;
+        padding: 0;
+        margin: 0 0 6px;
+      }
+      #mh-feedback-kind legend {
+        color: #9fb4c8;
+        padding: 0;
+        margin-bottom: 4px;
+      }
+      #mh-feedback-kind label {
+        display: inline-block;
+        margin: 0 14px 0 0;
+        white-space: nowrap;
+      }
+      #mh-feedback-box label {
+        display: block;
+        margin: 6px 0 2px;
+        color: #9fb4c8;
+      }
+      #mh-feedback-kind label {
+        color: inherit;
+      }
+      #mh-feedback-summary,
+      #mh-feedback-body {
+        width: 100%;
+        box-sizing: border-box;
+        background: #101736;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        font: inherit;
+        padding: 6px 8px;
+      }
+      #mh-feedback-body {
+        resize: vertical;
+        min-height: 9em;
+        font-family: ui-monospace, monospace;
+        font-size: calc(12.5px * var(--mh-text-scale, 1));
+        white-space: pre-wrap;
+      }
+      #mh-feedback-privacy {
+        color: #9fb4c8;
+        font-size: calc(12px * var(--mh-text-scale, 1));
+        margin: 10px 0 6px;
+      }
+      #mh-feedback-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      #mh-feedback-actions a {
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      #mh-feedback-actions #mh-feedback-github {
+        border-color: #2ec4b6;
+        color: #2ec4b6;
+      }
+      #mh-feedback-box > button {
+        margin-top: 12px;
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+      }
       /* Reduced-flash (M5/T1): with the body class on (the ⚙ Access toggle),
          every overlay and banner fades in and out over ≥300ms instead of
          appearing at once. A [hidden] overlay keeps its layout box but goes
@@ -646,6 +751,7 @@
       body.mh-reduced-flash #mh-faq-overlay,
       body.mh-reduced-flash #mh-settings-overlay,
       body.mh-reduced-flash #mh-about-overlay,
+      body.mh-reduced-flash #mh-feedback-overlay,
       body.mh-reduced-flash #mh-tier-overlay,
       body.mh-reduced-flash #mh-aaina-overlay,
       body.mh-reduced-flash #mh-cleared,
@@ -660,6 +766,7 @@
       body.mh-reduced-flash #mh-faq-overlay[hidden],
       body.mh-reduced-flash #mh-settings-overlay[hidden],
       body.mh-reduced-flash #mh-about-overlay[hidden],
+      body.mh-reduced-flash #mh-feedback-overlay[hidden],
       body.mh-reduced-flash #mh-tier-overlay[hidden] {
         display: grid; /* keep the box — opacity fades where display cannot */
         opacity: 0;

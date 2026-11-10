@@ -108,6 +108,27 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'about.provenance': 'Provenance',
     'about.license': 'License',
     'about.tagline': 'Made of 100% original glass.',
+    // step007/T2 — the 📮 feedback composer (bug / suggestion / kind word).
+    // Bilingual chrome from day one, like About: the beta's front door for
+    // testers in either language. The textarea's prompt + diagnostics header
+    // ride the same table; the diagnostics block itself is data (English).
+    'btn.feedback': 'Feedback',
+    'feedback.title': 'Send feedback',
+    'feedback.kind': 'What is it?',
+    'feedback.bug': '🐞 Bug',
+    'feedback.suggestion': '💡 Suggestion',
+    'feedback.love': '💙 A kind word',
+    'feedback.summary': 'Title (short)',
+    'feedback.body': 'Your message',
+    'feedback.github': 'Open GitHub issue',
+    'feedback.email': 'Email instead',
+    'feedback.privacyNote':
+      'Nothing is sent until you press a button — review the text below (diagnostics included) first.',
+    'feedback.prompt.bug': 'What happened? What did you do, and what did you expect?',
+    'feedback.prompt.suggestion': 'What would make the house better?',
+    'feedback.prompt.love': 'Tell us what you loved — the floor, the music, the chase.',
+    'feedback.diagHeader':
+      'Diagnostics — attached automatically; delete anything you would rather not share:',
     // chips (emoji + label + live value)
     'chip.streak': 'Streak',
     'chip.best': 'Best',
@@ -254,6 +275,23 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'about.provenance': 'उद्गम',
     'about.license': 'लाइसेंस',
     'about.tagline': 'शत-प्रतिशत मौलिक काँच से बना।',
+    // step007/T2 — 📮 प्रतिक्रिया संगीकर्ता: दिन-एक से द्विभाषी
+    'btn.feedback': 'प्रतिक्रिया',
+    'feedback.title': 'प्रतिक्रिया भेजें',
+    'feedback.kind': 'यह क्या है?',
+    'feedback.bug': '🐞 त्रुटि',
+    'feedback.suggestion': '💡 सुझाव',
+    'feedback.love': '💙 अच्छा लगा',
+    'feedback.summary': 'शीर्षक (संक्षेप में)',
+    'feedback.body': 'आपका संदेश',
+    'feedback.github': 'GitHub इशू खोलें',
+    'feedback.email': 'ईमेल करें',
+    'feedback.privacyNote':
+      'बटन दबाने तक कुछ नहीं भेजा जाता — पहले नीचे का पूरा पाठ (निदान सहित) देख लीजिए।',
+    'feedback.prompt.bug': 'क्या हुआ? आपने क्या किया, और क्या होना चाहिए था?',
+    'feedback.prompt.suggestion': 'घर को और बेहतर क्या बनाएगा?',
+    'feedback.prompt.love': 'बताइए क्या अच्छा लगा — मंज़िल, संगीत, शिकार।',
+    'feedback.diagHeader': 'निदान — स्वतः जुड़ा है; जो साझा नहीं करना चाहते, वह मिटा दीजिए:',
     // चिपें — छोटे शब्द, एक ही पंक्ति
     'chip.streak': 'लय',
     'chip.best': 'सर्वश्रेष्ठ',

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import * as THREE from 'three';
+import { APP_VERSION } from './appVersion';
 import { createAudioEngine } from './audio/engine';
 import { intensityFrom } from './audio/theory';
 import {
@@ -90,6 +91,7 @@ import {
   isCollapse,
 } from './game/houseState';
 import { parseLook } from './game/look';
+import { diagnosticsSnapshot, keymapDiffCount, recordError, type RingError } from './game/feedback';
 import {
   DEMO_VENUE_ID,
   validateVenuePack,
@@ -159,6 +161,7 @@ import {
 import { buildAainaOverlay } from './ui/aaina';
 import { buildAboutOverlay } from './ui/about';
 import { CAPTION_TTL_MS, captionFeed, renderCaptions, type CaptionEvent } from './ui/captions';
+import { buildFeedbackOverlay } from './ui/feedback';
 import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
 import { fill, resolveLang, t, type Lang } from './ui/i18n';
@@ -168,6 +171,19 @@ import { buildSettingsOverlay, keyLabel, type TextScale } from './ui/settings';
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const overheadCanvas = document.querySelector<HTMLCanvasElement>('#overhead')!;
 const diagnostics = document.querySelector<HTMLElement>('#diagnostics')!;
+
+// step007/T2 — the error ring: the last 10 runtime errors (window `error` +
+// `unhandledrejection`), capped and ~200 chars each inside recordError. It
+// feeds the 📮 composer's diagnostics block — nothing is sent anywhere; the
+// ring lives in memory for this tab only and dies with it. Attached before
+// the async boot below, so a boot-time failure is caught too.
+let errorRing: RingError[] = [];
+window.addEventListener('error', (e) => {
+  errorRing = recordError(errorRing, performance.now(), e.error ?? e.message);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  errorRing = recordError(errorRing, performance.now(), `Unhandled rejection: ${String(e.reason)}`);
+});
 
 // M4/T2 campaign boot. The URL names the campaign's BASE seed — `?seed=PLAY`
 // starts floor 1 of that base; DEV builds may also jump with `&floor=N`.
@@ -596,12 +612,17 @@ function buyHint(): void {
 
 /**
  * Verbs (frost, step-through, push) need a live floor AND no overlay in front
- * of it: the FAQ and the tactical view are pauses, and a key pressed while
- * reading/pausing must not act. Aaina is deliberately absent here — she is
- * diegetic, so verbs stay live while she talks.
+ * of it: the FAQ, the 📮 composer and the tactical view are pauses, and a key
+ * pressed while reading/writing/pausing must not act. Aaina is deliberately
+ * absent here — she is diegetic, so verbs stay live while she talks.
  */
 function canAct(): boolean {
-  return active(phase) && faq.root.hidden === true && !isTactical(view);
+  return (
+    active(phase) &&
+    faq.root.hidden === true &&
+    feedback.root.hidden === true && // step007/T2 — the composer is a pause
+    !isTactical(view)
+  );
 }
 
 function tryFrost(now: number): void {
@@ -667,6 +688,36 @@ const faq = buildFaqOverlay();
 // Two doors: the ⓘ beside 🌐 (hud.ts) and the entry inside ⚙ (settings.ts);
 // both land on this one overlay.
 const about = buildAboutOverlay();
+// step007/T2 — the 📮 feedback composer. On every open the textarea is
+// pre-filled with the prompt + a FRESH diagnosticsSnapshot (below) — the
+// player reads, edits or trims the whole thing before any button opens
+// GitHub or a mail client. Nothing else reads this state; nothing sends it.
+const feedback = buildFeedbackOverlay({ diagnostics: diagnosticsText });
+/** The composer's diagnostics: READ-ONLY truth from live state, composed at
+ *  open time — version, language, quality preset, the floor's seed + the
+ *  campaign base, the phase, the venue pack (if any), the a11y flags, the
+ *  remapped-key COUNT (never the bindings), the user agent, and the error
+ *  ring. Function declaration on purpose: every let it reads is live at the
+ *  moment the overlay opens, long after boot initialized them. */
+function diagnosticsText(): string {
+  const a = a11y();
+  return diagnosticsSnapshot({
+    appVersion: APP_VERSION,
+    userAgent: navigator.userAgent,
+    lang,
+    preset,
+    seed,
+    floor: campaign.floor,
+    campaignBase: campaign.seedBase,
+    phaseKind: phase.kind,
+    venueId: venue === null ? null : venue.id,
+    reducedFlash: a.reducedFlash,
+    captions: a.captions,
+    textScale: a.textScale,
+    remappedKeys: keymapDiffCount(a.keyMap, DEFAULT_KEYMAP),
+    errors: errorRing,
+  });
+}
 const aaina = buildAainaOverlay({ onBuyHint: buyHint });
 // M5/T1 — the ⚙ settings overlay: every control applies at once (text scale
 // re-sets the CSS var, reduced-flash flips the body class + the beat glow
@@ -733,6 +784,8 @@ const settings = buildSettingsOverlay({
   onVenueFloor: () => void toggleDemoVenue(),
   // step007/T1 — the ⚙ About entry stacks the panel on top of ⚙.
   onAbout: () => about.toggle(),
+  // step007/T2 — the ⚙ Feedback entry stacks the composer the same way.
+  onFeedback: () => feedback.toggle(),
   onClosed: () => persist(true), // a closed overlay must not ride a debounce window
 });
 settings.setValues({
@@ -776,6 +829,8 @@ const hud = createHud({
   onSettings: () => settings.toggle(),
   // step007/T1 — the ⓘ beside 🌐.
   onAbout: () => about.toggle(),
+  // step007/T2 — the 📮 beside ⓘ.
+  onFeedback: () => feedback.toggle(),
 });
 
 /** M4/T6 — one fn that re-feeds every localized surface the HUD/overlays own.
@@ -790,6 +845,7 @@ function refreshChrome(): void {
   aaina.setLang(lang);
   faq.setLang(lang);
   about.setLang(lang); // step007/T1 — the About panel is bilingual chrome
+  feedback.setLang(lang); // step007/T2 — the composer's chrome flips too
   settings.setLang(lang);
   hud.setMode(mode);
   hud.setView(viewLabel(view));
@@ -1470,6 +1526,16 @@ window.addEventListener('keydown', (e) => {
     (e.target as HTMLElement | null)?.closest?.('button, input, select, textarea, a[href]')
   )
     return;
+  // step007/T2 — a focused free-text control (the 📮 composer's title and
+  // body) owns EVERY key while it writes: without this guard, typing the bug
+  // report itself would fire H (FAQ), M (mute), V (view), F (frost)… as game
+  // verbs behind the composer. The pause gate above already froze the floor;
+  // this keeps the dispatch quiet too. Radios and checkboxes are inputs but
+  // never text — they keep the M5-final activation-key contract untouched.
+  // (instanceof HTMLElement: a document/window target has no closest and no
+  // text either — such a press belongs to the game.)
+  if (e.target instanceof HTMLElement && e.target.closest('input[type="text"], textarea') !== null)
+    return;
   switch (actionFor(e.code, a11y().keyMap)) {
     case 'mute':
       toggleMute();
@@ -1621,9 +1687,10 @@ function frame(now: number): void {
   // resets for the next attempt. No simulation on the reset frame itself.
   const { phase: reArmed, shouldReset } = tickFail(phase, now);
   // One gate for the whole simulation: a live floor, no overlay in front of
-  // it, and not parked in the tactical view. The FAQ and tactical are pauses —
-  // movement, verbs and catch-up all respect both.
-  const simActive = active(phase) && faq.root.hidden === true && !isTactical(view);
+  // it, and not parked in the tactical view. The FAQ, the 📮 composer and the
+  // tactical view are pauses — movement, verbs and catch-up all respect them.
+  const simActive =
+    active(phase) && faq.root.hidden === true && feedback.root.hidden === true && !isTactical(view);
   if (shouldReset) {
     phase = reArmed;
     resetFloor(now);
@@ -2003,6 +2070,8 @@ if (import.meta.env.DEV || import.meta.env.MODE === 'soak') {
     viewMode: () => view, // M3/T6 — the same value under its exact hook name
     // M5/T3 — the live caption feed (id + text), the bar's backing store.
     captions: () => captions.map((c) => ({ id: c.id, text: c.text })),
+    // step007/T2 — the live error ring behind the composer's diagnostics.
+    errorRing: () => errorRing.map((e) => ({ ...e })),
     // M5/T4 — the quality state (the ?perf= e2e reads `preset`): the choice,
     // the effective preset + its profile, the auto window's current average,
     // the live ratio, and the RT census (heroRt 0 on the low path — the

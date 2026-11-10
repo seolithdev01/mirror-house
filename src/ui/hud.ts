@@ -28,6 +28,8 @@ export type HudInit = {
   onSettings(): void;
   /** step007/T1 — the ⓘ button (beside 🌐): open/close the About panel. */
   onAbout(): void;
+  /** step007/T2 — the 📮 button (beside ⓘ): open/close the feedback composer. */
+  onFeedback(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -129,6 +131,14 @@ export function createHud(init: HudInit): Hud {
   aboutBtn.id = 'mh-about';
   aboutBtn.addEventListener('click', () => init.onAbout());
   modes.appendChild(aboutBtn);
+  // step007/T2 — 📮 sits beside ⓘ: the feedback composer (bug / suggestion /
+  // a kind word) with the diagnostics the player reviews before sending. The
+  // ⚙ entry opens the same overlay.
+  const feedbackBtn = document.createElement('button');
+  feedbackBtn.type = 'button';
+  feedbackBtn.id = 'mh-feedback';
+  feedbackBtn.addEventListener('click', () => init.onFeedback());
+  modes.appendChild(feedbackBtn);
   // M5/T1 — ⚙ sits next to 🌐 and opens the settings overlay (Display:
   // text scale; Access: reduced-flash + captions — the a11y front door).
   const gearBtn = document.createElement('button');
@@ -346,6 +356,9 @@ export function createHud(init: HudInit): Hud {
     aboutBtn.textContent = 'ⓘ';
     aboutBtn.title = t(lang, 'btn.about');
     aboutBtn.setAttribute('aria-label', t(lang, 'btn.about'));
+    feedbackBtn.textContent = '📮';
+    feedbackBtn.title = t(lang, 'btn.feedback');
+    feedbackBtn.setAttribute('aria-label', t(lang, 'btn.feedback'));
     gearBtn.textContent = '⚙';
     gearBtn.title = t(lang, 'btn.settings');
     gearBtn.setAttribute('aria-label', t(lang, 'btn.settings'));

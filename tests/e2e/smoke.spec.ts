@@ -293,6 +293,84 @@ test('beta: About opens via ⓘ beside 🌐, shows version + links, stacks over 
   expect(errors).toEqual([]);
 });
 
+// step007/T2 — the 📮 feedback composer: opens from the HUD button beside ⓘ
+// with the diagnostics block already IN the textarea (the seed line above
+// all — the player reviews exactly what will be sent), the GitHub exit is a
+// real anchor whose href is the repo's new-issue URL with the template and
+// the URL-encoded body (newlines as %0A), the email exit is the mailto
+// fallback to the support alias, typing retargets the hrefs live, the floor
+// pauses behind the composer (an FAQ-class pause), and Escape peels it.
+test('beta: 📮 composer opens with diagnostics prefilled; GitHub/mailto hrefs composed and encoded', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=FEEDBCK');
+  await ready(page);
+
+  // 📮 sits beside ⓘ and opens the composer
+  await expect(page.locator('#mh-about + #mh-feedback')).toHaveCount(1);
+  await page.locator('#mh-feedback').click();
+  await expect(page.locator('#mh-feedback-overlay')).toBeVisible();
+
+  // the textarea IS the message: prompt + diagnostics with the seed line
+  const body = await page.locator('#mh-feedback-body').inputValue();
+  expect(body).toContain('seed: FEEDBCK:1');
+  expect(body).toContain('game: Mirror House v');
+  expect(body).toContain('userAgent: ');
+
+  // the GitHub exit: repo new-issue URL, the bug template, from-game label,
+  // and the body URL-encoded (raw %0A) and decodable back to the textarea
+  const gh = await page.locator('#mh-feedback-github').getAttribute('href');
+  expect(gh!.startsWith('https://github.com/seolithdev01/mirror-house/issues/new?')).toBe(true);
+  expect(gh).toContain('%0A'); // encoded, never bare newlines
+  const ghParams = new URLSearchParams(gh!.slice(gh!.indexOf('?') + 1));
+  expect(ghParams.get('template')).toBe('bug_report.md');
+  expect(ghParams.get('labels')).toBe('from-game,feedback');
+  expect(ghParams.get('body')).toContain('seed: FEEDBCK:1');
+
+  // the email exit: mailto the support alias with the same body
+  const mail = await page.locator('#mh-feedback-email').getAttribute('href');
+  expect(mail!.startsWith('mailto:itsupport01@seolith.com?')).toBe(true);
+  const mailParams = new URLSearchParams(mail!.slice(mail!.indexOf('?') + 1));
+  expect(mailParams.get('body')).toContain('seed: FEEDBCK:1');
+
+  // typing retargets the exits live: a title lands in the issue title param —
+  // and the title deliberately presses game keys (T-h-e …: T is tactical, H
+  // is FAQ, M is mute, V is view) while focused in the text field: the
+  // dispatch's text-field guard must eat them all, or the FAQ would now be
+  // open over the composer.
+  await page.locator('#mh-feedback-summary').fill('The stair door never unlocked');
+  const gh2 = await page.locator('#mh-feedback-github').getAttribute('href');
+  expect(new URLSearchParams(gh2!.slice(gh2!.indexOf('?') + 1)).get('title')).toBe(
+    'The stair door never unlocked',
+  );
+  expect(page.locator('#mh-faq-overlay')).toBeHidden(); // H was eaten by the guard
+  await expect(page.locator('#mh-feedback-overlay')).toBeVisible(); // still the top layer
+
+  // the floor pauses behind the composer — a held W moves nobody
+  const pos = () =>
+    page.evaluate(() =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+    );
+  const frozenAt = await pos();
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(500);
+  await page.keyboard.up('KeyW');
+  const during = await pos();
+  expect(Math.hypot(during.x - frozenAt.x, during.y - frozenAt.y)).toBeLessThan(0.05);
+
+  // Escape peels the composer (the dialog trap)
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mh-feedback-overlay')).toBeHidden();
+
+  // and the ⚙ entry is the second door: stacked on top of ⚙
+  await page.locator('#mh-settings').click();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+  await page.locator('#mh-settings-feedback').click();
+  await expect(page.locator('#mh-feedback-overlay')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('sm: movement is paused behind the FAQ and resumes on close', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=PAUSED');

@@ -57,6 +57,9 @@ export interface SettingsInit {
   /** step007/T1 — the About entry: opens the About panel ON TOP of ⚙ (the
    *  dialog stack peels it first; ⚙ stays open underneath). */
   onAbout(): void;
+  /** step007/T2 — the Feedback entry: opens the 📮 composer ON TOP of ⚙ (the
+   *  same stack contract as the About entry). */
+  onFeedback(): void;
   /** Fired on every closing path (✕, backdrop, toggle-to-close) — main
    *  flushes the debounced save write here, so a closed tab eats nothing. */
   onClosed(): void;
@@ -340,6 +343,12 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
   aboutEntry.type = 'button';
   aboutEntry.id = 'mh-settings-about';
   aboutEntry.addEventListener('click', () => init.onAbout());
+  // step007/T2 — the Feedback entry beside it: the 📮 composer's second door
+  // (the HUD 📮 is the first).
+  const feedbackEntry = document.createElement('button');
+  feedbackEntry.type = 'button';
+  feedbackEntry.id = 'mh-settings-feedback';
+  feedbackEntry.addEventListener('click', () => init.onFeedback());
   function closeNow(): void {
     if (!root.hidden) {
       root.hidden = true;
@@ -374,6 +383,7 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     keyMsg,
     resetKeys,
     aboutEntry,
+    feedbackEntry,
     close,
   );
   root.appendChild(box);
@@ -405,6 +415,7 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     keyNote.textContent = t(lang, 'settings.keyNote');
     resetKeys.textContent = t(lang, 'settings.resetKeys');
     aboutEntry.textContent = t(lang, 'btn.about'); // step007/T1 — the ⓘ twin
+    feedbackEntry.textContent = `📮 ${t(lang, 'btn.feedback')}`; // step007/T2 — the 📮 twin
     close.textContent = t(lang, 'settings.close');
     close.setAttribute('aria-label', t(lang, 'aria.close')); // M5/T6
     renderKeyRows();
