@@ -15,6 +15,7 @@ import {
   FOG_COST,
   SHARD_BEACON,
   TAAL_FLOOR,
+  TAAL_SENTINEL_FLOOR,
   TIER_TWO_FLOORS,
 } from './engine/constants';
 import {
@@ -105,6 +106,7 @@ import {
 import {
   beatGlow,
   initTaal,
+  taalOutcome,
   taalTouch,
   TAAL_TOUCH_ANGER,
   TAAL_TOUCH_COOLDOWN_MS,
@@ -131,6 +133,7 @@ import {
 import {
   createHeroStandIn,
   createMirrorMesh,
+  createPortraitMirror,
   createSilveredDoor,
   HeroMirror,
   mirrorSpots,
@@ -362,7 +365,8 @@ let doorStates = new Map<number, DoorAnim>();
 let doorById = new Map<number, SilveredDoor>();
 let echoes: ReturnType<typeof initEchoes> = [];
 let echoMeshes: THREE.Group[] = [];
-// M4/T3 — Taal's cameo. State is null everywhere but his floor; the figure
+// M4/T3 — Taal's cameo (floor 5); T2 — the Sentinel on every tier-2 floor.
+// State is null everywhere else; the figure
 // exists exactly while that floor is built (buildFloor owns both, the
 // teardown rides floorDisposers with the rest of the stage).
 let taal: TaalState | null = null;
@@ -576,6 +580,13 @@ function aainaContext(): HintContext {
     // M4/T3 — his cameo floor, him on it: Aaina names the beat before she
     // names your shadow (chasing-adjacent in her chain of concerns).
     taalPresent: campaign.floor === TAAL_FLOOR && taal !== null,
+    // T2 — the Sentinel version: a tier-2 floor and him within 8 m. Different
+    // advice than the cameo — this touch catches, so the crossing rule only
+    // now earns its urgency.
+    taalSentinelNear:
+      campaign.floor >= TAAL_SENTINEL_FLOOR &&
+      taal !== null &&
+      Math.hypot(taal.x - player.x, taal.y - player.y) < 8,
     chasing: echoes.filter((e) => e.mode === 'chase').length,
     exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
     hintsUsed,
@@ -991,7 +1002,14 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // gameplay-critical step-through visibility.
   objs =
     pack === null
-      ? generateFloorObjects(floor, { ...M2_PARAMS, beacons: fp.beacons, echoes: fp.echoes })
+      ? generateFloorObjects(floor, {
+          ...M2_PARAMS,
+          beacons: fp.beacons,
+          echoes: fp.echoes,
+          // T2 — the Hall of Ancestors hangs 2–3 ancestor portraits per floor
+          // (the rng's coin on top of the 2 decides the third); tier-1 keeps 0.
+          portraits: tierOf(c.floor) === 2 ? 2 : 0,
+        })
       : generateFloorObjects(floor, { ...M2_PARAMS, ...vp!.objectOverrides });
   const qp = PROFILES[preset];
   const heroes: HeroMirror[] = [];
@@ -1067,6 +1085,17 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       scene.add(door.group);
       return { bind: door.mirror, hero: null, state: 'clear' as const };
     }
+    if (m.kind === 'portrait') {
+      // T2 — the ancestor: wall-mounted like the standing glass, her dim
+      // silhouette deterministic per mirror id; fog/crack ride the same
+      // CheapMirror interface, so the shared visual loop needs no cases.
+      const pm = createPortraitMirror(m.id);
+      pm.mesh.position.set(m.x, 1.35, m.z);
+      pm.mesh.rotation.y = m.rotY;
+      scene.add(pm.mesh);
+      cheap.push(pm);
+      return { bind: pm, hero: null, state: 'clear' as const };
+    }
     const cm = createMirrorMesh(m.kind, pack?.accent.secondary); // M6/T1 — beacon emissive accent
     cm.mesh.position.set(m.x, 1.35, m.z);
     cm.mesh.rotation.y = m.rotY;
@@ -1105,11 +1134,13 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     }
   });
 
-  // M4/T3 — Taal's cameo: the beat-walker tests only floor 5. One figure on
-  // the stage, one state on the loop; every other floor leaves both null
-  // (teardownFloor already cleared them when the previous floor was his).
-  // M6/T1 — never on a venue floor: the campaign's cameos stay home.
-  if (pack === null && c.floor === TAAL_FLOOR) {
+  // M4/T3 — Taal's cameo (floor 5); T2 — his promotion: from floor 11 through
+  // Dwaar II he walks EVERY tier-2 floor as the Sentinel, sharing the echoes'
+  // patrol anchors. One figure on the stage, one state on the loop; every
+  // other floor leaves both null (teardownFloor already cleared them when the
+  // previous floor was his). M6/T1 — never on a venue floor: the campaign's
+  // beat stays home.
+  if (pack === null && (c.floor === TAAL_FLOOR || tierOf(c.floor) === 2)) {
     const fig = createTaal();
     scene.add(fig.group);
     taalFigure = fig;
@@ -1829,21 +1860,26 @@ function frame(now: number): void {
       if (active(phase)) {
         for (const e of echoes)
           if (Math.hypot(e.x - player.x, e.y - player.y) < CONTACT_RADIUS) failFloor('caught');
-        // Taal's touch (M4/T3): a teaser, not a killer — no fail, no shards,
-        // just the house angering +20, once per 1.5s (taalTouch gates the
-        // wall clock; the cooldown banks on the state). A touch CAN tip an
-        // already-furious house over ANGER_MAX — the collapse is his alone.
+        // Taal's touch — routed by taalOutcome (M4/T3 + T2): the cameo floor
+        // angers the house (+20, once per 1.5s, taalTouch gating the wall
+        // clock; a touch CAN tip an already-furious house over ANGER_MAX);
+        // from TAAL_SENTINEL_FLOOR up he is the SENTINEL — his touch is the
+        // standard caught fail, shards forfeited like any capture.
         if (
           taal !== null &&
           Math.hypot(taal.x - player.x, taal.y - player.y) < CONTACT_RADIUS &&
           taalTouch(taal.touchCooldownUntil, now)
         ) {
           taal = { ...taal, touchCooldownUntil: now + TAAL_TOUCH_COOLDOWN_MS };
-          house = { ...house, anger: house.anger + TAAL_TOUCH_ANGER };
-          // M5/T3 — one line per touch (dedupe rides out his 1.5s cooldown);
-          // captionAnger below picks up any threshold this touch crossed.
-          pushCaption('taal-touch', t(lang, 'caption.taal'));
-          if (isCollapse(house)) failFloor('collapse');
+          if (taalOutcome(campaign.floor) === 'caught') {
+            failFloor('caught');
+          } else {
+            house = { ...house, anger: house.anger + TAAL_TOUCH_ANGER };
+            // M5/T3 — one line per touch (dedupe rides out his 1.5s cooldown);
+            // captionAnger below picks up any threshold this touch crossed.
+            pushCaption('taal-touch', t(lang, 'caption.taal'));
+            if (isCollapse(house)) failFloor('collapse');
+          }
         }
         const at = sampleDelayed(path, now, chhayaDelayMs());
         if (at !== null && Math.hypot(at.x - player.x, at.y - player.y) < CONTACT_RADIUS)

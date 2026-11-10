@@ -40,9 +40,10 @@ function runtimeFor(rt: MirrorRuntime[], m: MirrorRef): MirrorRuntime | null {
   return rt.find((r) => r.id === m.id) ?? null;
 }
 
-/** Mirrors an Echo can see through — silvered glass scatters, true glass reflects. */
+/** Mirrors an Echo can see through — silvered glass scatters, true glass
+ *  reflects. T2: the ancestor portraits are eyes exactly like standing glass. */
 function sensesThrough(m: MirrorRef): boolean {
-  return m.kind === 'standing' || m.kind === 'beacon' || m.kind === 'true';
+  return m.kind === 'standing' || m.kind === 'beacon' || m.kind === 'true' || m.kind === 'portrait';
 }
 
 export function initEchoes(

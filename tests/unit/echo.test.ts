@@ -83,6 +83,16 @@ describe('sensesPlayer', () => {
     expect(sensesPlayer(echoAt(-8, 0), { x: 8, y: 0, heading: 0 }, mirrors, rt, g, 0)).toBe(true);
   });
 
+  it('senses through a portrait — the ancestors are eyes too (T2)', () => {
+    const g = openGrid();
+    const mirrors = [{ ...mir(1, 0, 0), kind: 'portrait' as const }];
+    const rt = initMirrorRuntime(mirrors);
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt, g, 1000)).toBe(true);
+    applyFog(rt, 1, 1000); // fogging the pane blinds the eye, standing-style
+    expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt, g, 2000)).toBe(false);
+  });
+
   it('no mirror, or only out-of-range mirrors → blind', () => {
     const g = openGrid();
     expect(sensesPlayer(echoAt(-1.5, 0), { x: 1.5, y: 0, heading: 0 }, [], [], g, 0)).toBe(false);

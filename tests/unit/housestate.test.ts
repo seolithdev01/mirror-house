@@ -96,6 +96,13 @@ describe('houseState', () => {
     expect(crackTarget(pair, rt(pair), player, true)?.id).toBe(1); // nearest wins
   });
 
+  it('crackTarget: portraits crack exactly like standing glass (T2)', () => {
+    const player = { x: 0, y: 0, heading: 0 };
+    const mirrors = [m(0, 'portrait', 0, -0.8), m(1, 'true', 0, -0.5)];
+    expect(crackTarget(mirrors, rt(mirrors), player, true)?.id).toBe(0);
+    expect(crackTarget(mirrors, rt(mirrors, [0]), player, true)).toBeNull(); // already cracked
+  });
+
   it('beaconsCaptured counts captured/total; exitUnlocked only when every beacon is captured', () => {
     const mirrors = [m(0, 'beacon', 0, 0), m(1, 'beacon', 1, 0), m(2, 'standing', 2, 0)];
     const runtime = rt(mirrors);

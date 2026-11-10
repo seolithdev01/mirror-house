@@ -52,6 +52,7 @@ const KIND_LABEL: Record<HintKind, string> = {
   exit: 'the open stair door',
   chase: 'the thing hunting you',
   taal: 'the one on the beat',
+  taalSentinel: 'the Sentinel on his rounds',
   chhaya: 'your shadow, seconds behind',
   anger: "the house's temper",
   stuck: 'the way onward',

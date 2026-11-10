@@ -1,18 +1,30 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// Taal (M4/T3) — the beat-walker, second of the four Sentinels. A TEASER,
-// not a killer: he patrols the anchor loop in time with the 8-tick beat
-// (wall-clock phase — the rhythm works muted), lantern flaring on the
-// accent, and his touch only angers the house. No death, no shards; the FAQ
-// copy says so in T8. Pure state machine, same shape as echo.ts's patrol
-// leg: updateTaal returns a new state and never mutates its input.
-import { BEAT_TICK_MS } from '../engine/constants';
+// Taal (M4/T3) — the beat-walker, second of the four Sentinels. On floor 5
+// he is a TEASER, not a killer: he patrols the anchor loop in time with the
+// 8-tick beat (wall-clock phase — the rhythm works muted), lantern flaring
+// on the accent, and his touch only angers the house. T2 promotes him: from
+// TAAL_SENTINEL_FLOOR (11) through Dwaar II he walks EVERY tier-2 floor and
+// his touch catches — taalOutcome is the one pure place that contract lives;
+// main.ts routes contact by it. Pure state machine, same shape as echo.ts's
+// patrol leg: updateTaal returns a new state and never mutates its input.
+import { BEAT_TICK_MS, TAAL_SENTINEL_FLOOR } from '../engine/constants';
 import type { CellIndex, FloorGrid } from '../engine/grid';
 import { buildFlowField, flowStep } from '../engine/flowField';
 
 export const TAAL_BASE_SPEED = 1.6; // m/s — the stride the beat scales
 export const TAAL_TOUCH_ANGER = 20; // anger his touch adds (never kills directly)
 export const TAAL_TOUCH_COOLDOWN_MS = 1500; // ms between touches
+
+export { TAAL_SENTINEL_FLOOR };
+
+/** What his touch does on this floor (T2): the cameo angers the house (+20,
+ *  cooldown-gated); the Sentinel — every floor from TAAL_SENTINEL_FLOOR up —
+ *  catches, the standard fail sequence. Pure function of the floor number,
+ *  so the boundary is pinned in exactly one place. */
+export function taalOutcome(floor: number): 'anger' | 'caught' {
+  return floor >= TAAL_SENTINEL_FLOOR ? 'caught' : 'anger';
+}
 
 /** The lurch on even ticks, the crawl between them. */
 export const BEAT_ACCENT = 2.2;

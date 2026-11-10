@@ -12,6 +12,7 @@ import type { Floor } from './maze';
 import type { MirrorKind } from './floorObjects';
 import type { MirrorVisual } from './frost';
 import { AVATAR_LAYER } from './avatar';
+import { canvasTexture, makePortraitCanvas, portraitSpec, PORTRAIT_GLASS } from './textures';
 
 export interface MirrorSpot {
   x: number;
@@ -145,6 +146,41 @@ export function createHeroStandIn(spot: MirrorSpot): CheapMirror {
   cm.mesh.position.set(spot.x, 1.35, spot.z);
   cm.mesh.rotation.y = spot.rotY;
   return cm;
+}
+
+/** T2 — the ancestor portrait: the standing-mirror base (same 1.5×2.4 plane,
+ *  same fake-reflective family, same fog/crack interface) wearing amber
+ *  glass with a dim procedural silhouette baked per mirror id (portraitSpec
+ *  → makePortraitCanvas; node/no-canvas falls back to plain amber glass).
+ *  Fogged swaps to the shared matte exactly like standing glass — the
+ *  ancestor vanishes when the pane does. */
+export function createPortraitMirror(id: number): CheapMirror {
+  const texture = canvasTexture(makePortraitCanvas(portraitSpec(id)), 1, 1);
+  const base = new THREE.MeshStandardMaterial({
+    ...(texture ? { map: texture, color: 0xffffff } : { color: PORTRAIT_GLASS }),
+    metalness: 0.6,
+    roughness: 0.25,
+  });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2.4), base);
+  let state: MirrorFogState = 'clear';
+  return {
+    mesh,
+    setFog(next: MirrorFogState): void {
+      if (next === state) return;
+      state = next;
+      // Portraits never capture (not beacons): any non-clear state is the
+      // matte fogged swap.
+      mesh.material = next === 'clear' ? base : foggedMaterial;
+    },
+    setCracked(cracked: boolean): void {
+      base.color.setHex(cracked ? CRACK_TINT : texture ? 0xffffff : PORTRAIT_GLASS);
+    },
+    dispose(): void {
+      mesh.geometry.dispose();
+      base.dispose();
+      texture?.dispose(); // per-instance silhouette — the shared matte survives
+    },
+  };
 }
 
 /** Options for the RT mirror classes of visuals: heroes render at 512, the

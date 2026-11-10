@@ -6,8 +6,10 @@ import {
   beatGlow,
   beatPulse,
   initTaal,
+  taalOutcome,
   taalTouch,
   TAAL_BASE_SPEED,
+  TAAL_SENTINEL_FLOOR,
   TAAL_TOUCH_ANGER,
   TAAL_TOUCH_COOLDOWN_MS,
   updateTaal,
@@ -203,5 +205,27 @@ describe('taalTouch — the 1.5s anger cooldown gate', () => {
     expect(TAAL_TOUCH_ANGER).toBe(20);
     expect(TAAL_TOUCH_COOLDOWN_MS).toBe(1500);
     expect(TAAL_BASE_SPEED).toBe(1.6);
+  });
+});
+
+// T2 — the promotion: floor 5's teaser becomes the Hall of Ancestors' killer.
+// taalOutcome is the ONE place the floor decides which contact path main.ts
+// walks: 'anger' (the cameo touch, house +20) or 'caught' (the standard fail).
+describe('taalOutcome — cameo anger vs sentinel catch (T2)', () => {
+  it('pins the promotion floor at 11, the first Hall of Ancestors floor', () => {
+    expect(TAAL_SENTINEL_FLOOR).toBe(11);
+  });
+
+  it('every tier-1 floor keeps the cameo contract: anger, never caught', () => {
+    for (let f = 1; f <= 10; f++) expect(taalOutcome(f)).toBe('anger');
+  });
+
+  it('the boundary: floor 10 angers, floor 11 catches', () => {
+    expect(taalOutcome(10)).toBe('anger');
+    expect(taalOutcome(11)).toBe('caught');
+  });
+
+  it('every tier-2 floor 11..20 catches, Dwaar II included', () => {
+    for (let f = TAAL_SENTINEL_FLOOR; f <= 20; f++) expect(taalOutcome(f)).toBe('caught');
   });
 });

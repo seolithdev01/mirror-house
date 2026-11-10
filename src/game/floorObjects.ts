@@ -9,7 +9,7 @@ import { Dir, DIR_VECTOR, type FloorGrid } from '../engine/grid';
 import { CELL_SIZE } from '../engine/constants';
 import { bfsDistances, type Floor } from './maze';
 
-export type MirrorKind = 'standing' | 'beacon' | 'true' | 'silvered';
+export type MirrorKind = 'standing' | 'beacon' | 'true' | 'silvered' | 'portrait';
 
 export interface MirrorRef {
   id: number;
@@ -21,7 +21,8 @@ export interface MirrorRef {
   cellY: number;
   pairId: number | null;
   /** The wall edge this object covers as a door (T7): standing/silvered mount
-   *  on a wall and carry its dir; beacon/true never open anything — null. */
+   *  on a wall and carry their dir; beacon/true/portrait never open anything —
+   *  null (portraits mount on a wall like standing glass, but open nothing). */
   wallDir: Dir | null;
 }
 
@@ -36,9 +37,14 @@ export interface M2Params {
   beacons: number;
   echoes: number;
   anchors: number;
+  /** T2 — the FLOOR of the portrait count: the rng flips one coin on top of
+   *  it, so a tier-2 ask of 2 places 2–3 ancestor portraits. Zero (the
+   *  default, all tier-1 floors) draws nothing — the rng stream stays
+   *  byte-identical to the M2 order. */
+  portraits: number;
 }
 
-export const M2_PARAMS: M2Params = { standing: 6, beacons: 3, echoes: 4, anchors: 6 };
+export const M2_PARAMS: M2Params = { standing: 6, beacons: 3, echoes: 4, anchors: 6, portraits: 0 };
 
 export interface MirrorSpot {
   x: number;
@@ -85,7 +91,8 @@ const manhattan = (a: Candidate, b: Candidate): number => Math.abs(a.x - b.x) + 
  * Deterministic placement of all M2 floor objects from
  * `createRng(floor.seed + ':objects')`. Same floor + params → same result,
  * guaranteed: every random draw comes from one rng consumed in a fixed order
- * (standing shuffle → echo shuffle → anchor shuffle).
+ * (standing shuffle → [portraits: count coin + shuffle, only when
+ * params.portraits > 0] → echo shuffle → anchor shuffle).
  *
  * Edge cases (degenerate tiny grids): every pool below may hold fewer cells
  * than the parameter asks for — we then simply place what exists and never
@@ -202,6 +209,16 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
   // Rule 5: standing — rng-shuffled leftovers, first `standing`. No cell
   // sharing is guaranteed by construction: every pick removes its cell.
   for (const c of rng.shuffle(remaining()).slice(0, params.standing)) place(c, 'standing');
+
+  // Rule 5.5 (T2): ancestor portraits — the tier-2 halls' dim glass. The
+  // count is the rng's call (the param is the floor of the range, one coin
+  // adds a third), then a shuffle of whatever cells the standing glass left.
+  // Draws happen ONLY when portraits > 0, so tier-1/venue floors keep the
+  // exact M2 rng stream — their experience is byte-identical.
+  if (params.portraits > 0) {
+    const count = params.portraits + rng.int(2); // 2→2–3
+    for (const c of rng.shuffle(remaining()).slice(0, count)) place(c, 'portrait');
+  }
 
   // Rule 6: echo spawns — rng-pick cells at bfs distance >= 6 from the
   // entrance, never the entrance/exit. Spawns/anchors are plain cell centers.

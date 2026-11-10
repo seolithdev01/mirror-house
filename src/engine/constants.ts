@@ -70,3 +70,4 @@ export const DESCEND_MS = 800; // ms the descending overlay holds before the nex
 // T2 — the Hall of Ancestors: floors 11–19 procedural ramp, 20 = Dwaar II
 // (Taal's threshold hall — the LAST floor doubles as the Dwaar II floor).
 export const TIER_TWO_FLOORS = 20;
+export const TAAL_SENTINEL_FLOOR = 11; // from here Taal's touch catches, not angers

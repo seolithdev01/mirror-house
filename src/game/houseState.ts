@@ -47,9 +47,10 @@ export function isCollapse(h: HouseState): boolean {
 
 /**
  * The mirror a sprinting player would crack right now: nearest
- * `standing`|`beacon` mirror within CRACK_RANGE and the 60° heading cone
- * (same geometry as frost's fogTarget — a body-check into the glass), not
- * already cracked. Walking (`sprinting` false) never cracks anything.
+ * `standing`|`beacon`|`portrait` mirror within CRACK_RANGE and the 60°
+ * heading cone (same geometry as frost's fogTarget — a body-check into the
+ * glass; T2's portraits crack exactly like standing glass), not already
+ * cracked. Walking (`sprinting` false) never cracks anything.
  */
 export function crackTarget(
   mirrors: MirrorRef[],
@@ -63,7 +64,7 @@ export function crackTarget(
   let best: MirrorRef | null = null;
   let bestDist = Infinity;
   for (const m of mirrors) {
-    if (m.kind !== 'standing' && m.kind !== 'beacon') continue;
+    if (m.kind !== 'standing' && m.kind !== 'beacon' && m.kind !== 'portrait') continue;
     const r = rt.find((x) => x.id === m.id);
     if (!r || r.cracked) continue;
     const dx = m.x - player.x;

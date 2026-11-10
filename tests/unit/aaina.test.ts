@@ -21,18 +21,19 @@ const ctx = (over: Partial<HintContext> = {}): HintContext => ({
   chhayaNear: false,
   chasing: 0,
   taalPresent: false,
+  taalSentinelNear: false,
   exitUnlocked: false,
   hintsUsed: 0,
   ...over,
 });
 
 describe('aaina — nextHint priority chain', () => {
-  it('selects each of the seven kinds in priority order (hand-built contexts)', () => {
+  it('selects each of the eight kinds in priority order (hand-built contexts)', () => {
     const cases: Array<{ name: string; c: HintContext; want: HintKind }> = [
       // 1. beacons: left to capture and the house is not collapsing — wins over everything
       {
-        name: 'beacons beat chase, chhaya and anger',
-        c: ctx({ beaconsLeft: 3, chasing: 4, chhayaNear: true, anger: 59 }),
+        name: 'beacons beat chase, sentinel, chhaya and anger',
+        c: ctx({ beaconsLeft: 3, chasing: 4, taalSentinelNear: true, chhayaNear: true, anger: 59 }),
         want: 'beacons',
       },
       // 2. exit: every beacon captured — wins over chase and chhaya
@@ -41,28 +42,40 @@ describe('aaina — nextHint priority chain', () => {
         c: ctx({ exitUnlocked: true, chasing: 2, chhayaNear: true }),
         want: 'exit',
       },
-      // 3. chase: an echo is hunting — wins over taal, chhaya and anger
+      // 3. chase: an echo is hunting — wins over taal, the sentinel, chhaya and anger
       {
-        name: 'chase beats taal, chhaya and anger',
-        c: ctx({ chasing: 1, taalPresent: true, chhayaNear: true, anger: 90 }),
+        name: 'chase beats taal, the sentinel, chhaya and anger',
+        c: ctx({
+          chasing: 1,
+          taalPresent: true,
+          taalSentinelNear: true,
+          chhayaNear: true,
+          anger: 90,
+        }),
         want: 'chase',
       },
-      // 4. taal (M4/T3): the beat-walker walks this floor — wins over chhaya/anger
+      // 4. taal (M4/T3): the cameo floor's beat-walker — wins over chhaya/anger
       {
         name: 'taal beats chhaya and anger',
         c: ctx({ taalPresent: true, chhayaNear: true, anger: 90 }),
         want: 'taal',
       },
-      // 5. chhaya: the shadow is close — wins over anger
+      // 5. taalSentinel (T2): the LETHAL beat-walker is close — wins over chhaya/anger
+      {
+        name: 'taalSentinel beats chhaya and anger',
+        c: ctx({ taalSentinelNear: true, chhayaNear: true, anger: 90 }),
+        want: 'taalSentinel',
+      },
+      // 6. chhaya: the shadow is close — wins over anger
       { name: 'chhaya beats anger', c: ctx({ chhayaNear: true, anger: 90 }), want: 'chhaya' },
-      // 6. anger: at ≥60 (and beacons blocked at ANGER_MAX) she talks temper
+      // 7. anger: at ≥60 (and beacons blocked at ANGER_MAX) she talks temper
       {
         name: 'anger at threshold with beacons blocked by collapse',
         c: ctx({ beaconsLeft: 2, anger: ANGER_MAX }),
         want: 'anger',
       },
       { name: 'anger at exactly 60', c: ctx({ anger: 60 }), want: 'anger' },
-      // 7. stuck: nothing special — general fog-what-sees-you advice
+      // 8. stuck: nothing special — general fog-what-sees-you advice
       { name: 'stuck when nothing else applies', c: ctx(), want: 'stuck' },
     ];
     for (const { name, c, want } of cases) {
@@ -78,12 +91,25 @@ describe('aaina — nextHint priority chain', () => {
     expect(nextHint(ctx({ exitUnlocked: true, beaconsLeft: 1 })).kind).toBe('beacons'); // beacons outrank exit
   });
 
-  it('HINTS covers all seven kinds with non-empty in-voice lines', () => {
-    const kinds: HintKind[] = ['exit', 'beacons', 'chhaya', 'chase', 'taal', 'anger', 'stuck'];
+  it('HINTS covers all eight kinds with non-empty in-voice lines', () => {
+    const kinds: HintKind[] = [
+      'exit',
+      'beacons',
+      'chhaya',
+      'chase',
+      'taal',
+      'taalSentinel',
+      'anger',
+      'stuck',
+    ];
     for (const k of kinds) {
       expect(HINTS[k], k).toBeTruthy();
       expect(HINTS[k].length, k).toBeGreaterThan(20);
     }
+  });
+
+  it("pins the sentinel's line — the crossing rule, exactly (T2)", () => {
+    expect(HINTS.taalSentinel).toBe('He walks the beat — cross when the lantern dims.');
   });
 });
 

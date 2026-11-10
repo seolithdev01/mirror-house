@@ -47,6 +47,13 @@ describe('frost', () => {
     ];
     expect(fogTarget(mirrors, player, openGrid())?.id).toBe(1);
   });
+  it('fogTarget: portraits fog exactly like standing glass (T2)', () => {
+    const player = { x: 0, y: 0, heading: 0 };
+    expect(fogTarget([m(1, 'portrait', 0, -3)], player, openGrid())?.id).toBe(1);
+    // and they lose to a NEARER standing mirror — plain distance geometry
+    const both = [m(1, 'portrait', 0, -4.5), m(2, 'standing', 0, -3)];
+    expect(fogTarget(both, player, openGrid())?.id).toBe(2);
+  });
   it('fogTarget: outside cone or range → null', () => {
     const player = { x: 0, y: 0, heading: 0 };
     expect(fogTarget([m(1, 'standing', 3, -3)], player, openGrid())).toBeNull(); // ~45° off-cone
@@ -68,6 +75,13 @@ describe('frost', () => {
     applyFog(rt, 2, 1000);
     expect(isFogged(rt[1]!, 999_999)).toBe(true);
     expect(rt[1]!.captured).toBe(true);
+  });
+  it('applyFog: portrait fog is TIMED like standing — never a capture (T2)', () => {
+    const rt = initMirrorRuntime([m(1, 'portrait', 0, 0)]);
+    applyFog(rt, 1, 1000);
+    expect(rt[0]!.captured).toBe(false);
+    expect(isFogged(rt[0]!, 2000)).toBe(true);
+    expect(isFogged(rt[0]!, 26_001)).toBe(false);
   });
   it('breath spends and recharges with clamp', () => {
     expect(updateBreath(1, 0, true)).toBeCloseTo(1 - FOG_COST);

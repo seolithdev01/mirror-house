@@ -13,11 +13,15 @@ export interface HintContext {
   chasing: number;
   /** M4/T3 — Taal walks this floor (his cameo floor). */
   taalPresent: boolean;
+  /** T2 — the SENTINEL is close: a tier-2 floor (≥ 11) and Taal within 8 m.
+   *  Different advice than the cameo: this one catches. */
+  taalSentinelNear: boolean;
   exitUnlocked: boolean;
   hintsUsed: number;
 }
 
-export type HintKind = 'exit' | 'beacons' | 'chhaya' | 'chase' | 'taal' | 'anger' | 'stuck';
+export type HintKind =
+  'exit' | 'beacons' | 'chhaya' | 'chase' | 'taal' | 'taalSentinel' | 'anger' | 'stuck';
 
 export interface Hint {
   kind: HintKind;
@@ -38,6 +42,7 @@ export const HINTS: Record<HintKind, string> = {
   chase:
     'An Echo sees you through clear glass. Break its stare: fog the pane it watches through (F), or put honest stone between you. Enough frosted eyes in one place will spin it into a standstill.',
   taal: 'Taal is on this floor — the Sentinel who moves on the beat. He cannot kill you; his touch only angers the house. Cross him in the rest between the accents, when the lantern dims, and keep your count.',
+  taalSentinel: 'He walks the beat — cross when the lantern dims.',
   chhaya:
     'She is close — your own footsteps, seconds late, and quicker the deeper you go. Never retrace your path; bend your trail instead. And if you must, step through a True Mirror (Space) to somewhere your past never walked.',
   anger:
@@ -54,6 +59,8 @@ export function nextHint(ctx: HintContext): Hint {
   else if (ctx.chasing > 0) kind = 'chase';
   else if (ctx.taalPresent)
     kind = 'taal'; // chasing-adjacent: the beat-walker is about
+  else if (ctx.taalSentinelNear)
+    kind = 'taalSentinel'; // T2: the LETHAL beat — the crossing rule, urgent
   else if (ctx.chhayaNear) kind = 'chhaya';
   else if (ctx.anger >= ANGER_HINT_AT) kind = 'anger';
   else kind = 'stuck';

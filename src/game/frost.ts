@@ -37,12 +37,13 @@ export function initMirrorRuntime(mirrors: MirrorRef[]): MirrorRuntime[] {
 }
 
 /**
- * The mirror the lantern would fog right now: nearest `standing`|`beacon`
- * mirror within FOG_RANGE and the 60° cone around the player's heading, with
- * clear grid LOS from the player to the mirror center — frost does not pass
- * through walls. (`true`/`silvered` are never fog targets; fog state is
- * deliberately not consulted — this is a pure function of geometry, so
- * re-fogging an already-fogged mirror simply refreshes its timer.)
+ * The mirror the lantern would fog right now: nearest `standing`|`beacon`|
+ * `portrait` mirror within FOG_RANGE and the 60° cone around the player's
+ * heading, with clear grid LOS from the player to the mirror center — frost
+ * does not pass through walls. (`true`/`silvered` are never fog targets;
+ * T2's portraits fog exactly like standing glass; fog state is deliberately
+ * not consulted — this is a pure function of geometry, so re-fogging an
+ * already-fogged mirror simply refreshes its timer.)
  */
 export function fogTarget(
   mirrors: MirrorRef[],
@@ -54,7 +55,7 @@ export function fogTarget(
   let best: MirrorRef | null = null;
   let bestDist = Infinity;
   for (const m of mirrors) {
-    if (m.kind !== 'standing' && m.kind !== 'beacon') continue;
+    if (m.kind !== 'standing' && m.kind !== 'beacon' && m.kind !== 'portrait') continue;
     const dx = m.x - player.x;
     const dz = m.z - player.y;
     const dist = Math.hypot(dx, dz);

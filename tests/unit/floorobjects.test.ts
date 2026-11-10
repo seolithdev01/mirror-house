@@ -84,3 +84,46 @@ describe('generateFloorObjects', () => {
     expect(a.mirrors.length).toBeLessThanOrEqual(M2_PARAMS.standing + M2_PARAMS.beacons + 2 + 1);
   });
 });
+
+// T2 — ancestor portrait mirrors: 2–3 per tier-2 floor, wall-mounted like the
+// standing glass, fogable echo eyes. The count itself is the floor rng's call
+// (the param is the floor of the range — a coin adds one more).
+describe('portraits — tier-2 ancestor mirrors (T2)', () => {
+  const portraitFloor = (): ReturnType<typeof generateFloorObjects> =>
+    generateFloorObjects(floor, { ...M2_PARAMS, portraits: 2 });
+
+  it('places 2–3 portraits per floor, deterministic across rebuilds', () => {
+    const a = portraitFloor();
+    const b = portraitFloor();
+    expect(a).toEqual(b);
+    const portraits = a.mirrors.filter((m) => m.kind === 'portrait');
+    expect(portraits.length).toBeGreaterThanOrEqual(2);
+    expect(portraits.length).toBeLessThanOrEqual(3);
+  });
+
+  it('mounts every portrait on a wall exactly like the standing glass', () => {
+    const portraits = portraitFloor().mirrors.filter((m) => m.kind === 'portrait');
+    expect(portraits.length).toBeGreaterThan(0);
+    for (const m of portraits) {
+      const spot = mirrorSpotFor(floor.grid, m.cellX, m.cellY);
+      expect(spot).not.toBeNull();
+      expect(m.x).toBeCloseTo(spot!.x, 9);
+      expect(m.z).toBeCloseTo(spot!.z, 9);
+      expect(m.rotY).toBeCloseTo(spot!.rotY, 9);
+      expect(m.pairId).toBeNull(); // portraits never pair
+      expect(m.wallDir).toBeNull(); // and never open anything (not T7 doors)
+    }
+  });
+
+  it("portrait cells never collide with another mirror's cell", () => {
+    const o = portraitFloor();
+    const cells = o.mirrors.map((m) => `${m.cellX},${m.cellY}`);
+    expect(new Set(cells).size).toBe(cells.length);
+  });
+
+  it('default params place zero portraits — the tier-1 experience is unchanged', () => {
+    const o = generateFloorObjects(floor);
+    expect(o.mirrors.filter((m) => m.kind === 'portrait')).toHaveLength(0);
+    expect(generateFloorObjects(floor, { ...M2_PARAMS, portraits: 0 })).toEqual(o);
+  });
+});
