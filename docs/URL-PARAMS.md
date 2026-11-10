@@ -39,7 +39,7 @@ in".
 
 ### `?floor=` — jump to a floor **(dev builds only)**
 
-Jumps straight to floor _N_ (1–10) of the named base: `?seed=PLAYTEST&floor=5`
+Jumps straight to floor _N_ (1–20) of the named base: `?seed=PLAYTEST&floor=5`
 boots floor 5 directly. **The guard, honestly:** this is a development and
 test-suite affordance — the boot ignores `floor=` entirely in production/deployed
 builds (and always starts such a seeded campaign at floor 1). Tester-mode

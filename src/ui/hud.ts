@@ -69,8 +69,9 @@ export interface Hud {
   /** M4/T2 — the 0.8s `descending…` banner between floors; hide on rebuild. */
   showDescend(): void;
   hideDescend(): void;
-  /** M4/T2 — the Truth-Shard tier-complete screen (Play again / Stay). */
-  showTierComplete(stats: { floors: number; shards: number }): void;
+  /** M4/T2 — the Truth-Shard tier-complete screen (Play again / Stay).
+   *  T2/T1 — `tier` picks the screen's title: 1 = Dwaar I, 2 = Dwaar II. */
+  showTierComplete(stats: { tier: 1 | 2; floors: number; shards: number }): void;
   hideTier(): void;
   showFail(reason: string): void;
   hideFail(): void;
@@ -303,7 +304,7 @@ export function createHud(init: HudInit): Hud {
   // re-feeding them. Derived display state, not a second truth: the values'
   // owners still write them.
   let muted = false;
-  let lastTierStats: { floors: number; shards: number } | null = null;
+  let lastTierStats: { tier: 1 | 2; floors: number; shards: number } | null = null;
   const lastChips: {
     streak?: number;
     bestMs?: number | null;
@@ -378,7 +379,10 @@ export function createHud(init: HudInit): Hud {
     importBtn.textContent = '📂';
     importBtn.title = t(lang, 'btn.import');
     importBtn.setAttribute('aria-label', t(lang, 'btn.import'));
-    tierTitle.textContent = t(lang, 'overlay.tierTitle');
+    tierTitle.textContent = t(
+      lang,
+      (lastTierStats?.tier ?? 1) === 2 ? 'overlay.tierTitle2' : 'overlay.tierTitle',
+    );
     playAgain.textContent = t(lang, 'misc.playAgain');
     playAgain.setAttribute('aria-label', t(lang, 'misc.playAgain'));
     stay.textContent = t(lang, 'misc.stay');
@@ -453,6 +457,10 @@ export function createHud(init: HudInit): Hud {
     },
     showTierComplete: (stats) => {
       lastTierStats = stats;
+      tierTitle.textContent = t(
+        lang,
+        stats.tier === 2 ? 'overlay.tierTitle2' : 'overlay.tierTitle',
+      );
       tierStats.textContent = fill(t(lang, 'overlay.tierStats'), stats);
       tier.hidden = false;
     },
@@ -485,8 +493,13 @@ export function createHud(init: HudInit): Hud {
       lang = next;
       relabelStatic();
       renderChips();
-      if (lastTierStats !== null && !tier.hidden)
+      if (lastTierStats !== null && !tier.hidden) {
+        tierTitle.textContent = t(
+          lang,
+          lastTierStats.tier === 2 ? 'overlay.tierTitle2' : 'overlay.tierTitle',
+        );
         tierStats.textContent = fill(t(lang, 'overlay.tierStats'), lastTierStats);
+      }
     },
     captionBar,
     root,

@@ -77,6 +77,8 @@ describe('i18n — key parity', () => {
       'overlay.failCaught',
       'overlay.descend',
       'overlay.tierTitle',
+      'overlay.tierTitle2', // T2/T1 — the Dwaar II screen names Tier II
+      'chip.tier', // T2/T1 — the `L14 · T2` floor-chip suffix
       'hint.step',
       'hint.push',
       'hint.sealed',

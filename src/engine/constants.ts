@@ -66,3 +66,7 @@ export const DWAAR_FLOOR = 10; // tier-complete threshold hall (fixed layout)
 export const TAAL_FLOOR = 5; // the beat-walker's cameo floor
 export const BEAT_TICK_MS = 250; // Taal's lurch clock — 8-tick cycle (2s)
 export const DESCEND_MS = 800; // ms the descending overlay holds before the next floor arms
+
+// T2 — the Hall of Ancestors: floors 11–19 procedural ramp, 20 = Dwaar II
+// (Taal's threshold hall — the LAST floor doubles as the Dwaar II floor).
+export const TIER_TWO_FLOORS = 20;

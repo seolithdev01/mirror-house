@@ -15,7 +15,7 @@ import {
   FOG_COST,
   SHARD_BEACON,
   TAAL_FLOOR,
-  TIER_ONE_FLOORS,
+  TIER_TWO_FLOORS,
 } from './engine/constants';
 import {
   actionFor,
@@ -42,6 +42,7 @@ import {
   floorSeed,
   isDwaar,
   newCampaign,
+  tierOf,
   type Campaign,
 } from './game/campaign';
 import {
@@ -204,7 +205,7 @@ const testMode = parseTestMode(window.location.search);
 function bootFloorFromUrl(): number {
   if (!import.meta.env.DEV) return 1; // the floor jump is a dev-only affordance
   const n = Number.parseInt(urlParams.get('floor') ?? '', 10);
-  return Number.isInteger(n) && n >= 1 && n <= TIER_ONE_FLOORS ? n : 1;
+  return Number.isInteger(n) && n >= 1 && n <= TIER_TWO_FLOORS ? n : 1;
 }
 /** Migration reads the legacy localStorage meta v1 ONCE; unreadable → null
  *  (a fresh default, never a dead boot). The localStorage copy is left in
@@ -920,11 +921,16 @@ function teardownFloor(): void {
   floorDisposers = [];
 }
 
-/** The floor chip: `L02` on the ramp; the threshold floor names the tier.
- *  M4/T6: the `L`/`स्तर` prefix and the `DWAAR`/`द्वार` name localize. */
+/** The floor chip: `L02` on the tier-one ramp; tier two floors carry the
+ *  `· T2` suffix (`L14 · T2`); the threshold floors name their Dwaar
+ *  (`L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`).
+ *  M4/T6: the `L`/`स्तर` prefix, the `DWAAR`/`द्वार` name and the tier
+ *  suffix localize. */
 function floorChipLabel(c: Campaign): string {
   const tag = `${t(lang, 'chip.floor')}${String(c.floor).padStart(2, '0')}`;
-  return isDwaar(c.floor) ? `${tag} · ${t(lang, 'chip.dwaar')} I ✦` : tag;
+  if (isDwaar(c.floor))
+    return `${tag} · ${t(lang, 'chip.dwaar')} ${c.floor === DWAAR_FLOOR ? 'I' : 'II'} ✦`;
+  return tierOf(c.floor) === 2 ? `${tag} · ${t(lang, 'chip.tier')}` : tag;
 }
 
 /** Build the campaign's current floor. Floors 1–9 come from the procedural
@@ -953,7 +959,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     pack !== null
       ? generateFloor({ ...TIER_ONE, seed, ...vp!.mazeOverrides }) // always procedural, pack-shaped
       : isDwaar(c.floor)
-        ? floorFromGrid(dwaarGrid(), seed)
+        ? floorFromGrid(dwaarGrid(c.floor), seed) // Dwaar I (10) or Dwaar II (20)
         : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
   exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
@@ -1914,8 +1920,10 @@ function frame(now: number): void {
   ) {
     // The exit is the Stair Door (M4/T2). The phase stays 'cleared' — the sim
     // halts, exactly as before — and what happens NEXT depends on the floor:
-    // 1–9 hold 0.8s behind the `descending…` overlay then rebuild one floor
-    // deeper; the Dwaar claims the Truth-Shard and raises the tier screen.
+    // procedural floors hold 0.8s behind the `descending…` overlay then
+    // rebuild one floor deeper; a Dwaar claims its Truth-Shard. Dwaar I (10)
+    // then descends into the Hall of Ancestors — Act I continues; Dwaar II
+    // (20) raises the tier screen (T2).
     phase = clearRun(phase, now);
     if (venue !== null) {
       // M6/T1 — the SIDE-FLOOR clear: the sim halts and NOTHING banks — no
@@ -1945,13 +1953,24 @@ function frame(now: number): void {
       house = { ...house, shards: 0 };
       persist(true); // a cleared floor banks NOW — no debounce window
       updateShardsChip(); // chip flips from `banked (+pending)` to plain banked
-      if (isDwaar(campaign.floor)) {
+      if (isDwaar(campaign.floor) && tierOf(campaign.floor) === 2) {
+        // Dwaar II: the second Truth-Shard claims the tier — the screen, not
+        // the stairs (Play again / Stay, the same contract tier one had).
         campaign = completeTier(campaign);
         save = mergeCampaign(save, campaign); // tier complete is a save event
         persist(true);
-        hud.showTierComplete({ floors: DWAAR_FLOOR, shards: save.shards });
-        pushCaption('tier', t(lang, 'overlay.tierTitle')); // M5/T3 — the tier line is the overlay's own
+        hud.showTierComplete({ tier: 2, floors: TIER_TWO_FLOORS, shards: save.shards });
+        pushCaption('tier', t(lang, 'overlay.tierTitle2')); // M5/T3 — the tier line is the overlay's own
       } else {
+        if (isDwaar(campaign.floor)) {
+          // Dwaar I: Truth-Shard I is claimed and banked — but Act I continues
+          // DOWN. The stair door holds 0.8s like any ramp floor, then opens
+          // into the Hall of Ancestors; the descent re-arms the tier flag so
+          // tier-two floors pay their first-clear bonus (campaign.descend).
+          campaign = completeTier(campaign);
+          save = mergeCampaign(save, campaign); // the shard claim is a save event
+          persist(true);
+        }
         hud.showCleared(ms, save.best[seed] ?? null, wasBest === undefined || ms < wasBest);
         hud.showDescend();
         descendAt = now + DESCEND_MS;

@@ -137,6 +137,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.shards': 'Shards',
     'chip.floor': 'L', // prefix: L01, L02…
     'chip.dwaar': 'DWAAR', // L10 · DWAAR I ✦
+    'chip.tier': 'T2', // T2/T1 — the Hall-of-Ancestors suffix: L14 · T2
     // overlays and banners
     'overlay.failCaught': 'Caught by the glass',
     'overlay.failCollapse': 'The mirrors collapsed',
@@ -144,6 +145,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'overlay.clearedBest': '✨ Floor cleared in {s} — new best!',
     'overlay.descend': 'descending…',
     'overlay.tierTitle': '✦ Truth-Shard I claimed — Tier I complete',
+    'overlay.tierTitle2': '✦ Truth-Shard II claimed — Tier II complete',
     'overlay.tierStats': '{floors} floors cleared · {shards} shards banked',
     'overlay.tierNote': 'The shard is already banked — staying is a free walk.',
     // hint line prompts (M5/T2: the verb prompts name the LIVE bound key)
@@ -303,6 +305,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.shards': 'शार्ड',
     'chip.floor': 'स्तर ', // उपसर्ग: स्तर 01, स्तर 02…
     'chip.dwaar': 'द्वार', // स्तर 10 · द्वार I ✦
+    'chip.tier': 'चरण 2', // T2/T1 — पूर्वजों की हॉल प्रत्यय: स्तर 14 · चरण 2
     // परदे और पट्टियाँ — घर की आवाज़ में, पर संक्षेप में
     'overlay.failCaught': 'काँच ने आपको पकड़ लिया',
     'overlay.failCollapse': 'दर्पण ढह गए',
@@ -310,6 +313,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'overlay.clearedBest': '✨ मंज़िल {s} में पार — नया सर्वश्रेष्ठ!',
     'overlay.descend': 'नीचे उतर रहे हैं…',
     'overlay.tierTitle': '✦ सत्य-शार्ड प्राप्त — चरण I पूर्ण',
+    'overlay.tierTitle2': '✦ सत्य-शार्ड II प्राप्त — चरण II पूर्ण',
     'overlay.tierStats': '{floors} मंज़िलें पार · {shards} शार्ड जमा',
     'overlay.tierNote': 'शार्ड जमा हो चुका है — रुकना एक मुफ़्त सैर है।',
     // संकेत-पंक्ति (M5/T2: क्रिया-संकेत जीवंत बद्ध कुंजी का नाम लेते हैं)
@@ -375,6 +379,7 @@ export const CHIP_KEYS: readonly string[] = [
   'chip.shards',
   'chip.floor',
   'chip.dwaar',
+  'chip.tier',
   'tab.ask',
   'tab.hint',
   'tab.lore',
