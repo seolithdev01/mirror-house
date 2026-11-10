@@ -7,6 +7,7 @@ import {
   completeTier,
   descend,
   DWAAR_II_LAYOUT,
+  DWAAR_III_LAYOUT,
   DWAAR_LAYOUT,
   dwaarGrid,
   floorParams,
@@ -20,6 +21,7 @@ import {
   DWAAR_FLOOR,
   TAAL_FLOOR,
   TIER_ONE_FLOORS,
+  TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
 } from '../../src/engine/constants';
 
@@ -70,6 +72,10 @@ describe('campaign constants', () => {
   it('pins the tier-two campaign constant — 20 floors, Dwaar II on the last', () => {
     expect(TIER_TWO_FLOORS).toBe(20);
   });
+
+  it('pins the tier-three campaign constant — 30 floors, Dwaar III on the last', () => {
+    expect(TIER_THREE_FLOORS).toBe(30);
+  });
 });
 
 describe('tierOf', () => {
@@ -80,6 +86,13 @@ describe('tierOf', () => {
     expect(tierOf(11)).toBe(2);
     expect(tierOf(14)).toBe(2);
     expect(tierOf(20)).toBe(2);
+  });
+
+  it('splits the campaign at floor 20: 21–30 → 3', () => {
+    expect(tierOf(21)).toBe(3);
+    expect(tierOf(24)).toBe(3);
+    expect(tierOf(29)).toBe(3);
+    expect(tierOf(30)).toBe(3);
   });
 });
 
@@ -129,11 +142,25 @@ describe('descend', () => {
     expect(c.floor).toBe(TIER_TWO_FLOORS);
   });
 
+  it('walks the whole campaign 1..30', () => {
+    let c = newCampaign('CCCC');
+    for (let i = 2; i <= TIER_THREE_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(TIER_THREE_FLOORS);
+  });
+
   it('leaving Dwaar I re-arms the tier flag for tier two (Act I continues)', () => {
     // the claim at floor 10 sets the flag; the stairs into the Hall of
     // Ancestors clear it so tier-two floors pay their first-clear bonus
     const d = descend({ seedBase: 'DDDD', floor: DWAAR_FLOOR, tierComplete: true });
     expect(d).toEqual({ seedBase: 'DDDD', floor: 11, tierComplete: false });
+  });
+
+  it('leaving Dwaar II re-arms the tier flag for tier three (Act II continues)', () => {
+    // T3 — the same contract one tier down: the claim at floor 20 sets the
+    // flag; the stairs into the Reflecting Gardens clear it so tier-three
+    // floors pay their first-clear bonus
+    const d = descend({ seedBase: 'DDDD', floor: TIER_TWO_FLOORS, tierComplete: true });
+    expect(d).toEqual({ seedBase: 'DDDD', floor: 21, tierComplete: false });
   });
 });
 
@@ -164,18 +191,35 @@ describe('completeTier', () => {
     const c = { seedBase: 'FFFF', floor: 14, tierComplete: false };
     expect(completeTier(c)).toEqual(c);
   });
+
+  it('flags completion at Dwaar III — the single flag set a third time at floor 30', () => {
+    let c = newCampaign('DDDD');
+    for (let i = 1; i < TIER_THREE_FLOORS; i++) c = descend(c);
+    expect(c.tierComplete).toBe(false); // the descent from 20 re-armed it
+    const done = completeTier(c);
+    expect(done.tierComplete).toBe(true);
+  });
+
+  it('is a no-op on tier-three procedural floors 21..29', () => {
+    const c = { seedBase: 'GGGG', floor: 27, tierComplete: false };
+    expect(completeTier(c)).toEqual(c);
+  });
 });
 
 describe('isDwaar', () => {
   it('is true only for the Dwaar floors', () => {
     expect(isDwaar(10)).toBe(true);
     expect(isDwaar(20)).toBe(true);
+    expect(isDwaar(30)).toBe(true);
     expect(isDwaar(1)).toBe(false);
     expect(isDwaar(9)).toBe(false);
     expect(isDwaar(11)).toBe(false);
     expect(isDwaar(19)).toBe(false);
+    expect(isDwaar(21)).toBe(false);
+    expect(isDwaar(29)).toBe(false);
     expect(isDwaar(DWAAR_FLOOR)).toBe(true);
     expect(isDwaar(TIER_TWO_FLOORS)).toBe(true);
+    expect(isDwaar(TIER_THREE_FLOORS)).toBe(true);
   });
 });
 
@@ -250,8 +294,8 @@ describe('floorParams tier-two ramp (floors 11–20 pinned)', () => {
       expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(4000);
   });
 
-  it('clamps floors past the campaign to the Dwaar II values', () => {
-    expect(floorParams(99)).toEqual(floorParams(TIER_TWO_FLOORS));
+  it('clamps floors past the campaign to the Dwaar III values (T3)', () => {
+    expect(floorParams(99)).toEqual(floorParams(TIER_THREE_FLOORS));
   });
 
   it('leaves every tier-one pin untouched (the tier-one experience is frozen)', () => {
@@ -373,5 +417,120 @@ describe("DWAAR_II_LAYOUT — Taal's hall", () => {
     const exit: CellIndex = { x: best % 13, y: Math.floor(best / 13) };
     expect(exit).toEqual({ x: 11, y: 11 }); // bottom-right mirror of the entrance
     expect(dist[best]).toBe(20); // a real traverse of the hall
+  });
+});
+
+describe('floorParams tier-three ramp (floors 21–30 pinned)', () => {
+  // T3 — the Reflecting Gardens: echoes 6 on every floor (Dwaar III fixed 6
+  // too — the water-mirrors are the tier's teeth, not the count); beacons 4;
+  // braid = 0.24 + 0.004*(f-21); chhayaDelayMs = max(3600, 4200 - 60*(f-21))
+  // (Dwaar III 3400).
+  const pinned: [number, number, number, number, number][] = [
+    // floor, echoes, beacons, braid, chhayaDelayMs
+    [21, 6, 4, 0.24, 4200],
+    [22, 6, 4, 0.244, 4140],
+    [23, 6, 4, 0.248, 4080],
+    [24, 6, 4, 0.252, 4020],
+    [25, 6, 4, 0.256, 3960],
+    [26, 6, 4, 0.26, 3900],
+    [27, 6, 4, 0.264, 3840],
+    [28, 6, 4, 0.268, 3780],
+    [29, 6, 4, 0.272, 3720],
+    [30, 6, 4, 0.276, 3400],
+  ];
+
+  it('matches the pinned ramp for every tier-three floor', () => {
+    expect(pinned.length).toBe(TIER_THREE_FLOORS - TIER_TWO_FLOORS);
+    for (const [floor, echoes, beacons, braid, delay] of pinned) {
+      const p = floorParams(floor);
+      expect(p.echoes, `floor ${floor} echoes`).toBe(echoes);
+      expect(p.beacons, `floor ${floor} beacons`).toBe(beacons);
+      expect(p.braid, `floor ${floor} braid`).toBeCloseTo(braid, 10);
+      expect(p.chhayaDelayMs, `floor ${floor} chhayaDelayMs`).toBe(delay);
+    }
+  });
+
+  it('delays never drop below the 3600 clamp on tier-three procedural floors', () => {
+    for (let f = TIER_TWO_FLOORS + 1; f < TIER_THREE_FLOORS; f++)
+      expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(3600);
+  });
+});
+
+describe('DWAAR_III_LAYOUT — the garden hall', () => {
+  it('is 13 rows of 13 chars, walls and open cells only', () => {
+    expect(DWAAR_III_LAYOUT.length).toBe(13);
+    for (const row of DWAAR_III_LAYOUT) {
+      expect(row.length).toBe(13);
+      expect(row).toMatch(/^[#.]{13}$/);
+    }
+  });
+
+  it('is symmetric under 180° rotation', () => {
+    for (let y = 0; y < 13; y++)
+      for (let x = 0; x < 13; x++)
+        expect(DWAAR_III_LAYOUT[y]![x]).toBe(DWAAR_III_LAYOUT[12 - y]![12 - x]);
+  });
+
+  it('is MORE OPEN than Dwaar II: 107 open cells vs 96 (the gardens breathe)', () => {
+    const count = (layout: readonly string[]): number =>
+      layout.reduce((n, row) => n + [...row].filter((c) => c === '.').length, 0);
+    expect(count(DWAAR_III_LAYOUT)).toBe(107);
+    expect(count(DWAAR_III_LAYOUT)).toBeGreaterThan(count(DWAAR_II_LAYOUT)); // 96
+    expect(count(DWAAR_II_LAYOUT)).toBeGreaterThan(count(DWAAR_LAYOUT)); // 83 — the ladder keeps rising
+  });
+
+  it('carries LONG sightlines: the central row and column are fully open', () => {
+    expect(DWAAR_III_LAYOUT[6]!.slice(1, 12)).toBe('...........');
+    for (let y = 1; y < 12; y++) expect(DWAAR_III_LAYOUT[y]![6]).toBe('.');
+  });
+
+  it('walls are DOTTED hedge runs — no interior wall run longer than 2 cells', () => {
+    // rows: no '###' anywhere off the border
+    for (let y = 1; y < 12; y++) expect(DWAAR_III_LAYOUT[y]!.includes('###')).toBe(false);
+    // columns: no three stacked wall cells anywhere off the border
+    for (let x = 1; x < 12; x++)
+      for (let y = 1; y < 10; y++)
+        expect(
+          DWAAR_III_LAYOUT[y]![x] === '#' &&
+            DWAAR_III_LAYOUT[y + 1]![x] === '#' &&
+            DWAAR_III_LAYOUT[y + 2]![x] === '#',
+          `column ${x} rows ${y}..${y + 2}`,
+        ).toBe(false);
+  });
+
+  it('all open cells are connected (BFS via maze bfsDistances)', () => {
+    const { grid, open } = layoutGrid(DWAAR_III_LAYOUT);
+    const entrance = open[0]!; // first open cell row-major = (1,1)
+    const dist = bfsDistances(grid, entrance);
+    const reached = Array.from(dist).filter((d) => d >= 0).length;
+    expect(open.length).toBe(107);
+    expect(reached).toBe(open.length); // every open cell reachable, walls sealed off
+  });
+
+  it('entrance/exit are derivable: (1,1) → farthest open cell (11,11), 20 steps', () => {
+    const { grid, open } = layoutGrid(DWAAR_III_LAYOUT);
+    const entrance = open[0]!;
+    expect(entrance).toEqual({ x: 1, y: 1 });
+    const dist = bfsDistances(grid, entrance);
+    let best = 0;
+    for (let i = 1; i < dist.length; i++) if (dist[i]! > dist[best]!) best = i;
+    const exit: CellIndex = { x: best % 13, y: Math.floor(best / 13) };
+    expect(exit).toEqual({ x: 11, y: 11 }); // bottom-right mirror of the entrance
+    expect(dist[best]).toBe(20); // a real traverse of the garden
+  });
+});
+
+describe('dwaarGrid floor 30', () => {
+  it('derives the Dwaar III open-cell set from DWAAR_III_LAYOUT', () => {
+    const g = dwaarGrid(TIER_THREE_FLOORS);
+    expect(g.width).toBe(13);
+    expect(g.height).toBe(13);
+    expect(g.open.length).toBe(107);
+    expect(g.open[0]).toEqual({ x: 1, y: 1 });
+    for (const c of g.open) expect(DWAAR_III_LAYOUT[c.y]![c.x]).toBe('.');
+    const seen = new Set(g.open.map((c) => `${c.x},${c.y}`));
+    expect(seen.size).toBe(g.open.length); // no duplicates
+    const sorted = [...g.open].sort((a, b) => a.y - b.y || a.x - b.x);
+    expect(g.open).toEqual(sorted); // row-major order (entrance = first open cell)
   });
 });

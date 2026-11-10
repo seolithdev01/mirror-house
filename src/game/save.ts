@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import { TIER_TWO_FLOORS } from '../engine/constants';
+import { TIER_THREE_FLOORS } from '../engine/constants';
 import type { InputMode } from '../engine/input';
 import type { Campaign } from './campaign';
 import { DEFAULT_LOOK_NAME } from './look';
@@ -175,7 +175,15 @@ function validateProgress(raw: unknown): SaveData['progress'] | null {
     return null;
   const { seedBase, floor, tierComplete }: Record<string, unknown> = raw;
   if (typeof seedBase !== 'string' || !isValidSeed(seedBase)) return null;
-  if (typeof floor !== 'number' || !Number.isInteger(floor) || floor < 1 || floor > TIER_TWO_FLOORS)
+  // T3/T1 — THE T2 LESSON: the bound widens in the same commit the campaign
+  // range extends (floors 21–30 legal, 31 the first rejection) or every
+  // tier-3 save wipes on reload.
+  if (
+    typeof floor !== 'number' ||
+    !Number.isInteger(floor) ||
+    floor < 1 ||
+    floor > TIER_THREE_FLOORS
+  )
     return null;
   if (typeof tierComplete !== 'boolean') return null;
   return { seedBase, floor, tierComplete };

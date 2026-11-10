@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-import { DWAAR_FLOOR, TIER_ONE_FLOORS, TIER_TWO_FLOORS } from '../engine/constants';
+import {
+  DWAAR_FLOOR,
+  TIER_ONE_FLOORS,
+  TIER_THREE_FLOORS,
+  TIER_TWO_FLOORS,
+} from '../engine/constants';
 
 /** The Tier-1 campaign: a base seed plus how deep the player stands in the house.
  *  Pure data — every transition returns a fresh object; nothing mutates in place. */
@@ -43,20 +48,21 @@ export function descend(c: Campaign): Campaign {
 }
 
 /** Truth-Shard claim: only takes effect standing on a Dwaar floor —
- *  Dwaar I (10) or Dwaar II (20). The flag stays single: tier two's
- *  completion sets it again after the descent from 10 re-armed it. */
+ *  Dwaar I (10), Dwaar II (20) or Dwaar III (30). The flag stays single:
+ *  each tier's completion sets it again after the descent from the tier
+ *  above re-armed it. */
 export function completeTier(c: Campaign): Campaign {
   return isDwaar(c.floor) ? { ...c, tierComplete: true } : c;
 }
 
-/** Which tier a floor belongs to: 1–10 → 1, 11–20 → 2. */
-export function tierOf(floor: number): 1 | 2 {
-  return floor > TIER_ONE_FLOORS ? 2 : 1;
+/** Which tier a floor belongs to: 1–10 → 1, 11–20 → 2, 21–30 → 3. */
+export function tierOf(floor: number): 1 | 2 | 3 {
+  return floor > TIER_TWO_FLOORS ? 3 : floor > TIER_ONE_FLOORS ? 2 : 1;
 }
 
 /** The Dwaar threshold halls occupy the last floor of each tier. */
 export function isDwaar(floor: number): boolean {
-  return floor === DWAAR_FLOOR || floor === TIER_TWO_FLOORS;
+  return floor === DWAAR_FLOOR || floor === TIER_TWO_FLOORS || floor === TIER_THREE_FLOORS;
 }
 
 /** Best-time save key for the current floor (per-floor bucket, not per-run). */
@@ -74,10 +80,25 @@ export function bestKey(c: Campaign): string {
  *  echoes = 5,5,5,6,6,6,6,6,6,6 (Dwaar II fixed 5);
  *  beacons = 4 on every floor;
  *  braid = 0.22 + 0.005*(floor-11);
- *  chhayaDelayMs = max(4000, 4500 - 50*(floor-11)) (Dwaar II 3800). */
+ *  chhayaDelayMs = max(4000, 4500 - 50*(floor-11)) (Dwaar II 3800).
+ *
+ *  T3 — floors 21..TIER_THREE_FLOORS (the Reflecting Gardens):
+ *  echoes = 6 on every floor (Dwaar III 6 too — the water-mirrors are the
+ *  tier's teeth, not the echo count);
+ *  beacons = 4 on every floor;
+ *  braid = 0.24 + 0.004*(floor-21);
+ *  chhayaDelayMs = max(3600, 4200 - 60*(floor-21)) (Dwaar III 3400). */
 export function floorParams(floor: number): FloorRamp {
-  const f = Math.min(Math.max(floor, 1), TIER_TWO_FLOORS);
+  const f = Math.min(Math.max(floor, 1), TIER_THREE_FLOORS);
   const dwaar = isDwaar(f);
+  if (f > TIER_TWO_FLOORS) {
+    return {
+      echoes: 6,
+      beacons: 4,
+      braid: 0.24 + 0.004 * (f - TIER_TWO_FLOORS - 1),
+      chhayaDelayMs: dwaar ? 3400 : Math.max(3600, 4200 - 60 * (f - TIER_TWO_FLOORS - 1)),
+    };
+  }
   if (f > TIER_ONE_FLOORS) {
     return {
       echoes: dwaar ? 5 : T2_ECHO_RAMP[f - TIER_ONE_FLOORS - 1]!,
@@ -136,15 +157,42 @@ export const DWAAR_II_LAYOUT: readonly string[] = [
   '#############',
 ];
 
-/** The hand-authored layout of a Dwaar floor: Dwaar I at 10, Dwaar II at 20. */
+/** Hand-authored Dwaar III — the garden hall, floor 30. 13×13 like its elders
+ *  but the MOST OPEN of the three (107 open cells vs Dwaar II's 96, Dwaar I's
+ *  83): a Reflecting Gardens parterre whose walls are DOTTED hedge runs —
+ *  short L-shaped hedgerows tucked toward the corners (never a solid wall:
+ *  no run longer than two cells) and four freestanding hedge bushes around
+ *  the center. The central row and central column stand fully open: two
+ *  11-cell sightlines clear across the hall (the water-mirrors need the long
+ *  view). Invariant under 180° rotation so the exit mirrors the entrance;
+ *  all 107 open cells form one connected component. */
+export const DWAAR_III_LAYOUT: readonly string[] = [
+  '#############',
+  '#...........#',
+  '#........#..#',
+  '#.##.....##.#',
+  '#...........#',
+  '#...#...#...#',
+  '#...........#',
+  '#...#...#...#',
+  '#...........#',
+  '#.##.....##.#',
+  '#..#........#',
+  '#...........#',
+  '#############',
+];
+
+/** The hand-authored layout of a Dwaar floor: Dwaar I at 10, Dwaar II at 20,
+ *  Dwaar III at 30. */
 function dwaarLayout(floor: number): readonly string[] {
+  if (floor === TIER_THREE_FLOORS) return DWAAR_III_LAYOUT;
   return floor === TIER_TWO_FLOORS ? DWAAR_II_LAYOUT : DWAAR_LAYOUT;
 }
 
 /** Open-cell derivation from a Dwaar layout, row-major (first open cell is
  *  the entrance; a FloorGrid built from this opens edges between adjacent
  *  open cells only — see maze.floorFromGrid). Defaults to Dwaar I; floor 20
- *  reads DWAAR_II_LAYOUT. */
+ *  reads DWAAR_II_LAYOUT, floor 30 DWAAR_III_LAYOUT. */
 export function dwaarGrid(floor: number = DWAAR_FLOOR): {
   width: number;
   height: number;

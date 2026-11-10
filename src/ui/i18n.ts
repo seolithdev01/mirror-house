@@ -138,6 +138,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.floor': 'L', // prefix: L01, L02…
     'chip.dwaar': 'DWAAR', // L10 · DWAAR I ✦
     'chip.tier': 'T2', // T2/T1 — the Hall-of-Ancestors suffix: L14 · T2
+    'chip.tier3': 'T3', // T3/T1 — the Reflecting-Gardens suffix: L24 · T3
     // overlays and banners
     'overlay.failCaught': 'Caught by the glass',
     'overlay.failCollapse': 'The mirrors collapsed',
@@ -146,12 +147,16 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'overlay.descend': 'descending…',
     'overlay.tierTitle': '✦ Truth-Shard I claimed — Tier I complete',
     'overlay.tierTitle2': '✦ Truth-Shard II claimed — Tier II complete',
+    'overlay.tierTitle3': '✦ Truth-Shard III claimed — Tier III complete',
     'overlay.tierStats': '{floors} floors cleared · {shards} shards banked',
     'overlay.tierNote': 'The shard is already banked — staying is a free walk.',
     // T2/T5 — the Dwaar I interstitial (the T1 adjudication): the shard is
-    // claimed mid-descent as a 1.8s auto-dismiss banner; floor 20 keeps the
-    // full tier screen above.
+    // claimed mid-descent as a 1.8s auto-dismiss banner. T3/T1: Dwaar II
+    // takes the same treatment below; floor 30 keeps the full tier screen.
     'overlay.shardInterstitial': '✦ Truth-Shard I claimed — the house deepens…',
+    // T3/T1 — Dwaar II takes the same interstitial one tier down (the full
+    // tier screen is Dwaar III's now): Act II continues into the Gardens.
+    'overlay.shardInterstitial2': '✦ Truth-Shard II claimed — the house deepens…',
     // hint line prompts (M5/T2: the verb prompts name the LIVE bound key)
     'hint.step': '{key} — step through',
     'hint.push': '{key} — push',
@@ -310,6 +315,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.floor': 'स्तर ', // उपसर्ग: स्तर 01, स्तर 02…
     'chip.dwaar': 'द्वार', // स्तर 10 · द्वार I ✦
     'chip.tier': 'चरण 2', // T2/T1 — पूर्वजों की हॉल प्रत्यय: स्तर 14 · चरण 2
+    'chip.tier3': 'चरण 3', // T3/T1 — प्रतिबिंब-उद्यान प्रत्यय: स्तर 24 · चरण 3
     // परदे और पट्टियाँ — घर की आवाज़ में, पर संक्षेप में
     'overlay.failCaught': 'काँच ने आपको पकड़ लिया',
     'overlay.failCollapse': 'दर्पण ढह गए',
@@ -318,11 +324,15 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'overlay.descend': 'नीचे उतर रहे हैं…',
     'overlay.tierTitle': '✦ सत्य-शार्ड प्राप्त — चरण I पूर्ण',
     'overlay.tierTitle2': '✦ सत्य-शार्ड II प्राप्त — चरण II पूर्ण',
+    'overlay.tierTitle3': '✦ सत्य-शार्ड III प्राप्त — चरण III पूर्ण',
     'overlay.tierStats': '{floors} मंज़िलें पार · {shards} शार्ड जमा',
     'overlay.tierNote': 'शार्ड जमा हो चुका है — रुकना एक मुफ़्त सैर है।',
     // T2/T5 — द्वार I का अंतराल: शार्ड बीच-उतराई में मिलता है (1.8 सेकंड का
-    // स्वतः-मिटने वाला बैनर); मंज़िल 20 को पूर्ण चरण-परदा मिलता है।
+    // स्वतः-मिटने वाला बैनर)। T3/T1: द्वार II को भी यही अंतराल; मंज़िल 30 को
+    // पूर्ण चरण-परदा मिलता है।
     'overlay.shardInterstitial': '✦ सत्य-शार्ड I प्राप्त — घर और गहरा होता है…',
+    // T3/T1 — द्वार II का अंतराल (पूर्ण चरण-परदा अब द्वार III का है)
+    'overlay.shardInterstitial2': '✦ सत्य-शार्ड II प्राप्त — घर और गहरा होता है…',
     // संकेत-पंक्ति (M5/T2: क्रिया-संकेत जीवंत बद्ध कुंजी का नाम लेते हैं)
     'hint.step': '{key} — पार करें',
     'hint.push': '{key} — धकेलें',
@@ -387,6 +397,7 @@ export const CHIP_KEYS: readonly string[] = [
   'chip.floor',
   'chip.dwaar',
   'chip.tier',
+  'chip.tier3',
   'tab.ask',
   'tab.hint',
   'tab.lore',

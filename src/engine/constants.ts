@@ -71,3 +71,7 @@ export const DESCEND_MS = 800; // ms the descending overlay holds before the nex
 // (Taal's threshold hall — the LAST floor doubles as the Dwaar II floor).
 export const TIER_TWO_FLOORS = 20;
 export const TAAL_SENTINEL_FLOOR = 11; // from here Taal's touch catches, not angers
+
+// T3 — the Reflecting Gardens: floors 21–29 procedural ramp, 30 = Dwaar III
+// (the garden hall; Truth-Shard III ends the tier — Gher arrives in T3/T2).
+export const TIER_THREE_FLOORS = 30;

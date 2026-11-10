@@ -67,7 +67,7 @@ interface DebugHook {
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
   // T2/T4 — the tier the stage is dressed in (venue side-floors read 1)
-  tier(): 1 | 2;
+  tier(): 1 | 2 | 3;
   // T2/T4 — the Sentinel's exact spot for warps (null off his floors)
   taalPos(): { x: number; y: number } | null;
   // M6/T1 — the venue side-floor: which pack is live (null id = campaign
@@ -1481,6 +1481,35 @@ test('t2: floor 11 loads tier two', async ({ page }) => {
     2,
   );
   await expect(page.locator('#mh-floor')).toHaveText('L11 · T2');
+
+  // T3/T1 — the tier-three leg of the same census: the Gardens carry tier 3,
+  // the `· T3` chip suffix, and ZERO portraits (the placement gate is
+  // tier === 2 — the Gardens hang water, not ancestors). Taal stays home too:
+  // his beat is tier-2 only until Gher arrives.
+  await page.goto('/?seed=T3RUN&floor=21');
+  await ready(page);
+  const snap3 = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { tier: h.tier(), floor: h.campaign().floor, mirrors: h.mirrors(), taal: h.taalPos() };
+  });
+  expect(snap3.tier).toBe(3);
+  expect(snap3.floor).toBe(21);
+  expect(snap3.mirrors.portraits, 'portraits are tier-2-only — the Gardens hang none').toBe(0);
+  expect(snap3.taal, 'the Sentinel’s beat is tier-2 only').toBeNull();
+  await expect(page.locator('#mh-floor')).toHaveText('L21 · T3');
+
+  // Dwaar III — floor 30 builds the hand-authored garden hall and names it.
+  await page.goto('/?seed=T3RUN&floor=30');
+  await ready(page);
+  const snap30 = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { tier: h.tier(), floor: h.campaign().floor, mirrors: h.mirrors() };
+  });
+  expect(snap30.tier).toBe(3);
+  expect(snap30.floor).toBe(30);
+  expect(snap30.mirrors.portraits).toBe(0);
+  expect(snap30.mirrors.total, 'the garden hall hangs its glass').toBeGreaterThan(0);
+  await expect(page.locator('#mh-floor')).toHaveText('L30 · DWAAR III ✦');
   expect(errors).toEqual([]);
 });
 

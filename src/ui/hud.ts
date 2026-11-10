@@ -78,12 +78,14 @@ export interface Hud {
   /** T2/T5 — the Truth-Shard I interstitial (the T1 adjudication): Dwaar I's
    *  clear raises the tier-complete styling as a 1.8s auto-dismiss banner —
    *  the 0.8s descend hold beneath it is untouched, and the banner owns its
-   *  own clock (a floor rebuild never hides it). Dwaar II keeps the full
-   *  tier screen (`showTierComplete`). */
-  showShardInterstitial(): void;
+   *  own clock (a floor rebuild never hides it). T3/T1: Dwaar II takes the
+   *  same banner (`which: 2` names its own shard line); Dwaar III keeps the
+   *  full tier screen (`showTierComplete`). */
+  showShardInterstitial(which?: 1 | 2): void;
   /** M4/T2 — the Truth-Shard tier-complete screen (Play again / Stay).
-   *  T2/T1 — `tier` picks the screen's title: 1 = Dwaar I, 2 = Dwaar II. */
-  showTierComplete(stats: { tier: 1 | 2; floors: number; shards: number }): void;
+   *  T2/T1 — `tier` picks the screen's title: 1 = Dwaar I, 2 = Dwaar II.
+   *  T3/T1 — 3 = Dwaar III (the last tier's screen). */
+  showTierComplete(stats: { tier: 1 | 2 | 3; floors: number; shards: number }): void;
   hideTier(): void;
   showFail(reason: string): void;
   hideFail(): void;
@@ -320,13 +322,16 @@ export function createHud(init: HudInit): Hud {
   let hintText: string | null = null; // last shown hint (hint() early-returns on repeats)
   let toastTimer = 0; // the toast's own hide timer (re-toast restarts the clock)
   // T2/T5 — the interstitial's own hide clock, same contract as the toast's.
+  // T3/T1 — the live shard line (I or II), so setLang re-localizes the banner
+  // that is actually on screen.
   let shardTimer = 0;
+  let shardKey = 'overlay.shardInterstitial';
   // M4/T6 — the last values fed to the value-bearing setters, so setLang() can
   // recompose every label-bearing surface (chips, mute, tier) without main
   // re-feeding them. Derived display state, not a second truth: the values'
   // owners still write them.
   let muted = false;
-  let lastTierStats: { tier: 1 | 2; floors: number; shards: number } | null = null;
+  let lastTierStats: { tier: 1 | 2 | 3; floors: number; shards: number } | null = null;
   const lastChips: {
     streak?: number;
     bestMs?: number | null;
@@ -362,6 +367,12 @@ export function createHud(init: HudInit): Hud {
     if (lastChips.shards !== undefined)
       chipText('shards', `💠 ${t(lang, 'chip.shards')} ${lastChips.shards}`);
   }
+
+  /** The tier screen's title key — one place, so the three call sites
+   *  (relabelStatic, showTierComplete, setLang) can never drift apart.
+   *  T3/T1: tier 3 names Dwaar III's Truth-Shard III screen. */
+  const tierTitleKey = (tier: 1 | 2 | 3): string =>
+    tier === 3 ? 'overlay.tierTitle3' : tier === 2 ? 'overlay.tierTitle2' : 'overlay.tierTitle';
 
   /** One place that knows every static chrome label — boot and setLang().
    *  M5/T6: every HUD button also carries an aria-label from the same table —
@@ -401,10 +412,7 @@ export function createHud(init: HudInit): Hud {
     importBtn.textContent = '📂';
     importBtn.title = t(lang, 'btn.import');
     importBtn.setAttribute('aria-label', t(lang, 'btn.import'));
-    tierTitle.textContent = t(
-      lang,
-      (lastTierStats?.tier ?? 1) === 2 ? 'overlay.tierTitle2' : 'overlay.tierTitle',
-    );
+    tierTitle.textContent = t(lang, tierTitleKey(lastTierStats?.tier ?? 1));
     playAgain.textContent = t(lang, 'misc.playAgain');
     playAgain.setAttribute('aria-label', t(lang, 'misc.playAgain'));
     stay.textContent = t(lang, 'misc.stay');
@@ -477,8 +485,9 @@ export function createHud(init: HudInit): Hud {
     hideDescend: () => {
       descend.hidden = true;
     },
-    showShardInterstitial: () => {
-      shard.textContent = t(lang, 'overlay.shardInterstitial');
+    showShardInterstitial: (which: 1 | 2 = 1) => {
+      shardKey = which === 2 ? 'overlay.shardInterstitial2' : 'overlay.shardInterstitial';
+      shard.textContent = t(lang, shardKey);
       shard.hidden = false;
       window.clearTimeout(shardTimer);
       shardTimer = window.setTimeout(() => {
@@ -487,10 +496,7 @@ export function createHud(init: HudInit): Hud {
     },
     showTierComplete: (stats) => {
       lastTierStats = stats;
-      tierTitle.textContent = t(
-        lang,
-        stats.tier === 2 ? 'overlay.tierTitle2' : 'overlay.tierTitle',
-      );
+      tierTitle.textContent = t(lang, tierTitleKey(stats.tier));
       tierStats.textContent = fill(t(lang, 'overlay.tierStats'), stats);
       tier.hidden = false;
     },
@@ -524,13 +530,10 @@ export function createHud(init: HudInit): Hud {
       relabelStatic();
       renderChips();
       if (lastTierStats !== null && !tier.hidden) {
-        tierTitle.textContent = t(
-          lang,
-          lastTierStats.tier === 2 ? 'overlay.tierTitle2' : 'overlay.tierTitle',
-        );
+        tierTitle.textContent = t(lang, tierTitleKey(lastTierStats.tier));
         tierStats.textContent = fill(t(lang, 'overlay.tierStats'), lastTierStats);
       }
-      if (!shard.hidden) shard.textContent = t(lang, 'overlay.shardInterstitial'); // T2/T5
+      if (!shard.hidden) shard.textContent = t(lang, shardKey); // T2/T5, T3/T1 — the live line
     },
     captionBar,
     root,

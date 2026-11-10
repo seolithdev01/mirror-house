@@ -176,3 +176,27 @@ describe('i18n — fill()', () => {
     expect(fill('beacons ({n}/{total})', { n: 2, total: 5 })).toBe('beacons (2/5)');
   });
 });
+
+// T3/T1 — the tier-three chrome: the T3 floor-chip suffix, the Dwaar III
+// tier screen, and the Dwaar II interstitial that now descends into the
+// Reflecting Gardens (the full screen belongs to Dwaar III alone).
+describe('i18n — the T3 tier-three chrome', () => {
+  it('en pins the tier-three chip suffix and the Truth-Shard III screen verbatim', () => {
+    expect(STRINGS.en['chip.tier3']).toBe('T3');
+    expect(STRINGS.en['overlay.tierTitle3']).toBe('✦ Truth-Shard III claimed — Tier III complete');
+    expect(STRINGS.en['overlay.shardInterstitial2']).toBe(
+      '✦ Truth-Shard II claimed — the house deepens…',
+    );
+  });
+
+  it('hi carries its own authored lines (Devanagari, never copies of en)', () => {
+    for (const k of ['chip.tier3', 'overlay.tierTitle3', 'overlay.shardInterstitial2']) {
+      expect(STRINGS.hi[k], k).toMatch(/[\u0900-\u097F]/);
+      expect(STRINGS.hi[k], k).not.toBe(STRINGS.en[k]);
+    }
+  });
+
+  it('chip.tier3 is enumerated as a chip (single-line hi discipline applies)', () => {
+    expect(CHIP_KEYS).toContain('chip.tier3');
+  });
+});

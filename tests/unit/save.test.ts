@@ -120,10 +120,12 @@ describe('save: validateSave', () => {
 
   it('rejects malformed progress', () => {
     expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 0 })))).toBeNull();
-    // Tier 2 widened the legal floor range to TIER_TWO_FLOORS (20): 11 and 20
-    // are valid campaign floors; 21 is the first rejection.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 21 })))).toBeNull();
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 2.5 })))).toBeNull();
+    // Tier 3 widened the legal floor range to TIER_THREE_FLOORS (30): 21, 25
+    // and 30 are valid campaign floors; 31 is the first rejection.
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 31 })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 2.5 }))),
+    ).toBeNull();
     expect(
       validateSave(mutated((r) => (r.progress = { ...good.progress, floor: '3' }))),
     ).toBeNull();
@@ -562,7 +564,45 @@ describe('tier-2 save round-trip (t2 final-review regression)', () => {
     const restored = validateSave(JSON.parse(serializeSave(s)));
     expect(restored).not.toBeNull();
     expect(restored?.progress.floor).toBe(15);
-    expect(validateSave(JSON.parse(serializeSave({ ...s, progress: { ...s.progress, floor: 11 } })))?.progress.floor).toBe(11);
-    expect(validateSave(JSON.parse(serializeSave({ ...s, progress: { ...s.progress, floor: 20 } })))?.progress.floor).toBe(20);
+    expect(
+      validateSave(JSON.parse(serializeSave({ ...s, progress: { ...s.progress, floor: 11 } })))
+        ?.progress.floor,
+    ).toBe(11);
+    expect(
+      validateSave(JSON.parse(serializeSave({ ...s, progress: { ...s.progress, floor: 20 } })))
+        ?.progress.floor,
+    ).toBe(20);
+  });
+});
+
+// T3/T1 — the T2 lesson, binding: the validator widens in the SAME commit the
+// campaign range extends, or every tier-3 save wipes on reload.
+describe('tier-3 progress range + save round-trip (t3)', () => {
+  it('accepts tier-three floors 21, 25 and 30 as valid progress', () => {
+    for (const floor of [21, 25, 30]) {
+      const restored = validateSave(mutated((r) => (r.progress = { ...good.progress, floor })));
+      expect(restored, `floor ${floor}`).not.toBeNull();
+      expect(restored?.progress.floor).toBe(floor);
+    }
+  });
+
+  it('rejects 31 — the first floor past TIER_THREE_FLOORS', () => {
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 31 })))).toBeNull();
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+  });
+
+  it('a floor-25 and a floor-30 save survive serialize → validate (the tier-3 reload wipe)', () => {
+    const s = defaultSave();
+    s.progress = { seedBase: 'T3KEEP', floor: 25, tierComplete: false };
+    const mid = validateSave(JSON.parse(serializeSave(s)));
+    expect(mid).not.toBeNull();
+    expect(mid?.progress.floor).toBe(25);
+    const last = validateSave(
+      JSON.parse(
+        serializeSave({ ...s, progress: { ...s.progress, floor: 30, tierComplete: true } }),
+      ),
+    );
+    expect(last).not.toBeNull();
+    expect(last?.progress).toEqual({ seedBase: 'T3KEEP', floor: 30, tierComplete: true });
   });
 });

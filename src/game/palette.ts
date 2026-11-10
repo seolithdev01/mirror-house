@@ -48,8 +48,10 @@ export const TIER_TWO_PALETTE: TierPalette = {
   exit: 0x2f6f6a,
 };
 
-/** The palette a floor dresses in, by tier (campaign.tierOf picks the side). */
-export function paletteForTier(tier: 1 | 2): TierPalette {
+/** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
+ *  T3/T1: tier 3 keeps the tier-one dressing until T3/T4 ships the Gardens
+ *  palette — the ramp, layout and validator widen first, the paint follows. */
+export function paletteForTier(tier: 1 | 2 | 3): TierPalette {
   return tier === 2 ? TIER_TWO_PALETTE : TIER_ONE_PALETTE;
 }
 
@@ -57,7 +59,11 @@ export function paletteForTier(tier: 1 | 2): TierPalette {
  *  a rose diamond at (3,3), two-tone checker elsewhere. Pure twin of the canvas atlas.
  *  Tier-aware: the palette defaults to tier-one (call sites that pass nothing
  *  are pinned tier-1); tier-2 reuses the same slots in its own colors. */
-export function floorAccent(gx: number, gy: number, palette: TierPalette = TIER_ONE_PALETTE): number {
+export function floorAccent(
+  gx: number,
+  gy: number,
+  palette: TierPalette = TIER_ONE_PALETTE,
+): number {
   const m6 = ((gx % 6) + 6) % 6;
   const n6 = ((gy % 6) + 6) % 6;
   if (m6 === 3 && n6 === 3) return palette.rose;
