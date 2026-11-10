@@ -7,6 +7,43 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t3] — 2026-11-10 — the Reflecting Gardens (Tier 3, floors 21–30)
+
+The campaign deepens to thirty — a garden tier where the water watches.
+
+- **Floors 21–30** — the Reflecting Gardens: a tier-3 ramp (six Echoes on
+  every floor, four beacons, braids to 0.272 by floor 29, Chhaya 4.2 s behind
+  tightening to 3.7 s), the `L24 · T3` floor chip, and **Dwaar III** at floor 30 — the
+  garden hall, the most open threshold yet (107 open cells: dotted hedge
+  runs, never a solid wall, two 11-cell sightlines for the water's long
+  view). Dwaar II's clear now takes Dwaar I's interstitial banner (Act II
+  continues into the Gardens); the full tier screen is Dwaar III's —
+  `✦ Truth-Shard III claimed — Tier III complete`. The save validator
+  widened to 30 in the same commit as the ramp (the binding T2 lesson).
+- **Gher the Encircler** — the third Sentinel, and he does not sense at all:
+  pure prediction. He reads your commit against the road ahead and glides at
+  one steady 1.9 m/s to seal the corridor ~3 cells ahead of you (a 1 s
+  retarget tick). The counter is the **feint** — break the commit and his
+  prediction dies while he holds. The ladder **accumulates** (spec §4.4):
+  Taal stays — his spawn gate widened to every floor from 11 — so both
+  Sentinels walk the Gardens; both now always spawn at the patrol anchor
+  farthest from you (the fairness fix that killed a caught-at-spawn seed).
+- **Water-mirrors** — 2–4 still pools a floor, Echo eyes you cannot fog:
+  walk within arm's reach to ripple one blind for ten seconds (its overhead
+  dot dims; the water stills again on its own). The ripple is derived TTL
+  data (a look-alike, not a state machine); the pools consume into the echo
+  senses and the map, and never touch the tier-1/2 rng streams.
+- **Gardens dressing** — the green/water-teal/ivory palette, the pastoral
+  pentatonic scale `[0,2,5,7,9]`, and the melody voice switching to sine —
+  the flute leads tier 3 from its first note (venue floors reset to the
+  tier-one scale AND voice). New tester hook fields: `gherPos()`,
+  `mirrors().water`, `audioState().scale`/`.voice`.
+- **Close-out** — §4.6 row 3 and the §4.4 ladder annotated delivered in the
+  spec; README gains the Tier 3 section; the FAQ grows to 33 (the Gardens,
+  Gher's feint — the water entry landed with the pools); STATE_MACHINES'
+  Campaign section refreshed for 30 floors and the accumulating Sentinels.
+  487 unit + 34 e2e green.
+
 ## [t2] — 2026-11-10 — the Hall of Ancestors (Tier 2, floors 11–20)
 
 The first post-beta content milestone — the campaign doubles downward.

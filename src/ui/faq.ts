@@ -58,11 +58,11 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What hunts me?',
-    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya prowl from floor 1; Taal keeps the beat on floor 5 as a cameo and walks every floor from 11 down as the Sentinel — there his touch catches; the deeper Sentinels wake in later milestones.',
+    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya prowl from floor 1; Taal keeps the beat on floor 5 as a cameo and walks every floor from 11 down as the Sentinel — there his touch catches. The ladder accumulates: Gher joins at floor 21 and both Sentinels walk the Reflecting Gardens together. Aavart wakes in a later milestone.',
   },
   {
     q: 'What is below the Dwaar — the Hall of Ancestors?',
-    a: 'Floors 11–20: Tier 2. Clearing Dwaar I claims Truth-Shard I and the descent simply continues — a brief golden banner (✦ Truth-Shard I claimed — the house deepens…), then the stair door opens into the Hall. The loop is the same — frost the beacons, reach the stair door — in warmer, darker halls: four beacons a floor, five to six Echoes, Chhaya 4.5 s behind and tightening to 4.1 s by floor 19 (3.8 s in Dwaar II), and the floor chip reads L11 · T2 up to L19 · T2. The walls hang ancestor portraits, Taal walks every floor, and floor 20 is Dwaar II — his threshold hall; clearing it claims Truth-Shard II and the full tier screen.',
+    a: 'Floors 11–20: Tier 2. Clearing Dwaar I claims Truth-Shard I and the descent simply continues — a brief golden banner (✦ Truth-Shard I claimed — the house deepens…), then the stair door opens into the Hall. The loop is the same — frost the beacons, reach the stair door — in warmer, darker halls: four beacons a floor, five to six Echoes, Chhaya 4.5 s behind and tightening to 4.1 s by floor 19 (3.8 s in Dwaar II), and the floor chip reads L11 · T2 up to L19 · T2. The walls hang ancestor portraits, Taal walks every floor, and floor 20 is Dwaar II — his threshold hall; clearing it claims Truth-Shard II, and since the Gardens opened below, the claim shows the same brief banner as Dwaar I and the stairs keep going down — the full tier screen belongs to Dwaar III now.',
   },
   {
     q: 'Taal keeps catching me below floor 10 — how do I get past him?',
@@ -71,6 +71,14 @@ export const FAQ: readonly FaqEntry[] = [
   {
     q: 'Who are the figures in the portrait mirrors?',
     a: 'The ancestors — dim silhouettes hanging in the glass of every tier-2 floor, two or three per hall. They are mirrors like any other: the Echoes can see you through their clear panes, and one breath of the Frost Lantern (F) fogs their eyes shut for 25 seconds like any standing glass. Ancestor or not — fog them like any glass you would rather they did not watch you through.',
+  },
+  {
+    q: 'What is below the Hall of Ancestors — the Reflecting Gardens?',
+    a: 'Floors 21–30: Tier 3. Below Dwaar II the palace turns green — moss walls, water-teal glass, ivory light, hedges for partitions — the floor chip reads L21 · T3 up to L29 · T3, and the music goes pastoral: a flute leads the melody from the first note of the tier. The loop never changes, but the house deepens: six Echoes every floor, four beacons, Chhaya 4.2 s behind tightening to 3.7 s (3.4 s in Dwaar III), still pools of standing water you cannot fog (see the water-mirrors below) — and the Sentinels accumulate: Taal keeps the beat he learned in the Hall, and Gher the Encircler joins him. Both walk every Gardens floor. Floor 30 is Dwaar III, the most open threshold hall in the house — dotted hedges, two sightlines clear across it — and clearing it claims ✦ Truth-Shard III and the full tier screen: Tier III complete.',
+  },
+  {
+    q: 'Gher keeps cutting me off below floor 20 — how do I get past him?',
+    a: 'That is Gher the Encircler, and he is not chasing you — he is reading you. He predicts where your steps are committed and glides at one steady pace to seal the road about three cells ahead of you: the corridor you were about to take is suddenly his. Frost cannot blind him (he watches nothing — no glass, no eyes, only your heading), and outrunning him only deepens the commit. The verb is the feint: commit one way until he turns for the road ahead, then break the commit and take the other way — the moment your heading leaves the path, his prediction dies and he holds while you walk. Aaina says it best: he does not chase, he closes the road ahead — feint, then go the other way. And remember the ladder accumulates: Taal still keeps his beat down here, so cross him on the dim beat as ever.',
   },
   {
     q: 'What are the water-mirrors — the standing pools?',
@@ -130,7 +138,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What is this beta — and what is coming next?',
-    a: 'The open beta of a game being built in the open: Tier 1 — the ten floors, Chhaya and Taal, the Dwaar and Truth-Shard I — is complete, tuned, and saving on your device, and the launch kit (About, feedback, tester guides) is what you are looking at. Below it, Tier 2 — the Hall of Ancestors, floors 11–20, the Sentinel Taal, the ancestor portraits, Dwaar II and Truth-Shard II — is delivered and playable now. On the roadmap: the deeper Sentinels — Gher who seals exits, Aavart who predicts — floors past 20 (Tier 3, the Reflecting Gardens), more venue packs for local ventures, and more of Aaina’s tongue. Your saves survive the beta; where the house wobbles, the Feedback button in the top-right wants to hear about it.',
+    a: 'The open beta of a game being built in the open: Tier 1 — the ten floors, Chhaya and Taal, the Dwaar and Truth-Shard I — is complete, tuned, and saving on your device, and the launch kit (About, feedback, tester guides) is what you are looking at. Below it, Tier 2 — the Hall of Ancestors, floors 11–20, the Sentinel Taal, the ancestor portraits, Dwaar II and Truth-Shard II — and Tier 3 — the Reflecting Gardens, floors 21–30, Gher the Encircler, the water-mirrors, the flute-led pastoral score, Dwaar III and Truth-Shard III — are delivered and playable now. On the roadmap: Aavart who predicts, floors past 30 (Tier 4, the Carnival of Faces), more venue packs for local ventures, and more of Aaina’s tongue. Your saves survive the beta; where the house wobbles, the Feedback button in the top-right wants to hear about it.',
   },
 ];
 
@@ -143,7 +151,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 30
+  // M4/T6 — the heading and the close button are chrome (localized); the 33
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

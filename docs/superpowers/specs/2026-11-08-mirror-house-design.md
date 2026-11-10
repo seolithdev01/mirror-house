@@ -117,6 +117,12 @@ You carry the Glazier's **Frost Lantern**. Aim at any standing mirror and fog it
 
 Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → Tier 4 Aavart → Tiers 5–10 escalate combinations, speeds, sense ranges, and tier mechanics. Each tier ends in a **Dwaar** (threshold) — that tier's lead Sentinel in a handcrafted duel-hall, guarding the floor's **Truth-Shard**.
 
+> **Delivered note (recorded 2026-11-10, t3).** The ladder **accumulates** — a
+> new tier's Sentinel joins, the old ones stay: Chhaya walks from floor 1,
+> Taal joins at 11 and keeps walking every floor below (his spawn gate was
+> widened from "the tier-2 floors" to _every floor from 11 down_), and Gher
+> joins at 21 — both Sentinels walk the Reflecting Gardens together.
+
 ### 4.5 Economy & progression
 
 - **Shards** (score/currency): from beacons, trapped enemies, perfect floors (zero cracks), rescued NPCs.
@@ -130,7 +136,7 @@ Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → T
 | ---- | ------ | -------------------- | ----------------------------------------------------- | ------------------------------------------------ |
 | 1    | 1–10   | The Glass Gallery    | Frost Lantern, Echoes, Chhaya                         | Dawn-hope raga (Bhairav-family mood)             |
 | 2    | 11–20  | Hall of Ancestors    | Taal; portrait mirrors show _other_ floors            | Reverent, slow pulse — delivered 2026-11-10 (t2) |
-| 3    | 21–30  | Reflecting Gardens   | Water-mirrors (can't fog water — ripple them), Gher   | Pastoral, flute-lead                             |
+| 3    | 21–30  | Reflecting Gardens   | Water-mirrors (can't fog water — ripple them), Gher   | Pastoral, flute-lead — delivered 2026-11-10 (t3) |
 | 4    | 31–40  | Carnival of Faces    | Distorting mirrors displace your mirror-image, Aavart | Playful, mischievous groove                      |
 | 5    | 41–50  | The Flood Halls      | Rising water halves mirror height; Act II begins      | Submerged, filtered                              |
 | 6    | 51–60  | The Furnace Wings    | Heat fogs mirrors at range but cracks spread faster   | Urgent, percussive                               |

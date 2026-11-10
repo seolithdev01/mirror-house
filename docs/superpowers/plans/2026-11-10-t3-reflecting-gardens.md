@@ -25,7 +25,7 @@
 
 **Files:** `src/game/campaign.ts` (TIER_THREE_FLOORS, tierOf→1|2|3, isDwaar 10/20/30, ramp 21–30, `DWAAR_III_LAYOUT` — 13×13 garden hall: OPEN hedge rows, long sightlines, symmetric+connected), `src/game/save.ts` (validateProgress → TIER_THREE_FLOORS), constants, main.ts/hud chips (`L24 · T3`, `DWAAR III ✦`, `✦ Truth-Shard III claimed — Tier III complete`), tests (ramp 21–30 pinned; layout predicates; tierOf; **validator: 25/30 valid, 31 rejected; round-trip floor 25 + 30**).
 
-- [ ] Tests → RED → implement → GREEN; gates + 32/32. Commit `feat(t3): campaign to floor 30 — tier ramp, dwaar iii, validator widened`.
+- [x] Tests → RED → implement → GREEN; gates + 32/32. Commit `feat(t3): campaign to floor 30 — tier ramp, dwaar iii, validator widened`.
 
 ### Task 2: Gher the Encircler
 
@@ -42,25 +42,25 @@ export function updateGher(g: GherState, intercept: CellIndex | null, grid, now:
 // flow-field walk toward intercept at GHER_SPEED = 1.9 m/s; retarget on tick (GHER_INTERCEPT_MS); no sensing — pure prediction
 ```
 
-- [ ] Tests (intercept math: on-path ahead-cell, off-path → null; updateGher walk + retarget cadence) → RED → implement + wire + hint → GREEN; gates + 32/32. Commit `feat(t3): gher the encircler — predicts and seals`.
+- [x] Tests (intercept math: on-path ahead-cell, off-path → null; updateGher walk + retarget cadence) → RED → implement + wire + hint → GREEN; gates + 32/32. Commit `feat(t3): gher the encircler — predicts and seals`.
 
 ### Task 3: Water-mirrors — ripple, don't fog
 
 **Files:** Modify `src/game/floorObjects.ts` (`water: Array<{x:number;y:number}>` cells, 2–4/floor tier 3 only, rng-gated `params.water > 0` so tiers 1–2 streams untouched), `src/game/echo.ts` (sensesPlayer: unfogged water cells within SENSE_RANGE with both LOS count as eyes — same shape as mirror eyes; ripple state consulted), `src/game/water.ts` (NEW pure: `rippleState(at: number, now: number): boolean` TTL logic; `rippleTrigger(playerX, playerY, pools): number[]` — indices of pools within WATER_RIPPLE_RADIUS), `src/main.ts` (pools render: flat translucent water-teal plane patches at pool cells + gentle opacity shimmer (static under reduced-flash); ripple → dim + caption; overhead map: pool dots), captions + FAQ copy, tests (TTL boundaries; trigger radius; sensesPlayer with water eye + rippled-blind case; placement counts).
 
-- [ ] Tests → RED → implement → GREEN; gates + 32/32. Commit `feat(t3): water-mirrors — eyes you ripple, not fog`.
+- [x] Tests → RED → implement → GREEN; gates + 32/32. Commit `feat(t3): water-mirrors — eyes you ripple, not fog`.
 
 ### Task 4: Palette + pastoral flute + e2e
 
 **Files:** `src/game/palette.ts` (TIER_THREE_PALETTE: void 0x081410, floorBase 0x1e3226, floorLines 0x2a4432, teal→water-teal 0x3fae9a, ivory 0xeff2e4, gold 0xc9b458, rose→leaf 0x6fae6f, wallTop 0x7f937f, wallBottom 0x3e4a3e, lantern 0xfff2cf, entrance 0x3fae9a, exit 0x6fae6f), `src/audio/theory.ts` (TIER_THREE_SCALE [0,2,5,7,9]), `src/audio/engine.ts` (`setVoice(kind: 'triangle' | 'sine')` — tier 3 melody = sine/flute), main wiring (paletteForTier 3; setScale+setVoice at buildFloor; venue → tier-1 scale AND voice), hook (`tier(): 1|2|3`, `gherPos()`, `mirrors().water` count), e2e 32→34: (a) `t3: floor 21 loads the gardens` — tier 3, chip, gherPos non-null, water ≥ 2, palette check via a `paletteAccent()` hook field or canvas sample — simplest: assert `mirrors().water >= 2` + `tier() === 3`; (b) `t3: gher catches on contact` — warp onto gherPos → house().failed during freeze (T2's pattern).
 
-- [ ] Tests (palette/scale/voice) → implement → e2e 34/34 → gates. Commit `feat(t3): gardens palette, pastoral flute, tier-three e2e`.
+- [x] Tests (palette/scale/voice) → implement → e2e 34/34 → gates. Commit `feat(t3): gardens palette, pastoral flute, tier-three e2e`.
 
 ### Task 5: Close-out
 
 Spec §4.6 row 3 delivered; STATE_MACHINES (Campaign 30 floors; Gher + water registered as content under Campaign section notes, no new machines — water ripple = derived TTL data, look-alike line); README/CHANGELOG/FAQ (+3: Gardens, Gher's feint, water ripples); plan ticks; full gates + 34/34; bundle check.
 
-- [ ] Docs → gates → commit `docs(t3): delivery marks, how to read the gardens`.
+- [x] Docs → gates → commit `docs(t3): delivery marks, how to read the gardens`.
 
 ## Plan Self-Review
 

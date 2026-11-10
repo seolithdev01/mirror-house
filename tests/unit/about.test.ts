@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 31 entries (25 + feedback, beta, the tier-2 trio, and the T3 water)', () => {
-    expect(FAQ).toHaveLength(31);
+  it('grows to 33 entries (25 + feedback, beta, the tier-2 trio, the T3 water, and the Gardens pair)', () => {
+    expect(FAQ).toHaveLength(33);
   });
 
   it('the report-bugs answer names the Feedback button in the top-right', () => {
@@ -85,5 +85,18 @@ describe('faq — the beta launch pair', () => {
     expect(e!.a).toContain('cannot fog'); // the lantern has no verb here
     expect(e!.a).toContain('ripple'); // …the player's step is the verb
     expect(e!.a).toContain('ten seconds'); // the blindness window
+  });
+
+  it('the Gardens pair teaches the tier and the feint, both Sentinels walking (T3/T5)', () => {
+    const gardens = FAQ.find((f) => /reflecting gardens/i.test(f.q));
+    expect(gardens, 'the Gardens entry exists').toBeDefined();
+    expect(gardens!.a).toContain('L21 · T3'); // the chip readers see
+    expect(gardens!.a).toContain('Sentinels accumulate'); // the §4.4 ladder
+    expect(gardens!.a).toContain('Truth-Shard III'); // Dwaar III's claim
+    expect(gardens!.a.toLowerCase()).toContain('flute'); // the tier's mood
+    const gher = FAQ.find((f) => /gher keeps cutting me off/i.test(f.q));
+    expect(gher, 'the Gher-feint entry exists').toBeDefined();
+    expect(gher!.a.toLowerCase()).toContain('feint'); // the only counter
+    expect(gher!.a.toLowerCase()).toContain('dim beat'); // Taal still walks
   });
 });

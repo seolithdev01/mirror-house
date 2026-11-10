@@ -15,7 +15,7 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 415 unit tests + 32 Playwright tests, and the machine modules' own
+  suite is 487 unit tests + 34 Playwright tests, and the machine modules' own
   suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
@@ -36,7 +36,7 @@ a single value with named transitions.
 | 8   | **ViewMode**       | `focus` · `quad` · `overhead` · `tactical`                               | `src/game/viewMode.ts`                                          | Pure machine (M3/T3); `tactical` is the pause view                                                                                          |
 | 9   | **Aaina overlay**  | `closed` · `open{tab}`                                                   | `src/ui/aaina.ts`                                               | Diegetic panel — does **not** pause                                                                                                         |
 | 10  | **AudioEngine**    | `idle` · `running`                                                       | `src/audio/engine.ts`                                           | Starts on first gesture; `muted` is a flag, not a state                                                                                     |
-| 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete`                              | `src/game/campaign.ts`                                          | Pure data + transitions (M4/T1, grown to 20 floors in T2); the single `tierComplete` re-arms as each Dwaar is left                          |
+| 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete`                              | `src/game/campaign.ts`                                          | Pure data + transitions (M4/T1, grown to 30 floors in T3); the single `tierComplete` re-arms as each Dwaar is left                          |
 
 ---
 
@@ -239,83 +239,113 @@ frame; the scheduler smooths toward it (0.12 lerp per 50 ms wake-up).
 
 ## 11. Campaign — `src/game/campaign.ts`
 
-Pure data, not a phase machine (M4/T1, grown to two tiers in t2/T1): the spine
+Pure data, not a phase machine (M4/T1, grown to three tiers in t3/T1): the spine
 is `{ seedBase, floor, tierComplete }` and every transition returns a fresh
 object — callers (`main.ts`) rebind their `campaign` binding; nothing mutates
 in place.
 
-| From                       | Event                                  | To                                                                               |
-| -------------------------- | -------------------------------------- | -------------------------------------------------------------------------------- |
-| —                          | `newCampaign(seedBase)`                | `{ seedBase, floor: 1, tierComplete: false }`                                    |
-| any                        | `descend(c)` — the Stair Door was paid | `{ ...c, floor: floor + 1 }`; leaving a Dwaar also re-arms `tierComplete: false` |
-| `isDwaar(c.floor)` (10/20) | `completeTier(c)` — Truth-Shard claim  | `{ ...c, tierComplete: true }`                                                   |
-| any other floor            | `completeTier(c)`                      | unchanged, **by reference** — the shard is claimed in a hall only                |
+| From                          | Event                                  | To                                                                               |
+| ----------------------------- | -------------------------------------- | -------------------------------------------------------------------------------- |
+| —                             | `newCampaign(seedBase)`                | `{ seedBase, floor: 1, tierComplete: false }`                                    |
+| any                           | `descend(c)` — the Stair Door was paid | `{ ...c, floor: floor + 1 }`; leaving a Dwaar also re-arms `tierComplete: false` |
+| `isDwaar(c.floor)` (10/20/30) | `completeTier(c)` — Truth-Shard claim  | `{ ...c, tierComplete: true }`                                                   |
+| any other floor               | `completeTier(c)`                      | unchanged, **by reference** — the shard is claimed in a hall only                |
 
-**The tiers.** Floors 1–9 and 11–19 are procedural — `generateFloor` seeded by
-`floorSeed(c) = seedBase:floor`, braided and stocked by `floorParams`; the two
-threshold floors are fixed hand-authored 13×13 halls: floor 10 the
-`DWAAR_LAYOUT` Dwaar I, floor 20 the broader `DWAAR_II_LAYOUT` (96 open cells
-— the Sentinel's beat needs the room; `dwaarGrid()` derives either's open
-cells, `maze.floorFromGrid` builds the grid). `tierOf(floor)` maps 1–10 → 1
-and 11–20 → 2 — the stage palette, music scale, portrait spawns and Taal's
-promotion all read it — and `isDwaar(floor)` widens to both 10 and 20.
-`floorParams` pins both ramps: tier 1 echoes `min(5, 2 + floor − 1)` (Dwaar
-fixed 4), beacons 2,2,3,3,3,4,4,4,4,4, braid `0.12 + 0.01·(floor − 1)`,
-Chhaya `max(4500, 7000 − 300·(floor − 1))` (Dwaar 4000); tier 2 echoes
+**The tiers.** Floors 1–9, 11–19 and 21–29 are procedural — `generateFloor`
+seeded by `floorSeed(c) = seedBase:floor`, braided and stocked by
+`floorParams`; the three threshold floors are fixed hand-authored 13×13 halls:
+floor 10 the `DWAAR_LAYOUT` Dwaar I, floor 20 the broader `DWAAR_II_LAYOUT`
+(96 open cells — the Sentinel's beat needs the room), floor 30 the
+`DWAAR_III_LAYOUT` garden hall — the most open of the three (107 open cells):
+dotted hedge runs, never a solid wall, with the central row and column fully
+open so two 11-cell sightlines cross the hall (the water-mirrors need the
+long view; `dwaarGrid()` derives any hall's open cells, `maze.floorFromGrid`
+builds the grid). `tierOf(floor)` maps 1–10 → 1, 11–20 → 2 and 21–30 → 3 —
+the stage palette, music scale **and voice**, portrait spawns (tier 2 only)
+and the Sentinels' gates all read it — and `isDwaar(floor)` widens to 10, 20
+and 30. `floorParams` pins all three ramps: tier 1 echoes `min(5, 2 + floor −
+1)` (Dwaar fixed 4), beacons 2,2,3,3,3,4,4,4,4,4, braid `0.12 + 0.01·(floor −
+1)`, Chhaya `max(4500, 7000 − 300·(floor − 1))` (Dwaar 4000); tier 2 echoes
 5,5,5,6,6,6,6,6,6,6 (Dwaar II fixed 5), beacons 4 throughout, braid
 `0.22 + 0.005·(floor − 11)`, Chhaya `max(4000, 4500 − 50·(floor − 11))`
-(Dwaar II 3800).
+(Dwaar II 3800); tier 3 (t3/T1) echoes 6 on every floor (Dwaar III 6 too —
+the water-mirrors are the tier's teeth, not the echo count), beacons 4
+throughout, braid `0.24 + 0.004·(floor − 21)`, Chhaya `max(3600, 4200 −
+60·(floor − 21))` (Dwaar III 3400).
 
 **Invariants.** `tierComplete` flips true only inside `completeTier` and only
 on a Dwaar floor — the single flag always reads "the CURRENT tier's threshold
 has been claimed", because `descend` re-arms it false the moment the player
-LEAVES a Dwaar: Act I continues past Dwaar I into the Hall of Ancestors, and
-tier-two floors pay their first-clear bonus again on the re-armed flag. The
-tier screen's ↻ Play again (Dwaar II's) starts a `newCampaign` on a fresh
-random base instead of reopening the tier. `floor` lives in
-1..`TIER_TWO_FLOORS`, and `floorParams` clamps its input regardless. Taal
-reads `campaign.floor` in `main.ts` — cameo on floor 5, Sentinel
-(`taalOutcome` → `'caught'`) on every tier-2 floor — spawn-side data, not
-campaign state.
+LEAVES a Dwaar: Act I continues past Dwaar I into the Hall of Ancestors, Act
+II past Dwaar II into the Gardens, and each new tier's floors pay their
+first-clear bonus again on the re-armed flag. The tier screen's ↻ Play again
+(Dwaar III's) starts a `newCampaign` on a fresh random base instead of
+reopening the tier. `floor` lives in 1..`TIER_THREE_FLOORS`, and
+`floorParams` clamps its input regardless.
 
-**Tier interstitials (t2/T5).** Both Dwaar clears claim their Truth-Shard and
-bank it at once; what the player SEES splits by tier. Dwaar I raises a 1.8 s
-auto-dismiss banner (`✦ Truth-Shard I claimed — the house deepens…`) and the
-descent continues exactly as on any ramp floor — the banner's hide clock is
-HUD-owned, so the 0.8 s descend hold and the floor rebuild beneath it never
-cut the celebration short. Dwaar II raises the full tier-complete screen
-(Play again / Stay). The split is presentation only — the campaign machinery
-above is byte-identical at both thresholds.
+**The Sentinels accumulate (spec §4.4, t3/T4).** Both Sentinels read
+`campaign.floor` in `main.ts` — spawn-side data, not campaign state. Taal:
+cameo on floor 5 (anger-only), Sentinel (`taalOutcome` → `'caught'`) on
+**every floor from 11 down** — the gate was widened from "the tier-2 floors"
+to `floor ≥ TAAL_SENTINEL_FLOOR` so the ladder accumulates: he keeps his beat
+beside Gher throughout the Gardens. Gher (`src/game/gher.ts`, t3/T2) joins at
+21 (`GHER_SENTINEL_FLOOR`) and walks every tier-3 floor: no sensing at all —
+a pure prediction machine (`interceptCell` reads the player's commit against
+the BFS path to their nearest plausible goal; `updateGher` glides a flow-field
+walk to the seal cell, retargeting every `GHER_INTERCEPT_MS`). The counter is
+the feint: the moment the heading leaves the path the prediction goes null
+and he holds. Both spawn at the patrol anchor FARTHEST from the player
+(t3/T4's fairness fix — never an anchor-on-spawn catch).
+
+**Tier-3 content, not new machines.** The Gardens dress by tier — palette,
+the pastoral scale `[0,2,5,7,9]`, the sine (flute) melody voice — and the
+standing water (2–4 pools a floor, rng-gated `params.water > 0` so tiers 1–2
+draw nothing) rides the floor objects: pools are consumed by `sensesPlayer`
+as unfogged eyes and by the overhead map as dots. Portraits stay tier-2
+(`tier === 2`), which keeps the tier-1/3 rng streams clean. The water ripple
+is a look-alike (below), not a machine.
+
+**Tier interstitials (t2/T5, t3/T1).** Every Dwaar clear claims its
+Truth-Shard and banks it at once; what the player SEES splits by tier. Dwaar
+I and Dwaar II raise a 1.8 s auto-dismiss banner (`✦ Truth-Shard I/II claimed
+— the house deepens…`) and the descent continues exactly as on any ramp floor
+— the banner's hide clock is HUD-owned, so the 0.8 s descend hold and the
+floor rebuild beneath it never cut the celebration short (t3/T1 moved Dwaar
+II here from the full screen: Act II continues into the Gardens). Dwaar III
+raises the full tier-complete screen (Play again / Stay). The split is
+presentation only — the campaign machinery above is byte-identical at all
+three thresholds.
 
 **Derived:** `floorSeed`/`bestKey` (`seedBase:floor` — every floor is its own
 best-time bucket), `tierOf`, `isDwaar`, the `floorParams` ramp, and the HUD
-floor chip (`L02` on the tier-1 ramp, `L14 · T2` in the Hall, and the
-threshold floors naming their Dwaar — `L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`,
-localized `स्तर`/`द्वार` in Hindi).
+floor chip (`L02` on the tier-1 ramp, `L14 · T2` in the Hall, `L24 · T3` in
+the Gardens, and the threshold floors naming their Dwaar — `L10 · DWAAR I ✦`,
+`L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`, localized `स्तर`/`द्वार` in Hindi).
 
 ---
 
 ## Look-alikes — deliberately _not_ machines
 
-| Thing                                     | Why not                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Breath** (0..1)                         | A clamped resource with a continuous rate. No discrete states; `updateBreath` is arithmetic.                                                                                                                                                                                                                                                                                                                                                                           |
-| **Anger** (0..100)                        | A resource with a threshold. `isCollapse(h)` is the event; there is no state to be in.                                                                                                                                                                                                                                                                                                                                                                                 |
-| **Run timer**                             | Derived: `runElapsedMs(phase, now)`. Never stored.                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| **HUD hints**                             | Derived each frame by a precedence chain (step-through → push → sealed exit), not stored.                                                                                                                                                                                                                                                                                                                                                                              |
-| **Chhaya visibility**                     | Derived: visible iff a delayed path sample exists **and** the phase is active. She has no state of her own.                                                                                                                                                                                                                                                                                                                                                            |
-| **Cracked glass**                         | Orthogonal damage flag on the runtime mirror; guarded once-per-mirror by `applyCrack`.                                                                                                                                                                                                                                                                                                                                                                                 |
-| **Audio intensity**                       | Derived per frame by `intensityFrom({ anger, chasing, failing, cleared })` (M3/T6); the engine only smooths toward the target.                                                                                                                                                                                                                                                                                                                                         |
-| **`hintsUsed`**                           | A per-floor counter (0 at spawn, reset in `resetFloor`), not a state: it prices Aaina's next hint (`hintCost`), nothing more.                                                                                                                                                                                                                                                                                                                                          |
-| **`visited` / pings**                     | Fog-of-war data (M3/T4): a `Set` of explored cells plus a decaying ping array (`pingOpacity`). Written by the fixed step, read by the map.                                                                                                                                                                                                                                                                                                                             |
-| **Waypoints**                             | Tactical-view data: ivory cell marks (max `WAYPOINT_MAX`), click-toggled, first `Esc` cleared. A list with a cap, not a lifecycle.                                                                                                                                                                                                                                                                                                                                     |
-| **Pointer lock**                          | Owned by the browser. We observe; we do not model.                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| **Tester mode** (step007/T3)              | A session flag, not a machine: `?test=1` (parsed once at boot; `?test=0` the explicit off) gates the diagnostics hook's availability in production and mounts the TESTER chip + one-time banner. Never persisted, nothing transitions.                                                                                                                                                                                                                                 |
-| **IDB save `v2`**                         | A versioning policy, not a machine (M4/T4, the meta-v1 row grown up): `validateSave` gates `v === 2` strictly — an imported or stored save is untrusted bytes until every field checks out, and a corrupt record reads as absent so boot falls through to defaults; `migrateMeta` maps the localStorage v1 era once (progress fresh, lang `en`); `mergeCampaign` is the campaign write-through; `idbGet`/`idbPut` degrade to null/no-op so storage never kills a boot. |
-| **⚙ Settings & the `a11y` block** (M5/T1) | A versioned configuration document, not a machine: `{ reducedFlash, captions, textScale, keyMap }` rides the IDB save — optional in `validateSave`, defaulted by `normalizeSave`, so an m4 save upgrades in place. The ⚙ overlay (`src/ui/settings.ts`) is pure chrome over the document: toggles apply at once and persist; consumers read flags, nothing transitions.                                                                                                |
-| **KeyMap** (M5/T2)                        | A versioned configuration document: action → `KeyboardEvent.code`. `rebind(map, action, code)` is a pure function returning a fresh map plus a `conflict` name (the guard refuses a key another action owns; only the default `turnR`/`push` pair may share `E`, resolved by context — the push hint — not by state). `actionFor(code, map)` is a reverse lookup, not a transition.                                                                                    |
-| **`perf` preset** (M5/T4)                 | A versioned configuration document: `'auto' \| 'low' \| 'mid' \| 'high'` in the save. `autoPreset(fps, dpr)` is a pure grader with hysteresis fed by a rolling 5 s FPS average; `PROFILES` maps a preset to `{ pixelRatioCap, heroRt, heroRtSize, chhayaBob }` — applied live for pixel ratio, on the next floor build for hero RTs. A derivation feeding a document, not a lifecycle.                                                                                 |
-| **Captions** (M5/T3)                      | Derived events, not a state: game moments push immutable `CaptionEvent`s into the pure `captionFeed` (dedupe by id within ttl, trim expired); `renderCaptions` shows the latest two, fading. With captions off nothing about the game differs — the bar observes the machines above, it never joins them.                                                                                                                                                              |
+| Thing                                     | Why not                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Breath** (0..1)                         | A clamped resource with a continuous rate. No discrete states; `updateBreath` is arithmetic.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Anger** (0..100)                        | A resource with a threshold. `isCollapse(h)` is the event; there is no state to be in.                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Run timer**                             | Derived: `runElapsedMs(phase, now)`. Never stored.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **HUD hints**                             | Derived each frame by a precedence chain (step-through → push → sealed exit), not stored.                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Chhaya visibility**                     | Derived: visible iff a delayed path sample exists **and** the phase is active. She has no state of her own.                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Cracked glass**                         | Orthogonal damage flag on the runtime mirror; guarded once-per-mirror by `applyCrack`.                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Audio intensity**                       | Derived per frame by `intensityFrom({ anger, chasing, failing, cleared })` (M3/T6); the engine only smooths toward the target.                                                                                                                                                                                                                                                                                                                                                                           |
+| **`hintsUsed`**                           | A per-floor counter (0 at spawn, reset in `resetFloor`), not a state: it prices Aaina's next hint (`hintCost`), nothing more.                                                                                                                                                                                                                                                                                                                                                                            |
+| **`visited` / pings**                     | Fog-of-war data (M3/T4): a `Set` of explored cells plus a decaying ping array (`pingOpacity`). Written by the fixed step, read by the map.                                                                                                                                                                                                                                                                                                                                                               |
+| **Waypoints**                             | Tactical-view data: ivory cell marks (max `WAYPOINT_MAX`), click-toggled, first `Esc` cleared. A list with a cap, not a lifecycle.                                                                                                                                                                                                                                                                                                                                                                       |
+| **Pointer lock**                          | Owned by the browser. We observe; we do not model.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Tester mode** (step007/T3)              | A session flag, not a machine: `?test=1` (parsed once at boot; `?test=0` the explicit off) gates the diagnostics hook's availability in production and mounts the TESTER chip + one-time banner. Never persisted, nothing transitions.                                                                                                                                                                                                                                                                   |
+| **IDB save `v2`**                         | A versioning policy, not a machine (M4/T4, the meta-v1 row grown up): `validateSave` gates `v === 2` strictly — an imported or stored save is untrusted bytes until every field checks out, and a corrupt record reads as absent so boot falls through to defaults; `migrateMeta` maps the localStorage v1 era once (progress fresh, lang `en`); `mergeCampaign` is the campaign write-through; `idbGet`/`idbPut` degrade to null/no-op so storage never kills a boot.                                   |
+| **⚙ Settings & the `a11y` block** (M5/T1) | A versioned configuration document, not a machine: `{ reducedFlash, captions, textScale, keyMap }` rides the IDB save — optional in `validateSave`, defaulted by `normalizeSave`, so an m4 save upgrades in place. The ⚙ overlay (`src/ui/settings.ts`) is pure chrome over the document: toggles apply at once and persist; consumers read flags, nothing transitions.                                                                                                                                  |
+| **KeyMap** (M5/T2)                        | A versioned configuration document: action → `KeyboardEvent.code`. `rebind(map, action, code)` is a pure function returning a fresh map plus a `conflict` name (the guard refuses a key another action owns; only the default `turnR`/`push` pair may share `E`, resolved by context — the push hint — not by state). `actionFor(code, map)` is a reverse lookup, not a transition.                                                                                                                      |
+| **`perf` preset** (M5/T4)                 | A versioned configuration document: `'auto' \| 'low' \| 'mid' \| 'high'` in the save. `autoPreset(fps, dpr)` is a pure grader with hysteresis fed by a rolling 5 s FPS average; `PROFILES` maps a preset to `{ pixelRatioCap, heroRt, heroRtSize, chhayaBob }` — applied live for pixel ratio, on the next floor build for hero RTs. A derivation feeding a document, not a lifecycle.                                                                                                                   |
+| **Captions** (M5/T3)                      | Derived events, not a state: game moments push immutable `CaptionEvent`s into the pure `captionFeed` (dedupe by id within ttl, trim expired); `renderCaptions` shows the latest two, fading. With captions off nothing about the game differs — the bar observes the machines above, it never joins them.                                                                                                                                                                                                |
+| **Water ripple** (t3/T3)                  | Derived TTL data over a timestamp, not a machine (MirrorVisual's fog contract, one tier down): each pool carries `rippledAt: number \| null`; `rippleState(at, now)` = `at !== null && now < at + WATER_RIPPLE_MS` (10 s, exclusive expiry). The trigger is a per-fixed-step proximity check (`rippleTrigger`), the dimmed 3D patch and the dimmed map dot both read the same derivation — sight and display cannot disagree. Standing in a pool past the TTL re-ripples it (the fog-refresh semantics). |
 
 ---
 
@@ -330,15 +360,18 @@ localized `स्तर`/`द्वार` in Hindi).
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **366/366** unit ·
-**30/30** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
+`npm run typecheck` clean · `npm run lint` clean · **487/487** unit ·
+**34/34** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
 wiring, descend to floor 2, save round-trip resume, Hindi chrome via
 `?lang=hi`; 5 for m5: rebind forward through the settings overlay, Space
 toggles the focused ⚙ checkbox, `?perf=low` low path, export/import
 round-trip through a real file, warp-caught restart within 2000 ms; 3 for m6:
 venue demo floor, Escape peels one dialog layer, Aaina refuses hint sales on
 a venue floor; 3 for step007: the ⓘ About panel, the 📮 feedback composer,
-`?test=1` TESTER chip).
+`?test=1` TESTER chip; 2 for t2: floor 11 loads tier two, sentinel Taal
+catches while the floor-5 cameo stays anger-only; 2 for t3: floor 21 loads
+the Gardens (both Sentinels, the water census, the flute), Gher catches on
+contact).
 
 ---
 
