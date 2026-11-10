@@ -25,7 +25,7 @@
 
 **Files:** `src/game/campaign.ts` (TIER_FOUR_FLOORS, tierOf 1|2|3|4, isDwaar +30→40 set, ramp per constraints, `DWAAR_IV_LAYOUT` 13×13 funhouse — offset alcoves + central ring, 180°-symmetric + connected + entrance/exit predicates, ~100+ open), `src/game/save.ts` (→ TIER_FOUR_FLOORS same commit + tests 35/40 round-trip, 41 rejected), constants, main/hud (chips `L34 · T4`, `DWAAR IV ✦`; interstitial `✦ Truth-Shard IV`; **act screen at Dwaar IV clear**: `ACT I COMPLETE — The Trap` with campaign stats line (floors cleared 40, shards banked) + `Act II: The Deception — the house will start copying you…` + Play again/Stay — reuse tier-complete overlay with act styling), tests.
 
-- [ ] Tests → RED → implement → GREEN; gates + 34/34. Commit `feat(t4): campaign to floor 40 — act i closes, validator widened`.
+- [x] Tests → RED → implement → GREEN; gates + 34/34. Commit `feat(t4): campaign to floor 40 — act i closes, validator widened`.
 
 ### Task 2: Aavart the Ambusher
 
@@ -44,25 +44,25 @@ export function updateAvart(a: AvartState, ambush: CellIndex | null, grid, now: 
 // glide at AVART_SPEED = 2.4 m/s (fastest sentinel — he RUNS), retarget on AVART_INTERCEPT_MS tick
 ```
 
-- [ ] Tests (ambushCell: sprint projects far ahead onto path; walk mid; creep ≈ next cell; off-path heading → objective-end cell; updateAvart cadence) → RED → implement + wire + hint → GREEN; gates + 34/34. Commit `feat(t4): aavart the ambusher — reads your speed`.
+- [x] Tests (ambushCell: sprint projects far ahead onto path; walk mid; creep ≈ next cell; off-path heading → objective-end cell; updateAvart cadence) → RED → implement + wire + hint → GREEN; gates + 34/34. Commit `feat(t4): aavart the ambusher — reads your speed`.
 
 ### Task 3: Distorting mirrors — the house lies about you
 
 **Files:** Modify `src/game/floorObjects.ts` (kind `'distort'` 2–3/floor tier-4-only, `distortDx/distortDy` per-id deterministic ±DISTORT_MAX_CELLS axis-aligned; rng draws LAST-LAST, streams pinned), `src/game/echo.ts` (sensesPlayer: compute apparent player position — if any UNFOGGED distort mirror has both-LOS (echo↔mirror, mirror↔player), apply THAT mirror's delta to the player position used for the range check + return the apparent position alongside; chases then target the apparent cell), `src/main.ts` (echo chase targets apparent cell; PINGS render at the apparent position — the deception visible on the map; capture/frost work on distort like standing — fogging one restores truth for its area; visual: bent plane via slight vertex offset on the fake-reflective material + rose tint), overhead (distort mirrors marked, warped glyph), captions + FAQ, tests (placement; determinism; displacement vector bounds; sensesPlayer displaced-range case; fog restores truth; ping-at-apparent).
 
-- [ ] Tests → RED → implement → GREEN; gates + 34/34. Commit `feat(t4): distorting mirrors — enemies chase where you appear`.
+- [x] Tests → RED → implement → GREEN; gates + 34/34. Commit `feat(t4): distorting mirrors — enemies chase where you appear`.
 
 ### Task 4: Palette + groove + e2e
 
 **Files:** `src/game/palette.ts` (TIER_FOUR_PALETTE: void 0x140812, floorBase 0x2e1a26, floorLines 0x402233, teal→magenta 0xc2548a, ivory 0xf2e4ee, gold 0xd9a441, rose→candle 0xffb347, wallTop 0x8a6a7a, wallBottom 0x46303c, lantern 0xffd4c0, entrance 0xc2548a, exit 0xffb347), `src/audio/theory.ts` (TIER_FOUR_SCALE [0,2,3,7,9] — the mischievous one), engine voice map (tier 4 = 'triangle' + slightly faster note-rate via existing intensity path — no engine change needed if voice map covers it; if setVoice map in main: {1:triangle,2:triangle,3:sine,4:triangle}), hook (`avartPos()`, `mirrors().distort`, tier→4), e2e 34→36: (a) `t4: floor 31 loads the carnival` — tier 4, chip, avartPos non-null, mirrors().distort ≥ 2, ALL THREE sentinel positions non-null (accumulation pinned); (b) `t4: aavart catches + distortion displaces` — warp onto avartPos → failed; then the distortion leg: seed with known distort mirror, warp player to a spot seen through it, assert an echo ping/chase target computed at the displaced position (expose `apparentPlayer()` in the tester hook — additive — and assert it ≠ player while in view, = player after fogging that mirror).
 
-- [ ] Tests (palette/scale) → implement → e2e 36/36 → gates; live :4199 check (carnival look; sprint → Aavart leaps far ahead, creep → he shadows you; distorted pings on the map). Commit `feat(t4): carnival palette, mischievous groove, tier-four e2e`.
+- [x] Tests (palette/scale) → implement → e2e 36/36 → gates; live :4199 check (carnival look; sprint → Aavart leaps far ahead, creep → he shadows you; distorted pings on the map). Commit `feat(t4): carnival palette, mischievous groove, tier-four e2e`.
 
 ### Task 5: Close-out
 
 Spec §4.6 row 4 delivered + §2.3 Act I closed note; §4.4 ladder note (Taal ≥11, Gher ≥21, Aavart ≥31 — all four walk by tier 4); STATE_MACHINES (Campaign@40, act screen, distort = MirrorVisual-adjacent content note); README (Tier 4 + Act I complete), CHANGELOG `[t4]`, FAQ +2 (the Carnival; Aavart's pace trick), plan ticks; full gates + 36/36; bundle check.
 
-- [ ] Docs → gates → commit `docs(t4): act i closes — delivery marks, how to run the carnival`.
+- [x] Docs → gates → commit `docs(t4): act i closes — delivery marks, how to run the carnival`.
 
 ## Plan Self-Review
 

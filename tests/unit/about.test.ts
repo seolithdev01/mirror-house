@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 34 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass)', () => {
-    expect(FAQ).toHaveLength(34);
+  it('grows to 36 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair)', () => {
+    expect(FAQ).toHaveLength(36);
   });
 
   it('the report-bugs answer names the Feedback button in the top-right', () => {
@@ -105,5 +105,20 @@ describe('faq — the beta launch pair', () => {
     expect(gher, 'the Gher-feint entry exists').toBeDefined();
     expect(gher!.a.toLowerCase()).toContain('feint'); // the only counter
     expect(gher!.a.toLowerCase()).toContain('dim beat'); // Taal still walks
+  });
+
+  it('the Carnival pair teaches the tier and the pace trick, the act closing (T4/T5)', () => {
+    const carnival = FAQ.find((f) => /carnival of faces/i.test(f.q));
+    expect(carnival, 'the Carnival entry exists').toBeDefined();
+    expect(carnival!.a).toContain('L31 · T4'); // the chip readers see
+    expect(carnival!.a).toContain('Truth-Shard IV'); // Dwaar IV's claim
+    expect(carnival!.a).toContain('ACT I'); // the act close on floor 40's clear
+    expect(carnival!.a).toContain('distorting mirrors'); // the tier's mechanic, cross-referenced
+    const aavart = FAQ.find((f) => /aavart keeps intercepting/i.test(f.q));
+    expect(aavart, 'the Aavart-pace entry exists').toBeDefined();
+    expect(aavart!.a.toLowerCase()).toContain('change your pace'); // the only counter
+    expect(aavart!.a).toContain('1.2 seconds'); // the retarget window the trick rides
+    expect(aavart!.a.toLowerCase()).toContain('dim beat'); // Taal still walks
+    expect(aavart!.a.toLowerCase()).toContain('feint'); // Gher still reads the heading
   });
 });

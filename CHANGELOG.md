@@ -7,6 +7,72 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t4] — 2026-11-10 — the Carnival of Faces (Tier 4, floors 31–40) — ACT I closes
+
+The campaign runs to forty and the first act ends — the funhouse tier, where the glass lies about you.
+
+- **Floors 31–40** — the Carnival of Faces: a tier-4 ramp (four beacons, braids
+  to 0.312 by floor 39, Chhaya 3.8 s behind tightening to 3.3 s, 3.0 s in
+  Dwaar IV) carrying **five Echoes on every floor, Dwaar IV included — a
+  deliberate step DOWN from tier three's six, the ratified playability call:
+  three lethal Sentinels walk tier 4, so the echoes yield the stage** — the
+  `L34 · T4` floor chip, and **Dwaar IV** at floor 40: the funhouse hall (101
+  open cells), four offset alcoves — one per wall, each rotated one position
+  on from the last, never compass-aligned — around a central carousel ring (a
+  radius-2 wall ring with four compass gaps, its 3×3 heart standing open). The
+  save validator widened to 40 in the same commit as the ramp (the binding T2
+  lesson; 41 is the first rejection).
+- **Act I closes (spec §2.3)** — Dwaar III's clear now cascades to Dwaar
+  I/II's interstitial banner (`✦ Truth-Shard III claimed — the house
+  deepens…`, en+hi), and **Dwaar IV's clear raises the act-completion
+  screen**: the tier-complete overlay re-styled as the act close —
+  `ACT I COMPLETE — The Trap`, the forty floors and banked shards counted,
+  `Act II: The Deception — the house will start copying you…` for the note
+  line, the card dressed in the carnival's rose, ↻ Play again / Stay. The
+  campaign is **terminal at 40**: `descend()` there is a no-op returning the
+  same object (pinned) — the act screen is the end of the house until Act II
+  exists.
+- **Aavart the Ambusher** — the fourth Sentinel (`src/game/avart.ts`), and he
+  reads the one thing the others ignore: your **pace**. `ambushCell`
+  projects 1.8 s of travel along your heading, scaled by stride (a sprint
+  reaches ~3 cells ahead; standing still collapses the lead onto your own
+  next step), onto the BFS path to your nearest goal and takes the
+  corner-cut; an off-road projection sends him to the objective itself to
+  wait. `updateAavart` runs him there at 2.4 m/s — the fastest Sentinel —
+  adopting a fresh read only every 1.2 s: the counter is to change your pace
+  inside that window (Aaina: "He leaps where you are GOING — the faster you
+  run, the further he reaches. Change your pace.").
+- **The ladder accumulates — all four walk by tier 4 (spec §4.4).** Found
+  during t4's Aavart wiring: Gher's spawn gate was still tier-3-only, so it
+  was widened to **every floor from 21 down** (the same widening Taal got at
+  t3 for ≥ 11) — Chhaya always, Taal ≥ 11, Gher ≥ 21, Aavart ≥ 31: Taal and
+  Gher walk the whole Carnival beside the newcomer (pinned by e2e — all
+  three Sentinel positions non-null on floor 31).
+- **Distorting mirrors** — 2–3 bent rose panes a floor, the rng draws
+  LAST-LAST so the tier-1/2/3 streams stay byte-identical, and each pane's
+  fixed lie derives from its id (axis-aligned, ±`DISTORT_MAX_CELLS` = 2
+  cells). While an unfogged pane sees you, `apparentPlayer()` displaces your
+  **apparent position** by that pane's delta: the echo sense check, the
+  chase cell AND the map pings all read where you appear, not where you are
+  — the deception visible on the map (pings bloom offset from your arrow),
+  warned once per attempt by caption ("The glass shows you somewhere you are
+  not.", en+hi). They fog exactly like standing glass (25 s, banks nothing) —
+  fog the seeing pane and the house remembers where you truly stand. The
+  displacement is derived per fixed step: a look-alike, not a state machine.
+- **Carnival dressing** — the rose/magenta-on-night palette (the teal slot
+  wears the carnival's magenta; the diamond lattice glows candle-flame), the
+  mischievous fourth scale `[0,2,3,7,9]` — the Durga frame with its third
+  flattened — and the melody voice back on the triangle, the reed's wink
+  after the Gardens' flute. New tester hook fields: `avartPos()`,
+  `mirrors().distort`, `apparentPlayer()`.
+- **Close-out** — §4.6 row 4 delivered and the §2.3 Act I row closed in the
+  spec (the §4.4 ladder note now reads all-four-walk-by-tier-4; §13.1 notes
+  Acts II/III remain future content); README gains the Tier 4 + ACT I
+  COMPLETE section; the FAQ grows to 36 (the Carnival, Aavart's pace trick —
+  the carnival-glass entry landed with the mirrors); STATE_MACHINES'
+  Campaign section refreshed for 40 floors, the terminal note, and the
+  distort look-alike under MirrorVisual. 562 unit + 36 e2e green.
+
 ## [t3] — 2026-11-10 — the Reflecting Gardens (Tier 3, floors 21–30)
 
 The campaign deepens to thirty — a garden tier where the water watches.

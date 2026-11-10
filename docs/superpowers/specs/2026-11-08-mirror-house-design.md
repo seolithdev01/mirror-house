@@ -51,7 +51,7 @@ You are **the Surveyor** — a heritage architect sent to appraise the palace be
 
 | Act                       | Floors              | Arc                                                                                                                                                                                                                                    |
 | ------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **I — The Trap**          | 1–40 (Tiers 1–4)    | Learn the house's rules. Meet Aaina. Discover the Echoes are former guests' peeled reflections. First truth: _the house keeps people by copying them._                                                                                 |
+| **I — The Trap**          | 1–40 (Tiers 1–4)    | Learn the house's rules. Meet Aaina. Discover the Echoes are former guests' peeled reflections. First truth: _the house keeps people by copying them._ — **closed 2026-11-10 (t4)**: all forty floors delivered (§4.6 rows 1–4); Dwaar IV's clear raises the act-completion screen (`ACT I COMPLETE — The Trap`, the campaign's floors and banked shards counted, with the Act II tease)                                   |
 | **II — The Deception**    | 41–80 (Tiers 5–8)   | The house starts impersonating _you_ — mirror-you decoys that enemies protect and you may be mistaken for. Allies behind glass may be copies. Second truth: _the house can no longer tell originals from copies — including itself._   |
 | **III — The Ground Door** | 81–100 (Tiers 9–10) | The Foundations have no mirrors at all — nothing to hide behind, nothing to hide _behind you_. The door opens only for someone carrying all **ten Truth-Shards** (one per tier, from each Sentinel hall) — proof of being an original. |
 
@@ -117,11 +117,12 @@ You carry the Glazier's **Frost Lantern**. Aim at any standing mirror and fog it
 
 Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → Tier 4 Aavart → Tiers 5–10 escalate combinations, speeds, sense ranges, and tier mechanics. Each tier ends in a **Dwaar** (threshold) — that tier's lead Sentinel in a handcrafted duel-hall, guarding the floor's **Truth-Shard**.
 
-> **Delivered note (recorded 2026-11-10, t3).** The ladder **accumulates** — a
-> new tier's Sentinel joins, the old ones stay: Chhaya walks from floor 1,
-> Taal joins at 11 and keeps walking every floor below (his spawn gate was
-> widened from "the tier-2 floors" to _every floor from 11 down_), and Gher
-> joins at 21 — both Sentinels walk the Reflecting Gardens together.
+> **Delivered note (recorded 2026-11-10, t4).** The ladder **accumulates** — a
+> new tier's Sentinel joins, the old ones stay: **all four walk by tier 4** —
+> Chhaya always (from floor 1), Taal from 11 (his spawn gate was widened from
+> "the tier-2 floors" to _every floor from 11 down_), Gher from 21 (the same
+> widening landed with t4, found while wiring Aavart), and Aavart from 31 —
+> Chhaya, Taal and Gher walk the whole Carnival of Faces beside Aavart.
 
 ### 4.5 Economy & progression
 
@@ -137,7 +138,7 @@ Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → T
 | 1    | 1–10   | The Glass Gallery    | Frost Lantern, Echoes, Chhaya                         | Dawn-hope raga (Bhairav-family mood)             |
 | 2    | 11–20  | Hall of Ancestors    | Taal; portrait mirrors show _other_ floors            | Reverent, slow pulse — delivered 2026-11-10 (t2) |
 | 3    | 21–30  | Reflecting Gardens   | Water-mirrors (can't fog water — ripple them), Gher   | Pastoral, flute-lead — delivered 2026-11-10 (t3) |
-| 4    | 31–40  | Carnival of Faces    | Distorting mirrors displace your mirror-image, Aavart | Playful, mischievous groove                      |
+| 4    | 31–40  | Carnival of Faces    | Distorting mirrors displace your mirror-image, Aavart | Playful, mischievous groove — delivered 2026-11-10 (t4) |
 | 5    | 41–50  | The Flood Halls      | Rising water halves mirror height; Act II begins      | Submerged, filtered                              |
 | 6    | 51–60  | The Furnace Wings    | Heat fogs mirrors at range but cracks spread faster   | Urgent, percussive                               |
 | 7    | 61–70  | The Whisper Library  | Sound-based Echoes (they hear, not see)               | Sparse, whispered                                |
@@ -398,15 +399,17 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 > M4 criterion is the human one: **five strangers completing Tier 1 unaided**.
 > It needs real humans: recruit them, watch them, close this line.
 
-> **Scope today (recorded 2026-11-10, t2).** This section is the Tier 1 beta
-> scope, delivered as written above; on top of it, the first post-beta content
-> milestone is also delivered — **Tier 2, floors 11–20** (§4.6 row 2): the Hall
-> of Ancestors with its amber/brown/deep-teal palette and Durga-pentatonic
-> melody walk, Taal promoted from the floor-5 cameo to a lethal Sentinel on
-> every tier-2 floor, dim ancestor portrait mirrors (fogged like any glass),
-> the hand-authored Dwaar II at floor 20, and the Truth-Shard I interstitial
-> on Dwaar I's clear (the descent continues; only Dwaar II raises the tier
-> screen). 415 unit + 32 e2e green.
+> **Scope today (recorded 2026-11-10, t4).** This section is the Tier 1 beta
+> scope, delivered as written above; on top of it, the post-beta content
+> milestones have run to the **close of Act I** — **Tier 2, floors 11–20**
+> (§4.6 row 2: the Hall of Ancestors, Taal the lethal Sentinel, ancestor
+> portraits, Dwaar II), **Tier 3, floors 21–30** (§4.6 row 3: the Reflecting
+> Gardens, Gher the Encircler, water-mirrors, Dwaar III) and **Tier 4, floors
+> 31–40** (§4.6 row 4: the Carnival of Faces, Aavart the Ambusher, distorting
+> mirrors, Dwaar IV — the act-completion screen of §2.3). 562 unit + 36 e2e
+> green. **Acts II and III (floors 41–100) remain future content**: the
+> campaign is terminal at floor 40 — `descend()` is a no-op there and the act
+> screen is the end of the house until Act II is built.
 
 ### 13.2 Milestones (part-time, ~13 weeks)
 

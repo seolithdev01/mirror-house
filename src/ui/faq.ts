@@ -58,11 +58,11 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What hunts me?',
-    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya prowl from floor 1; Taal keeps the beat on floor 5 as a cameo and walks every floor from 11 down as the Sentinel — there his touch catches. The ladder accumulates: Gher joins at floor 21 and both Sentinels walk the Reflecting Gardens together. Aavart wakes in a later milestone.',
+    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya prowl from floor 1; Taal keeps the beat on floor 5 as a cameo and walks every floor from 11 down as the Sentinel — there his touch catches. The ladder accumulates: Gher joins at floor 21, Aavart at floor 31 — by the Carnival of Faces all four walk the house together, and Act I closes at floor 40.',
   },
   {
     q: 'What is below the Dwaar — the Hall of Ancestors?',
-    a: 'Floors 11–20: Tier 2. Clearing Dwaar I claims Truth-Shard I and the descent simply continues — a brief golden banner (✦ Truth-Shard I claimed — the house deepens…), then the stair door opens into the Hall. The loop is the same — frost the beacons, reach the stair door — in warmer, darker halls: four beacons a floor, five to six Echoes, Chhaya 4.5 s behind and tightening to 4.1 s by floor 19 (3.8 s in Dwaar II), and the floor chip reads L11 · T2 up to L19 · T2. The walls hang ancestor portraits, Taal walks every floor, and floor 20 is Dwaar II — his threshold hall; clearing it claims Truth-Shard II, and since the Gardens opened below, the claim shows the same brief banner as Dwaar I and the stairs keep going down — the full tier screen belongs to Dwaar III now.',
+    a: 'Floors 11–20: Tier 2. Clearing Dwaar I claims Truth-Shard I and the descent simply continues — a brief golden banner (✦ Truth-Shard I claimed — the house deepens…), then the stair door opens into the Hall. The loop is the same — frost the beacons, reach the stair door — in warmer, darker halls: four beacons a floor, five to six Echoes, Chhaya 4.5 s behind and tightening to 4.1 s by floor 19 (3.8 s in Dwaar II), and the floor chip reads L11 · T2 up to L19 · T2. The walls hang ancestor portraits, Taal walks every floor, and floor 20 is Dwaar II — his threshold hall; clearing it claims Truth-Shard II, and since the house keeps opening below, the claim shows the same brief banner as Dwaar I and the stairs keep going down — every full screen now lives deeper, ending at Dwaar IV\u2019s act close.',
   },
   {
     q: 'Taal keeps catching me below floor 10 — how do I get past him?',
@@ -74,7 +74,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What is below the Hall of Ancestors — the Reflecting Gardens?',
-    a: 'Floors 21–30: Tier 3. Below Dwaar II the palace turns green — moss walls, water-teal glass, ivory light, hedges for partitions — the floor chip reads L21 · T3 up to L29 · T3, and the music goes pastoral: a flute leads the melody from the first note of the tier. The loop never changes, but the house deepens: six Echoes every floor, four beacons, Chhaya 4.2 s behind tightening to 3.7 s (3.4 s in Dwaar III), still pools of standing water you cannot fog (see the water-mirrors below) — and the Sentinels accumulate: Taal keeps the beat he learned in the Hall, and Gher the Encircler joins him. Both walk every Gardens floor. Floor 30 is Dwaar III, the most open threshold hall in the house — dotted hedges, two sightlines clear across it — and clearing it claims ✦ Truth-Shard III and the full tier screen: Tier III complete.',
+    a: 'Floors 21–30: Tier 3. Below Dwaar II the palace turns green — moss walls, water-teal glass, ivory light, hedges for partitions — the floor chip reads L21 · T3 up to L29 · T3, and the music goes pastoral: a flute leads the melody from the first note of the tier. The loop never changes, but the house deepens: six Echoes every floor, four beacons, Chhaya 4.2 s behind tightening to 3.7 s (3.4 s in Dwaar III), still pools of standing water you cannot fog (see the water-mirrors below) — and the Sentinels accumulate: Taal keeps the beat he learned in the Hall, and Gher the Encircler joins him. Both walk every Gardens floor. Floor 30 is Dwaar III, the most open threshold hall in the house — dotted hedges, two sightlines clear across it — and clearing it claims ✦ Truth-Shard III (the same brief banner as the Dwaars above — the Carnival opened below, and the full screen is the act close\u2019s now).',
   },
   {
     q: 'Gher keeps cutting me off below floor 20 — how do I get past him?',
@@ -87,6 +87,14 @@ export const FAQ: readonly FaqEntry[] = [
   {
     q: 'What are the distorting mirrors — the carnival glass?',
     a: "The Carnival of Faces (floors 31–40) hangs bent panes of rose glass, two or three a floor — the wavy rose squiggle on your overhead map marks each one. While a pane can see you, it lies about WHERE you are: every Echo's mirror-sight reads you a cell or two off from your true standing, so they chase, ping and hunt the spot the glass shows instead of you. The deception is visible — watch the map's red pings bloom offset from your own arrow — and the caption warns you once. They are eyes too, so treat them like standing glass: face one and breathe the Frost Lantern (F) to fog it for 25 seconds, and the house remembers where you truly stand. Fogging can even shake a chase outright, if the Echo was following the lie.",
+  },
+  {
+    q: 'What is below the Reflecting Gardens — the Carnival of Faces?',
+    a: 'Floors 31–40: Tier 4, the last tier of Act I. Below Dwaar III the palace throws a carnival — rose and magenta glass over plum-dark walls, candle-glow diamonds on the floor lattice — and the music turns mischievous: the melody flattens its third and hands the lead back to the reed. The floor chip reads L31 · T4 up to L39 · T4. The loop never changes, but the house plays its last tricks: bent panes of rose glass that lie about where you stand (the distorting mirrors just above), five Echoes a floor (a deliberate step back from the Gardens\u2019 six — three lethal Sentinels walk down here and the Echoes yield the stage), four beacons, Chhaya 3.8 s behind tightening to 3.3 s (3 s in Dwaar IV). All three Sentinels accumulate — Taal\u2019s beat, Gher\u2019s feint, and Aavart the Ambusher joins at floor 31. Floor 40 is Dwaar IV, the funhouse hall — offset alcoves around a central carousel ring you circle while the Sentinels circle you — and clearing it claims ✦ Truth-Shard IV and closes ACT I: the act screen, forty floors and banked shards counted, teasing Act II. That screen is the end of the house for now — the stairs go no deeper until Act II is built.',
+  },
+  {
+    q: 'Aavart keeps intercepting me below floor 30 — how do I get past him?',
+    a: "That is Aavart the Ambusher, the fourth Sentinel, and he reads the one thing the others ignore: your pace. He projects where your stride is committed — up to 1.8 seconds of travel ahead at a full sprint — and runs there at the fastest Sentinel pace in the house, cutting the corner before you reach it. Stand still and his lead collapses onto your own next step; sprint and he meets you nearly three cells down the road. The counter is the trick Aaina sells: change your pace. Walk where you meant to sprint, stop dead mid-corridor, turn a corner at a crawl — his projection retargets only every 1.2 seconds, so a pace changed inside that window leaves him ambushing an empty road. And remember the ladder accumulates: Taal still keeps his beat and Gher still reads your heading down here, so cross Taal on the dim beat, feint Gher, and walk where Aavart expected you to run.",
   },
   {
     q: 'How do I fog mirrors — and why bother?',
@@ -142,7 +150,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What is this beta — and what is coming next?',
-    a: 'The open beta of a game being built in the open: Tier 1 — the ten floors, Chhaya and Taal, the Dwaar and Truth-Shard I — is complete, tuned, and saving on your device, and the launch kit (About, feedback, tester guides) is what you are looking at. Below it, Tier 2 — the Hall of Ancestors, floors 11–20, the Sentinel Taal, the ancestor portraits, Dwaar II and Truth-Shard II — and Tier 3 — the Reflecting Gardens, floors 21–30, Gher the Encircler, the water-mirrors, the flute-led pastoral score, Dwaar III and Truth-Shard III — are delivered and playable now. On the roadmap: Aavart who predicts, floors past 30 (Tier 4, the Carnival of Faces), more venue packs for local ventures, and more of Aaina’s tongue. Your saves survive the beta; where the house wobbles, the Feedback button in the top-right wants to hear about it.',
+    a: 'The open beta of a game being built in the open: Tier 1 — the ten floors, Chhaya and Taal, the Dwaar and Truth-Shard I — is complete, tuned, and saving on your device, and the launch kit (About, feedback, tester guides) is what you are looking at. Below it the descent has run to the close of ACT I: Tier 2 — the Hall of Ancestors, floors 11–20, the Sentinel Taal, the ancestor portraits, Dwaar II and Truth-Shard II — Tier 3 — the Reflecting Gardens, floors 21–30, Gher the Encircler, the water-mirrors, the flute-led pastoral score, Dwaar III and Truth-Shard III — and Tier 4 — the Carnival of Faces, floors 31–40, Aavart the Ambusher, the distorting mirrors, Dwaar IV and Truth-Shard IV — are delivered and playable now; the act screen on floor 40’s clear is the end of the house for now. On the roadmap: Act II — The Deception (the house starts copying you), more venue packs for local ventures, and more of Aaina’s tongue. Your saves survive the beta; where the house wobbles, the Feedback button in the top-right wants to hear about it.',
   },
 ];
 
@@ -155,7 +163,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 33
+  // M4/T6 — the heading and the close button are chrome (localized); the 36
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

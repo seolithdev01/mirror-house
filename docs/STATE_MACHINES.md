@@ -15,7 +15,7 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 487 unit tests + 34 Playwright tests, and the machine modules' own
+  suite is 562 unit tests + 36 Playwright tests, and the machine modules' own
   suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
@@ -36,7 +36,7 @@ a single value with named transitions.
 | 8   | **ViewMode**       | `focus` · `quad` · `overhead` · `tactical`                               | `src/game/viewMode.ts`                                          | Pure machine (M3/T3); `tactical` is the pause view                                                                                          |
 | 9   | **Aaina overlay**  | `closed` · `open{tab}`                                                   | `src/ui/aaina.ts`                                               | Diegetic panel — does **not** pause                                                                                                         |
 | 10  | **AudioEngine**    | `idle` · `running`                                                       | `src/audio/engine.ts`                                           | Starts on first gesture; `muted` is a flag, not a state                                                                                     |
-| 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete`                              | `src/game/campaign.ts`                                          | Pure data + transitions (M4/T1, grown to 30 floors in T3); the single `tierComplete` re-arms as each Dwaar is left                          |
+| 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete`                              | `src/game/campaign.ts`                                          | Pure data + transitions (M4/T1, grown to 40 floors in t4/T1 — terminal there, Act I's close); the single `tierComplete` re-arms as each Dwaar is left |
 
 ---
 
@@ -82,6 +82,16 @@ Not a stored field: a **derivation** over `(captured, foggedUntil, now)`.
 **Orthogonal:** `cracked` is damage, not sight. It tints the glass, does not
 change what the glass shows or what can see through it, and survives a fog
 lifting. It is deliberately not part of this union.
+
+**T4 content note (the distorting mirrors, t4/T3).** The Carnival's bent rose
+panes are **fogable standing-class glass**: `fogTarget`, `crackTarget` and
+`applyFog` admit the `'distort'` kind exactly like `'standing'` (a fog lasts
+the same 25 s and banks nothing — a distort pane is not a beacon), so the
+derivation above is the whole story of their sight. The lie itself — the
+player's **apparent position**, displaced by a pane's fixed per-id delta while
+that pane sees them — is never stored: it is derived once per fixed step
+(`distort.ts apparentPlayer`) and consumed by the echo sense/chase and the map
+pings, a look-alike (below), not a machine.
 
 ---
 
@@ -239,7 +249,8 @@ frame; the scheduler smooths toward it (0.12 lerp per 50 ms wake-up).
 
 ## 11. Campaign — `src/game/campaign.ts`
 
-Pure data, not a phase machine (M4/T1, grown to three tiers in t3/T1): the spine
+Pure data, not a phase machine (M4/T1, grown to four tiers — and its act's
+end — in t4/T1): the spine
 is `{ seedBase, floor, tierComplete }` and every transition returns a fresh
 object — callers (`main.ts`) rebind their `campaign` binding; nothing mutates
 in place.
@@ -247,55 +258,83 @@ in place.
 | From                          | Event                                  | To                                                                               |
 | ----------------------------- | -------------------------------------- | -------------------------------------------------------------------------------- |
 | —                             | `newCampaign(seedBase)`                | `{ seedBase, floor: 1, tierComplete: false }`                                    |
-| any                           | `descend(c)` — the Stair Door was paid | `{ ...c, floor: floor + 1 }`; leaving a Dwaar also re-arms `tierComplete: false` |
-| `isDwaar(c.floor)` (10/20/30) | `completeTier(c)` — Truth-Shard claim  | `{ ...c, tierComplete: true }`                                                   |
+| `c.floor < 40`                | `descend(c)` — the Stair Door was paid | `{ ...c, floor: floor + 1 }`; leaving a Dwaar also re-arms `tierComplete: false` |
+| `c.floor >= 40`               | `descend(c)`                           | **unchanged, by reference** — the campaign is TERMINAL at 40 (Act I's close)     |
+| `isDwaar(c.floor)` (10/20/30/40) | `completeTier(c)` — Truth-Shard claim | `{ ...c, tierComplete: true }`                                                 |
 | any other floor               | `completeTier(c)`                      | unchanged, **by reference** — the shard is claimed in a hall only                |
 
-**The tiers.** Floors 1–9, 11–19 and 21–29 are procedural — `generateFloor`
-seeded by `floorSeed(c) = seedBase:floor`, braided and stocked by
-`floorParams`; the three threshold floors are fixed hand-authored 13×13 halls:
-floor 10 the `DWAAR_LAYOUT` Dwaar I, floor 20 the broader `DWAAR_II_LAYOUT`
-(96 open cells — the Sentinel's beat needs the room), floor 30 the
-`DWAAR_III_LAYOUT` garden hall — the most open of the three (107 open cells):
-dotted hedge runs, never a solid wall, with the central row and column fully
-open so two 11-cell sightlines cross the hall (the water-mirrors need the
-long view; `dwaarGrid()` derives any hall's open cells, `maze.floorFromGrid`
-builds the grid). `tierOf(floor)` maps 1–10 → 1, 11–20 → 2 and 21–30 → 3 —
-the stage palette, music scale **and voice**, portrait spawns (tier 2 only)
-and the Sentinels' gates all read it — and `isDwaar(floor)` widens to 10, 20
-and 30. `floorParams` pins all three ramps: tier 1 echoes `min(5, 2 + floor −
-1)` (Dwaar fixed 4), beacons 2,2,3,3,3,4,4,4,4,4, braid `0.12 + 0.01·(floor −
+**The tiers.** Floors 1–9, 11–19, 21–29 and 31–39 are procedural —
+`generateFloor` seeded by `floorSeed(c) = seedBase:floor`, braided and
+stocked by `floorParams`; the four threshold floors are fixed hand-authored
+13×13 halls: floor 10 the `DWAAR_LAYOUT` Dwaar I, floor 20 the broader
+`DWAAR_II_LAYOUT` (96 open cells — the Sentinel's beat needs the room), floor
+30 the `DWAAR_III_LAYOUT` garden hall — the most open of the first three (107
+open cells): dotted hedge runs, never a solid wall, with the central row and
+column fully open so two 11-cell sightlines cross the hall (the
+water-mirrors need the long view) — and floor 40 the `DWAAR_IV_LAYOUT`
+funhouse hall (101 open cells): four offset alcoves tucked one-per-wall
+against the outer ring (each rotated one position on from the last — never
+compass-aligned) around a central carousel — a radius-2 ring of 12 wall
+cells with exactly four gaps at the compass midpoints and its 3×3 center
+chamber standing open, the ring you circle while the Sentinels circle you
+(`dwaarGrid()` derives any hall's open cells, `maze.floorFromGrid` builds the
+grid). `tierOf(floor)` maps 1–10 → 1, 11–20 → 2, 21–30 → 3 and 31–40 → 4 —
+the stage palette, music scale **and voice**, portrait spawns (tier 2 only),
+water spawns (tier 3 only), distort spawns (tier 4 only) and the Sentinels'
+gates all read it — and `isDwaar(floor)` widens to 10, 20, 30 and 40.
+`floorParams` pins all four ramps: tier 1 echoes `min(5, 2 + floor − 1)`
+(Dwaar fixed 4), beacons 2,2,3,3,3,4,4,4,4,4, braid `0.12 + 0.01·(floor −
 1)`, Chhaya `max(4500, 7000 − 300·(floor − 1))` (Dwaar 4000); tier 2 echoes
 5,5,5,6,6,6,6,6,6,6 (Dwaar II fixed 5), beacons 4 throughout, braid
 `0.22 + 0.005·(floor − 11)`, Chhaya `max(4000, 4500 − 50·(floor − 11))`
 (Dwaar II 3800); tier 3 (t3/T1) echoes 6 on every floor (Dwaar III 6 too —
 the water-mirrors are the tier's teeth, not the echo count), beacons 4
 throughout, braid `0.24 + 0.004·(floor − 21)`, Chhaya `max(3600, 4200 −
-60·(floor − 21))` (Dwaar III 3400).
+60·(floor − 21))` (Dwaar III 3400); tier 4 (t4/T1) echoes **5 on every floor,
+Dwaar IV included** — a deliberate step DOWN from tier three's 6 (the
+ratified playability call: three lethal Sentinels walk tier 4, so the echoes
+yield the stage) — beacons 4 throughout, braid `0.28 + 0.004·(floor − 31)`,
+Chhaya `max(3200, 3800 − 60·(floor − 31))` (Dwaar IV 3000).
 
 **Invariants.** `tierComplete` flips true only inside `completeTier` and only
 on a Dwaar floor — the single flag always reads "the CURRENT tier's threshold
 has been claimed", because `descend` re-arms it false the moment the player
-LEAVES a Dwaar: Act I continues past Dwaar I into the Hall of Ancestors, Act
-II past Dwaar II into the Gardens, and each new tier's floors pay their
-first-clear bonus again on the re-armed flag. The tier screen's ↻ Play again
-(Dwaar III's) starts a `newCampaign` on a fresh random base instead of
-reopening the tier. `floor` lives in 1..`TIER_THREE_FLOORS`, and
-`floorParams` clamps its input regardless.
+LEAVES a Dwaar: Act I continues past Dwaar I into the Hall of Ancestors, past
+Dwaar II into the Gardens and past Dwaar III into the Carnival, and each new
+tier's floors pay their first-clear bonus again on the re-armed flag. The
+act screen's ↻ Play again (the tier-complete screen's button, Dwaar IV's
+card) starts a `newCampaign` on a fresh random base instead of reopening the
+act. `floor` lives in 1..`TIER_FOUR_FLOORS` (the save validator widened in
+the same t4/T1 commit — 41 is the first rejection), `floorParams` clamps its
+input regardless, and **the campaign is TERMINAL at 40**: `descend()` there
+returns its input unchanged, no `descendAt` arms below Dwaar IV, and the
+act-completion screen is the end of the house until Act II exists.
 
-**The Sentinels accumulate (spec §4.4, t3/T4).** Both Sentinels read
-`campaign.floor` in `main.ts` — spawn-side data, not campaign state. Taal:
-cameo on floor 5 (anger-only), Sentinel (`taalOutcome` → `'caught'`) on
-**every floor from 11 down** — the gate was widened from "the tier-2 floors"
-to `floor ≥ TAAL_SENTINEL_FLOOR` so the ladder accumulates: he keeps his beat
-beside Gher throughout the Gardens. Gher (`src/game/gher.ts`, t3/T2) joins at
-21 (`GHER_SENTINEL_FLOOR`) and walks every tier-3 floor: no sensing at all —
-a pure prediction machine (`interceptCell` reads the player's commit against
-the BFS path to their nearest plausible goal; `updateGher` glides a flow-field
-walk to the seal cell, retargeting every `GHER_INTERCEPT_MS`). The counter is
-the feint: the moment the heading leaves the path the prediction goes null
-and he holds. Both spawn at the patrol anchor FARTHEST from the player
-(t3/T4's fairness fix — never an anchor-on-spawn catch).
+**The Sentinels accumulate (spec §4.4, t3/T4 + t4/T2).** All three lethal
+Sentinels read `campaign.floor` in `main.ts` — spawn-side data, not campaign
+state. Taal: cameo on floor 5 (anger-only), Sentinel (`taalOutcome` →
+`'caught'`) on **every floor from 11 down** — the gate was widened from "the
+tier-2 floors" to `floor ≥ TAAL_SENTINEL_FLOOR` so the ladder accumulates: he
+keeps his beat beside Gher and Aavart through the whole Carnival. Gher
+(`src/game/gher.ts`, t3/T2) joins at 21 (`GHER_SENTINEL_FLOOR`) — his
+tier-3-only gate was widened in t4/T2 to every floor from 21 down, the
+accumulation ratification found while wiring Aavart: no sensing at all, a
+pure prediction machine (`interceptCell` reads the player's commit against
+the BFS path to their nearest plausible goal; `updateGher` glides a
+flow-field walk to the seal cell, retargeting every `GHER_INTERCEPT_MS`).
+The counter is the feint: the moment the heading leaves the path the
+prediction goes null and he holds. Aavart (`src/game/avart.ts`, t4/T2) joins
+at 31 (`AVART_SENTINEL_FLOOR`) and walks every floor of the Carnival beside
+them — the fourth and fastest (2.4 m/s, he RUNS): a pure velocity-projection
+machine (`ambushCell` projects `AVART_LEAD_S · speed/SPRINT_SPEED` seconds
+of travel along the heading onto the BFS path to the player's nearest goal —
+sprint and the ambush lands ~3 cells ahead, stand still and it collapses
+onto their own next step; an off-road projection sends him to the objective
+itself to wait — `updateAavart` adopts a fresh read only every
+`AVART_INTERCEPT_MS`, so a pace changed inside the window leaves him
+ambushing an empty road). The counter is the pace change. All three spawn at
+the patrol anchor FARTHEST from the player (t3/T4's fairness fix — never an
+anchor-on-spawn catch).
 
 **Tier-3 content, not new machines.** The Gardens dress by tier — palette,
 the pastoral scale `[0,2,5,7,9]`, the sine (flute) melody voice — and the
@@ -305,22 +344,39 @@ as unfogged eyes and by the overhead map as dots. Portraits stay tier-2
 (`tier === 2`), which keeps the tier-1/3 rng streams clean. The water ripple
 is a look-alike (below), not a machine.
 
-**Tier interstitials (t2/T5, t3/T1).** Every Dwaar clear claims its
+**Tier-4 content, not new machines.** The Carnival dresses by tier — the
+rose/magenta-on-night palette, the mischievous scale `[0,2,3,7,9]` (the Durga
+frame with its third flattened), the melody voice back on the triangle (the
+reed's wink after the Gardens' flute) — and the distorting mirrors (2–3 panes
+a floor, rng-gated `params.distort > 0`, drawing LAST-LAST so the tier-1/2/3
+streams stay byte-identical) ride the floor objects beside the water:
+fogable standing-class glass (§2's content note) whose fixed per-id delta
+(`distortDelta`) displaces the player's apparent position while a pane sees
+them — derived per fixed step by `distort.ts apparentPlayer`, fed to the echo
+sense/chase and the map pings. The displacement is a look-alike (below), not
+a machine.
+
+**Tier interstitials (t2/T5, t3/T1, t4/T1).** Every Dwaar clear claims its
 Truth-Shard and banks it at once; what the player SEES splits by tier. Dwaar
-I and Dwaar II raise a 1.8 s auto-dismiss banner (`✦ Truth-Shard I/II claimed
-— the house deepens…`) and the descent continues exactly as on any ramp floor
-— the banner's hide clock is HUD-owned, so the 0.8 s descend hold and the
-floor rebuild beneath it never cut the celebration short (t3/T1 moved Dwaar
-II here from the full screen: Act II continues into the Gardens). Dwaar III
-raises the full tier-complete screen (Play again / Stay). The split is
-presentation only — the campaign machinery above is byte-identical at all
-three thresholds.
+I, II and III raise a 1.8 s auto-dismiss banner (`✦ Truth-Shard I/II/III
+claimed — the house deepens…`) and the descent continues exactly as on any
+ramp floor — the banner's hide clock is HUD-owned, so the 0.8 s descend hold
+and the floor rebuild beneath it never cut the celebration short (t3/T1
+moved Dwaar II here from the full screen; t4/T1 cascaded Dwaar III the same
+way — the full screen belongs to the act close now). Dwaar IV raises the
+**act-completion screen**: the tier-complete overlay re-styled as the act
+close (`ACT I COMPLETE — The Trap`, the campaign's forty floors and banked
+shards counted, the Act II tease for a note line, the card dressed in the
+Carnival's rose; Play again / Stay reuse the tier screen's buttons). The
+split is presentation only — the campaign machinery above is byte-identical
+at all four thresholds.
 
 **Derived:** `floorSeed`/`bestKey` (`seedBase:floor` — every floor is its own
 best-time bucket), `tierOf`, `isDwaar`, the `floorParams` ramp, and the HUD
 floor chip (`L02` on the tier-1 ramp, `L14 · T2` in the Hall, `L24 · T3` in
-the Gardens, and the threshold floors naming their Dwaar — `L10 · DWAAR I ✦`,
-`L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`, localized `स्तर`/`द्वार` in Hindi).
+the Gardens, `L34 · T4` in the Carnival, and the threshold floors naming
+their Dwaar — `L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`,
+`L40 · DWAAR IV ✦`, localized `स्तर`/`द्वार` in Hindi).
 
 ---
 
@@ -346,6 +402,7 @@ the Gardens, and the threshold floors naming their Dwaar — `L10 · DWAAR I ✦
 | **`perf` preset** (M5/T4)                 | A versioned configuration document: `'auto' \| 'low' \| 'mid' \| 'high'` in the save. `autoPreset(fps, dpr)` is a pure grader with hysteresis fed by a rolling 5 s FPS average; `PROFILES` maps a preset to `{ pixelRatioCap, heroRt, heroRtSize, chhayaBob }` — applied live for pixel ratio, on the next floor build for hero RTs. A derivation feeding a document, not a lifecycle.                                                                                                                   |
 | **Captions** (M5/T3)                      | Derived events, not a state: game moments push immutable `CaptionEvent`s into the pure `captionFeed` (dedupe by id within ttl, trim expired); `renderCaptions` shows the latest two, fading. With captions off nothing about the game differs — the bar observes the machines above, it never joins them.                                                                                                                                                                                                |
 | **Water ripple** (t3/T3)                  | Derived TTL data over a timestamp, not a machine (MirrorVisual's fog contract, one tier down): each pool carries `rippledAt: number \| null`; `rippleState(at, now)` = `at !== null && now < at + WATER_RIPPLE_MS` (10 s, exclusive expiry). The trigger is a per-fixed-step proximity check (`rippleTrigger`), the dimmed 3D patch and the dimmed map dot both read the same derivation — sight and display cannot disagree. Standing in a pool past the TTL re-ripples it (the fog-refresh semantics). |
+| **Distortion** (t4/T3)                    | The player's apparent position, not a machine: while the first unfogged distort pane in list order sees the player (within `SENSE_RANGE`, clear mirror↔player LOS), `distort.ts apparentPlayer` returns the true spot displaced by that pane's fixed per-id delta (`distortDelta`, ±`DISTORT_MAX_CELLS` axis-aligned cells); otherwise the truth. Derived once per fixed step and consumed by the echo sense check, the chase cell and the map pings — fog the seeing pane and the next step tells the truth again. The pane's fog state itself is MirrorVisual (§2), nothing more. |
 
 ---
 
@@ -360,8 +417,8 @@ the Gardens, and the threshold floors naming their Dwaar — `L10 · DWAAR I ✦
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **487/487** unit ·
-**34/34** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
+`npm run typecheck` clean · `npm run lint` clean · **562/562** unit ·
+**36/36** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
 wiring, descend to floor 2, save round-trip resume, Hindi chrome via
 `?lang=hi`; 5 for m5: rebind forward through the settings overlay, Space
 toggles the focused ⚙ checkbox, `?perf=low` low path, export/import
@@ -371,7 +428,9 @@ a venue floor; 3 for step007: the ⓘ About panel, the 📮 feedback composer,
 `?test=1` TESTER chip; 2 for t2: floor 11 loads tier two, sentinel Taal
 catches while the floor-5 cameo stays anger-only; 2 for t3: floor 21 loads
 the Gardens (both Sentinels, the water census, the flute), Gher catches on
-contact).
+contact; 2 for t4: floor 31 loads the Carnival (all three lethal Sentinels,
+the distort census, the mischievous scale), Aavart catches and the carnival
+glass displaces — `apparentPlayer()` reads the pane's exact lie until fogged).
 
 ---
 
