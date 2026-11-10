@@ -108,6 +108,14 @@ export const FAQ: readonly FaqEntry[] = [
     q: 'I found a bug.',
     a: 'Thank you — please file it at github.com/seolithdev01/mirror-house/issues with your seed code; the layout reproduces itself.',
   },
+  {
+    q: 'How do I report a bug or share an idea?',
+    a: 'Use the Feedback button in the top-right of the screen — it opens a short form (Bug, Suggestion, or a kind word), and hands you a prefilled GitHub issue with your diagnostics — version, seed, floor, settings — already written in, so you review it and send it yourself. Nothing is ever sent without you seeing it first; prefer email and the same form will compose that instead.',
+  },
+  {
+    q: 'What is this beta — and what is coming next?',
+    a: 'The open beta of a game being built in the open: Tier 1 — the ten floors, Chhaya and Taal, the Dwaar and Truth-Shard I — is complete, tuned, and saving on your device, and the launch kit (About, feedback, tester guides) is what you are looking at. On the roadmap: the deeper Sentinels — Gher who seals exits, Aavart who predicts — floors past 10 with new tiers, more venue packs for local ventures, and more of Aaina’s tongue. Your saves survive the beta; where the house wobbles, the Feedback button in the top-right wants to hear about it.',
+  },
 ];
 
 export function buildFaqOverlay(): {
@@ -119,7 +127,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 25
+  // M4/T6 — the heading and the close button are chrome (localized); the 27
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

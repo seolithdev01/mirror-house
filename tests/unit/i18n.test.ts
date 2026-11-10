@@ -16,6 +16,7 @@ const PARAM_KEYS = [
   'caption.chhaya',
   'caption.cleared',
   'venue.banner',
+  'about.version', // step007/T1 — {v} is the injected APP_VERSION in both langs
 ] as const;
 
 const tokens = (s: string): string => (s.match(/\{\w+\}/g) ?? []).sort().join(',');

@@ -91,6 +91,23 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // M6/T4 — Aaina's venue refusal (T1 adjudication): the sale is refused,
     // the toast names the way back to her.
     'toast.hintVenue': 'Return to your campaign to ask Aaina',
+    // step007/T1 — the ⓘ About panel. Unlike the FAQ's entries (content,
+    // English-only), About ships bilingual from day one: a stranger's first
+    // question in either language deserves an answer in it.
+    'btn.about': 'About this game',
+    'about.title': 'About Mirror House',
+    'about.version': 'Version {v} · open beta',
+    'about.what':
+      'A 100-floor escape through a century-old palace of mirrors. Fog the glass, outwit what hunts you, and walk down — every floor a 2–5 minute puzzle that remembers you.',
+    'about.beta':
+      'You are playing the open beta: the first tier — floors 1 to 10, Chhaya and Taal, the Dwaar — stands complete; deeper floors, the remaining Sentinels and new venue packs are on the roadmap.',
+    'about.credits':
+      'An original, open-source work: every wall, word and reflection was made for this house (Apache-2.0 code, CC-BY 4.0 art and words), and the raga-inspired music is generated live in your browser — no samples.',
+    'about.source': 'Source',
+    'about.privacy': 'Privacy',
+    'about.provenance': 'Provenance',
+    'about.license': 'License',
+    'about.tagline': 'Made of 100% original glass.',
     // chips (emoji + label + live value)
     'chip.streak': 'Streak',
     'chip.best': 'Best',
@@ -222,6 +239,21 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'toast.venueRejected': 'वेन्यू मंज़िल उपलब्ध नहीं है',
     // M6/T4 — आईना की वेन्यू मनाही (T1 निर्णय): बिक्री अस्वीकृत, टोस्ट वापसी का रास्ता बताता है।
     'toast.hintVenue': 'आईना से पूछने के लिए अपने अभियान पर लौटें',
+    // step007/T1 — ⓘ पैनल: दिन-एक से द्विभाषी
+    'btn.about': 'इस खेल के बारे में',
+    'about.title': 'मिरर हाउस के बारे में',
+    'about.version': 'संस्करण {v} · खुला बीटा',
+    'about.what':
+      'सौ मंज़िलों की फ़रारी, एक सौ साल पुराने दर्पण-महल से। काँच जमाइए, शिकारी को चतुराई से पछाड़िए और नीचे उतरिए — हर मंज़िल दो से पाँच मिनट की एक पहेली है जो आपको याद रखती है।',
+    'about.beta':
+      'आप खुला बीटा खेल रहे हैं: पहला चरण — मंज़िल 1 से 10, छाया और ताल, द्वार — पूरा खड़ा है; गहरी मंज़िलें, बाकी संतरी और नई वेन्यू मंज़िलें रोडमैप पर हैं।',
+    'about.credits':
+      'एक मौलिक, खुला-स्रोत रचना: हर दीवार, हर शब्द, हर परछाईँ इसी घर के लिए बनी (कोड Apache-2.0, कला और शब्द CC-BY 4.0), और राग-प्रेरित संगीत आपके ब्राउज़र में ही जीवंत रचा जाता है — कोई सैंपल नहीं।',
+    'about.source': 'स्रोत',
+    'about.privacy': 'गोपनीयता',
+    'about.provenance': 'उद्गम',
+    'about.license': 'लाइसेंस',
+    'about.tagline': 'शत-प्रतिशत मौलिक काँच से बना।',
     // चिपें — छोटे शब्द, एक ही पंक्ति
     'chip.streak': 'लय',
     'chip.best': 'सर्वश्रेष्ठ',

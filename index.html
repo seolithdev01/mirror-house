@@ -10,6 +10,24 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <title>Mirror House</title>
+    <!-- step007/T1 — launch meta: the one-line pitch for crawlers and share
+         cards. og:image is a DIRECT PNG url (crawlers do not run JS and most
+         do not follow /assets hashes) — public/og-image.png, a copy of
+         store-assets/icon-512.png committed at the repo root, referenced
+         absolutely against the production origin. -->
+    <meta
+      name="description"
+      content="Escape a century-old palace of mirrors: fog the glass, outthink what hunts you, descend. Free, open source, offline — your data never leaves your device."
+    />
+    <meta property="og:title" content="Mirror House" />
+    <meta
+      property="og:description"
+      content="Escape a century-old palace of mirrors: fog the glass, outthink what hunts you, descend. Free, open source, offline — your data never leaves your device."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mirror-house-8fg.pages.dev/" />
+    <meta property="og:image" content="https://mirror-house-8fg.pages.dev/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
     <style>
       /* M5/T1 — the text-scale ladder every HUD/overlay font multiplies in.
          main.ts sets the inline body value from the save (1 | 1.25 | 1.5);
@@ -554,6 +572,68 @@
       #mh-settings-box .mh-venue-card button {
         margin-top: 6px;
       }
+      /* step007/T1 — the About overlay: the settings modal's shape (centered,
+         gold-titled box), holding the version line, the two-line pitch, the
+         beta/credits notes, the four launch links and the tagline. */
+      #mh-about-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: rgba(5, 8, 20, 0.82);
+        display: grid;
+        place-items: center;
+      }
+      #mh-about-overlay[hidden] {
+        display: none;
+      }
+      #mh-about-box {
+        min-width: 300px;
+        max-width: 480px;
+        max-height: 82vh;
+        overflow: auto;
+        background: #0b1026;
+        border: 1px solid #2a3560;
+        border-radius: 10px;
+        padding: 20px 26px;
+        color: #f2e9d8;
+        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
+      }
+      #mh-about-box h2 {
+        margin: 0 0 6px;
+        color: #d9a441;
+        font-size: calc(18px * var(--mh-text-scale, 1));
+      }
+      #mh-about-version {
+        margin: 0 0 10px;
+        color: #9fb4c8;
+        font-family: ui-monospace, monospace;
+        font-size: calc(12px * var(--mh-text-scale, 1));
+      }
+      #mh-about-box p {
+        margin: 8px 0;
+      }
+      #mh-about-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 12px 0 4px;
+      }
+      #mh-about-links a {
+        color: #2ec4b6;
+      }
+      #mh-about-tagline {
+        color: #9fb4c8;
+        font-style: italic;
+      }
+      #mh-about-box button {
+        margin-top: 12px;
+        background: #1d2440;
+        color: #f2e9d8;
+        border: 1px solid #2a3560;
+        border-radius: 6px;
+        padding: 6px 14px;
+        cursor: pointer;
+      }
       /* Reduced-flash (M5/T1): with the body class on (the ⚙ Access toggle),
          every overlay and banner fades in and out over ≥300ms instead of
          appearing at once. A [hidden] overlay keeps its layout box but goes
@@ -565,6 +645,7 @@
          never transition visibility, so it snaps back visible at once. */
       body.mh-reduced-flash #mh-faq-overlay,
       body.mh-reduced-flash #mh-settings-overlay,
+      body.mh-reduced-flash #mh-about-overlay,
       body.mh-reduced-flash #mh-tier-overlay,
       body.mh-reduced-flash #mh-aaina-overlay,
       body.mh-reduced-flash #mh-cleared,
@@ -578,6 +659,7 @@
       }
       body.mh-reduced-flash #mh-faq-overlay[hidden],
       body.mh-reduced-flash #mh-settings-overlay[hidden],
+      body.mh-reduced-flash #mh-about-overlay[hidden],
       body.mh-reduced-flash #mh-tier-overlay[hidden] {
         display: grid; /* keep the box — opacity fades where display cannot */
         opacity: 0;

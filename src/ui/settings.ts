@@ -54,6 +54,9 @@ export interface SettingsInit {
    *  side-floor, or — while one is live — return to the campaign. Main owns
    *  which (it holds the venue state); the button's label follows setVenue. */
   onVenueFloor(): void;
+  /** step007/T1 — the About entry: opens the About panel ON TOP of ⚙ (the
+   *  dialog stack peels it first; ⚙ stays open underneath). */
+  onAbout(): void;
   /** Fired on every closing path (✕, backdrop, toggle-to-close) — main
    *  flushes the debounced save write here, so a closed tab eats nothing. */
   onClosed(): void;
@@ -331,6 +334,12 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
   const close = document.createElement('button');
   close.type = 'button';
   close.id = 'mh-settings-close';
+  // step007/T1 — the About entry (second of the panel's two doors, the ⓘ
+  // beside 🌐 being the first): a plain button above the ✕.
+  const aboutEntry = document.createElement('button');
+  aboutEntry.type = 'button';
+  aboutEntry.id = 'mh-settings-about';
+  aboutEntry.addEventListener('click', () => init.onAbout());
   function closeNow(): void {
     if (!root.hidden) {
       root.hidden = true;
@@ -364,6 +373,7 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     keymapList,
     keyMsg,
     resetKeys,
+    aboutEntry,
     close,
   );
   root.appendChild(box);
@@ -394,6 +404,7 @@ export function buildSettingsOverlay(init: SettingsInit): SettingsOverlay {
     controls.textContent = t(lang, 'settings.controls');
     keyNote.textContent = t(lang, 'settings.keyNote');
     resetKeys.textContent = t(lang, 'settings.resetKeys');
+    aboutEntry.textContent = t(lang, 'btn.about'); // step007/T1 — the ⓘ twin
     close.textContent = t(lang, 'settings.close');
     close.setAttribute('aria-label', t(lang, 'aria.close')); // M5/T6
     renderKeyRows();

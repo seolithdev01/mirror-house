@@ -7,7 +7,7 @@ Everything in this repository is original work, created for this project, or gen
 | What | Where it comes from |
 | --- | --- |
 | Code | Written for this project. Licensed **Apache-2.0** (see [LICENSE](LICENSE)). |
-| Art | **Procedural.** Every texture, palette, and mesh is generated in code at load time (`src/game/textures.ts`, `src/game/palette.ts`, `src/game/floorScene.ts`, `src/game/mirror.ts`, `src/game/avatar.ts`) — canvas-painted stone, silvered glass, the surveyor's silhouette. The one static image is `public/icon.svg`, the gold-lantern glyph, drawn for this project. No stock art, no AI-scraped packs, no image files beyond that glyph. |
+| Art | **Procedural.** Every texture, palette, and mesh is generated in code at load time (`src/game/textures.ts`, `src/game/palette.ts`, `src/game/floorScene.ts`, `src/game/mirror.ts`, `src/game/avatar.ts`) — canvas-painted stone, silvered glass, the surveyor's silhouette. The only static images are the gold-lantern glyph itself, drawn for this project — `public/icon.svg`, and `public/og-image.png` (the share-card PNG, a committed copy of `store-assets/icon-512.png` rendered from the same glyph; step007). No stock art, no AI-scraped packs, no image files beyond that glyph. |
 | Audio | **Synthesized live in your browser** (`src/engine` audio): raga-inspired classical-fusion built from oscillators and noise at play time. Fully original composition-by-code — **no samples, no recordings, no third-party music**. It is silent until your first input (browser gesture policy) and follows the house's anger and pursuit. |
 | Words | The FAQ, Aaina's dialogue, the lore, and the docs are original writing for this project. Licensed **CC-BY 4.0** alongside the art and audio. |
 

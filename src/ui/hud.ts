@@ -26,6 +26,8 @@ export type HudInit = {
   onLang(): void;
   /** M5/T1 — the ⚙ button: open/close the settings overlay. */
   onSettings(): void;
+  /** step007/T1 — the ⓘ button (beside 🌐): open/close the About panel. */
+  onAbout(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -119,6 +121,14 @@ export function createHud(init: HudInit): Hud {
   langBtn.id = 'mh-lang';
   langBtn.addEventListener('click', () => init.onLang());
   modes.appendChild(langBtn);
+  // step007/T1 — a small ⓘ sits beside 🌐 (the launch kit's one allowed HUD
+  // addition): it opens the About panel — version, pitch, beta, credits,
+  // links. The ⚙ entry inside settings opens the same panel.
+  const aboutBtn = document.createElement('button');
+  aboutBtn.type = 'button';
+  aboutBtn.id = 'mh-about';
+  aboutBtn.addEventListener('click', () => init.onAbout());
+  modes.appendChild(aboutBtn);
   // M5/T1 — ⚙ sits next to 🌐 and opens the settings overlay (Display:
   // text scale; Access: reduced-flash + captions — the a11y front door).
   const gearBtn = document.createElement('button');
@@ -333,6 +343,9 @@ export function createHud(init: HudInit): Hud {
     langBtn.textContent = t(lang, lang === 'en' ? 'btn.langHi' : 'btn.langEn');
     langBtn.title = t(lang, 'btn.langTitle');
     langBtn.setAttribute('aria-label', t(lang, 'btn.langTitle'));
+    aboutBtn.textContent = 'ⓘ';
+    aboutBtn.title = t(lang, 'btn.about');
+    aboutBtn.setAttribute('aria-label', t(lang, 'btn.about'));
     gearBtn.textContent = '⚙';
     gearBtn.title = t(lang, 'btn.settings');
     gearBtn.setAttribute('aria-label', t(lang, 'btn.settings'));

@@ -230,16 +230,66 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('step003: FAQ opens with 25 entries and H toggles', async ({ page }) => {
+test('step003: FAQ opens with 27 entries and H toggles', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=FAQ');
   await ready(page);
   await page.locator('#mh-faq').click();
-  await expect(page.locator('#mh-faq-box details')).toHaveCount(25);
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(27);
   await page.keyboard.press('KeyH'); // closes
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens
   await expect(page.locator('#mh-faq-overlay')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+// step007/T1 — the About panel: the small ⓘ beside 🌐 opens it (and the ⚙
+// entry stacks it on top of Settings — Escape peels exactly that layer, the
+// M6/T4 stack contract holding with the new overlay in it). The version line
+// carries the vite-injected package version (never a raw {v} token), and the
+// four launch links are absolute https URLs to the public repo.
+test('beta: About opens via ⓘ beside 🌐, shows version + links, stacks over ⚙', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=ABOUTPNL');
+  await ready(page);
+
+  // the ⓘ sits beside 🌐 and opens the panel
+  await expect(page.locator('#mh-lang + #mh-about')).toHaveCount(1);
+  await page.locator('#mh-about').click();
+  await expect(page.locator('#mh-about-overlay')).toBeVisible();
+
+  // version (vite define → package.json's version; never the raw token)
+  await expect(page.locator('#mh-about-version')).toContainText(/Version \S+/);
+  await expect(page.locator('#mh-about-version')).not.toContainText('{v}');
+
+  // the four launch links, absolute and direct
+  const hrefs = await page.locator('#mh-about-links a').evaluateAll((els) =>
+    els.map((a) => (a as HTMLAnchorElement).getAttribute('href')),
+  );
+  expect(hrefs).toEqual([
+    'https://github.com/seolithdev01/mirror-house',
+    'https://github.com/seolithdev01/mirror-house/blob/main/PRIVACY.md',
+    'https://github.com/seolithdev01/mirror-house/blob/main/PROVENANCE.md',
+    'https://github.com/seolithdev01/mirror-house/blob/main/LICENSE',
+  ]);
+
+  // Escape closes (the trap); the ⚙ entry opens it AGAIN — stacked on ⚙
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mh-about-overlay')).toBeHidden();
+  await page.locator('#mh-settings').click();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+  await page.locator('#mh-settings-about').click();
+  await expect(page.locator('#mh-about-overlay')).toBeVisible();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+
+  // one Escape peels only About; the next unwinds ⚙
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mh-about-overlay')).toBeHidden();
+  await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mh-settings-overlay')).toBeHidden();
   expect(errors).toEqual([]);
 });
 

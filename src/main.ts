@@ -157,6 +157,7 @@ import {
   type ViewMode,
 } from './game/viewMode';
 import { buildAainaOverlay } from './ui/aaina';
+import { buildAboutOverlay } from './ui/about';
 import { CAPTION_TTL_MS, captionFeed, renderCaptions, type CaptionEvent } from './ui/captions';
 import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
@@ -662,6 +663,10 @@ const input = new InputCollector();
 input.attach(window);
 let mode: InputMode = save.mode;
 const faq = buildFaqOverlay();
+// step007/T1 — the About panel: version, pitch, beta, credits, links, tagline.
+// Two doors: the ⓘ beside 🌐 (hud.ts) and the entry inside ⚙ (settings.ts);
+// both land on this one overlay.
+const about = buildAboutOverlay();
 const aaina = buildAainaOverlay({ onBuyHint: buyHint });
 // M5/T1 — the ⚙ settings overlay: every control applies at once (text scale
 // re-sets the CSS var, reduced-flash flips the body class + the beat glow
@@ -726,6 +731,8 @@ const settings = buildSettingsOverlay({
   },
   // M6/T1 — the Floors section: play the DEMO venue side-floor / return.
   onVenueFloor: () => void toggleDemoVenue(),
+  // step007/T1 — the ⚙ About entry stacks the panel on top of ⚙.
+  onAbout: () => about.toggle(),
   onClosed: () => persist(true), // a closed overlay must not ride a debounce window
 });
 settings.setValues({
@@ -767,6 +774,8 @@ const hud = createHud({
   onLang: () => cycleLang(),
   // M5/T1 — the ⚙ button.
   onSettings: () => settings.toggle(),
+  // step007/T1 — the ⓘ beside 🌐.
+  onAbout: () => about.toggle(),
 });
 
 /** M4/T6 — one fn that re-feeds every localized surface the HUD/overlays own.
@@ -780,6 +789,7 @@ function refreshChrome(): void {
   hud.setLang(lang);
   aaina.setLang(lang);
   faq.setLang(lang);
+  about.setLang(lang); // step007/T1 — the About panel is bilingual chrome
   settings.setLang(lang);
   hud.setMode(mode);
   hud.setView(viewLabel(view));
