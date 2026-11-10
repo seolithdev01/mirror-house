@@ -13,6 +13,7 @@ import {
   EXIT_LOCKED_EMISSIVE,
   FIXED_STEP,
   FOG_COST,
+  GHER_SENTINEL_FLOOR,
   SHARD_BEACON,
   TAAL_FLOOR,
   TAAL_SENTINEL_FLOOR,
@@ -28,12 +29,14 @@ import {
   withoutKey,
   type InputMode,
 } from './engine/input';
-import { Dir } from './engine/grid';
+import { Dir, type CellIndex } from './engine/grid';
 import {
   createAvatar,
   createChhaya,
+  createGher,
   createTaal,
   updateAvatar,
+  type GherFigure,
   type TaalFigure,
 } from './game/avatar';
 import {
@@ -114,6 +117,7 @@ import {
   updateTaal,
   type TaalState,
 } from './game/taal';
+import { initGher, interceptCell, updateGher, type GherState } from './game/gher';
 import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
 import { paletteForTier, TIER_ONE_PALETTE } from './game/palette';
 import { awardShards, dailySeed, META_KEY, recordRun, spendShards, todayStamp } from './game/meta';
@@ -378,6 +382,12 @@ let echoMeshes: THREE.Group[] = [];
 // teardown rides floorDisposers with the rest of the stage).
 let taal: TaalState | null = null;
 let taalFigure: TaalFigure | null = null;
+// T3/T2 — Gher the Encircler: every tier-3 floor (21–30), and nowhere else.
+// Same per-floor ownership as Taal — buildFloor owns state + figure, the
+// teardown rides floorDisposers with the rest of the stage, resetFloor
+// re-seeds him at the far anchor.
+let gher: GherState | null = null;
+let gherFigure: GherFigure | null = null;
 let floorDisposers: Array<() => void> = []; // one floor's teardown, in order
 // Beacon gate: the stair door burns dim red until every beacon is frosted,
 // then returns to its built gold. Tint the material of the CURRENT floor's
@@ -505,6 +515,10 @@ function resetFloor(now: number): void {
   hintsUsed = 0; // a fresh attempt prices Aaina's hints from the base again
   purchasedHint = null;
   player = spawnPlayer(floor);
+  // Gher re-seeds at the far anchor — the Gardens' roads reset with the
+  // attempt, and the first commit is again the player's to make.
+  gher = gherFigure === null ? null : initGher(objs.patrolAnchors, player);
+  if (gherFigure !== null) gherFigure.group.visible = gher !== null;
   visited.clear(); // the fog closes in — the new attempt starts unexplored
   pings = []; // the old attempt's radar is spent
   markVisited();
@@ -594,10 +608,30 @@ function aainaContext(): HintContext {
       campaign.floor >= TAAL_SENTINEL_FLOOR &&
       taal !== null &&
       Math.hypot(taal.x - player.x, taal.y - player.y) < 8,
+    // T3 — the Encircler: a tier-3 floor and him within 8 m. Slotted beside
+    // the taalSentinel rule — the third Sentinel's counter is the feint.
+    gherNear:
+      campaign.floor >= GHER_SENTINEL_FLOOR &&
+      gher !== null &&
+      Math.hypot(gher.x - player.x, gher.y - player.y) < 8,
     chasing: echoes.filter((e) => e.mode === 'chase').length,
     exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
     hintsUsed,
   };
+}
+
+/** The roads Gher may seal (T3/T2): every UNCAPTURED beacon's cell plus the
+ *  stair door — the player's plausible destinations, nothing else. As
+ *  beacons fall the predictions tighten toward the exit: Gher seals exits. */
+function gherObjectives(): CellIndex[] {
+  const cells: CellIndex[] = allMirrors
+    .filter(
+      (m) =>
+        m.kind === 'beacon' && !(mirrorRuntime.find((r) => r.id === m.id)?.captured ?? false),
+    )
+    .map((m) => ({ x: m.cellX, y: m.cellY }));
+  cells.push({ x: floor.exit.x, y: floor.exit.y });
+  return cells;
 }
 
 /** Per-frame panel refresh while she is open: preview kind, price, purse, lore. */
@@ -1189,6 +1223,26 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       fig.dispose();
       taalFigure = null;
       taal = null;
+    });
+  }
+
+  // T3/T2 — Gher the Encircler: from GHER_SENTINEL_FLOOR (21) through Dwaar
+  // III he walks EVERY tier-3 floor. No sensing, no beat — pure prediction
+  // (see gher.ts) — spawning at the patrol anchor farthest from the player.
+  // Same shape as Taal above: one figure on the stage, one state on the
+  // loop, null everywhere else. M6/T1 — never on a venue floor: the
+  // campaign's roads stay home.
+  if (pack === null && tierOf(c.floor) === 3) {
+    const fig = createGher();
+    scene.add(fig.group);
+    gherFigure = fig;
+    gher = initGher(objs.patrolAnchors, spawnPlayer(floor));
+    fig.group.visible = gher !== null; // degenerate anchorless floor: no seal
+    floorDisposers.push(() => {
+      scene.remove(fig.group);
+      fig.dispose();
+      gherFigure = null;
+      gher = null;
     });
   }
 
@@ -1880,6 +1934,19 @@ function frame(now: number): void {
       // speed — same wall-clock now the lantern reads, so stride and glow
       // can never fall out of time.
       if (taal !== null) taal = updateTaal(taal, objs.patrolAnchors, floor.grid, now, FIXED_STEP);
+      // The encirclement (T3/T2): the freshest prediction is offered every
+      // step — interceptCell reads the player's roads, no senses involved —
+      // and updateGher adopts it on the 1s tick (a feint's null lands at
+      // once; he holds mid-stride until the player commits again).
+      if (gher !== null) {
+        gher = updateGher(
+          gher,
+          interceptCell(player, floor.grid, gherObjectives()),
+          floor.grid,
+          now,
+          FIXED_STEP,
+        );
+      }
       // Sprint into a mirror and it cracks: the house angers, the glass tints.
       const sprintMoving =
         inputFrame.sprint && (inputFrame.forward !== 0 || inputFrame.strafe !== 0);
@@ -1922,6 +1989,10 @@ function frame(now: number): void {
         const at = sampleDelayed(path, now, chhayaDelayMs());
         if (at !== null && Math.hypot(at.x - player.x, at.y - player.y) < CONTACT_RADIUS)
           failFloor('caught');
+        // Gher's touch (T3/T2): the Encircler sealed your road — the standard
+        // caught fail. No anger, no cooldown: a seal is a seal.
+        if (gher !== null && Math.hypot(gher.x - player.x, gher.y - player.y) < CONTACT_RADIUS)
+          failFloor('caught');
       }
       accumulator -= FIXED_STEP;
     }
@@ -1943,6 +2014,12 @@ function frame(now: number): void {
     taalFigure.group.position.set(taal.x, 0, taal.y);
     taalFigure.group.rotation.y = -taal.heading; // same convention as the avatar
     taalFigure.setBeat(beatGlow(now, a11y().reducedFlash));
+  }
+  // Gher follows his state — the steady glide. No setBeat: where Taal's
+  // lantern reads the beat, the still-water glass holds one constant glow.
+  if (gher !== null && gherFigure !== null) {
+    gherFigure.group.position.set(gher.x, 0, gher.y);
+    gherFigure.group.rotation.y = -gher.heading; // same convention as the avatar
   }
   updateChhaya(now);
   // Chhaya's map radar (T4): a ping every CHHAYA_PING_MS while her sample

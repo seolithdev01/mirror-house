@@ -75,3 +75,5 @@ export const TAAL_SENTINEL_FLOOR = 11; // from here Taal's touch catches, not an
 // T3 — the Reflecting Gardens: floors 21–29 procedural ramp, 30 = Dwaar III
 // (the garden hall; Truth-Shard III ends the tier — Gher arrives in T3/T2).
 export const TIER_THREE_FLOORS = 30;
+export const GHER_SENTINEL_FLOOR = 21; // from here Gher walks every tier-3 floor
+export const GHER_INTERCEPT_MS = 1000; // his reaction time: how often the prediction retargets

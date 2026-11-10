@@ -53,6 +53,7 @@ const KIND_LABEL: Record<HintKind, string> = {
   chase: 'the thing hunting you',
   taal: 'the one on the beat',
   taalSentinel: 'the Sentinel on his rounds',
+  gherNear: 'the one who seals the roads',
   chhaya: 'your shadow, seconds behind',
   anger: "the house's temper",
   stuck: 'the way onward',
