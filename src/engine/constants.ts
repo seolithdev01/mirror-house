@@ -77,6 +77,11 @@ export const TAAL_SENTINEL_FLOOR = 11; // from here Taal's touch catches, not an
 export const TIER_THREE_FLOORS = 30;
 export const GHER_SENTINEL_FLOOR = 21; // from here Gher walks every tier-3 floor
 export const GHER_INTERCEPT_MS = 1000; // his reaction time: how often the prediction retargets
+// T4/T2 — Aavart the Ambusher: from here he walks every tier-4 floor beside
+// Taal and Gher (the ladder accumulates — all three walk the Carnival).
+export const AVART_SENTINEL_FLOOR = 31; // from here Aavart walks every tier-4 floor
+export const AVART_INTERCEPT_MS = 1200; // his reaction time: how often the projection retargets
+export const AVART_LEAD_S = 1.8; // seconds of travel projected at a full sprint
 // T4 — the Carnival of Faces: floors 31–39 procedural ramp, 40 = Dwaar IV
 // (the funhouse hall; Truth-Shard IV closes ACT I — spec §2.3). The campaign
 // is TERMINAL at 40: descend() is a no-op there until Act II exists.

@@ -19,6 +19,9 @@ export interface HintContext {
   /** T3 — the ENCIRCLER is close: a tier-3 floor (≥ 21) and Gher within
    *  8 m. The one Sentinel whose counter is a lie told with your feet. */
   gherNear: boolean;
+  /** T4 — the AMBUSHER is close: a tier-4 floor (≥ 31) and Aavart within
+   *  8 m. The one Sentinel whose counter is your own stride. */
+  avartNear: boolean;
   exitUnlocked: boolean;
   hintsUsed: number;
 }
@@ -31,6 +34,7 @@ export type HintKind =
   | 'taal'
   | 'taalSentinel'
   | 'gherNear'
+  | 'avartNear'
   | 'anger'
   | 'stuck';
 
@@ -55,6 +59,8 @@ export const HINTS: Record<HintKind, string> = {
   taal: 'Taal is on this floor — the Sentinel who moves on the beat. He cannot kill you; his touch only angers the house. Cross him in the rest between the accents, when the lantern dims, and keep your count.',
   taalSentinel: 'He walks the beat — cross when the lantern dims.',
   gherNear: 'He does not chase — he closes the road ahead. Feint, then go the other way.',
+  avartNear:
+    'He leaps where you are GOING — the faster you run, the further he reaches. Change your pace.',
   chhaya:
     'She is close — your own footsteps, seconds late, and quicker the deeper you go. Never retrace your path; bend your trail instead. And if you must, step through a True Mirror (Space) to somewhere your past never walked.',
   anger:
@@ -75,6 +81,8 @@ export function nextHint(ctx: HintContext): Hint {
     kind = 'taalSentinel'; // T2: the LETHAL beat — the crossing rule, urgent
   else if (ctx.gherNear)
     kind = 'gherNear'; // T3: the Encircler — the feint rule, beside the beat
+  else if (ctx.avartNear)
+    kind = 'avartNear'; // T4: the Ambusher — the pace rule, beside the feint
   else if (ctx.chhayaNear) kind = 'chhaya';
   else if (ctx.anger >= ANGER_HINT_AT) kind = 'anger';
   else kind = 'stuck';

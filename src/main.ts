@@ -5,6 +5,7 @@ import { createAudioEngine } from './audio/engine';
 import { intensityFrom, TIER_ONE_SCALE, TIER_THREE_SCALE, TIER_TWO_SCALE } from './audio/theory';
 import {
   ANGER_MAX,
+  AVART_SENTINEL_FLOOR,
   CELL_SIZE,
   CHHAYA_PING_MS,
   CONTACT_RADIUS,
@@ -16,10 +17,12 @@ import {
   FOG_COST,
   GHER_SENTINEL_FLOOR,
   SHARD_BEACON,
+  SPRINT_SPEED,
   TAAL_FLOOR,
   TAAL_SENTINEL_FLOOR,
   TIER_FOUR_FLOORS,
   TIER_TWO_FLOORS,
+  WALK_SPEED,
 } from './engine/constants';
 import {
   actionFor,
@@ -32,11 +35,13 @@ import {
 } from './engine/input';
 import { Dir, type CellIndex } from './engine/grid';
 import {
+  createAavart,
   createAvatar,
   createChhaya,
   createGher,
   createTaal,
   updateAvatar,
+  type AavartFigure,
   type GherFigure,
   type TaalFigure,
 } from './game/avatar';
@@ -119,6 +124,7 @@ import {
   type TaalState,
 } from './game/taal';
 import { initGher, interceptCell, updateGher, type GherState } from './game/gher';
+import { ambushCell, initAavart, updateAavart, type AvartState } from './game/avart';
 import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
 import { paletteForTier, TIER_ONE_PALETTE } from './game/palette';
 import { awardShards, dailySeed, META_KEY, recordRun, spendShards, todayStamp } from './game/meta';
@@ -157,7 +163,7 @@ import {
   tryTeleport,
   type DoorAnim,
 } from './game/passages';
-import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
+import { movePlayer, spawnPlayer, type MoveInput, type PlayerState } from './game/player';
 import { autoPreset, PROFILES, type PerfChoice, type PerfPreset } from './game/quality';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
 import { parseTestMode } from './game/testMode';
@@ -393,6 +399,12 @@ let taalFigure: TaalFigure | null = null;
 // re-seeds him at the far anchor.
 let gher: GherState | null = null;
 let gherFigure: GherFigure | null = null;
+// T4/T2 — Aavart the Ambusher: every tier-4 floor (31–40), and nowhere else.
+// The ladder accumulates — by the Carnival all three Sentinels walk (spec
+// §4.4: tier 4 ADDS Aavart beside Taal and Gher). Same per-floor ownership
+// as the other two; resetFloor re-seeds him at the far anchor.
+let aavart: AvartState | null = null;
+let aavartFigure: AavartFigure | null = null;
 // T3/T3 — the water-mirrors: runtime pools (rippledAt mutated in place, the
 // MirrorRuntime precedent) + their visual patches. Empty arrays on every
 // tier-1/2/venue floor; buildFloor owns both, the teardown rides
@@ -531,6 +543,10 @@ function resetFloor(now: number): void {
   // attempt, and the first commit is again the player's to make.
   gher = gherFigure === null ? null : initGher(objs.patrolAnchors, player);
   if (gherFigure !== null) gherFigure.group.visible = gher !== null;
+  // Aavart re-seeds at the far anchor too — the Carnival resets with the
+  // attempt, and the first pace is again the player's to set.
+  aavart = aavartFigure === null ? null : initAavart(objs.patrolAnchors, player);
+  if (aavartFigure !== null) aavartFigure.group.visible = aavart !== null;
   // T3/T3 — the pools persist with the floor; only their ripples reset (all
   // still water again — the patches re-brighten on the next frame's sync).
   for (const w of waterRt) w.rippledAt = null;
@@ -629,16 +645,23 @@ function aainaContext(): HintContext {
       campaign.floor >= GHER_SENTINEL_FLOOR &&
       gher !== null &&
       Math.hypot(gher.x - player.x, gher.y - player.y) < 8,
+    // T4 — the Ambusher: a tier-4 floor and him within 8 m. Slotted beside
+    // the other Sentinel rules — the fourth keeper's counter is your pace.
+    avartNear:
+      campaign.floor >= AVART_SENTINEL_FLOOR &&
+      aavart !== null &&
+      Math.hypot(aavart.x - player.x, aavart.y - player.y) < 8,
     chasing: echoes.filter((e) => e.mode === 'chase').length,
     exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
     hintsUsed,
   };
 }
 
-/** The roads Gher may seal (T3/T2): every UNCAPTURED beacon's cell plus the
- *  stair door — the player's plausible destinations, nothing else. As
- *  beacons fall the predictions tighten toward the exit: Gher seals exits. */
-function gherObjectives(): CellIndex[] {
+/** The roads the predicting Sentinels may play (T3/T2, widened T4/T2): every
+ *  UNCAPTURED beacon's cell plus the stair door — the player's plausible
+ *  destinations, nothing else. Gher seals them; Aavart ambushes them. As
+ *  beacons fall the predictions tighten toward the exit: both seal exits. */
+function sentinelObjectives(): CellIndex[] {
   const cells: CellIndex[] = allMirrors
     .filter(
       (m) => m.kind === 'beacon' && !(mirrorRuntime.find((r) => r.id === m.id)?.captured ?? false),
@@ -646,6 +669,15 @@ function gherObjectives(): CellIndex[] {
     .map((m) => ({ x: m.cellX, y: m.cellY }));
   cells.push({ x: floor.exit.x, y: floor.exit.y });
   return cells;
+}
+
+/** The player's current stride (T4/T2): the one thing Aavart reads that the
+ *  other Sentinels do not. Sprint, walk, or a standstill — turning on the
+ *  spot or holding still projects no lead at all, which is the whole
+ *  counter-play: change your pace. */
+function playerSpeed(input: MoveInput): number {
+  if (input.forward === 0 && input.strafe === 0) return 0;
+  return input.sprint ? SPRINT_SPEED : WALK_SPEED;
 }
 
 /** Per-frame panel refresh while she is open: preview kind, price, purse, lore. */
@@ -1330,13 +1362,16 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     });
   }
 
-  // T3/T2 — Gher the Encircler: from GHER_SENTINEL_FLOOR (21) through Dwaar
-  // III he walks EVERY tier-3 floor. No sensing, no beat — pure prediction
-  // (see gher.ts) — spawning at the patrol anchor farthest from the player.
-  // Same shape as Taal above: one figure on the stage, one state on the
-  // loop, null everywhere else. M6/T1 — never on a venue floor: the
+  // T3/T2 — Gher the Encircler: from GHER_SENTINEL_FLOOR (21) up he walks
+  // EVERY floor. No sensing, no beat — pure prediction (see gher.ts) —
+  // spawning at the patrol anchor farthest from the player. Same shape as
+  // Taal above: one figure on the stage, one state on the loop, null
+  // everywhere else. T4/T2 — the tier-3-only gate WIDENED to every floor
+  // from GHER_SENTINEL_FLOOR up: the ladder ACCUMULATES (spec §4.4 — tier 4
+  // ADDS Aavart beside Taal and Gher, all three walk the Carnival); the
+  // aaina rule already read >=. M6/T1 — never on a venue floor: the
   // campaign's roads stay home.
-  if (pack === null && tierOf(c.floor) === 3) {
+  if (pack === null && c.floor >= GHER_SENTINEL_FLOOR) {
     const fig = createGher();
     scene.add(fig.group);
     gherFigure = fig;
@@ -1347,6 +1382,27 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       fig.dispose();
       gherFigure = null;
       gher = null;
+    });
+  }
+
+  // T4/T2 — Aavart the Ambusher: from AVART_SENTINEL_FLOOR (31) up he walks
+  // every floor, BESIDE Taal and Gher (the ladder accumulates — all three
+  // walk the Carnival). No sensing, no beat — pure velocity projection (see
+  // avart.ts) — spawning at the patrol anchor farthest from the player.
+  // Same shape as the two above: one figure on the stage, one state on the
+  // loop, null everywhere else; the aaina rule reads >= too. M6/T1 — never
+  // on a venue floor: the campaign's pace stays home.
+  if (pack === null && c.floor >= AVART_SENTINEL_FLOOR) {
+    const fig = createAavart();
+    scene.add(fig.group);
+    aavartFigure = fig;
+    aavart = initAavart(objs.patrolAnchors, spawnPlayer(floor));
+    fig.group.visible = aavart !== null; // degenerate anchorless floor: no ambush
+    floorDisposers.push(() => {
+      scene.remove(fig.group);
+      fig.dispose();
+      aavartFigure = null;
+      aavart = null;
     });
   }
 
@@ -2058,7 +2114,24 @@ function frame(now: number): void {
       if (gher !== null) {
         gher = updateGher(
           gher,
-          interceptCell(player, floor.grid, gherObjectives()),
+          interceptCell(player, floor.grid, sentinelObjectives()),
+          floor.grid,
+          now,
+          FIXED_STEP,
+        );
+      }
+      // The ambush (T4/T2): the freshest projection is offered every step —
+      // ambushCell reads the player's direction AND speed (the one Sentinel
+      // who cares how fast you run) — and updateAavart adopts it on the
+      // 1200 ms tick. A null read changes nothing: he finishes the ambush.
+      if (aavart !== null) {
+        aavart = updateAavart(
+          aavart,
+          ambushCell(
+            { x: player.x, y: player.y, heading: player.heading, speed: playerSpeed(inputFrame) },
+            floor.grid,
+            sentinelObjectives(),
+          ),
           floor.grid,
           now,
           FIXED_STEP,
@@ -2110,6 +2183,10 @@ function frame(now: number): void {
         // caught fail. No anger, no cooldown: a seal is a seal.
         if (gher !== null && Math.hypot(gher.x - player.x, gher.y - player.y) < CONTACT_RADIUS)
           failFloor('caught');
+        // Aavart's touch (T4/T2): the Ambusher read your pace and got there
+        // first — the standard caught fail. Lethal on every floor he walks.
+        if (aavart !== null && Math.hypot(aavart.x - player.x, aavart.y - player.y) < CONTACT_RADIUS)
+          failFloor('caught');
       }
       accumulator -= FIXED_STEP;
     }
@@ -2137,6 +2214,12 @@ function frame(now: number): void {
   if (gher !== null && gherFigure !== null) {
     gherFigure.group.position.set(gher.x, 0, gher.y);
     gherFigure.group.rotation.y = -gher.heading; // same convention as the avatar
+  }
+  // Aavart follows his state — the steady glide, the fastest of the three.
+  // No setBeat either: the candle-flame glass holds one constant glow.
+  if (aavart !== null && aavartFigure !== null) {
+    aavartFigure.group.position.set(aavart.x, 0, aavart.y);
+    aavartFigure.group.rotation.y = -aavart.heading; // same convention as the avatar
   }
   updateChhaya(now);
   // Chhaya's map radar (T4): a ping every CHHAYA_PING_MS while her sample

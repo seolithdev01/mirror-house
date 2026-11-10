@@ -54,6 +54,7 @@ const KIND_LABEL: Record<HintKind, string> = {
   taal: 'the one on the beat',
   taalSentinel: 'the Sentinel on his rounds',
   gherNear: 'the one who seals the roads',
+  avartNear: 'the one who reads your pace',
   chhaya: 'your shadow, seconds behind',
   anger: "the house's temper",
   stuck: 'the way onward',
