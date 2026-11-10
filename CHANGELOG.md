@@ -7,6 +7,36 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t2] — 2026-11-10 — the Hall of Ancestors (Tier 2, floors 11–20)
+
+The first post-beta content milestone — the campaign doubles downward.
+
+- **Floors 11–20** — the Hall of Ancestors: a tier-2 ramp (echoes 5–6,
+  beacons 4 a floor, tighter braids, Chhaya 4.5 s behind tightening to 4.1),
+  the `L14 · T2` floor chip, and Dwaar II at floor 20 — a second
+  hand-authored 13×13 threshold hall, broader than Dwaar I (96 open cells)
+  because the Sentinel needs room to walk his beat.
+- **Taal promoted to Sentinel** — from floor 11 through Dwaar II he walks
+  every tier-2 floor and his touch **catches** (the floor-5 cameo stays
+  anger-only); `taalOutcome` pins that boundary in one pure place. He surges
+  on the 2-second beat and crawls between — cross on the dim beat.
+- **Ancestor portraits** — 2–3 dim procedural silhouettes wall-mounted on
+  every tier-2 floor; mirrors like any other, fogged like any glass.
+- **Tier-2 art + music** — the amber/brown/deep-teal palette (void haze and
+  walking lantern re-dress per floor), and the melody walker finally plays
+  the Durga pentatonic (`setScale`, live at every floor build; venue
+  side-floors stay tier-one dressed).
+- **Truth-Shard I interstitial** — Dwaar I's clear now celebrates with a 1.8 s
+  auto-dismiss banner (`✦ Truth-Shard I claimed — the house deepens…`, en+hi)
+  and the descent continues into the Hall; floor 20 keeps the full
+  tier-complete screen.
+- **Close-out** — §4.6 row 2 and §13.1 annotated delivered in the spec; the
+  full 2h desktop soak closed **PASSED 2026-11-10: 2181 cycles, 0 crashes,
+  heap stable post-warmup (14.5MB flat final hour)**; README gains the Tier 2
+  section; the FAQ grows to 30 (the Hall, crossing Taal, the portraits);
+  STATE_MACHINES' Campaign section refreshed for 20 floors. 415 unit + 32
+  e2e green.
+
 ## [0.2.0-beta.1] — 2026-11-09 — the beta (M6)
 
 - **Venue side-floors** — local ventures can host a themed floor of the game:
@@ -43,7 +73,7 @@ Versions follow the store line: `0.1.0` carried everything through M5,
 - **📮 Feedback & suggestions** — the in-game composer (top right): pick
   🐞 Bug / 💡 Suggestion / 💙 a kind word, and the message comes pre-carried
   with a read-only diagnostics block — version, seed (`BASE:floor`), preset,
-  language, accessibility flags, a remap *count* (never the bindings), venue,
+  language, accessibility flags, a remap _count_ (never the bindings), venue,
   user agent, the last runtime errors. Nothing is sent until you press a
   button: it opens a prefilled GitHub issue (bug/suggestion/playtest
   templates live in the repo) or a mailto — you see the exact text first.

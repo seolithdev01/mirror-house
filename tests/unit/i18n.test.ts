@@ -78,6 +78,7 @@ describe('i18n — key parity', () => {
       'overlay.descend',
       'overlay.tierTitle',
       'overlay.tierTitle2', // T2/T1 — the Dwaar II screen names Tier II
+      'overlay.shardInterstitial', // T2/T5 — Dwaar I's 1.8s claim banner
       'chip.tier', // T2/T1 — the `L14 · T2` floor-chip suffix
       'hint.step',
       'hint.push',
@@ -90,6 +91,20 @@ describe('i18n — key parity', () => {
       'misc.stay',
     ])
       expect(STRINGS.en[k], k).toBeDefined();
+  });
+});
+
+describe('i18n — the T2/T5 Truth-Shard I interstitial', () => {
+  it('en is the brief claim line the adjudication pinned, verbatim', () => {
+    expect(STRINGS.en['overlay.shardInterstitial']).toBe(
+      '✦ Truth-Shard I claimed — the house deepens…',
+    );
+  });
+
+  it('hi carries its own authored line (Devanagari, never a copy of en)', () => {
+    const hi = STRINGS.hi['overlay.shardInterstitial']!;
+    expect(hi).toMatch(/[\u0900-\u097F]/);
+    expect(hi).not.toBe(STRINGS.en['overlay.shardInterstitial']);
   });
 });
 

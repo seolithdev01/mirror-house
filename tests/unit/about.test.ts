@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 27 entries (25 + the feedback and beta answers)', () => {
-    expect(FAQ).toHaveLength(27);
+  it('grows to 30 entries (25 + feedback, beta, and the tier-2 trio)', () => {
+    expect(FAQ).toHaveLength(30);
   });
 
   it('the report-bugs answer names the Feedback button in the top-right', () => {
@@ -64,5 +64,18 @@ describe('faq — the beta launch pair', () => {
     const e = FAQ.find((f) => /beta/i.test(f.q));
     expect(e, 'an entry about the beta exists').toBeDefined();
     expect(e!.a.toLowerCase()).toContain('roadmap');
+  });
+
+  it('the tier-2 trio answers how to survive the ancestors (T2/T5)', () => {
+    const hall = FAQ.find((f) => /hall of ancestors/i.test(f.q));
+    expect(hall, 'the Hall of Ancestors entry exists').toBeDefined();
+    expect(hall!.a).toContain('L11 · T2'); // the chip readers see
+    expect(hall!.a).toContain('Truth-Shard II');
+    const taal = FAQ.find((f) => /taal keeps catching/i.test(f.q));
+    expect(taal, 'the lethal-Taal entry exists').toBeDefined();
+    expect(taal!.a.toLowerCase()).toContain('dim beat'); // cross on the dim beat
+    const portraits = FAQ.find((f) => /portrait mirrors/i.test(f.q));
+    expect(portraits, 'the ancestor-portraits entry exists').toBeDefined();
+    expect(portraits!.a).toContain('fog'); // fog them like any glass
   });
 });

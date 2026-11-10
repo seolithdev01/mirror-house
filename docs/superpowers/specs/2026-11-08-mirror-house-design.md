@@ -126,18 +126,18 @@ Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → T
 
 ### 4.6 Difficulty architecture (10 tiers × 10 floors)
 
-| Tier | Floors | Setting              | New mechanic                                          | Music mood                           |
-| ---- | ------ | -------------------- | ----------------------------------------------------- | ------------------------------------ |
-| 1    | 1–10   | The Glass Gallery    | Frost Lantern, Echoes, Chhaya                         | Dawn-hope raga (Bhairav-family mood) |
-| 2    | 11–20  | Hall of Ancestors    | Taal; portrait mirrors show _other_ floors            | Reverent, slow pulse                 |
-| 3    | 21–30  | Reflecting Gardens   | Water-mirrors (can't fog water — ripple them), Gher   | Pastoral, flute-lead                 |
-| 4    | 31–40  | Carnival of Faces    | Distorting mirrors displace your mirror-image, Aavart | Playful, mischievous groove          |
-| 5    | 41–50  | The Flood Halls      | Rising water halves mirror height; Act II begins      | Submerged, filtered                  |
-| 6    | 51–60  | The Furnace Wings    | Heat fogs mirrors at range but cracks spread faster   | Urgent, percussive                   |
-| 7    | 61–70  | The Whisper Library  | Sound-based Echoes (they hear, not see)               | Sparse, whispered                    |
-| 8    | 71–80  | The Frozen Atrium    | All mirrors pre-fogged — _you_ unfog to lure          | Austere, cold strings                |
-| 9    | 81–90  | The Warden's Warrens | All four Sentinels hunt together                      | Dread, low drone                     |
-| 10   | 91–100 | The Foundations      | No mirrors at all — pure maze, the Glazier himself    | Resolve; silence between notes       |
+| Tier | Floors | Setting              | New mechanic                                          | Music mood                                       |
+| ---- | ------ | -------------------- | ----------------------------------------------------- | ------------------------------------------------ |
+| 1    | 1–10   | The Glass Gallery    | Frost Lantern, Echoes, Chhaya                         | Dawn-hope raga (Bhairav-family mood)             |
+| 2    | 11–20  | Hall of Ancestors    | Taal; portrait mirrors show _other_ floors            | Reverent, slow pulse — delivered 2026-11-10 (t2) |
+| 3    | 21–30  | Reflecting Gardens   | Water-mirrors (can't fog water — ripple them), Gher   | Pastoral, flute-lead                             |
+| 4    | 31–40  | Carnival of Faces    | Distorting mirrors displace your mirror-image, Aavart | Playful, mischievous groove                      |
+| 5    | 41–50  | The Flood Halls      | Rising water halves mirror height; Act II begins      | Submerged, filtered                              |
+| 6    | 51–60  | The Furnace Wings    | Heat fogs mirrors at range but cracks spread faster   | Urgent, percussive                               |
+| 7    | 61–70  | The Whisper Library  | Sound-based Echoes (they hear, not see)               | Sparse, whispered                                |
+| 8    | 71–80  | The Frozen Atrium    | All mirrors pre-fogged — _you_ unfog to lure          | Austere, cold strings                            |
+| 9    | 81–90  | The Warden's Warrens | All four Sentinels hunt together                      | Dread, low drone                                 |
+| 10   | 91–100 | The Foundations      | No mirrors at all — pure maze, the Glazier himself    | Resolve; silence between notes                   |
 
 ### 4.7 Movement & trap language (Wolfenstein feet, Prince of Persia hands)
 
@@ -392,23 +392,33 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 > M4 criterion is the human one: **five strangers completing Tier 1 unaided**.
 > It needs real humans: recruit them, watch them, close this line.
 
+> **Scope today (recorded 2026-11-10, t2).** This section is the Tier 1 beta
+> scope, delivered as written above; on top of it, the first post-beta content
+> milestone is also delivered — **Tier 2, floors 11–20** (§4.6 row 2): the Hall
+> of Ancestors with its amber/brown/deep-teal palette and Durga-pentatonic
+> melody walk, Taal promoted from the floor-5 cameo to a lethal Sentinel on
+> every tier-2 floor, dim ancestor portrait mirrors (fogged like any glass),
+> the hand-authored Dwaar II at floor 20, and the Truth-Shard I interstitial
+> on Dwaar I's clear (the descent continues; only Dwaar II raises the tier
+> screen). 415 unit + 32 e2e green.
+
 ### 13.2 Milestones (part-time, ~13 weeks)
 
-| M   | Weeks | Deliverable                                                                             | Acceptance                                                                                       |
-| --- | ----- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| M0  | 1     | Repo scaffold, CI, empty deploy to CF Pages                                             | PR preview + prod URL live; lint/test/build green                                                |
-| M1  | 2–3   | Grid + movement + seeded maze-gen + FOCUS view                                          | Deterministic floors from seed; 60fps mid desktop                                                |
-| M2  | 4–5   | Mirrors + frost + Echoes + Chhaya + traps                                               | One playable floor loop, winnable and losable                                                    |
-| M3  | 6–7   | QUAD/OVERHEAD/TACTICAL + HUD + Aaina v1 + audio engine                                  | All views ≤ budget; hint economy works — delivered 2026-11-09 (m3)                               |
-| M4  | 8–9   | Tier 1 content (10 floors + Dwaar I), saves, PWA, i18n                                  | Playtest 5 strangers complete Tier 1 unaided — delivered 2026-11-09 (m4); playtest gate OPEN, see §13.1 |
-| M5  | 10–11 | Polish, a11y pass, perf presets, beta hardening                                         | Exit criteria below all green; web beta launches here — delivered 2026-11-09 (m5); the human/pre-beta lines stay OPEN, see §13.3 |
+| M   | Weeks | Deliverable                                                                             | Acceptance                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| --- | ----- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M0  | 1     | Repo scaffold, CI, empty deploy to CF Pages                                             | PR preview + prod URL live; lint/test/build green                                                                                                                                                                                                                                                                                                                                                                          |
+| M1  | 2–3   | Grid + movement + seeded maze-gen + FOCUS view                                          | Deterministic floors from seed; 60fps mid desktop                                                                                                                                                                                                                                                                                                                                                                          |
+| M2  | 4–5   | Mirrors + frost + Echoes + Chhaya + traps                                               | One playable floor loop, winnable and losable                                                                                                                                                                                                                                                                                                                                                                              |
+| M3  | 6–7   | QUAD/OVERHEAD/TACTICAL + HUD + Aaina v1 + audio engine                                  | All views ≤ budget; hint economy works — delivered 2026-11-09 (m3)                                                                                                                                                                                                                                                                                                                                                         |
+| M4  | 8–9   | Tier 1 content (10 floors + Dwaar I), saves, PWA, i18n                                  | Playtest 5 strangers complete Tier 1 unaided — delivered 2026-11-09 (m4); playtest gate OPEN, see §13.1                                                                                                                                                                                                                                                                                                                    |
+| M5  | 10–11 | Polish, a11y pass, perf presets, beta hardening                                         | Exit criteria below all green; web beta launches here — delivered 2026-11-09 (m5); the human/pre-beta lines stay OPEN, see §13.3                                                                                                                                                                                                                                                                                           |
 | M6  | 12–13 | Capacitor store builds, listings, IARC ratings; venue pilot pack published; full launch | Android + iOS pass review; venue pack live with partner sign-off; beta live on web + both stores — delivered 2026-11-09 (m6): web beta LIVE at the Pages URL (m5 build serves today; `0.2.0-beta.1` auto-deploys on merge to `main`); venue machinery + DEMO pack live (partner sign-off OPEN); Android debug APK built green (store submission OPEN pending Play account); iOS runbook shipped (Mac required) — see §13.4 |
 
 ### 13.3 Exit criteria
 
 Annotated at M5 close-out (2026-11-09). **[x] = machine-proven green this milestone; [ ] = OPEN** (a human or pre-beta runbook item); the last two belong to M6 by the §13.2 split and are listed for completeness.
 
-- [x] **No crash in 2h soak on mid desktop + one Android** — machine evidence green: the 10-min soak on the preview build ran 182 fail-restart cycles with heap Δ 0.00 MB (9.5 → 9.5 MB), geometries/textures/draw calls flat, fps 43–46 (`scripts/soak.mjs`, `npm run soak`). The full 2h desktop run is the pre-beta runbook step `npm run soak -- --minutes 120` — OPEN; the Android device leg rides the M6 store-build runbook.
+- [x] **No crash in 2h soak on mid desktop + one Android** — machine evidence green: the 10-min soak on the preview build ran 182 fail-restart cycles with heap Δ 0.00 MB (9.5 → 9.5 MB), geometries/textures/draw calls flat, fps 43–46 (`scripts/soak.mjs`, `npm run soak`). The full 2h desktop run — the pre-beta runbook step `npm run soak -- --minutes 120` — is closed: **PASSED 2026-11-10: 2181 cycles, 0 crashes, heap stable post-warmup (14.5MB flat final hour)** (re-run on the t2 tree, so it covers the tier-two stage + Sentinel + portraits too); the Android device leg rides the M6 store-build runbook.
 - [x] **Floor restart < 2s** — e2e `m5: warp-caught restart returns the player to spawn within 2000ms` asserts contact → spawn ≤ 2000 ms; measured ~1.3–1.4 s.
 - [x] **Export/import round-trips** — e2e `m5: export/import round-trip through a real file`: real download, rewrite to a distinct campaign, file-chooser import, boots onto the rewritten save.
 - [x] **Offline install verified on Android + desktop** — proven at M4 (PWA manifest + service worker e2e green; desktop install exercised; `PRIVACY.md` carries the offline note). Device-matrix re-verification rides the M6 store builds.

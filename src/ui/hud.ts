@@ -4,6 +4,12 @@ import type { InputMode } from '../engine/input';
 import { trapDialog } from './dialog';
 import { fill, t, type Lang } from './i18n';
 
+/** T2/T5 — how long the Truth-Shard I interstitial holds before it dismisses
+ *  itself (the descend hold beneath it stays DESCEND_MS = 0.8s, so the banner
+ *  rides ~1s into the Hall of Ancestors before fading — a celebration, never
+ *  a gate). */
+export const SHARD_INTERSTITIAL_MS = 1800;
+
 export type HudInit = {
   mode: InputMode;
   onMode(m: InputMode): void;
@@ -69,6 +75,12 @@ export interface Hud {
   /** M4/T2 — the 0.8s `descending…` banner between floors; hide on rebuild. */
   showDescend(): void;
   hideDescend(): void;
+  /** T2/T5 — the Truth-Shard I interstitial (the T1 adjudication): Dwaar I's
+   *  clear raises the tier-complete styling as a 1.8s auto-dismiss banner —
+   *  the 0.8s descend hold beneath it is untouched, and the banner owns its
+   *  own clock (a floor rebuild never hides it). Dwaar II keeps the full
+   *  tier screen (`showTierComplete`). */
+  showShardInterstitial(): void;
   /** M4/T2 — the Truth-Shard tier-complete screen (Play again / Stay).
    *  T2/T1 — `tier` picks the screen's title: 1 = Dwaar I, 2 = Dwaar II. */
   showTierComplete(stats: { tier: 1 | 2; floors: number; shards: number }): void;
@@ -206,6 +218,13 @@ export function createHud(init: HudInit): Hud {
   const descend = document.createElement('div');
   descend.id = 'mh-descend';
   descend.hidden = true;
+  // T2/T5 — the Truth-Shard I interstitial: the tier-complete card's styling
+  // as a centered banner. It owns its own hide clock (below), so a descend's
+  // buildFloor sweep — which hides the cleared/descend/tier surfaces — never
+  // cuts the 1.8s celebration short.
+  const shard = document.createElement('div');
+  shard.id = 'mh-shard';
+  shard.hidden = true;
   const fail = document.createElement('div');
   fail.id = 'mh-fail';
   fail.hidden = true;
@@ -257,6 +276,7 @@ export function createHud(init: HudInit): Hud {
     anger,
     cleared,
     descend,
+    shard,
     fail,
     hint,
     toast,
@@ -299,6 +319,8 @@ export function createHud(init: HudInit): Hud {
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
   let hintText: string | null = null; // last shown hint (hint() early-returns on repeats)
   let toastTimer = 0; // the toast's own hide timer (re-toast restarts the clock)
+  // T2/T5 — the interstitial's own hide clock, same contract as the toast's.
+  let shardTimer = 0;
   // M4/T6 — the last values fed to the value-bearing setters, so setLang() can
   // recompose every label-bearing surface (chips, mute, tier) without main
   // re-feeding them. Derived display state, not a second truth: the values'
@@ -455,6 +477,14 @@ export function createHud(init: HudInit): Hud {
     hideDescend: () => {
       descend.hidden = true;
     },
+    showShardInterstitial: () => {
+      shard.textContent = t(lang, 'overlay.shardInterstitial');
+      shard.hidden = false;
+      window.clearTimeout(shardTimer);
+      shardTimer = window.setTimeout(() => {
+        shard.hidden = true;
+      }, SHARD_INTERSTITIAL_MS);
+    },
     showTierComplete: (stats) => {
       lastTierStats = stats;
       tierTitle.textContent = t(
@@ -500,6 +530,7 @@ export function createHud(init: HudInit): Hud {
         );
         tierStats.textContent = fill(t(lang, 'overlay.tierStats'), lastTierStats);
       }
+      if (!shard.hidden) shard.textContent = t(lang, 'overlay.shardInterstitial'); // T2/T5
     },
     captionBar,
     root,

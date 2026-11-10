@@ -23,31 +23,31 @@
 
 **Files:** `src/game/campaign.ts` (+`tierOf(floor): 1|2`, `DWAAR_II_LAYOUT` new 13×13, `isDwaar` → `floor === 10 || floor === 20`, ramp table 11–20 per constraints, `TIER_TWO_FLOORS`), constants, main.ts (floor chip `L14 · T2`, Dwaar II chip `DWAAR II ✦`, tier-complete at 20 → `✦ Truth-Shard II — Act I halfway`… no: keep tier-2 completion text `✦ Truth-Shard II claimed — Tier II complete`; Play again/Stay reuse), tests extended (ramp pinned 11–20; DWAAR_II_LAYOUT symmetric+connected like T1's checks; tierOf; isDwaar(10/20)).
 
-- [ ] Tests → RED → implement → GREEN; gates + 30/30. Commit `feat(t2): campaign to floor 20 — tier ramp, dwaar ii layout`.
+- [x] Tests → RED → implement → GREEN; gates + 30/30. Commit `feat(t2): campaign to floor 20 — tier ramp, dwaar ii layout`.
 
 ### Task 2: Taal the Sentinel + portrait mirrors
 
 **Files:** `src/game/taal.ts` (`taalOutcome(floor): 'anger' | 'caught'` pure + contact paths in main route by it; beat behavior unchanged), `src/game/floorObjects.ts` (tier-2 spawns: Taal present every floor 11–20 alongside echoes — spawn count bookkeeping; portraits: 2–3 per tier-2 floor, kind `'portrait'`, fogable eye, wall-mounted like standing), `src/game/mirror.ts` + `textures.ts` (portrait visual: standing-mirror fake-reflective base + a dim procedural ancestor silhouette canvas baked per-portrait-seed; fogged swaps matte as usual), main.ts wiring, aaina hint (`taalSentinel` kind when floor ≥ 11 && taal within 8m: "He walks the beat — cross when the lantern dims"), tests (outcome by floor; portrait placement counts; silhouette determinism).
 
-- [ ] Tests → RED → implement → GREEN; gates + 30/30. Commit `feat(t2): taal the sentinel, ancestor portraits`.
+- [x] Tests → RED → implement → GREEN; gates + 30/30. Commit `feat(t2): taal the sentinel, ancestor portraits`.
 
 ### Task 3: Tier-2 palette + audio scale
 
 **Files:** `src/game/palette.ts` (`TIER_TWO_PALETTE`: void 0x120d08, floorBase 0x2a2018, floorLines 0x3a2c1c, teal→amber 0xc98a3d, ivory 0xe8dcc8, gold 0xb8860b→keep 0xd9a441, rose→deep-teal 0x2f6f6a, wallTop 0x8a7a5c, wallBottom 0x4a3f2c, lantern 0xffe0b0, entrance 0xc98a3d, exit 0x2f6f6a), `floorScene` (palette chosen by `tierOf(campaign.floor)` — pass through buildFloor), `src/audio/engine.ts` (+`setScale(scale: readonly number[])` — swaps the melody walker's scale live; drone root unchanged), main.ts (calls engine.setScale at buildFloor), tests (palette values; tier selection fn; setScale behavior via engine test seam).
 
-- [ ] Tests → RED → implement → GREEN; gates + 30/30. Commit `feat(t2): hall of ancestors palette, durga pentatonic wiring`.
+- [x] Tests → RED → implement → GREEN; gates + 30/30. Commit `feat(t2): hall of ancestors palette, durga pentatonic wiring`.
 
 ### Task 4: e2e + hook
 
 **Files:** hook `tier(): 1|2`, `taalPos(): {x,y}|null` (tester additions); e2e (30→32): (1) `t2: floor 11 loads tier two` — `&floor=11` → tier()===2, chip contains `T2`, taalPos non-null, portrait mirrors present in `mirrors()` snapshot (add kind count); (2) `t2: sentinel taal catches` — warp onto taalPos → attempts++ (outcome 'caught') — and floor-5 cameo still anger-only (assert via addAnger path? keep to the floor-11 catch assertion).
 
-- [ ] Implement → e2e 32/32 → gates. Commit `test(t2): tier-two e2e — load, sentinel catch`.
+- [x] Implement → e2e 32/32 → gates. Commit `test(t2): tier-two e2e — load, sentinel catch`.
 
 ### Task 5: Close-out
 
 Spec §4.6 row 2 annotated delivered; CHANGELOG; README (Tier 2 section); FAQ +3 (Tier 2/Hall of Ancestors; Taal is lethal now — beat-crossing; portraits); STATE_MACHINES Campaign section refresh (floors 1–20, two Dwaars); plan ticks; full gates + 32/32.
 
-- [ ] Docs → gates → commit `docs(t2): delivery marks, how to survive the ancestors`.
+- [x] Docs → gates → commit `docs(t2): delivery marks, how to survive the ancestors`.
 
 ## Plan Self-Review
 

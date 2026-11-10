@@ -58,7 +58,19 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What hunts me?',
-    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya prowl from floor 1; Taal keeps the beat on floor 5; the deeper Sentinels wake in later milestones.',
+    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya prowl from floor 1; Taal keeps the beat on floor 5 as a cameo and walks every floor from 11 down as the Sentinel — there his touch catches; the deeper Sentinels wake in later milestones.',
+  },
+  {
+    q: 'What is below the Dwaar — the Hall of Ancestors?',
+    a: 'Floors 11–20: Tier 2. Clearing Dwaar I claims Truth-Shard I and the descent simply continues — a brief golden banner (✦ Truth-Shard I claimed — the house deepens…), then the stair door opens into the Hall. The loop is the same — frost the beacons, reach the stair door — in warmer, darker halls: four beacons a floor, five to six Echoes, Chhaya 4.5 s behind and tightening to 4.1 s by floor 19 (3.8 s in Dwaar II), and the floor chip reads L11 · T2 up to L19 · T2. The walls hang ancestor portraits, Taal walks every floor, and floor 20 is Dwaar II — his threshold hall; clearing it claims Truth-Shard II and the full tier screen.',
+  },
+  {
+    q: 'Taal keeps catching me below floor 10 — how do I get past him?',
+    a: "From floor 11 he is the Sentinel: his touch fails the floor like any Echo's catch (on floor 5 he only made the house angrier). You cannot blind him — he walks the floor, not the glass — and you cannot outrun the beat, but you can read it. He surges on the beat and nearly stands between beats, on a two-second loop, and his lantern tells you which is which: bright, he is striding; dim, he is crawling. Cross his corridor on the dim beat, and while you wait keep a wall or a corner between you. Break the rhythm, not the glass.",
+  },
+  {
+    q: 'Who are the figures in the portrait mirrors?',
+    a: 'The ancestors — dim silhouettes hanging in the glass of every tier-2 floor, two or three per hall. They are mirrors like any other: the Echoes can see you through their clear panes, and one breath of the Frost Lantern (F) fogs their eyes shut for 25 seconds like any standing glass. Ancestor or not — fog them like any glass you would rather they did not watch you through.',
   },
   {
     q: 'How do I fog mirrors — and why bother?',
@@ -114,7 +126,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What is this beta — and what is coming next?',
-    a: 'The open beta of a game being built in the open: Tier 1 — the ten floors, Chhaya and Taal, the Dwaar and Truth-Shard I — is complete, tuned, and saving on your device, and the launch kit (About, feedback, tester guides) is what you are looking at. On the roadmap: the deeper Sentinels — Gher who seals exits, Aavart who predicts — floors past 10 with new tiers, more venue packs for local ventures, and more of Aaina’s tongue. Your saves survive the beta; where the house wobbles, the Feedback button in the top-right wants to hear about it.',
+    a: 'The open beta of a game being built in the open: Tier 1 — the ten floors, Chhaya and Taal, the Dwaar and Truth-Shard I — is complete, tuned, and saving on your device, and the launch kit (About, feedback, tester guides) is what you are looking at. Below it, Tier 2 — the Hall of Ancestors, floors 11–20, the Sentinel Taal, the ancestor portraits, Dwaar II and Truth-Shard II — is delivered and playable now. On the roadmap: the deeper Sentinels — Gher who seals exits, Aavart who predicts — floors past 20 (Tier 3, the Reflecting Gardens), more venue packs for local ventures, and more of Aaina’s tongue. Your saves survive the beta; where the house wobbles, the Feedback button in the top-right wants to hear about it.',
   },
 ];
 
@@ -127,7 +139,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 27
+  // M4/T6 — the heading and the close button are chrome (localized); the 30
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

@@ -148,6 +148,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'overlay.tierTitle2': '✦ Truth-Shard II claimed — Tier II complete',
     'overlay.tierStats': '{floors} floors cleared · {shards} shards banked',
     'overlay.tierNote': 'The shard is already banked — staying is a free walk.',
+    // T2/T5 — the Dwaar I interstitial (the T1 adjudication): the shard is
+    // claimed mid-descent as a 1.8s auto-dismiss banner; floor 20 keeps the
+    // full tier screen above.
+    'overlay.shardInterstitial': '✦ Truth-Shard I claimed — the house deepens…',
     // hint line prompts (M5/T2: the verb prompts name the LIVE bound key)
     'hint.step': '{key} — step through',
     'hint.push': '{key} — push',
@@ -316,6 +320,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'overlay.tierTitle2': '✦ सत्य-शार्ड II प्राप्त — चरण II पूर्ण',
     'overlay.tierStats': '{floors} मंज़िलें पार · {shards} शार्ड जमा',
     'overlay.tierNote': 'शार्ड जमा हो चुका है — रुकना एक मुफ़्त सैर है।',
+    // T2/T5 — द्वार I का अंतराल: शार्ड बीच-उतराई में मिलता है (1.8 सेकंड का
+    // स्वतः-मिटने वाला बैनर); मंज़िल 20 को पूर्ण चरण-परदा मिलता है।
+    'overlay.shardInterstitial': '✦ सत्य-शार्ड I प्राप्त — घर और गहरा होता है…',
     // संकेत-पंक्ति (M5/T2: क्रिया-संकेत जीवंत बद्ध कुंजी का नाम लेते हैं)
     'hint.step': '{key} — पार करें',
     'hint.push': '{key} — धकेलें',

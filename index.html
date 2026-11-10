@@ -249,6 +249,31 @@
       #mh-descend[hidden] {
         display: none;
       }
+      /* T2/T5 — the Truth-Shard I interstitial (the T1 adjudication): the
+         tier-complete card's visual language — indigo card, gold border,
+         gold line — as a centered banner that auto-dismisses from hud.ts
+         after 1.8s. No backdrop and no pointer events: the 0.8s descend
+         beneath it keeps running, and only Dwaar II (floor 20) raises the
+         full tier screen. */
+      #mh-shard {
+        position: fixed;
+        top: 38%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 15;
+        max-width: min(480px, 90vw);
+        background: #0b1026;
+        border: 1px solid #d9a441;
+        border-radius: 10px;
+        padding: 18px 26px;
+        color: #d9a441;
+        font: calc(19px * var(--mh-text-scale, 1))/1.6 system-ui;
+        text-align: center;
+        pointer-events: none;
+      }
+      #mh-shard[hidden] {
+        display: none;
+      }
       /* M4/T2 — tier-complete screen: Truth-Shard I, final stats, Play again /
          Stay. A modal in the FAQ's image, above the HUD. */
       #mh-tier-overlay {
@@ -795,6 +820,7 @@
       body.mh-reduced-flash #mh-aaina-overlay,
       body.mh-reduced-flash #mh-cleared,
       body.mh-reduced-flash #mh-descend,
+      body.mh-reduced-flash #mh-shard,
       body.mh-reduced-flash #mh-fail,
       body.mh-reduced-flash #mh-hint,
       body.mh-reduced-flash #mh-toast,
@@ -827,6 +853,7 @@
       }
       body.mh-reduced-flash #mh-cleared[hidden],
       body.mh-reduced-flash #mh-descend[hidden],
+      body.mh-reduced-flash #mh-shard[hidden],
       body.mh-reduced-flash #mh-fail[hidden],
       body.mh-reduced-flash #mh-hint[hidden],
       body.mh-reduced-flash #mh-toast[hidden],

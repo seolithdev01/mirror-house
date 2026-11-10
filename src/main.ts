@@ -2028,6 +2028,12 @@ function frame(now: number): void {
           campaign = completeTier(campaign);
           save = mergeCampaign(save, campaign); // the shard claim is a save event
           persist(true);
+          // T2/T5 — the T1 adjudication: the claim is celebrated as a 1.8s
+          // interstitial in the tier screen's styling, never the tier screen
+          // itself — the descend below proceeds exactly as on any ramp floor.
+          // (Dwaar II took the full screen in the branch above.)
+          hud.showShardInterstitial();
+          pushCaption('tier', t(lang, 'overlay.shardInterstitial')); // the interstitial's own line
         }
         hud.showCleared(ms, save.best[seed] ?? null, wasBest === undefined || ms < wasBest);
         hud.showDescend();

@@ -2,7 +2,7 @@
 
 A 100-floor, first-person mirror-maze escape game. You descend a century-old palace of glass where reflections deceive you — and the things hunting you. Free, open source, runs in any modern browser, saves live only on your device.
 
-**Status:** **beta** — `0.2.0-beta.1`: the Tier-1 campaign, saves, accessibility, and quality presets of m0–m5, plus m6's venue side-floors (a local venture can host a themed floor — the ☕ Glasshouse Café demo ships in ⚙ → Floors), the Android store build (debug APK proven — [docs/BUILD-STORES.md](docs/BUILD-STORES.md); store submission pending accounts), and the launch kit. **Play it: <https://mirror-house-8fg.pages.dev>** — or run it locally below.
+**Status:** **beta** — `0.2.0-beta.1`: the Tier-1 campaign, saves, accessibility, and quality presets of m0–m5, plus m6's venue side-floors (a local venture can host a themed floor — the ☕ Glasshouse Café demo ships in ⚙ → Floors), the Android store build (debug APK proven — [docs/BUILD-STORES.md](docs/BUILD-STORES.md); store submission pending accounts), and the launch kit. **Tier 2 delivered (2026-11-10): floors 11–20 — the Hall of Ancestors, Taal the Sentinel, ancestor portraits, Dwaar II.** **Play it: <https://mirror-house-8fg.pages.dev>** — or run it locally below.
 
 - [Changelog](CHANGELOG.md) · [Launch kit](docs/LAUNCH.md) · [Store listing](docs/STORE-LISTING.md) · [Store builds](docs/BUILD-STORES.md)
 - [Design blueprint (step001)](docs/superpowers/specs/2026-11-08-mirror-house-design.md)
@@ -33,7 +33,16 @@ You start on floor 1 of a ten-floor tier and go down. Clearing a floor turns its
 
 Floor 5 has a visitor: **Taal**, the beat-walker — a gold-lantern silhouette lurching in time with the music (wall-clock phase, so he keeps the beat even muted). His touch is a temper, not a kill: +20 anger per touch, 1.5 s between touches, and he never takes the floor from you.
 
-Floor 10 is the **Dwaar** — Chhaya's threshold hall, a fixed hand-authored 13×13 labyrinth instead of a procedural floor. Clear it and you claim **✦ Truth-Shard I**: the tier screen counts your floors and banked shards, then offers ↻ Play again (a fresh random base, a new ten-floor spine) or Stay — a free walk through the hall you earned. Your position in the house is saved; close the tab mid-tier and you resume on the floor you left.
+Floor 10 is the **Dwaar** — Chhaya's threshold hall, a fixed hand-authored 13×13 labyrinth instead of a procedural floor. Clear it and you claim **✦ Truth-Shard I**: a brief golden banner (`✦ Truth-Shard I claimed — the house deepens…`) and the descent continues — and from floor 11 the house is dressed for Tier 2. Your position in the house is saved; close the tab mid-tier and you resume on the floor you left.
+
+### Tier 2 — the Hall of Ancestors (floors 11–20)
+
+Below the Dwaar the palace changes register. The halls go warm and dark — amber glass, brown stone, deep-teal trim — the music's melody walker moves to a Durga pentatonic, and the floor chip reads `L11 · T2` … `L19 · T2`. The loop never changes — frost the beacons (four a floor), reach the stair door — but the house deepens around it:
+
+- **Taal is the Sentinel now.** The floor-5 cameo only made the house angrier; from floor 11 his touch **catches**, failing the floor like any Echo. He walks every tier-2 floor on the music's beat — surging on it, nearly still between beats, on a two-second loop you can read in his lantern: bright he strides, dim he crawls. **Cross his corridor on the dim beat.** Frost cannot blind him (he walks the floor, not the glass); the beat is the only telegraph you get.
+- **The ancestors hang in the glass.** Two or three dim portrait silhouettes wall-mount on every tier-2 floor. They are mirrors like any other — the Echoes see you through their clear panes, and one breath of the Frost Lantern fogs their eyes shut for 25 seconds. Fog them like any glass you would rather they did not watch you through.
+- The ramp tightens: five to six Echoes, braids drawn closer, Chhaya 4.5 s behind and tightening to 4.1 s by floor 19.
+- **Floor 20 is Dwaar II** — Taal's threshold hall, a second hand-authored 13×13 layout, broader and more open than Dwaar I (96 open cells — the Sentinel needs room to walk his beat). Clear it to claim **✦ Truth-Shard II**: the full tier screen, floors and banked shards counted, ↻ Play again or Stay — the same contract Dwaar I's tier had in Tier 1.
 
 ### Frost — the only attack you get (`F`)
 
@@ -109,7 +118,7 @@ The run timer starts on your first input and stops when you reach the stair door
 
 ### FAQ
 
-The **? FAQ** button (top right) or the `H` key opens 25 questions in-game: how to move, the views and the tactical map, how the floors and descending work (Dwaar included, and why Taal only makes you angrier), how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, who Aaina is and what her hints cost, where the music comes from, what seeds are, the Daily, where your data lives and what the export file is, whether it works offline and in which languages, what the captions say and where to turn them on, a tour of ⚙ settings and everything you can change there, what a sponsored (venue) floor is and why it never touches your campaign, and the privacy statement in plain words.
+The **? FAQ** button (top right) or the `H` key opens 30 questions in-game: how to move, the views and the tactical map, how the floors and descending work (Dwaar included, and why the floor-5 Taal only makes you angrier), what the Hall of Ancestors below floor 10 is, how to cross Taal now that his touch catches (the dim beat), who the figures in the portrait mirrors are (fog them like any glass), how and why to fog, what makes the house angry, why the stair door is sealed, how to shake Chhaya, who Aaina is and what her hints cost, where the music comes from, what seeds are, the Daily, where your data lives and what the export file is, whether it works offline and in which languages, what the captions say and where to turn them on, a tour of ⚙ settings and everything you can change there, what a sponsored (venue) floor is and why it never touches your campaign, and the privacy statement in plain words.
 
 ### Feedback — 📮
 
@@ -138,7 +147,7 @@ A rejected or corrupt stored save reads as absent: the game boots fresh with sen
 
 ### Install it — it works offline
 
-Mirror House is a PWA. On the production build, use your browser's _Install app_ / _Add to Home Screen_ action: it gets its own window, its own icon (the gold lantern), and a service worker caches the shell and assets — installed once, it loads and plays with the network cut. The whole game ships as a single ~176 KB (gzipped) bundle, so the first load is quick and the offline copy is small.
+Mirror House is a PWA. On the production build, use your browser's _Install app_ / _Add to Home Screen_ action: it gets its own window, its own icon (the gold lantern), and a service worker caches the shell and assets — installed once, it loads and plays with the network cut. The whole game ships as a single ~172 KB (gzipped) bundle, so the first load is quick and the offline copy is small.
 
 ### नमस्ते — English and Hindi
 
