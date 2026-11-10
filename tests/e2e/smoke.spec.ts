@@ -1526,6 +1526,39 @@ test('t2: floor 11 loads tier two', async ({ page }) => {
   expect(snap30.mirrors.portraits).toBe(0);
   expect(snap30.mirrors.total, 'the garden hall hangs its glass').toBeGreaterThan(0);
   await expect(page.locator('#mh-floor')).toHaveText('L30 · DWAAR III ✦');
+
+  // T4/T1 — the tier-four leg of the same census: the Carnival of Faces
+  // carries tier 4, the `· T4` chip suffix, and ZERO portraits AND ZERO
+  // water (the placement gates stay `tier === 2` / `tier === 3` — the
+  // portraits are the Ancestors' alone, the pools the Gardens' alone, and
+  // the tier-4 rng streams stay clean until the distorting mirrors land).
+  await page.goto('/?seed=T4RUN&floor=31');
+  await ready(page);
+  const snap4 = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { tier: h.tier(), floor: h.campaign().floor, mirrors: h.mirrors() };
+  });
+  expect(snap4.tier).toBe(4);
+  expect(snap4.floor).toBe(31);
+  expect(snap4.mirrors.portraits, 'portraits are tier-2-only — the Carnival hangs none').toBe(0);
+  expect(snap4.mirrors.water, 'water is tier-3-only — the Carnival pools none').toBe(0);
+  await expect(page.locator('#mh-floor')).toHaveText('L31 · T4');
+
+  // Dwaar IV — floor 40 builds the hand-authored funhouse hall and names it;
+  // Act I's threshold (the act screen itself is a clear-flow overlay, pinned
+  // by the campaign/save unit suites).
+  await page.goto('/?seed=T4RUN&floor=40');
+  await ready(page);
+  const snap40 = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { tier: h.tier(), floor: h.campaign().floor, mirrors: h.mirrors() };
+  });
+  expect(snap40.tier).toBe(4);
+  expect(snap40.floor).toBe(40);
+  expect(snap40.mirrors.portraits).toBe(0);
+  expect(snap40.mirrors.water).toBe(0);
+  expect(snap40.mirrors.total, 'the funhouse hall hangs its glass').toBeGreaterThan(0);
+  await expect(page.locator('#mh-floor')).toHaveText('L40 · DWAAR IV ✦');
   expect(errors).toEqual([]);
 });
 

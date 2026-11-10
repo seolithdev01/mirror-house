@@ -70,8 +70,10 @@ export const TIER_THREE_PALETTE: TierPalette = {
 
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
  *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
- *  retired. */
-export function paletteForTier(tier: 1 | 2 | 3): TierPalette {
+ *  retired. T4/T1: tier 4 (the Carnival of Faces) keeps the tier-one night
+ *  palette FOR NOW — the carnival's rose/magenta set arrives with T4/T4's
+ *  palette task, whose commit replaces this fallthrough. */
+export function paletteForTier(tier: 1 | 2 | 3 | 4): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
   return TIER_ONE_PALETTE;

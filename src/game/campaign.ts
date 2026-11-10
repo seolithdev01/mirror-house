@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   DWAAR_FLOOR,
+  TIER_FOUR_FLOORS,
   TIER_ONE_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
@@ -41,28 +42,44 @@ export function floorSeed(c: Campaign): string {
 /** Stair Door transition: one floor deeper. Tier completion never happens
  *  here — but LEAVING a Dwaar floor re-arms the tier flag for the tier
  *  below (Act I continues past Dwaar I), so the single `tierComplete` flag
- *  always reads "the CURRENT tier's threshold has been claimed". */
+ *  always reads "the CURRENT tier's threshold has been claimed".
+ *  T4: the campaign is TERMINAL at floor 40 (Dwaar IV closes Act I, spec
+ *  §2.3) — descend there is a NO-OP that returns the same object, so the
+ *  act-completion screen is the end of the house until Act II exists. */
 export function descend(c: Campaign): Campaign {
+  if (c.floor >= TIER_FOUR_FLOORS) return c; // Act I ends at 40 — no floor 41 yet
   const next: Campaign = { ...c, floor: c.floor + 1 };
   return isDwaar(c.floor) ? { ...next, tierComplete: false } : next;
 }
 
 /** Truth-Shard claim: only takes effect standing on a Dwaar floor —
- *  Dwaar I (10), Dwaar II (20) or Dwaar III (30). The flag stays single:
- *  each tier's completion sets it again after the descent from the tier
- *  above re-armed it. */
+ *  Dwaar I (10), Dwaar II (20), Dwaar III (30) or Dwaar IV (40). The flag
+ *  stays single: each tier's completion sets it again after the descent
+ *  from the tier above re-armed it. */
 export function completeTier(c: Campaign): Campaign {
   return isDwaar(c.floor) ? { ...c, tierComplete: true } : c;
 }
 
-/** Which tier a floor belongs to: 1–10 → 1, 11–20 → 2, 21–30 → 3. */
-export function tierOf(floor: number): 1 | 2 | 3 {
-  return floor > TIER_TWO_FLOORS ? 3 : floor > TIER_ONE_FLOORS ? 2 : 1;
+/** Which tier a floor belongs to: 1–10 → 1, 11–20 → 2, 21–30 → 3,
+ *  31–40 → 4. */
+export function tierOf(floor: number): 1 | 2 | 3 | 4 {
+  return floor > TIER_THREE_FLOORS
+    ? 4
+    : floor > TIER_TWO_FLOORS
+      ? 3
+      : floor > TIER_ONE_FLOORS
+        ? 2
+        : 1;
 }
 
 /** The Dwaar threshold halls occupy the last floor of each tier. */
 export function isDwaar(floor: number): boolean {
-  return floor === DWAAR_FLOOR || floor === TIER_TWO_FLOORS || floor === TIER_THREE_FLOORS;
+  return (
+    floor === DWAAR_FLOOR ||
+    floor === TIER_TWO_FLOORS ||
+    floor === TIER_THREE_FLOORS ||
+    floor === TIER_FOUR_FLOORS
+  );
 }
 
 /** Best-time save key for the current floor (per-floor bucket, not per-run). */
@@ -87,10 +104,26 @@ export function bestKey(c: Campaign): string {
  *  tier's teeth, not the echo count);
  *  beacons = 4 on every floor;
  *  braid = 0.24 + 0.004*(floor-21);
- *  chhayaDelayMs = max(3600, 4200 - 60*(floor-21)) (Dwaar III 3400). */
+ *  chhayaDelayMs = max(3600, 4200 - 60*(floor-21)) (Dwaar III 3400).
+ *
+ *  T4 — floors 31..TIER_FOUR_FLOORS (the Carnival of Faces):
+ *  echoes = 5 on every floor, Dwaar IV included — a DELIBERATE step DOWN
+ *  from tier three's 6 (the ratified playability call: three lethal
+ *  Sentinels walk tier 4, so the echoes yield the stage);
+ *  beacons = 4 on every floor;
+ *  braid = 0.28 + 0.004*(floor-31);
+ *  chhayaDelayMs = max(3200, 3800 - 60*(floor-31)) (Dwaar IV 3000). */
 export function floorParams(floor: number): FloorRamp {
-  const f = Math.min(Math.max(floor, 1), TIER_THREE_FLOORS);
+  const f = Math.min(Math.max(floor, 1), TIER_FOUR_FLOORS);
   const dwaar = isDwaar(f);
+  if (f > TIER_THREE_FLOORS) {
+    return {
+      echoes: 5,
+      beacons: 4,
+      braid: 0.28 + 0.004 * (f - TIER_THREE_FLOORS - 1),
+      chhayaDelayMs: dwaar ? 3000 : Math.max(3200, 3800 - 60 * (f - TIER_THREE_FLOORS - 1)),
+    };
+  }
   if (f > TIER_TWO_FLOORS) {
     return {
       echoes: 6,
@@ -182,9 +215,36 @@ export const DWAAR_III_LAYOUT: readonly string[] = [
   '#############',
 ];
 
+/** Hand-authored Dwaar IV — the funhouse hall, floor 40, where Act I closes.
+ *  13×13 like its elders, 101 open cells: a carnival funhouse whose walls
+ *  are OFFSET ALCOVES — four single-pocket recesses tucked against the
+ *  outer walls, one per wall, each rotated one position on from the last
+ *  (never aligned with the compass axes, the stagger that makes the hall
+ *  dizzy) — around a central RING/CAROUSEL: a Chebyshev-radius-2 ring of 12
+ *  wall cells with EXACTLY 4 gaps at the compass midpoints, its 3×3 center
+ *  chamber standing open (the carousel you circle while the Sentinels
+ *  circle you). Invariant under 180° rotation so the exit mirrors the
+ *  entrance; all 101 open cells form one connected component. */
+export const DWAAR_IV_LAYOUT: readonly string[] = [
+  '#############',
+  '#..#.#......#',
+  '#...........#',
+  '#..........##',
+  '#...##.##...#',
+  '#...#...#..##',
+  '#...........#',
+  '##..#...#...#',
+  '#...##.##...#',
+  '##..........#',
+  '#...........#',
+  '#......#.#..#',
+  '#############',
+];
+
 /** The hand-authored layout of a Dwaar floor: Dwaar I at 10, Dwaar II at 20,
- *  Dwaar III at 30. */
+ *  Dwaar III at 30, Dwaar IV at 40. */
 function dwaarLayout(floor: number): readonly string[] {
+  if (floor === TIER_FOUR_FLOORS) return DWAAR_IV_LAYOUT;
   if (floor === TIER_THREE_FLOORS) return DWAAR_III_LAYOUT;
   return floor === TIER_TWO_FLOORS ? DWAAR_II_LAYOUT : DWAAR_LAYOUT;
 }
@@ -192,7 +252,8 @@ function dwaarLayout(floor: number): readonly string[] {
 /** Open-cell derivation from a Dwaar layout, row-major (first open cell is
  *  the entrance; a FloorGrid built from this opens edges between adjacent
  *  open cells only — see maze.floorFromGrid). Defaults to Dwaar I; floor 20
- *  reads DWAAR_II_LAYOUT, floor 30 DWAAR_III_LAYOUT. */
+ *  reads DWAAR_II_LAYOUT, floor 30 DWAAR_III_LAYOUT, floor 40
+ *  DWAAR_IV_LAYOUT. */
 export function dwaarGrid(floor: number = DWAAR_FLOOR): {
   width: number;
   height: number;

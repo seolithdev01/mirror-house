@@ -2,12 +2,7 @@
 import * as THREE from 'three';
 import { APP_VERSION } from './appVersion';
 import { createAudioEngine } from './audio/engine';
-import {
-  intensityFrom,
-  TIER_ONE_SCALE,
-  TIER_THREE_SCALE,
-  TIER_TWO_SCALE,
-} from './audio/theory';
+import { intensityFrom, TIER_ONE_SCALE, TIER_THREE_SCALE, TIER_TWO_SCALE } from './audio/theory';
 import {
   ANGER_MAX,
   CELL_SIZE,
@@ -23,7 +18,7 @@ import {
   SHARD_BEACON,
   TAAL_FLOOR,
   TAAL_SENTINEL_FLOOR,
-  TIER_THREE_FLOORS,
+  TIER_FOUR_FLOORS,
   TIER_TWO_FLOORS,
 } from './engine/constants';
 import {
@@ -222,7 +217,8 @@ function bootFloorFromUrl(): number {
   if (!import.meta.env.DEV) return 1; // the floor jump is a dev-only affordance
   const n = Number.parseInt(urlParams.get('floor') ?? '', 10);
   // T3/T1 — widened with the campaign: floors 21–30 jump too (the e2e legs).
-  return Number.isInteger(n) && n >= 1 && n <= TIER_THREE_FLOORS ? n : 1;
+  // T4/T1 — and 31–40: the carnival legs jump the same way.
+  return Number.isInteger(n) && n >= 1 && n <= TIER_FOUR_FLOORS ? n : 1;
 }
 /** Migration reads the legacy localStorage meta v1 ONCE; unreadable → null
  *  (a fresh default, never a dead boot). The localStorage copy is left in
@@ -645,8 +641,7 @@ function aainaContext(): HintContext {
 function gherObjectives(): CellIndex[] {
   const cells: CellIndex[] = allMirrors
     .filter(
-      (m) =>
-        m.kind === 'beacon' && !(mirrorRuntime.find((r) => r.id === m.id)?.captured ?? false),
+      (m) => m.kind === 'beacon' && !(mirrorRuntime.find((r) => r.id === m.id)?.captured ?? false),
     )
     .map((m) => ({ x: m.cellX, y: m.cellY }));
   cells.push({ x: floor.exit.x, y: floor.exit.y });
@@ -1027,23 +1022,33 @@ function teardownFloor(): void {
 }
 
 /** The floor chip: `L02` on the tier-one ramp; tier two floors carry the
- *  `· T2` suffix (`L14 · T2`), tier three the `· T3` suffix (`L24 · T3`);
- *  the threshold floors name their Dwaar (`L10 · DWAAR I ✦`, `L20 · DWAAR
- *  II ✦`, `L30 · DWAAR III ✦`).
+ *  `· T2` suffix (`L14 · T2`), tier three the `· T3` suffix (`L24 · T3`),
+ *  tier four the `· T4` suffix (`L34 · T4`); the threshold floors name their
+ *  Dwaar (`L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`,
+ *  `L40 · DWAAR IV ✦`).
  *  M4/T6: the `L`/`स्तर` prefix, the `DWAAR`/`द्वार` name and the tier
  *  suffix localize. */
 function floorChipLabel(c: Campaign): string {
   const tag = `${t(lang, 'chip.floor')}${String(c.floor).padStart(2, '0')}`;
   if (isDwaar(c.floor)) {
-    const numeral = c.floor === DWAAR_FLOOR ? 'I' : c.floor === TIER_TWO_FLOORS ? 'II' : 'III';
+    const numeral =
+      c.floor === DWAAR_FLOOR
+        ? 'I'
+        : c.floor === TIER_TWO_FLOORS
+          ? 'II'
+          : c.floor === TIER_FOUR_FLOORS
+            ? 'IV'
+            : 'III';
     return `${tag} · ${t(lang, 'chip.dwaar')} ${numeral} ✦`;
   }
   const tier = tierOf(c.floor);
-  return tier === 2
-    ? `${tag} · ${t(lang, 'chip.tier')}`
+  return tier === 4
+    ? `${tag} · ${t(lang, 'chip.tier4')}`
     : tier === 3
       ? `${tag} · ${t(lang, 'chip.tier3')}`
-      : tag;
+      : tier === 2
+        ? `${tag} · ${t(lang, 'chip.tier')}`
+        : tag;
 }
 
 /** Build the campaign's current floor. Floors 1–9 come from the procedural
@@ -1072,7 +1077,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     pack !== null
       ? generateFloor({ ...TIER_ONE, seed, ...vp!.mazeOverrides }) // always procedural, pack-shaped
       : isDwaar(c.floor)
-        ? floorFromGrid(dwaarGrid(c.floor), seed) // Dwaar I (10), II (20) or III (30)
+        ? floorFromGrid(dwaarGrid(c.floor), seed) // Dwaar I (10), II (20), III (30) or IV (40)
         : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
   exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
@@ -1082,8 +1087,11 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // set untouched. The melody moves with it (T3/T4): Durga pentatonic on
   // tier-2 floors, the pastoral pentatonic AND the flute voice (sine) on
   // tier-3 — swapped live (next note uses them; the drone root never moves).
-  // Venue side-floors stay tier-one dressed — scale AND voice: a return from
-  // a sponsored floor resets both to the tier-one pair.
+  // T4/T1: tier 4 (floors 31–40) rides the tier-one pair for now — the
+  // mischievous fourth scale + the carnival palette land with T4/T4's
+  // dressing commit (voice already reads 'triangle', the carnival's final
+  // map). Venue side-floors stay tier-one dressed — scale AND voice: a
+  // return from a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
   if (pack === null) {
     audio.setScale(tier === 2 ? TIER_TWO_SCALE : tier === 3 ? TIER_THREE_SCALE : TIER_ONE_SCALE);
@@ -2183,9 +2191,12 @@ function frame(now: number): void {
     // halts, exactly as before — and what happens NEXT depends on the floor:
     // procedural floors hold 0.8s behind the `descending…` overlay then
     // rebuild one floor deeper; a Dwaar claims its Truth-Shard. Dwaar I (10)
-    // descends into the Hall of Ancestors and Dwaar II (20) into the
-    // Reflecting Gardens — Acts I and II continue (T3/T1: the interstitial,
-    // tier-appropriately worded); Dwaar III (30) raises the tier screen.
+    // descends into the Hall of Ancestors, Dwaar II (20) into the Reflecting
+    // Gardens and Dwaar III (30) into the Carnival of Faces — Acts I and II
+    // continue (T3/T1 + T4/T1: the interstitial, tier-appropriately worded);
+    // Dwaar IV (40) raises the ACT I completion screen (T4/T1) — the
+    // campaign is terminal there; descend() is a no-op, so the act screen is
+    // the end of the house until Act II exists.
     phase = clearRun(phase, now);
     if (venue !== null) {
       // M6/T1 — the SIDE-FLOOR clear: the sim halts and NOTHING banks — no
@@ -2215,37 +2226,45 @@ function frame(now: number): void {
       house = { ...house, shards: 0 };
       persist(true); // a cleared floor banks NOW — no debounce window
       updateShardsChip(); // chip flips from `banked (+pending)` to plain banked
-      if (isDwaar(campaign.floor) && tierOf(campaign.floor) === 3) {
-        // Dwaar III: the LAST tier's Truth-Shard claims it — the screen, not
-        // the stairs (Play again / Stay, the same contract the tiers above had).
+      if (isDwaar(campaign.floor) && tierOf(campaign.floor) === 4) {
+        // Dwaar IV (40): Truth-Shard IV closes ACT I (spec §2.3) — the act
+        // screen, not the stairs (Play again / Stay on the tier-complete
+        // overlay re-styled as the act close). No descendAt arms below, and
+        // campaign.descend is a no-op at 40 anyway — the house ends here
+        // until Act II exists.
         campaign = completeTier(campaign);
-        save = mergeCampaign(save, campaign); // tier complete is a save event
+        save = mergeCampaign(save, campaign); // the act close is a save event
         persist(true);
-        hud.showTierComplete({ tier: 3, floors: TIER_THREE_FLOORS, shards: save.shards });
-        pushCaption('tier', t(lang, 'overlay.tierTitle3')); // M5/T3 — the tier line is the overlay's own
+        hud.showTierComplete({ tier: 4, floors: TIER_FOUR_FLOORS, shards: save.shards });
+        pushCaption('tier', t(lang, 'overlay.actTitle')); // the act line is the overlay's own
       } else {
         if (isDwaar(campaign.floor)) {
-          // Dwaar I (10) and Dwaar II (20): the Truth-Shard is claimed and
-          // banked — but the act continues DOWN. The stair door holds 0.8s
-          // like any ramp floor, then opens into the next tier's halls; the
-          // descent re-arms the tier flag so the new tier's floors pay their
-          // first-clear bonus (campaign.descend).
+          // Dwaar I (10), II (20) and III (30): the Truth-Shard is claimed
+          // and banked — but the act continues DOWN. The stair door holds
+          // 0.8s like any ramp floor, then opens into the next tier's halls;
+          // the descent re-arms the tier flag so the new tier's floors pay
+          // their first-clear bonus (campaign.descend).
           campaign = completeTier(campaign);
           save = mergeCampaign(save, campaign); // the shard claim is a save event
           persist(true);
           // T2/T5 — the T1 adjudication: the claim is celebrated as a 1.8s
           // interstitial in the tier screen's styling, never the tier screen
           // itself — the descend below proceeds exactly as on any ramp floor.
-          // T3/T1: Dwaar II joins Dwaar I here (the full screen is Dwaar
-          // III's now) and the banner names its own shard.
-          hud.showShardInterstitial(campaign.floor === DWAAR_FLOOR ? 1 : 2);
+          // T3/T1: Dwaar II joins Dwaar I here. T4/T1: Dwaar III cascades the
+          // same way (the full screen is the ACT CLOSE's now) and the banner
+          // names its own shard.
+          hud.showShardInterstitial(
+            campaign.floor === DWAAR_FLOOR ? 1 : campaign.floor === TIER_TWO_FLOORS ? 2 : 3,
+          );
           pushCaption(
             'tier',
             t(
               lang,
               campaign.floor === DWAAR_FLOOR
                 ? 'overlay.shardInterstitial'
-                : 'overlay.shardInterstitial2',
+                : campaign.floor === TIER_TWO_FLOORS
+                  ? 'overlay.shardInterstitial2'
+                  : 'overlay.shardInterstitial3',
             ),
           ); // the interstitial's own line
         }

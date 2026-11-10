@@ -200,3 +200,42 @@ describe('i18n — the T3 tier-three chrome', () => {
     expect(CHIP_KEYS).toContain('chip.tier3');
   });
 });
+
+// T4/T1 — the tier-four chrome: the T4 floor-chip suffix, Dwaar III's new
+// interstitial (the tier screen now belongs to the ACT close), and the
+// Act I completion screen that Dwaar IV raises.
+describe('i18n — the T4 tier-four + Act I chrome', () => {
+  it('en pins the tier-four chip, the Truth-Shard III interstitial and the act screen verbatim', () => {
+    expect(STRINGS.en['chip.tier4']).toBe('T4');
+    expect(STRINGS.en['overlay.shardInterstitial3']).toBe(
+      '✦ Truth-Shard III claimed — the house deepens…',
+    );
+    expect(STRINGS.en['overlay.actTitle']).toBe('ACT I COMPLETE — The Trap');
+    expect(STRINGS.en['overlay.actNote']).toBe(
+      'Act II: The Deception — the house will start copying you…',
+    );
+  });
+
+  it('hi carries its own authored lines (Devanagari, never copies of en)', () => {
+    for (const k of [
+      'chip.tier4',
+      'overlay.shardInterstitial3',
+      'overlay.actTitle',
+      'overlay.actNote',
+    ]) {
+      expect(STRINGS.hi[k], k).toMatch(/[\u0900-\u097F]/);
+      expect(STRINGS.hi[k], k).not.toBe(STRINGS.en[k]);
+    }
+  });
+
+  it('chip.tier4 is enumerated as a chip (single-line hi discipline applies)', () => {
+    expect(CHIP_KEYS).toContain('chip.tier4');
+  });
+
+  it('the act screen reuses the tier stats line — 40 floors reads naturally in both languages', () => {
+    expect(fill(STRINGS.en['overlay.tierStats']!, { floors: 40, shards: 120 })).toBe(
+      '40 floors cleared · 120 shards banked',
+    );
+    expect(fill(STRINGS.hi['overlay.tierStats']!, { floors: 40, shards: 120 })).toContain('40');
+  });
+});

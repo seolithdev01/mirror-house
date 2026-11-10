@@ -79,13 +79,16 @@ export interface Hud {
    *  clear raises the tier-complete styling as a 1.8s auto-dismiss banner —
    *  the 0.8s descend hold beneath it is untouched, and the banner owns its
    *  own clock (a floor rebuild never hides it). T3/T1: Dwaar II takes the
-   *  same banner (`which: 2` names its own shard line); Dwaar III keeps the
-   *  full tier screen (`showTierComplete`). */
-  showShardInterstitial(which?: 1 | 2): void;
+   *  same banner (`which: 2` names its own shard line). T4/T1: Dwaar III
+   *  cascades to the same banner (`which: 3`) — the full screen belongs to
+   *  the ACT CLOSE Dwaar IV raises (`showTierComplete({ tier: 4 })`). */
+  showShardInterstitial(which?: 1 | 2 | 3): void;
   /** M4/T2 — the Truth-Shard tier-complete screen (Play again / Stay).
    *  T2/T1 — `tier` picks the screen's title: 1 = Dwaar I, 2 = Dwaar II.
-   *  T3/T1 — 3 = Dwaar III (the last tier's screen). */
-  showTierComplete(stats: { tier: 1 | 2 | 3; floors: number; shards: number }): void;
+   *  T3/T1 — 3 = Dwaar III. T4/T1 — 4 = Dwaar IV, the ACT I completion
+   *  screen: the same overlay re-styled (the `.act` class), the campaign
+   *  stats line, and the Act II teaser in place of the free-walk note. */
+  showTierComplete(stats: { tier: 1 | 2 | 3 | 4; floors: number; shards: number }): void;
   hideTier(): void;
   showFail(reason: string): void;
   hideFail(): void;
@@ -323,7 +326,7 @@ export function createHud(init: HudInit): Hud {
   let toastTimer = 0; // the toast's own hide timer (re-toast restarts the clock)
   // T2/T5 — the interstitial's own hide clock, same contract as the toast's.
   // T3/T1 — the live shard line (I or II), so setLang re-localizes the banner
-  // that is actually on screen.
+  // that is actually on screen. T4/T1 — III joins the set.
   let shardTimer = 0;
   let shardKey = 'overlay.shardInterstitial';
   // M4/T6 — the last values fed to the value-bearing setters, so setLang() can
@@ -331,7 +334,7 @@ export function createHud(init: HudInit): Hud {
   // re-feeding them. Derived display state, not a second truth: the values'
   // owners still write them.
   let muted = false;
-  let lastTierStats: { tier: 1 | 2 | 3; floors: number; shards: number } | null = null;
+  let lastTierStats: { tier: 1 | 2 | 3 | 4; floors: number; shards: number } | null = null;
   const lastChips: {
     streak?: number;
     bestMs?: number | null;
@@ -370,9 +373,21 @@ export function createHud(init: HudInit): Hud {
 
   /** The tier screen's title key — one place, so the three call sites
    *  (relabelStatic, showTierComplete, setLang) can never drift apart.
-   *  T3/T1: tier 3 names Dwaar III's Truth-Shard III screen. */
-  const tierTitleKey = (tier: 1 | 2 | 3): string =>
-    tier === 3 ? 'overlay.tierTitle3' : tier === 2 ? 'overlay.tierTitle2' : 'overlay.tierTitle';
+   *  T3/T1: tier 3 names Dwaar III's Truth-Shard III screen. T4/T1: tier 4
+   *  names the ACT I completion screen Dwaar IV raises. */
+  const tierTitleKey = (tier: 1 | 2 | 3 | 4): string =>
+    tier === 4
+      ? 'overlay.actTitle'
+      : tier === 3
+        ? 'overlay.tierTitle3'
+        : tier === 2
+          ? 'overlay.tierTitle2'
+          : 'overlay.tierTitle';
+
+  /** The tier screen's note key — the free-walk line for the tier screens,
+   *  the Act II teaser for the act close (T4/T1). */
+  const tierNoteKey = (tier: 1 | 2 | 3 | 4): string =>
+    tier === 4 ? 'overlay.actNote' : 'overlay.tierNote';
 
   /** One place that knows every static chrome label — boot and setLang().
    *  M5/T6: every HUD button also carries an aria-label from the same table —
@@ -417,7 +432,7 @@ export function createHud(init: HudInit): Hud {
     playAgain.setAttribute('aria-label', t(lang, 'misc.playAgain'));
     stay.textContent = t(lang, 'misc.stay');
     stay.setAttribute('aria-label', t(lang, 'misc.stay'));
-    tierNote.textContent = t(lang, 'overlay.tierNote');
+    tierNote.textContent = t(lang, tierNoteKey(lastTierStats?.tier ?? 1));
   }
   relabelStatic();
 
@@ -485,8 +500,13 @@ export function createHud(init: HudInit): Hud {
     hideDescend: () => {
       descend.hidden = true;
     },
-    showShardInterstitial: (which: 1 | 2 = 1) => {
-      shardKey = which === 2 ? 'overlay.shardInterstitial2' : 'overlay.shardInterstitial';
+    showShardInterstitial: (which: 1 | 2 | 3 = 1) => {
+      shardKey =
+        which === 3
+          ? 'overlay.shardInterstitial3'
+          : which === 2
+            ? 'overlay.shardInterstitial2'
+            : 'overlay.shardInterstitial';
       shard.textContent = t(lang, shardKey);
       shard.hidden = false;
       window.clearTimeout(shardTimer);
@@ -498,6 +518,12 @@ export function createHud(init: HudInit): Hud {
       lastTierStats = stats;
       tierTitle.textContent = t(lang, tierTitleKey(stats.tier));
       tierStats.textContent = fill(t(lang, 'overlay.tierStats'), stats);
+      // T4/T1 — the act close swaps the note line for the Act II tease (the
+      // free-walk note belongs to the tier screens); setLang re-pins it.
+      tierNote.textContent = t(lang, tierNoteKey(stats.tier));
+      // T4/T1 — the act close dresses the same card in the carnival's rose
+      // (index.html's `#mh-tier-box.act`); the tier screens keep the gold.
+      tierBox.classList.toggle('act', stats.tier === 4);
       tier.hidden = false;
     },
     hideTier: () => {
@@ -532,8 +558,9 @@ export function createHud(init: HudInit): Hud {
       if (lastTierStats !== null && !tier.hidden) {
         tierTitle.textContent = t(lang, tierTitleKey(lastTierStats.tier));
         tierStats.textContent = fill(t(lang, 'overlay.tierStats'), lastTierStats);
+        tierNote.textContent = t(lang, tierNoteKey(lastTierStats.tier)); // T4/T1 — the act tease flips too
       }
-      if (!shard.hidden) shard.textContent = t(lang, shardKey); // T2/T5, T3/T1 — the live line
+      if (!shard.hidden) shard.textContent = t(lang, shardKey); // T2/T5, T3/T1, T4/T1 — the live line
     },
     captionBar,
     root,

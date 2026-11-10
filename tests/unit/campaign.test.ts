@@ -8,6 +8,7 @@ import {
   descend,
   DWAAR_II_LAYOUT,
   DWAAR_III_LAYOUT,
+  DWAAR_IV_LAYOUT,
   DWAAR_LAYOUT,
   dwaarGrid,
   floorParams,
@@ -21,6 +22,7 @@ import {
   DWAAR_FLOOR,
   TAAL_FLOOR,
   TIER_ONE_FLOORS,
+  TIER_FOUR_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
 } from '../../src/engine/constants';
@@ -76,6 +78,10 @@ describe('campaign constants', () => {
   it('pins the tier-three campaign constant — 30 floors, Dwaar III on the last', () => {
     expect(TIER_THREE_FLOORS).toBe(30);
   });
+
+  it('pins the tier-four campaign constant — 40 floors, Dwaar IV on the last (Act I closes)', () => {
+    expect(TIER_FOUR_FLOORS).toBe(40);
+  });
 });
 
 describe('tierOf', () => {
@@ -93,6 +99,13 @@ describe('tierOf', () => {
     expect(tierOf(24)).toBe(3);
     expect(tierOf(29)).toBe(3);
     expect(tierOf(30)).toBe(3);
+  });
+
+  it('T4 — splits the campaign at floor 30: 31–40 → 4 (the Carnival of Faces)', () => {
+    expect(tierOf(31)).toBe(4);
+    expect(tierOf(34)).toBe(4);
+    expect(tierOf(39)).toBe(4);
+    expect(tierOf(40)).toBe(4);
   });
 });
 
@@ -162,6 +175,30 @@ describe('descend', () => {
     const d = descend({ seedBase: 'DDDD', floor: TIER_TWO_FLOORS, tierComplete: true });
     expect(d).toEqual({ seedBase: 'DDDD', floor: 21, tierComplete: false });
   });
+
+  it('T4 — leaving Dwaar III re-arms the tier flag for tier four (Act I continues)', () => {
+    // the claim at floor 30 sets the flag; the stairs into the Carnival of
+    // Faces clear it so tier-four floors pay their first-clear bonus
+    const d = descend({ seedBase: 'DDDD', floor: TIER_THREE_FLOORS, tierComplete: true });
+    expect(d).toEqual({ seedBase: 'DDDD', floor: 31, tierComplete: false });
+  });
+
+  it('T4 — walks the whole campaign 1..40', () => {
+    let c = newCampaign('CCCC');
+    for (let i = 2; i <= TIER_FOUR_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(TIER_FOUR_FLOORS);
+  });
+
+  it('T4 — descend at floor 40 is a NO-OP returning the same object (the campaign is terminal)', () => {
+    // §2.3 — Act I ends at Dwaar IV: there is no floor 41 until Act II
+    // exists, so the stair door at 40 opens onto the act screen and the
+    // descend itself must refuse — the SAME object back, not a copy.
+    const at40 = { seedBase: 'TTTT', floor: TIER_FOUR_FLOORS, tierComplete: true };
+    expect(descend(at40)).toBe(at40);
+    expect(descend(at40)).toEqual({ seedBase: 'TTTT', floor: 40, tierComplete: true });
+    // the flag survives the no-op untouched (no re-arm past the act close)
+    expect(at40.tierComplete).toBe(true);
+  });
 });
 
 describe('completeTier', () => {
@@ -204,6 +241,20 @@ describe('completeTier', () => {
     const c = { seedBase: 'GGGG', floor: 27, tierComplete: false };
     expect(completeTier(c)).toEqual(c);
   });
+
+  it('T4 — flags completion at Dwaar IV, the single flag set a fourth time at floor 40', () => {
+    let c = newCampaign('DDDD');
+    for (let i = 1; i < TIER_FOUR_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(40);
+    expect(c.tierComplete).toBe(false); // the descent from 30 re-armed it
+    const done = completeTier(c);
+    expect(done.tierComplete).toBe(true);
+  });
+
+  it('T4 — is a no-op on tier-four procedural floors 31..39', () => {
+    const c = { seedBase: 'HHHH', floor: 37, tierComplete: false };
+    expect(completeTier(c)).toEqual(c);
+  });
 });
 
 describe('isDwaar', () => {
@@ -220,6 +271,14 @@ describe('isDwaar', () => {
     expect(isDwaar(DWAAR_FLOOR)).toBe(true);
     expect(isDwaar(TIER_TWO_FLOORS)).toBe(true);
     expect(isDwaar(TIER_THREE_FLOORS)).toBe(true);
+  });
+
+  it('T4 — Dwaar IV joins the set at floor 40; 31..39 stay procedural', () => {
+    expect(isDwaar(TIER_FOUR_FLOORS)).toBe(true);
+    expect(isDwaar(40)).toBe(true);
+    expect(isDwaar(31)).toBe(false);
+    expect(isDwaar(39)).toBe(false);
+    expect(isDwaar(41)).toBe(false); // past the act close — never a Dwaar
   });
 });
 
@@ -294,8 +353,11 @@ describe('floorParams tier-two ramp (floors 11–20 pinned)', () => {
       expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(4000);
   });
 
-  it('clamps floors past the campaign to the Dwaar III values (T3)', () => {
-    expect(floorParams(99)).toEqual(floorParams(TIER_THREE_FLOORS));
+  it('clamps floors past the campaign to the terminal floor (T4: Dwaar IV)', () => {
+    // T3 pinned this to the Dwaar III values; T4 widened the campaign to 40,
+    // so the clamp now lands on Dwaar IV's ramp row.
+    expect(floorParams(99)).toEqual(floorParams(TIER_FOUR_FLOORS));
+    expect(floorParams(99)).not.toEqual(floorParams(TIER_THREE_FLOORS));
   });
 
   it('leaves every tier-one pin untouched (the tier-one experience is frozen)', () => {
@@ -528,6 +590,165 @@ describe('dwaarGrid floor 30', () => {
     expect(g.open.length).toBe(107);
     expect(g.open[0]).toEqual({ x: 1, y: 1 });
     for (const c of g.open) expect(DWAAR_III_LAYOUT[c.y]![c.x]).toBe('.');
+    const seen = new Set(g.open.map((c) => `${c.x},${c.y}`));
+    expect(seen.size).toBe(g.open.length); // no duplicates
+    const sorted = [...g.open].sort((a, b) => a.y - b.y || a.x - b.x);
+    expect(g.open).toEqual(sorted); // row-major order (entrance = first open cell)
+  });
+});
+
+// T4/T1 — the Carnival of Faces ramp. ECHOES STEP DOWN from tier three's 6
+// to 5 on every floor including Dwaar IV — a deliberate playability call:
+// the tier's teeth are the THREE accumulated lethal Sentinels, not the echo
+// count (the plan's Global Constraints ratify it).
+describe('floorParams tier-four ramp (floors 31–40 pinned)', () => {
+  // echoes = 5 on every floor (Dwaar IV fixed 5 too); beacons 4;
+  // braid = 0.28 + 0.004*(f-31);
+  // chhayaDelayMs = max(3200, 3800 - 60*(f-31)) (Dwaar IV 3000).
+  const pinned: [number, number, number, number, number][] = [
+    // floor, echoes, beacons, braid, chhayaDelayMs
+    [31, 5, 4, 0.28, 3800],
+    [32, 5, 4, 0.284, 3740],
+    [33, 5, 4, 0.288, 3680],
+    [34, 5, 4, 0.292, 3620],
+    [35, 5, 4, 0.296, 3560],
+    [36, 5, 4, 0.3, 3500],
+    [37, 5, 4, 0.304, 3440],
+    [38, 5, 4, 0.308, 3380],
+    [39, 5, 4, 0.312, 3320],
+    [40, 5, 4, 0.316, 3000],
+  ];
+
+  it('matches the pinned ramp for every tier-four floor', () => {
+    expect(pinned.length).toBe(TIER_FOUR_FLOORS - TIER_THREE_FLOORS);
+    for (const [floor, echoes, beacons, braid, delay] of pinned) {
+      const p = floorParams(floor);
+      expect(p.echoes, `floor ${floor} echoes`).toBe(echoes);
+      expect(p.beacons, `floor ${floor} beacons`).toBe(beacons);
+      expect(p.braid, `floor ${floor} braid`).toBeCloseTo(braid, 10);
+      expect(p.chhayaDelayMs, `floor ${floor} chhayaDelayMs`).toBe(delay);
+    }
+  });
+
+  it('echoes step DOWN from tier three: 5 on 31 vs 6 on 30 (the playability call)', () => {
+    // three lethal Sentinels walk tier 4 (Taal + Gher + Aavart-to-come) —
+    // the echoes yield the stage, documented and pinned.
+    expect(floorParams(TIER_THREE_FLOORS).echoes).toBe(6);
+    expect(floorParams(31).echoes).toBe(5);
+    expect(floorParams(40).echoes).toBe(5); // Dwaar IV included — the hall's teeth are the Sentinels
+  });
+
+  it('delays never drop below the 3200 clamp on tier-four procedural floors', () => {
+    for (let f = TIER_THREE_FLOORS + 1; f < TIER_FOUR_FLOORS; f++)
+      expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(3200);
+  });
+
+  it('leaves every tier-one/three pin untouched (floors 1–30 are frozen)', () => {
+    expect(floorParams(30)).toEqual({ echoes: 6, beacons: 4, braid: 0.276, chhayaDelayMs: 3400 });
+    expect(floorParams(21)).toEqual({ echoes: 6, beacons: 4, braid: 0.24, chhayaDelayMs: 4200 });
+    expect(floorParams(10)).toEqual({ echoes: 4, beacons: 4, braid: 0.21, chhayaDelayMs: 4000 });
+  });
+});
+
+describe('DWAAR_IV_LAYOUT — the funhouse hall (floor 40, Act I closes)', () => {
+  it('is 13 rows of 13 chars, walls and open cells only', () => {
+    expect(DWAAR_IV_LAYOUT.length).toBe(13);
+    for (const row of DWAAR_IV_LAYOUT) {
+      expect(row.length).toBe(13);
+      expect(row).toMatch(/^[#.]{13}$/);
+    }
+  });
+
+  it('is symmetric under 180° rotation', () => {
+    for (let y = 0; y < 13; y++)
+      for (let x = 0; x < 13; x++)
+        expect(DWAAR_IV_LAYOUT[y]![x]).toBe(DWAAR_IV_LAYOUT[12 - y]![12 - x]);
+  });
+
+  it("holds 101 open cells — ~100+, the funhouse trades a little of the Gardens' air for the carousel", () => {
+    const count = (layout: readonly string[]): number =>
+      layout.reduce((n, row) => n + [...row].filter((c) => c === '.').length, 0);
+    expect(count(DWAAR_IV_LAYOUT)).toBe(101);
+    expect(count(DWAAR_IV_LAYOUT)).toBeGreaterThanOrEqual(100);
+    expect(count(DWAAR_IV_LAYOUT)).toBeGreaterThan(count(DWAAR_II_LAYOUT)); // still airier than II
+  });
+
+  it('carries the central carousel: a ring of wall cells with EXACTLY 4 gaps at the compass midpoints', () => {
+    const isOpen = (x: number, y: number): boolean => DWAAR_IV_LAYOUT[y]![x] === '.';
+    // the Chebyshev-radius-2 ring around the center (6,6)
+    const ring: Array<[number, number]> = [];
+    for (let y = 4; y <= 8; y++)
+      for (let x = 4; x <= 8; x++)
+        if (Math.max(Math.abs(x - 6), Math.abs(y - 6)) === 2) ring.push([x, y]);
+    expect(ring.length).toBe(16);
+    const openRing = ring.filter(([x, y]) => isOpen(x, y));
+    expect(openRing).toEqual([
+      [6, 4],
+      [4, 6],
+      [8, 6],
+      [6, 8],
+    ]); // N, W, E, S gaps — the carousel's four doors
+    // and the carousel's own center chamber stands fully open
+    for (let y = 5; y <= 7; y++)
+      for (let x = 5; x <= 7; x++) expect(isOpen(x, y), `center ${x},${y}`).toBe(true);
+  });
+
+  it('carries OFFSET alcoves: four single-pocket recesses, one per wall, staggered (never aligned)', () => {
+    const isOpen = (x: number, y: number): boolean => DWAAR_IV_LAYOUT[y]![x] === '.';
+    const openCells: Array<[number, number]> = [];
+    DWAAR_IV_LAYOUT.forEach((row, y) => {
+      for (let x = 0; x < 13; x++) if (row[x] === '.') openCells.push([x, y]);
+    });
+    // a pocket = an open cell whose four neighbors leave exactly one way out
+    const DIRS: ReadonlyArray<readonly [number, number]> = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ];
+    const pockets = openCells.filter(
+      ([x, y]) => DIRS.filter(([dx, dy]) => isOpen(x + dx, y + dy)).length === 1,
+    );
+    expect(pockets).toEqual([
+      [4, 1],
+      [11, 4],
+      [1, 8],
+      [8, 11],
+    ]); // top / right / left / bottom — each rotated one wall on, the funhouse stagger
+    // no two pockets share a wall and none sits on an axis midpoint (offset from the carousel gaps)
+    for (const [x, y] of pockets) expect(x === 6 || y === 6).toBe(false);
+  });
+
+  it('all open cells are connected (BFS via maze bfsDistances)', () => {
+    const { grid, open } = layoutGrid(DWAAR_IV_LAYOUT);
+    const entrance = open[0]!; // first open cell row-major = (1,1)
+    const dist = bfsDistances(grid, entrance);
+    const reached = Array.from(dist).filter((d) => d >= 0).length;
+    expect(open.length).toBe(101);
+    expect(reached).toBe(open.length); // every open cell reachable, walls sealed off
+  });
+
+  it('entrance/exit are derivable: (1,1) → farthest open cell (11,11), 20 steps', () => {
+    const { grid, open } = layoutGrid(DWAAR_IV_LAYOUT);
+    const entrance = open[0]!;
+    expect(entrance).toEqual({ x: 1, y: 1 });
+    const dist = bfsDistances(grid, entrance);
+    let best = 0;
+    for (let i = 1; i < dist.length; i++) if (dist[i]! > dist[best]!) best = i;
+    const exit: CellIndex = { x: best % 13, y: Math.floor(best / 13) };
+    expect(exit).toEqual({ x: 11, y: 11 }); // bottom-right mirror of the entrance
+    expect(dist[best]).toBe(20); // a real traverse of the funhouse
+  });
+});
+
+describe('dwaarGrid floor 40', () => {
+  it('derives the Dwaar IV open-cell set from DWAAR_IV_LAYOUT', () => {
+    const g = dwaarGrid(TIER_FOUR_FLOORS);
+    expect(g.width).toBe(13);
+    expect(g.height).toBe(13);
+    expect(g.open.length).toBe(101);
+    expect(g.open[0]).toEqual({ x: 1, y: 1 });
+    for (const c of g.open) expect(DWAAR_IV_LAYOUT[c.y]![c.x]).toBe('.');
     const seen = new Set(g.open.map((c) => `${c.x},${c.y}`));
     expect(seen.size).toBe(g.open.length); // no duplicates
     const sorted = [...g.open].sort((a, b) => a.y - b.y || a.x - b.x);
