@@ -4,6 +4,7 @@ import {
   floorAccent,
   paletteForTier,
   TIER_ONE_PALETTE,
+  TIER_THREE_PALETTE,
   TIER_TWO_PALETTE,
 } from '../../src/game/palette';
 import { makeFloorTexture, makeWallTexture } from '../../src/game/textures';
@@ -56,6 +57,41 @@ describe('palette', () => {
   it('paletteForTier picks the tier palette', () => {
     expect(paletteForTier(1)).toBe(TIER_ONE_PALETTE);
     expect(paletteForTier(2)).toBe(TIER_TWO_PALETTE);
+    // T3/T4 — the Gardens dress tier 3 (night-blue stand-in retired)
+    expect(paletteForTier(3)).toBe(TIER_THREE_PALETTE);
+  });
+
+  // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):
+  // moss-green floors, water-teal glass, ivory light. Same slot NAMES again —
+  // the rose-diamond slot becomes the leaf accent, the teal slot the pools'
+  // water-teal.
+  it('tier-three values are exact (Reflecting Gardens: green/water-teal/ivory)', () => {
+    expect(TIER_THREE_PALETTE).toEqual({
+      void: 0x081410,
+      floorBase: 0x1e3226,
+      floorLines: 0x2a4432,
+      teal: 0x3fae9a, // the water-teal slot — the pools' glass
+      ivory: 0xeff2e4,
+      gold: 0xc9b458,
+      rose: 0x6fae6f, // the leaf slot
+      wallTop: 0x7f937f,
+      wallBottom: 0x3e4a3e,
+      lantern: 0xfff2cf,
+      entrance: 0x3fae9a,
+      exit: 0x6fae6f,
+    });
+  });
+
+  it('floorAccent with the tier-three palette: same pattern, gardens colors', () => {
+    // the rose-diamond slot becomes the leaf accent; gold lattice follows suit
+    expect(floorAccent(3, 3, TIER_THREE_PALETTE)).toBe(0x6fae6f);
+    expect(floorAccent(9, 3, TIER_THREE_PALETTE)).toBe(0x6fae6f);
+    expect(floorAccent(6, 2, TIER_THREE_PALETTE)).toBe(0xc9b458);
+    expect(floorAccent(2, 12, TIER_THREE_PALETTE)).toBe(0xc9b458);
+    expect(floorAccent(0, 0, TIER_THREE_PALETTE)).toBe(0xc9b458);
+    // the two-tone checker flips to the moss-green floor pair
+    expect(floorAccent(1, 1, TIER_THREE_PALETTE)).toBe(0x2a4432);
+    expect(floorAccent(2, 1, TIER_THREE_PALETTE)).toBe(0x1e3226);
   });
 
   it('floorAccent default is pinned tier-one (no-arg call sites unchanged)', () => {

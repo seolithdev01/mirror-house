@@ -10,6 +10,10 @@ export const TIER_ONE_SCALE: readonly number[] = [0, 1, 4, 5, 7, 8, 11];
 /** Tier-two mood: Durga-inspired pentatonic (major-ish, no semitone steps). */
 export const TIER_TWO_SCALE: readonly number[] = [0, 2, 4, 7, 9];
 
+/** Tier-three mood: the Gardens' pastoral pentatonic (suspended fourth, no
+ *  third — the flute's open, meadow-air contour; spec §6.1 row 3). */
+export const TIER_THREE_SCALE: readonly number[] = [0, 2, 5, 7, 9];
+
 /** Standard equal-temperament MIDI-note-number → Hz. */
 export function midiToHz(semi: number): number {
   return 440 * Math.pow(2, (semi - 69) / 12);

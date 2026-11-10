@@ -2,7 +2,12 @@
 import * as THREE from 'three';
 import { APP_VERSION } from './appVersion';
 import { createAudioEngine } from './audio/engine';
-import { intensityFrom, TIER_ONE_SCALE, TIER_TWO_SCALE } from './audio/theory';
+import {
+  intensityFrom,
+  TIER_ONE_SCALE,
+  TIER_THREE_SCALE,
+  TIER_TWO_SCALE,
+} from './audio/theory';
 import {
   ANGER_MAX,
   CELL_SIZE,
@@ -379,7 +384,8 @@ let doorStates = new Map<number, DoorAnim>();
 let doorById = new Map<number, SilveredDoor>();
 let echoes: ReturnType<typeof initEchoes> = [];
 let echoMeshes: THREE.Group[] = [];
-// M4/T3 — Taal's cameo (floor 5); T2 — the Sentinel on every tier-2 floor.
+// M4/T3 — Taal's cameo (floor 5); T2 — the Sentinel from floor 11 up (the
+// ladder accumulates: he keeps the beat through the Gardens beside Gher).
 // State is null everywhere else; the figure
 // exists exactly while that floor is built (buildFloor owns both, the
 // teardown rides floorDisposers with the rest of the stage).
@@ -511,10 +517,6 @@ function resetFloor(now: number): void {
     v.bind.setCracked(false);
   }
   echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, now);
-  // Taal restarts his loop from the first anchor — the beat never missed a
-  // step, only the attempt did. Cooldown clears; the figure is the floor's.
-  taal = taalFigure === null ? null : initTaal(objs.patrolAnchors);
-  if (taalFigure !== null) taalFigure.group.visible = taal !== null;
   path = []; // Chhaya loses the trail; she hides on the next update
   chhaya.visible = false;
   chhayaAnnounced = false; // the new attempt's first sighting speaks again
@@ -524,6 +526,11 @@ function resetFloor(now: number): void {
   hintsUsed = 0; // a fresh attempt prices Aaina's hints from the base again
   purchasedHint = null;
   player = spawnPlayer(floor);
+  // Taal re-seeds at the far anchor — the beat never missed a step, only the
+  // attempt did (and the far-anchor rule means the reset can never land him
+  // on the returned player). Cooldown clears; the figure is the floor's.
+  taal = taalFigure === null ? null : initTaal(objs.patrolAnchors, player);
+  if (taalFigure !== null) taalFigure.group.visible = taal !== null;
   // Gher re-seeds at the far anchor — the Gardens' roads reset with the
   // attempt, and the first commit is again the player's to make.
   gher = gherFigure === null ? null : initGher(objs.patrolAnchors, player);
@@ -1070,15 +1077,21 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
   // The tier dresses the stage (T2/T3): campaign floors 11–20 wear the Hall
-  // of Ancestors palette — the same floorAccent lattice re-tinted amber/brown/
-  // deep-teal, tiers 1–10 keep the night-blue tier-one set untouched. The
-  // melody walker moves with it: Durga pentatonic on tier-2 floors, swapped
-  // live (next note uses it; the drone root never moves). Venue side-floors
-  // stay tier-one dressed — scale included. T3/T1: tier-3 floors keep the
-  // tier-one dressing for now — the Gardens palette + pastoral flute scale
-  // arrive in T3/T4 (paletteForTier maps 3 → TIER_ONE_PALETTE meanwhile).
+  // of Ancestors palette, 21–30 the Reflecting Gardens — the same
+  // floorAccent lattice re-tinted, tiers 1–10 keep the night-blue tier-one
+  // set untouched. The melody moves with it (T3/T4): Durga pentatonic on
+  // tier-2 floors, the pastoral pentatonic AND the flute voice (sine) on
+  // tier-3 — swapped live (next note uses them; the drone root never moves).
+  // Venue side-floors stay tier-one dressed — scale AND voice: a return from
+  // a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
-  audio.setScale(pack === null ? (tier === 2 ? TIER_TWO_SCALE : TIER_ONE_SCALE) : TIER_ONE_SCALE);
+  if (pack === null) {
+    audio.setScale(tier === 2 ? TIER_TWO_SCALE : tier === 3 ? TIER_THREE_SCALE : TIER_ONE_SCALE);
+    audio.setVoice(tier === 3 ? 'sine' : 'triangle');
+  } else {
+    audio.setScale(TIER_ONE_SCALE);
+    audio.setVoice('triangle');
+  }
   // The pack's accents dress the stage: primary on the exit marker (the
   // beacon gate's unlocked tint follows), secondary on the entrance marker.
   const stagePalette =
@@ -1283,18 +1296,23 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     }
   });
 
-  // M4/T3 — Taal's cameo (floor 5); T2 — his promotion: from floor 11 through
-  // Dwaar II he walks EVERY tier-2 floor as the Sentinel, sharing the echoes'
-  // patrol anchors. One figure on the stage, one state on the loop; every
-  // other floor leaves both null (teardownFloor already cleared them when the
-  // previous floor was his). M6/T1 — never on a venue floor: the campaign's
-  // beat stays home. T3/T1 — his beat stays TIER-2 only: the Gardens are
-  // Gher's (T3/T2), so tier-3 floors leave both null for now.
-  if (pack === null && (c.floor === TAAL_FLOOR || tierOf(c.floor) === 2)) {
+  // M4/T3 — Taal's cameo (floor 5); T2 — his promotion: the Sentinel from
+  // floor 11 up, sharing the echoes' patrol anchors. One figure on the stage,
+  // one state on the loop; every other floor leaves both null (teardownFloor
+  // already cleared them when the previous floor was his). M6/T1 — never on a
+  // venue floor: the campaign's beat stays home. T3/T4 — the tier-2-only gate
+  // WIDENED to every floor from TAAL_SENTINEL_FLOOR up: the ladder
+  // ACCUMULATES Sentinels (spec §4.4 — tier 2 ADDS Taal, tier 3 ADDS Gher),
+  // so he keeps the beat through the Gardens beside the Encircler. His touch
+  // already catches on every floor that far (taalOutcome), and the aaina rule
+  // reads >= already — the spawn was the one place still saying tier-2.
+  if (pack === null && (c.floor === TAAL_FLOOR || c.floor >= TAAL_SENTINEL_FLOOR)) {
     const fig = createTaal();
     scene.add(fig.group);
     taalFigure = fig;
-    taal = initTaal(objs.patrolAnchors);
+    // the far-anchor spawn (T3/T4, the initGher precedent): the beat-walker
+    // starts far from the player's spawn — never on it
+    taal = initTaal(objs.patrolAnchors, spawnPlayer(floor));
     fig.group.visible = taal !== null; // degenerate anchorless floor: no cameo
     floorDisposers.push(() => {
       scene.remove(fig.group);
@@ -2420,11 +2438,15 @@ if (import.meta.env.DEV || testMode) {
       triangles: renderer.info.render.triangles,
     }),
     // M3/T6 — the audio engine's observable state (started/muted) plus the
-    // last intensity the frame loop fed it.
+    // last intensity the frame loop fed it. T3/T4 — the walker's live scale
+    // and voice join the read-out: the tier dressing (Gardens = pastoral set
+    // + sine flute, venue = the tier-one pair) is witnessable in a live tab.
     audioState: () => ({
       started: audio.started,
       muted: audio.muted,
       intensity: audioIntensity,
+      scale: [...audio.scale],
+      voice: audio.voice,
     }),
     // M3/T6 dev faucet — bank + save shards at once (e2e seeds Aaina's purse).
     grantShards: (n: number) => {
@@ -2464,6 +2486,8 @@ if (import.meta.env.DEV || testMode) {
           },
     // T2/T4 — the Sentinel's exact spot for e2e warps (null off his floors).
     taalPos: () => (taal === null ? null : { x: taal.x, y: taal.y }),
+    // T3/T4 — the Encircler's exact spot for e2e warps (null off tier 3).
+    gherPos: () => (gher === null ? null : { x: gher.x, y: gher.y }),
     // T8 e2e hooks — scripted win/lose. `mirrors()` replaces the old hero
     // count (the step003 suite reads .total now). mirrorAt(kind) prefers the
     // first mirror of that kind not captured yet, so a capture loop walks the
@@ -2477,6 +2501,9 @@ if (import.meta.env.DEV || testMode) {
         // T2/T4 — the ancestor portrait census (kind count; tier-2 floors
         // hang 2–3, tier-1 and venues none).
         portraits: allMirrors.filter((m) => m.kind === 'portrait').length,
+        // T3/T4 — the Gardens' standing pools (2–4 on tier-3 floors, 0
+        // everywhere else — the gated rng's output, the t3 e2e's census).
+        water: waterRt.length,
       };
     },
     beaconsLeft: () => {

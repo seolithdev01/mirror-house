@@ -9,6 +9,7 @@ import {
   midiToHz,
   nextMelodySemi,
   TIER_ONE_SCALE,
+  TIER_THREE_SCALE,
   TIER_TWO_SCALE,
 } from '../../src/audio/theory';
 
@@ -21,6 +22,11 @@ describe('scales', () => {
 
   it('tier two is the Durga-inspired pentatonic set', () => {
     expect(TIER_TWO_SCALE).toEqual([0, 2, 4, 7, 9]);
+  });
+
+  // T3/T4 — the Gardens' pastoral third scale (spec §6.1 row 3: flute-lead).
+  it('tier three is the pastoral pentatonic set', () => {
+    expect(TIER_THREE_SCALE).toEqual([0, 2, 5, 7, 9]);
   });
 });
 
@@ -59,7 +65,7 @@ describe('nextMelodySemi', () => {
   });
 
   it('honours the window for both scales from any start inside it', () => {
-    for (const scale of [TIER_ONE_SCALE, TIER_TWO_SCALE]) {
+    for (const scale of [TIER_ONE_SCALE, TIER_TWO_SCALE, TIER_THREE_SCALE]) {
       for (let start = OCT; start <= OCT + 12; start += 3) {
         const rng = createRng(`SPAN-${start}`);
         let semi = start;
@@ -69,6 +75,20 @@ describe('nextMelodySemi', () => {
           expect(semi).toBeLessThanOrEqual(OCT + 12);
         }
       }
+    }
+  });
+
+  // T3/T4 — the flute walks the pastoral set only: every emitted note is a
+  // tier-three member inside the window (pcs of [0,2,5,7,9] rooted at A=9).
+  it('after a tier-three swap the walk only emits pastoral members in the window', () => {
+    const rng = createRng('GARDEN-WALK');
+    let semi = OCT;
+    const pastoral = new Set(TIER_THREE_SCALE.map((s) => (OCT + s) % 12));
+    for (let i = 0; i < 200; i++) {
+      semi = nextMelodySemi(rng, TIER_THREE_SCALE, semi, 0.7, OCT);
+      expect(semi).toBeGreaterThanOrEqual(OCT);
+      expect(semi).toBeLessThanOrEqual(OCT + 12);
+      expect(pastoral.has(semi % 12)).toBe(true);
     }
   });
 
@@ -179,5 +199,19 @@ describe('createAudioEngine (node)', () => {
       expect(semi).toBeLessThanOrEqual(OCT + 12);
       expect(durga.has(semi % 12)).toBe(true);
     }
+  });
+
+  // T3/T4 — the voice test seam: the engine exposes the melody osc's live
+  // kind so node can witness setVoice without an AudioContext. The flute is
+  // tier-3's lead (sine); triangle is the tier-1/2 default every reset
+  // returns to (venue floors included — buildFloor re-sets both scale+voice).
+  it('setVoice swaps the melody voice live (starts triangle)', () => {
+    const engine = createAudioEngine('FLUTE');
+    expect(engine.voice).toBe('triangle');
+    expect(() => engine.setVoice('sine')).not.toThrow();
+    expect(engine.voice).toBe('sine');
+    // swap is repeatable both ways — buildFloor re-sets it on every floor
+    engine.setVoice('triangle');
+    expect(engine.voice).toBe('triangle');
   });
 });

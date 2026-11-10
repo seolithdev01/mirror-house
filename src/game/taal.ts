@@ -46,16 +46,33 @@ export interface TaalState {
   touchCooldownUntil: number;
 }
 
-/** Spawn him on the first anchor of the floor's patrol loop. No anchors →
- *  no cameo (null): that floor never heard the beat. */
-export function initTaal(anchors: ReadonlyArray<{ x: number; y: number }>): TaalState | null {
+/** Spawn him at the patrol anchor FARTHEST from the player's start (the
+ *  initGher precedent, T3/T4): anchors are plain cell centers from a pool
+ *  that includes the spawn area, so the OLD anchors[0] spawn could sit ON
+ *  the player — a caught-fail before the first input ever lands. Ties break
+ *  to the earlier anchor (deterministic). No anchors → no cameo (null):
+ *  that floor never heard the beat. */
+export function initTaal(
+  anchors: ReadonlyArray<{ x: number; y: number }>,
+  playerStart: { x: number; y: number },
+): TaalState | null {
   if (anchors.length === 0) return null;
-  const a = anchors[0]!;
+  let farIdx = 0;
+  let farD = -1;
+  for (let i = 0; i < anchors.length; i++) {
+    const a = anchors[i]!;
+    const d = (a.x - playerStart.x) ** 2 + (a.y - playerStart.y) ** 2;
+    if (d > farD) {
+      farIdx = i;
+      farD = d;
+    }
+  }
+  const a = anchors[farIdx]!;
   return {
     x: a.x,
     y: a.y,
     heading: 0,
-    anchorIdx: 0,
+    anchorIdx: farIdx,
     active: true,
     target: null,
     field: null,

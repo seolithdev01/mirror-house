@@ -9,7 +9,13 @@ interface DebugHook {
   seed: string;
   look(): string;
   mode(): string;
-  mirrors(): { total: number; fogged: number; captured: number; portraits: number };
+  mirrors(): {
+    total: number;
+    fogged: number;
+    captured: number;
+    portraits: number;
+    water: number;
+  };
   avatarPresent: boolean;
   streak(): number;
   bestFor(seed: string): number | null;
@@ -60,7 +66,13 @@ interface DebugHook {
   // M3/T6 hooks — views, audio, Aaina's economy, fog of war
   view(): string;
   viewMode(): string;
-  audioState(): { started: boolean; muted: boolean; intensity: number };
+  audioState(): {
+    started: boolean;
+    muted: boolean;
+    intensity: number;
+    scale: number[];
+    voice: string;
+  };
   grantShards(n: number): void;
   aaina(): { open: boolean; hintCost: number; lastHint: string | null };
   visitedCount(): number;
@@ -70,6 +82,8 @@ interface DebugHook {
   tier(): 1 | 2 | 3;
   // T2/T4 — the Sentinel's exact spot for warps (null off his floors)
   taalPos(): { x: number; y: number } | null;
+  // T3/T4 — the Encircler's exact spot for e2e warps (null off tier 3)
+  gherPos(): { x: number; y: number } | null;
   // M6/T1 — the venue side-floor: which pack is live (null id = campaign
   // floor) and its floor's beacon total (the pack's own count).
   venue(): { active: boolean; id: string | null; beacons: number };
@@ -1484,8 +1498,10 @@ test('t2: floor 11 loads tier two', async ({ page }) => {
 
   // T3/T1 — the tier-three leg of the same census: the Gardens carry tier 3,
   // the `· T3` chip suffix, and ZERO portraits (the placement gate is
-  // tier === 2 — the Gardens hang water, not ancestors). Taal stays home too:
-  // his beat is tier-2 only until Gher arrives.
+  // tier === 2 — the Gardens hang water, not ancestors). T3/T4 — the ladder
+  // ACCUMULATES Sentinels (spec §4.4): Gher joins tier 3, Taal STAYS — his
+  // spawn gate widened from "tier-2 floors" to every floor from
+  // TAAL_SENTINEL_FLOOR (11) up, so he walks the Gardens beside Gher.
   await page.goto('/?seed=T3RUN&floor=21');
   await ready(page);
   const snap3 = await page.evaluate(() => {
@@ -1495,7 +1511,7 @@ test('t2: floor 11 loads tier two', async ({ page }) => {
   expect(snap3.tier).toBe(3);
   expect(snap3.floor).toBe(21);
   expect(snap3.mirrors.portraits, 'portraits are tier-2-only — the Gardens hang none').toBe(0);
-  expect(snap3.taal, 'the Sentinel’s beat is tier-2 only').toBeNull();
+  expect(snap3.taal, 'the ladder accumulates — Taal walks tier 3 beside Gher').not.toBeNull();
   await expect(page.locator('#mh-floor')).toHaveText('L21 · T3');
 
   // Dwaar III — floor 30 builds the hand-authored garden hall and names it.
@@ -1602,5 +1618,77 @@ test('t2: sentinel taal catches; floor-5 cameo stays anger-only', async ({ page 
   expect(after.attempts, 'the cameo never catches').toBe(cameo.attempts);
   expect(after.failed).toBe(false);
   expect(after.anger).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
+// T3/T4 — the Reflecting Gardens end to end. Floor 21 dresses tier 3: the
+// hook's tier reads 3, the chip carries the `· T3` suffix, Gher walks his
+// encirclement, the standing water hangs 2–4 pools, and — the ladder
+// ACCUMULATES (spec §4.4) — Taal keeps his Sentinel beat beside Gher.
+test('t3: floor 21 loads the gardens', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T3RUN&floor=21');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      gher: h.gherPos(),
+      taal: h.taalPos(),
+      mirrors: h.mirrors(),
+      audio: h.audioState(),
+    };
+  });
+  expect(snap.tier).toBe(3);
+  expect(snap.floor).toBe(21);
+  expect(snap.gher, 'the Encircler walks every tier-3 floor').not.toBeNull();
+  expect(snap.taal, 'the ladder accumulates — Taal stays on tier 3').not.toBeNull();
+  expect(snap.mirrors.water, '2-4 standing pools per tier-3 floor').toBeGreaterThanOrEqual(2);
+  // the flute leads tier 3: the walker carries the pastoral set and the sine
+  // voice (the seam tracks both from buildFloor, gesture or not)
+  expect(snap.audio.scale).toEqual([0, 2, 5, 7, 9]);
+  expect(snap.audio.voice).toBe('sine');
+  await expect(page.locator('#mh-floor')).toHaveText('L21 · T3');
+  expect(errors).toEqual([]);
+});
+
+// T3/T4 — the Encircler's touch is the standard caught fail: warp onto
+// gherPos() and the run fails — house().failed observed DURING the 1200ms
+// freeze (the attempt banks only at the reset past it, so attempts is never
+// read too early). T2's polling pattern, no anger detour for this Sentinel.
+test('t3: gher catches on contact', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T3RUN&floor=21');
+  await ready(page);
+  const gher = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.gherPos();
+  });
+  expect(gher, 'the Encircler is live on floor 21').not.toBeNull();
+  await page.evaluate((p: { x: number; y: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(p.x, p.y);
+  }, gher!);
+  // the freeze window: failed rises on the next fixed step (50ms) and holds
+  // through FAIL_FREEZE_MS — poll fast to see it true (post-reset it is false)
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.house()
+        .failed,
+    null,
+    { timeout: 2000 },
+  );
+  await expect(page.locator('#mh-fail')).toHaveText('Caught by the glass');
+  // the tally banks at the reset AFTER the freeze — poll for it, never a
+  // blind read inside the window
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.attempts() === 1,
+    null,
+    { timeout: 2500 },
+  );
   expect(errors).toEqual([]);
 });

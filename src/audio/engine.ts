@@ -16,11 +16,17 @@ export interface AudioEngine {
   /** Swap the melody walker's scale live (T2/T3): the NEXT scheduled note
    *  walks the new set; the drone root and tempo never move. */
   setScale(scale: readonly number[]): void;
+  /** Swap the melody osc's timbre live (T3/T4): 'sine' is the Gardens' flute
+   *  lead, 'triangle' the tier-1/2 voice every reset returns to (venue floors
+   *  included — buildFloor re-sets scale AND voice together). */
+  setVoice(kind: 'triangle' | 'sine'): void;
   readonly started: boolean;
   readonly muted: boolean;
   /** The walker's current scale — the node test seam (no AudioContext needed
    *  to witness a setScale swap). */
   readonly scale: readonly number[];
+  /** The melody osc's current kind — the setVoice test seam, same contract. */
+  readonly voice: 'triangle' | 'sine';
 }
 
 const SCHEDULE_MS = 50; // scheduler wake-up
@@ -31,15 +37,20 @@ const NOTE_S_HI = 0.22; // ...at intensity 1
 const MELODY_OCTAVE_SEMI = 57; // A3 — walk window [57, 69]
 
 function inertEngine(): AudioEngine {
-  // Audio-inert, but the scale is still tracked: the node suite witnesses
-  // setScale swaps through it (the test seam documented on the interface).
+  // Audio-inert, but the scale and voice are still tracked: the node suite
+  // witnesses setScale/setVoice swaps through them (the test seams documented
+  // on the interface).
   let scale: readonly number[] = TIER_ONE_SCALE;
+  let voice: 'triangle' | 'sine' = 'triangle';
   return {
     start: () => {},
     setIntensity: () => {},
     setMuted: () => {},
     setScale: (s: readonly number[]) => {
       scale = s;
+    },
+    setVoice: (kind: 'triangle' | 'sine') => {
+      voice = kind;
     },
     get started() {
       return false;
@@ -49,6 +60,9 @@ function inertEngine(): AudioEngine {
     },
     get scale() {
       return scale;
+    },
+    get voice() {
+      return voice;
     },
   };
 }
@@ -61,7 +75,7 @@ export function createAudioEngine(seed: string): AudioEngine {
   const rng: Rng = createRng(seed + ':audio');
   let ctx: AudioContext | undefined;
   let master: GainNode;
-  let melodyOsc: OscillatorNode;
+  let melodyOsc: OscillatorNode | undefined;
   let melodyGain: GainNode;
   let padGain: GainNode;
   let taFilter: BiquadFilterNode;
@@ -72,6 +86,7 @@ export function createAudioEngine(seed: string): AudioEngine {
   let intensityTarget = 0.2;
   let intensity = intensityTarget;
   let melodyScale: readonly number[] = TIER_ONE_SCALE;
+  let melodyVoice: 'triangle' | 'sine' = 'triangle';
   let prevSemi = MELODY_OCTAVE_SEMI;
   let tick = 0;
   let nextTickTime = 0;
@@ -100,9 +115,11 @@ export function createAudioEngine(seed: string): AudioEngine {
       osc.start();
     }
 
-    // Melody: one triangle voice, portamento via linear frequency ramps.
+    // Melody: one lead voice (triangle tier-1/2, sine = the Gardens' flute),
+    // portamento via linear frequency ramps. build() reads melodyVoice so a
+    // pre-start setVoice lands on the osc the moment it exists.
     melodyOsc = ctx.createOscillator();
-    melodyOsc.type = 'triangle';
+    melodyOsc.type = melodyVoice;
     melodyOsc.frequency.value = midiToHz(MELODY_OCTAVE_SEMI);
     melodyGain = ctx.createGain();
     melodyGain.gain.value = 0;
@@ -173,7 +190,7 @@ export function createAudioEngine(seed: string): AudioEngine {
   function melodyNote(t: number, period: number, iv: number): void {
     // read the scale at note time — a setScale swap takes effect on the NEXT note
     prevSemi = nextMelodySemi(rng, melodyScale, prevSemi, iv, MELODY_OCTAVE_SEMI);
-    melodyOsc.frequency.linearRampToValueAtTime(midiToHz(prevSemi), t + 0.04);
+    melodyOsc!.frequency.linearRampToValueAtTime(midiToHz(prevSemi), t + 0.04);
     melodyGain.gain.setValueAtTime(Math.max(melodyGain.gain.value, 0.0001), t);
     melodyGain.gain.linearRampToValueAtTime(0.12 + 0.1 * iv, t + 0.02);
     melodyGain.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.08, period * 0.9));
@@ -224,6 +241,10 @@ export function createAudioEngine(seed: string): AudioEngine {
     setScale(scale: readonly number[]) {
       melodyScale = scale;
     },
+    setVoice(kind: 'triangle' | 'sine') {
+      melodyVoice = kind;
+      if (melodyOsc !== undefined) melodyOsc.type = kind;
+    },
     get started() {
       return started;
     },
@@ -232,6 +253,9 @@ export function createAudioEngine(seed: string): AudioEngine {
     },
     get scale() {
       return melodyScale;
+    },
+    get voice() {
+      return melodyVoice;
     },
   };
 }

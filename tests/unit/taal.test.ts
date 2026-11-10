@@ -82,24 +82,37 @@ describe('beatGlow — the lantern emissive under reduced-flash (M5/T1)', () => 
 });
 
 describe('initTaal', () => {
-  it('spawns on the first anchor, walking, touch ready', () => {
+  // T3/T4 — the far-anchor spawn (the initGher precedent): anchors are plain
+  // cell centers from a pool that includes the spawn area, so the OLD
+  // anchors[0] spawn could sit ON the player — a caught-fail before the
+  // first input ever lands.
+  it('spawns at the anchor FARTHEST from the player start, walking, touch ready', () => {
     const anchors = [
-      { x: -8, y: 0 },
-      { x: 8, y: 0 },
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
     ];
-    const t = initTaal(anchors);
+    const t = initTaal(anchors, { x: 0, y: 0 });
     expect(t).toMatchObject({
-      x: -8,
+      x: 10,
       y: 0,
-      anchorIdx: 0,
+      anchorIdx: 1,
       active: true,
       heading: 0,
       touchCooldownUntil: 0,
     });
   });
 
+  it('a distance tie breaks to the earlier anchor (deterministic)', () => {
+    const anchors = [
+      { x: -8, y: 0 },
+      { x: 8, y: 0 },
+    ];
+    const t = initTaal(anchors, { x: 0, y: 0 });
+    expect(t).toMatchObject({ x: -8, y: 0, anchorIdx: 0 });
+  });
+
   it('returns null with no anchors — no loop, no cameo', () => {
-    expect(initTaal([])).toBeNull();
+    expect(initTaal([], { x: 0, y: 0 })).toBeNull();
   });
 });
 
@@ -112,7 +125,7 @@ describe('updateTaal — the beat-walk', () => {
     ];
     // he starts ON anchors[0]: arrival rotates the loop to anchors[1] at +8,
     // so the first step walks east along the corridor
-    let t = initTaal(anchors)!;
+    let t = initTaal(anchors, { x: 0, y: 0 })!;
     t = updateTaal(t, anchors, g, 0, 1 / 120); // tick 0, pulse 2.2
     expect(t.anchorIdx).toBe(1);
     expect(t.x).toBeCloseTo(-8 + (TAAL_BASE_SPEED * 2.2) / 120);
@@ -126,7 +139,7 @@ describe('updateTaal — the beat-walk', () => {
       { x: -8, y: 0 },
       { x: 8, y: 0 },
     ];
-    const t = updateTaal(initTaal(anchors)!, anchors, g, 250, 1 / 120); // tick 1, pulse 0.3
+    const t = updateTaal(initTaal(anchors, { x: 0, y: 0 })!, anchors, g, 250, 1 / 120); // tick 1, pulse 0.3
     expect(t.x).toBeCloseTo(-8 + (TAAL_BASE_SPEED * 0.3) / 120); // ~6mm: a swaying stop
     expect(t.x - -8).toBeLessThan(0.005);
   });
@@ -137,7 +150,7 @@ describe('updateTaal — the beat-walk', () => {
       { x: -8, y: 0 },
       { x: 8, y: 0 },
     ];
-    let t = initTaal(anchors)!;
+    let t = initTaal(anchors, { x: 0, y: 0 })!;
     let prevX = t.x;
     let prevIdx = t.anchorIdx;
     let hitFarEnd = false; // arrival at +8 rotated the patrol home…
@@ -171,7 +184,7 @@ describe('updateTaal — the beat-walk', () => {
   it('holds still once retired (active false)', () => {
     const g = openGrid();
     const anchors = [{ x: 8, y: 0 }];
-    const t0 = { ...initTaal(anchors)!, active: false };
+    const t0 = { ...initTaal(anchors, { x: 0, y: 0 })!, active: false };
     const t = updateTaal(t0, anchors, g, 0, 0.5);
     expect(t).toMatchObject({ x: 8, y: 0 });
     expect(t).toBe(t0); // retired is a no-op, reference and all
@@ -183,7 +196,7 @@ describe('updateTaal — the beat-walk', () => {
       { x: -8, y: 0 },
       { x: 8, y: 0 },
     ];
-    const t0 = initTaal(anchors)!;
+    const t0 = initTaal(anchors, { x: 0, y: 0 })!;
     const before = { ...t0 };
     updateTaal(t0, anchors, g, 0, 1 / 120);
     expect(t0).toEqual(before);

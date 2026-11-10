@@ -48,11 +48,33 @@ export const TIER_TWO_PALETTE: TierPalette = {
   exit: 0x2f6f6a,
 };
 
+/** The Reflecting Gardens (floors 21–30, T3/T4): moss-green floors, sage
+ *  walls, water-teal glass and ivory light — the pastoral third act. Same
+ *  slot NAMES again: the teal slot becomes the pools' water-teal, the rose
+ *  diamond a leaf accent, so every palette-driven pattern re-dresses itself
+ *  with zero structural change (the T2 precedent). */
+export const TIER_THREE_PALETTE: TierPalette = {
+  void: 0x081410,
+  floorBase: 0x1e3226,
+  floorLines: 0x2a4432,
+  teal: 0x3fae9a, // water-teal — the standing pools' glass
+  ivory: 0xeff2e4,
+  gold: 0xc9b458,
+  rose: 0x6fae6f, // leaf
+  wallTop: 0x7f937f,
+  wallBottom: 0x3e4a3e,
+  lantern: 0xfff2cf,
+  entrance: 0x3fae9a,
+  exit: 0x6fae6f,
+};
+
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
- *  T3/T1: tier 3 keeps the tier-one dressing until T3/T4 ships the Gardens
- *  palette — the ramp, layout and validator widen first, the paint follows. */
+ *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
+ *  retired. */
 export function paletteForTier(tier: 1 | 2 | 3): TierPalette {
-  return tier === 2 ? TIER_TWO_PALETTE : TIER_ONE_PALETTE;
+  if (tier === 2) return TIER_TWO_PALETTE;
+  if (tier === 3) return TIER_THREE_PALETTE;
+  return TIER_ONE_PALETTE;
 }
 
 /** Deterministic per-cell floor accent on a 6x6 lattice: gold grid lines on every 6th row/column,
