@@ -161,3 +161,6 @@ The first post-beta content milestone — the campaign doubles downward.
   auto/manual quality presets; a11y aria + real dialog semantics (Lighthouse
   97/97); privacy, provenance and playtest docs; round-trip, timing and soak
   tests.
+
+- Note: Taal's spawn-at-farthest-anchor fairness fix (tier 3 work) also moves his
+  floor-5 cameo start position — he no longer can spawn on top of the player.
