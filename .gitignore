@@ -50,3 +50,11 @@ android/*.jks
 # defense-in-depth: keystores anywhere under android/
 android/**/*.jks
 android/**/*.keystore
+
+# beta tester invites — real email addresses, git-ignored by design.
+# The directory pattern (docs/invites/) cannot be re-included per-file, so
+# the contents are ignored and only the redacted template is let back in:
+# check with `git check-ignore docs/invites/invite-TESTIS.md` (ignored) and
+# `git check-ignore docs/invites/TEMPLATE.example.md` (not ignored).
+docs/invites/*
+!docs/invites/TEMPLATE.example.md

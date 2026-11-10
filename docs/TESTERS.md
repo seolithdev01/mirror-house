@@ -70,12 +70,10 @@ rebindable in ⚙ → Controls; mouse-only play works too):
 
 ## The full manual suite
 
-When you have 20–30 minutes, the complete checklist — ~28 cases across
+When you have 20–30 minutes, the complete checklist — 31 cases across
 campaign flow, views, accessibility, saves, audio, the venue side-floor, and
 mobile/touch — lives in [TEST-CASES.md](TEST-CASES.md). Work top to bottom or
-cherry-pick; every case is steps + expected result. (If that link 404s today,
-it lands with this beta's test kit — the smoke above is always enough to
-start.)
+cherry-pick; every case is steps + expected result.
 
 ## How to send feedback
 
