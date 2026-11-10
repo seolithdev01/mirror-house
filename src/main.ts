@@ -5,6 +5,7 @@ import { createAudioEngine } from './audio/engine';
 import { intensityFrom, TIER_ONE_SCALE, TIER_TWO_SCALE } from './audio/theory';
 import {
   ANGER_MAX,
+  CELL_SIZE,
   CHHAYA_PING_MS,
   CONTACT_RADIUS,
   DESCEND_MS,
@@ -160,6 +161,8 @@ import { movePlayer, spawnPlayer, type PlayerState } from './game/player';
 import { autoPreset, PROFILES, type PerfChoice, type PerfPreset } from './game/quality';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
 import { parseTestMode } from './game/testMode';
+import { canvasTexture, makeWaterCanvas } from './game/textures';
+import { initWaterRuntime, rippleState, rippleTrigger, type WaterRuntime } from './game/water';
 import {
   cycleView,
   exitTactical,
@@ -388,6 +391,12 @@ let taalFigure: TaalFigure | null = null;
 // re-seeds him at the far anchor.
 let gher: GherState | null = null;
 let gherFigure: GherFigure | null = null;
+// T3/T3 — the water-mirrors: runtime pools (rippledAt mutated in place, the
+// MirrorRuntime precedent) + their visual patches. Empty arrays on every
+// tier-1/2/venue floor; buildFloor owns both, the teardown rides
+// floorDisposers, resetFloor clears the ripples (pools persist with the floor).
+let waterRt: WaterRuntime[] = [];
+let waterPatches: THREE.Mesh[] = []; // 1:1 with waterRt — the material IS the ripple read-out
 let floorDisposers: Array<() => void> = []; // one floor's teardown, in order
 // Beacon gate: the stair door burns dim red until every beacon is frosted,
 // then returns to its built gold. Tint the material of the CURRENT floor's
@@ -519,6 +528,9 @@ function resetFloor(now: number): void {
   // attempt, and the first commit is again the player's to make.
   gher = gherFigure === null ? null : initGher(objs.patrolAnchors, player);
   if (gherFigure !== null) gherFigure.group.visible = gher !== null;
+  // T3/T3 — the pools persist with the floor; only their ripples reset (all
+  // still water again — the patches re-brighten on the next frame's sync).
+  for (const w of waterRt) w.rippledAt = null;
   visited.clear(); // the fog closes in — the new attempt starts unexplored
   pings = []; // the old attempt's radar is spent
   markVisited();
@@ -700,6 +712,37 @@ function tryFrost(now: number): void {
     hud.setChips({ beacons: beaconsCaptured(allMirrors, mirrorRuntime) });
     updateShardsChip(); // the new stake joins the display: `banked (+pending)`
     setExitLocked(!exitUnlocked(allMirrors, mirrorRuntime));
+  }
+}
+
+// T3/T3 — the water visuals. One plane geometry + one static sheen texture
+// for every pool on every floor: created lazily ONCE and never disposed, so
+// the geometry/texture counts stay flat across floor rebuilds (the soak
+// census's witness). The ripple read-out is the per-pool material's OPACITY
+// — the only thing that ever changes on a pool (reduced-flash: no shimmer,
+// one dim on ripple, one brighten when the water stills).
+const WATER_STILL_OPACITY = 0.35;
+const WATER_RIPPLED_OPACITY = 0.15;
+const WATER_PLANE_M = CELL_SIZE - 0.6; // the patch sits clear of the cell walls
+let waterGeo: THREE.PlaneGeometry | null = null;
+let waterTex: THREE.CanvasTexture | null = null;
+function waterGeometry(): THREE.PlaneGeometry {
+  waterGeo ??= new THREE.PlaneGeometry(WATER_PLANE_M, WATER_PLANE_M);
+  return waterGeo;
+}
+function waterSheen(): THREE.CanvasTexture | null {
+  waterTex ??= canvasTexture(makeWaterCanvas(), 1, 1);
+  return waterTex;
+}
+/** Still pools hold the still opacity; rippled pools sit dim until their TTL
+ *  lapses — then the water stills again on its own (and re-ripples the very
+ *  next step if the player still stands in it). */
+function syncWaterVisuals(now: number): void {
+  for (let i = 0; i < waterPatches.length; i++) {
+    const mat = waterPatches[i]!.material as THREE.MeshBasicMaterial;
+    mat.opacity = rippleState(waterRt[i]!.rippledAt, now)
+      ? WATER_RIPPLED_OPACITY
+      : WATER_STILL_OPACITY;
   }
 }
 
@@ -1080,6 +1123,10 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
           // Gardens hang water, not ancestors, and the tier-1/3 rng streams
           // stay clean (pinned by the t3 e2e leg: portraits === 0 on 21/30).
           portraits: tierOf(c.floor) === 2 ? 2 : 0,
+          // T3/T3 — the Gardens' standing water: 2–4 pools on every tier-3
+          // floor (the param is the floor of the range, the rng's int(3) the
+          // rest); tier-1/2 and venues keep 0 — their rng streams untouched.
+          water: tierOf(c.floor) === 3 ? 2 : 0,
         })
       : generateFloorObjects(floor, { ...M2_PARAMS, ...vp!.objectOverrides });
   const qp = PROFILES[preset];
@@ -1189,6 +1236,37 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       scene.remove(cm.mesh);
       cm.dispose();
     }
+  });
+
+  // T3/T3 — the standing water: one flat translucent patch per pool, a
+  // breath above the floor plane (0.03 m — under the 0.06 m markers, over
+  // the stage floor). The sheen is STATIC (reduced-flash); a pool's material
+  // opacity is the ripple read-out (see syncWaterVisuals). Empty on every
+  // tier-1/2/venue floor — objs.water is the gated rng's output.
+  waterRt = initWaterRuntime(objs.water);
+  waterPatches = objs.water.map((w) => {
+    const mat = new THREE.MeshBasicMaterial({
+      map: waterSheen(), // null-safe: flat teal when the canvas is unavailable
+      transparent: true,
+      opacity: WATER_STILL_OPACITY,
+      depthWrite: false, // translucent glass over the floor, never occludes
+    });
+    if (mat.map === null) mat.color.setHex(0x3fae9a); // water-teal fallback
+    const mesh = new THREE.Mesh(waterGeometry(), mat);
+    mesh.rotation.x = -Math.PI / 2; // lie flat, facing up
+    mesh.position.set(w.x, 0.03, w.y);
+    scene.add(mesh);
+    return mesh;
+  });
+  floorDisposers.push(() => {
+    for (const mesh of waterPatches) {
+      scene.remove(mesh);
+      (mesh.material as THREE.MeshBasicMaterial).dispose();
+    }
+    waterPatches = [];
+    waterRt = [];
+    // the shared geometry + sheen texture are singletons: they stay (their
+    // counts never climb across floors — the soak census's witness)
   });
 
   echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, performance.now());
@@ -1802,6 +1880,8 @@ function drawOverhead(now: number): void {
     pings,
     chhaya: chhaya.visible ? { x: chhaya.position.x, y: chhaya.position.z } : null,
     waypoints,
+    // T3/T3 — pool dots: teal, dim while the ripple blinds the eye.
+    water: waterRt.map((w) => ({ x: w.x, y: w.y, dim: rippleState(w.rippledAt, now) })),
     now,
   });
 }
@@ -1897,12 +1977,23 @@ function frame(now: number): void {
       if (inputActive) phase = startRun(phase, now); // first input starts the clock
       updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);
       breath = updateBreath(breath, FIXED_STEP, false); // recharge per fixed step
+      // T3/T3 — the player's one verb against water: step close and it
+      // ripples. Only a FRESH ripple lands (still water, or the last ripple
+      // spent): the eye shuts at once — before this step's echo sense checks
+      // below — and the caption speaks once per ripple event (the feed's
+      // dedupe window is far shorter than the TTL; a re-ripple fires anew).
+      for (const i of rippleTrigger(player.x, player.y, waterRt)) {
+        if (rippleState(waterRt[i]!.rippledAt, now)) continue; // already blind
+        waterRt[i]!.rippledAt = now;
+        pushCaption('water-ripple', t(lang, 'caption.waterRipple'));
+      }
       echoes = echoes.map((e) => {
         const next = updateEcho(
           e,
           player,
           allMirrors,
           mirrorRuntime,
+          waterRt,
           floor.grid,
           objs.patrolAnchors,
           now,
@@ -2054,6 +2145,7 @@ function frame(now: number): void {
   audio.setIntensity(audioIntensity);
   if (!aaina.root.hidden) refreshAaina(); // she reads the floor while you walk it
   syncFogVisuals(now);
+  syncWaterVisuals(now); // T3/T3 — the pools' dim follows the ripple TTL
   // Door machine: an opening door advances on frame time, then rests open for
   // the rest of the floor — no further hints, no further pushes.
   for (const [id, st] of doorStates) {

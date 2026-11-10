@@ -4,6 +4,9 @@
 // machine — updateEcho returns a new state and never mutates its input.
 // Sense model: ∃ mirror (standing|beacon|true, unfogged) with clear LOS from
 // BOTH the echo and the player to the mirror center, both within SENSE_RANGE.
+// T3: standing water pools are eyes too — the same both-LOS + SENSE_RANGE
+// shape, kind-independent of the mirror list (a pool is not a MirrorRef, so
+// frost never touches it; only a ripple blinds it — rippleState consults).
 import {
   CHASE_MEMORY_MS,
   CONFUSE_FOGGED_R,
@@ -17,6 +20,7 @@ import { losClear } from '../engine/los';
 import { buildFlowField, flowStep } from '../engine/flowField';
 import { isFogged, type MirrorRuntime } from './frost';
 import type { MirrorRef } from './floorObjects';
+import { rippleState, type WaterRuntime } from './water';
 import type { PlayerState } from './player';
 
 export interface EchoState {
@@ -73,6 +77,7 @@ export function sensesPlayer(
   player: PlayerState,
   mirrors: MirrorRef[],
   rt: MirrorRuntime[],
+  water: ReadonlyArray<WaterRuntime>,
   grid: FloorGrid,
   now: number,
 ): boolean {
@@ -87,6 +92,18 @@ export function sensesPlayer(
     if (!losClear(grid, player.x, player.y, m.x, m.z)) continue;
     return true; // both stand in this mirror's reflection
   }
+  // T3 — the water eyes: still pools see exactly like clear glass (both LOS,
+  // SENSE_RANGE). No fog state exists for water — the ripple is the only
+  // blindness, and it is the player's verb (see water.ts).
+  for (const w of water) {
+    if (rippleState(w.rippledAt, now)) continue; // rippled shut
+    const echoDist = Math.hypot(w.x - echo.x, w.y - echo.y);
+    const playerDist = Math.hypot(w.x - player.x, w.y - player.y);
+    if (echoDist > SENSE_RANGE || playerDist > SENSE_RANGE) continue;
+    if (!losClear(grid, echo.x, echo.y, w.x, w.y)) continue;
+    if (!losClear(grid, player.x, player.y, w.x, w.y)) continue;
+    return true; // both stand in the pool's reflection
+  }
   return false;
 }
 
@@ -95,6 +112,7 @@ export function updateEcho(
   player: PlayerState,
   mirrors: MirrorRef[],
   rt: MirrorRuntime[],
+  water: ReadonlyArray<WaterRuntime>,
   grid: FloorGrid,
   anchors: Array<{ x: number; y: number }>,
   now: number,
@@ -129,7 +147,7 @@ export function updateEcho(
   let { lastSensedCell, loseMemoryAt, nextSenseAt } = echo;
   if (now >= nextSenseAt) {
     nextSenseAt = now + SENSE_INTERVAL_MS;
-    if (sensesPlayer(echo, player, mirrors, rt, grid, now)) {
+    if (sensesPlayer(echo, player, mirrors, rt, water, grid, now)) {
       lastSensedCell = grid.cellAt(player.x, player.y);
       loseMemoryAt = now + CHASE_MEMORY_MS;
     }

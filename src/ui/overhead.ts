@@ -23,6 +23,8 @@ export interface OverheadDrawInput {
   pings: Array<{ x: number; y: number; at: number }>;
   chhaya: { x: number; y: number } | null;
   waypoints: ReadonlyArray<{ x: number; y: number }>;
+  /** T3 — the standing pools: teal dots, dim while their ripple blinds them. */
+  water: ReadonlyArray<{ x: number; y: number; dim: boolean }>;
   now: number;
 }
 
@@ -47,6 +49,7 @@ const COLOR = {
   chhaya: '#c8ccd8', // the six-second shadow — pale hollow ring
   ping: '#e05252', // fading red
   waypoint: '#f2e9d8', // ivory dots
+  water: '#3fae9a', // T3 — the standing pools (water-teal; the tier-3 accent)
 } as const;
 
 const MARGIN_PX = 28; // breathing room around the fitted grid
@@ -168,6 +171,17 @@ export function createOverhead(canvas: HTMLCanvasElement): {
     ctx.beginPath();
     ctx.arc(px(input.exit.cx), py(input.exit.cy), L.cell * 0.32, 0, Math.PI * 2);
     ctx.stroke();
+
+    // T3 — the standing pools: small teal dots, dimming while their ripple
+    // blinds the eye (the water stills again when the TTL lapses).
+    for (const p of input.water) {
+      ctx.globalAlpha = p.dim ? 0.35 : 1;
+      ctx.fillStyle = COLOR.water;
+      ctx.beginPath();
+      ctx.arc(px(p.x), py(p.y), L.cell * 0.16, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
 
     // Beacons — teal, filled once captured, hollow until then.
     for (const m of input.mirrors) {

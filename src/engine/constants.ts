@@ -77,3 +77,7 @@ export const TAAL_SENTINEL_FLOOR = 11; // from here Taal's touch catches, not an
 export const TIER_THREE_FLOORS = 30;
 export const GHER_SENTINEL_FLOOR = 21; // from here Gher walks every tier-3 floor
 export const GHER_INTERCEPT_MS = 1000; // his reaction time: how often the prediction retargets
+// T3 — the water-mirrors: standing pools are Echo eyes the lantern cannot
+// fog; the player's step is the only blindness they know.
+export const WATER_RIPPLE_MS = 10_000; // ms a rippled pool's eye stays shut
+export const WATER_RIPPLE_RADIUS = 1.4; // m — how close the player must come to ripple a pool

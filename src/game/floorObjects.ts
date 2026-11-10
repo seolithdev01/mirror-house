@@ -30,6 +30,10 @@ export interface FloorObjects {
   mirrors: MirrorRef[];
   echoSpawns: Array<{ x: number; y: number }>;
   patrolAnchors: Array<{ x: number; y: number }>;
+  /** T3 — the Gardens' standing water: WORLD cell centers of the pools
+   *  (2–4 per tier-3 floor). Cell features, NOT MirrorRefs — the frost
+   *  lantern never sees them; echo senses + the ripple own them (water.ts). */
+  water: Array<{ x: number; y: number }>;
 }
 
 export interface M2Params {
@@ -42,9 +46,21 @@ export interface M2Params {
    *  default, all tier-1 floors) draws nothing — the rng stream stays
    *  byte-identical to the M2 order. */
   portraits: number;
+  /** T3 — the FLOOR of the pool count: the rng rolls one int(3) on top of
+   *  it, so a tier-3 ask of 2 places 2–4 standing pools. Zero (the default,
+   *  tiers 1–2 and venues) draws nothing — the rng stream stays
+   *  byte-identical to the M2/T2 order. */
+  water: number;
 }
 
-export const M2_PARAMS: M2Params = { standing: 6, beacons: 3, echoes: 4, anchors: 6, portraits: 0 };
+export const M2_PARAMS: M2Params = {
+  standing: 6,
+  beacons: 3,
+  echoes: 4,
+  anchors: 6,
+  portraits: 0,
+  water: 0,
+};
 
 export interface MirrorSpot {
   x: number;
@@ -92,7 +108,9 @@ const manhattan = (a: Candidate, b: Candidate): number => Math.abs(a.x - b.x) + 
  * `createRng(floor.seed + ':objects')`. Same floor + params → same result,
  * guaranteed: every random draw comes from one rng consumed in a fixed order
  * (standing shuffle → [portraits: count coin + shuffle, only when
- * params.portraits > 0] → echo shuffle → anchor shuffle).
+ * params.portraits > 0] → echo shuffle → anchor shuffle → [water: count
+ * coin + shuffle, only when params.water > 0 — LAST, so the water draws
+ * append to the stream and never perturb the tier-1/2 order]).
  *
  * Edge cases (degenerate tiny grids): every pool below may hold fewer cells
  * than the parameter asks for — we then simply place what exists and never
@@ -247,5 +265,29 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
   }
   const patrolAnchors = rng.shuffle(anchorPool).slice(0, params.anchors);
 
-  return { mirrors, echoSpawns, patrolAnchors };
+  // Rule 8 (T3): the Gardens' standing water. Pools are CELL features picked
+  // from open cells (bfs-reachable) at Chebyshev distance >= 2 from BOTH the
+  // entrance and the exit — never the cells themselves, never beside them.
+  // They may share a cell with a wall-mounted mirror (floor vs wall), so
+  // unlike the rules above they do not touch `used`. Draws happen ONLY when
+  // params.water > 0 (tier 3) and LAST in the stream: tiers 1–2 keep the
+  // exact M2/T2 rng order — their experience is byte-identical.
+  let water: Array<{ x: number; y: number }> = [];
+  if (params.water > 0) {
+    const count = params.water + rng.int(3); // 2 → 2–4 pools
+    const poolCells: Array<{ x: number; y: number }> = [];
+    for (let y = 0; y < grid.height; y++) {
+      for (let x = 0; x < grid.width; x++) {
+        if (special.has(key(x, y))) continue;
+        if (Math.max(Math.abs(x - floor.entrance.x), Math.abs(y - floor.entrance.y)) < 2) continue;
+        if (Math.max(Math.abs(x - floor.exit.x), Math.abs(y - floor.exit.y)) < 2) continue;
+        if ((dist[y * grid.width + x] ?? -1) < 0) continue; // not open/reachable
+        const { cx, cy } = grid.cellCenter(x, y);
+        poolCells.push({ x: cx, y: cy });
+      }
+    }
+    water = rng.shuffle(poolCells).slice(0, count);
+  }
+
+  return { mirrors, echoSpawns, patrolAnchors, water };
 }

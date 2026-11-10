@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 30 entries (25 + feedback, beta, and the tier-2 trio)', () => {
-    expect(FAQ).toHaveLength(30);
+  it('grows to 31 entries (25 + feedback, beta, the tier-2 trio, and the T3 water)', () => {
+    expect(FAQ).toHaveLength(31);
   });
 
   it('the report-bugs answer names the Feedback button in the top-right', () => {
@@ -77,5 +77,13 @@ describe('faq — the beta launch pair', () => {
     const portraits = FAQ.find((f) => /portrait mirrors/i.test(f.q));
     expect(portraits, 'the ancestor-portraits entry exists').toBeDefined();
     expect(portraits!.a).toContain('fog'); // fog them like any glass
+  });
+
+  it('the water-mirrors answer teaches the ripple, not the fog (T3/T3)', () => {
+    const e = FAQ.find((f) => /water-mirrors/i.test(f.q));
+    expect(e, 'the water-mirrors entry exists').toBeDefined();
+    expect(e!.a).toContain('cannot fog'); // the lantern has no verb here
+    expect(e!.a).toContain('ripple'); // …the player's step is the verb
+    expect(e!.a).toContain('ten seconds'); // the blindness window
   });
 });

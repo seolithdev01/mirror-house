@@ -163,6 +163,29 @@ export function makePortraitCanvas(spec: PortraitSpec): HTMLCanvasElement | null
   return canvas;
 }
 
+/** T3 — the standing water's static sheen: a radial gradient, still-water
+ *  highlight at the center deepening to a rim. Painted ONCE and never
+ *  animated — the reduced-flash rule bars shimmer; the only change a pool
+ *  ever knows is the ripple's one-time dim (main.ts drops the material's
+ *  opacity, the texture itself holds). Node-guarded like every texture
+ *  factory: no document → null (the caller falls back to flat teal). */
+export function makeWaterCanvas(): HTMLCanvasElement | null {
+  if (typeof document === 'undefined') return null;
+  const S = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = S;
+  canvas.height = S;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  const sheen = ctx.createRadialGradient(S / 2, S / 2, S * 0.1, S / 2, S / 2, S / 2);
+  sheen.addColorStop(0, '#8fd9c9'); // the still highlight at the center
+  sheen.addColorStop(0.5, '#3fae9a'); // water-teal body (the tier-3 accent)
+  sheen.addColorStop(1, '#2b7d6e'); // the deeper rim
+  ctx.fillStyle = sheen;
+  ctx.fillRect(0, 0, S, S);
+  return canvas;
+}
+
 export function canvasTexture(
   canvas: HTMLCanvasElement | null,
   repeatX: number,

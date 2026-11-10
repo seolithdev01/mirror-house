@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
 import { Dir, FloorGrid } from '../../src/engine/grid';
-import { CHASE_MEMORY_MS, ECHO_SPEED, SENSE_INTERVAL_MS } from '../../src/engine/constants';
+import {
+  CHASE_MEMORY_MS,
+  ECHO_SPEED,
+  SENSE_INTERVAL_MS,
+  WATER_RIPPLE_MS,
+} from '../../src/engine/constants';
 import { applyFog, initMirrorRuntime } from '../../src/game/frost';
 import type { MirrorRef } from '../../src/game/floorObjects';
 import type { PlayerState } from '../../src/game/player';
 import { initEchoes, sensesPlayer, updateEcho, type EchoState } from '../../src/game/echo';
+import { initWaterRuntime, type WaterRuntime } from '../../src/game/water';
 
 // One straight open corridor across the middle row of a 5x5 grid: row y=2,
 // whose cell centers lie on world y=0 (x = -8..8). All sense geometry stays
@@ -44,6 +50,13 @@ const echoAt = (x: number, y: number, over: Partial<EchoState> = {}): EchoState 
   ...over,
 });
 
+/** One still (or rippled) pool at a world spot — the water eye fixture. */
+const poolAt = (x: number, y: number, rippledAt: number | null = null): WaterRuntime => ({
+  x,
+  y,
+  rippledAt,
+});
+
 describe('initEchoes', () => {
   it('spawns one patrol echo per spawn point at world positions', () => {
     const g = openGrid();
@@ -71,16 +84,18 @@ describe('sensesPlayer', () => {
     const rt = initMirrorRuntime(mirrors);
     const echo = echoAt(-1.5, 0);
     const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
-    expect(sensesPlayer(echo, player, mirrors, rt, g, 1000)).toBe(true);
+    expect(sensesPlayer(echo, player, mirrors, rt, [], g, 1000)).toBe(true);
     applyFog(rt, 1, 1000);
-    expect(sensesPlayer(echo, player, mirrors, rt, g, 2000)).toBe(false);
+    expect(sensesPlayer(echo, player, mirrors, rt, [], g, 2000)).toBe(false);
   });
 
   it('senses across the corridor through a distant shared mirror', () => {
     const g = openGrid();
     const mirrors = [mir(1, 0, 0)];
     const rt = initMirrorRuntime(mirrors);
-    expect(sensesPlayer(echoAt(-8, 0), { x: 8, y: 0, heading: 0 }, mirrors, rt, g, 0)).toBe(true);
+    expect(sensesPlayer(echoAt(-8, 0), { x: 8, y: 0, heading: 0 }, mirrors, rt, [], g, 0)).toBe(
+      true,
+    );
   });
 
   it('senses through a portrait — the ancestors are eyes too (T2)', () => {
@@ -88,17 +103,21 @@ describe('sensesPlayer', () => {
     const mirrors = [{ ...mir(1, 0, 0), kind: 'portrait' as const }];
     const rt = initMirrorRuntime(mirrors);
     const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
-    expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt, g, 1000)).toBe(true);
+    expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt, [], g, 1000)).toBe(true);
     applyFog(rt, 1, 1000); // fogging the pane blinds the eye, standing-style
-    expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt, g, 2000)).toBe(false);
+    expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt, [], g, 2000)).toBe(false);
   });
 
   it('no mirror, or only out-of-range mirrors → blind', () => {
     const g = openGrid();
-    expect(sensesPlayer(echoAt(-1.5, 0), { x: 1.5, y: 0, heading: 0 }, [], [], g, 0)).toBe(false);
+    expect(sensesPlayer(echoAt(-1.5, 0), { x: 1.5, y: 0, heading: 0 }, [], [], [], g, 0)).toBe(
+      false,
+    );
     const far = [mir(1, 0, 0)];
     const rt = initMirrorRuntime(far);
-    expect(sensesPlayer(echoAt(-50, 0), { x: 1.5, y: 0, heading: 0 }, far, rt, g, 0)).toBe(false);
+    expect(sensesPlayer(echoAt(-50, 0), { x: 1.5, y: 0, heading: 0 }, far, rt, [], g, 0)).toBe(
+      false,
+    );
   });
 
   it('a wall between echo and mirror blocks the sight', () => {
@@ -106,9 +125,57 @@ describe('sensesPlayer', () => {
     const mirrors = [mir(1, 0, 0)];
     const rt = initMirrorRuntime(mirrors);
     // echo in row 1 (world y=-4): mirror is 4m away but across a wall
-    expect(sensesPlayer(echoAt(0, -4), { x: 1.5, y: 0, heading: 0 }, mirrors, rt, g, 0)).toBe(
+    expect(sensesPlayer(echoAt(0, -4), { x: 1.5, y: 0, heading: 0 }, mirrors, rt, [], g, 0)).toBe(
       false,
     );
+  });
+});
+
+// T3 — the water-mirrors: standing pools are Echo eyes like clear glass
+// (kind-independent of the mirror list — NO MirrorRef, no fog state), and the
+// ONE blindness is the player's ripple.
+describe('sensesPlayer — water eyes (T3)', () => {
+  it('senses through still water with no mirrors on the floor at all', () => {
+    const g = openGrid();
+    const water = initWaterRuntime([{ x: 0, y: 0 }]);
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    expect(sensesPlayer(echoAt(-1.5, 0), player, [], [], water, g, 1000)).toBe(true);
+  });
+
+  it('a rippled pool is blind — and the eye reopens when the ripple lapses', () => {
+    const g = openGrid();
+    const water = [poolAt(0, 0, 1000)]; // rippled at t=1000
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    expect(sensesPlayer(echoAt(-1.5, 0), player, [], [], water, g, 1000)).toBe(false);
+    expect(
+      sensesPlayer(echoAt(-1.5, 0), player, [], [], water, g, 1000 + WATER_RIPPLE_MS - 1),
+    ).toBe(false); // the last blinded ms
+    expect(sensesPlayer(echoAt(-1.5, 0), player, [], [], water, g, 1000 + WATER_RIPPLE_MS)).toBe(
+      true,
+    ); // expiry reopens the eye
+  });
+
+  it('a wall between echo and pool blocks the sight, like glass', () => {
+    const g = openGrid();
+    const water = initWaterRuntime([{ x: 0, y: 0 }]);
+    expect(sensesPlayer(echoAt(0, -4), { x: 1.5, y: 0, heading: 0 }, [], [], water, g, 0)).toBe(
+      false,
+    );
+  });
+
+  it('water beyond SENSE_RANGE does not see; a still pool can carry the sight when every mirror is fogged', () => {
+    const g = openGrid();
+    const far = initWaterRuntime([{ x: -8, y: 0 }]);
+    const player: PlayerState = { x: 60, y: 0, heading: 0 }; // out of range of everything
+    expect(sensesPlayer(echoAt(8, 0), player, [], [], far, g, 0)).toBe(false);
+    // fog the only mirror; the still pool keeps the echo's eye open
+    const mirrors = [mir(1, 0, 0)];
+    const rt = initMirrorRuntime(mirrors);
+    applyFog(rt, 1, 0);
+    const near = initWaterRuntime([{ x: 0, y: 0 }]);
+    expect(
+      sensesPlayer(echoAt(-1.5, 0), { x: 1.5, y: 0, heading: 0 }, mirrors, rt, near, g, 0),
+    ).toBe(true);
   });
 });
 
@@ -128,6 +195,7 @@ describe('updateEcho', () => {
       player,
       mirrors,
       rt,
+      [],
       g,
       anchors,
       999,
@@ -140,6 +208,7 @@ describe('updateEcho', () => {
       player,
       mirrors,
       rt,
+      [],
       g,
       anchors,
       1000,
@@ -149,6 +218,39 @@ describe('updateEcho', () => {
     expect(chase.lastSensedCell).toEqual(g.cellAt(1.5, 0));
     expect(chase.loseMemoryAt).toBe(1000 + CHASE_MEMORY_MS);
     expect(chase.nextSenseAt).toBe(1000 + SENSE_INTERVAL_MS);
+  });
+
+  it('chases through rippled-blind water too: a pool the player ripples mid-chase loses them', () => {
+    const g = openGrid();
+    const anchors = [{ x: -8, y: 0 }];
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    const chasing = echoAt(-1.5, 0, { loseMemoryAt: 0, nextSenseAt: 1000 });
+    // still water carries the sense → chase begins
+    const still = updateEcho(
+      chasing,
+      player,
+      [],
+      [],
+      initWaterRuntime([{ x: 0, y: 0 }]),
+      g,
+      anchors,
+      1000,
+      1 / 120,
+    );
+    expect(still.mode).toBe('chase');
+    // the memory lapses; the pool is rippled now — the fresh check finds no eye
+    const rippled = updateEcho(
+      { ...still, loseMemoryAt: 0, nextSenseAt: 2000 },
+      player,
+      [],
+      [],
+      [poolAt(0, 0, 1500)],
+      g,
+      anchors,
+      2000,
+      1 / 120,
+    );
+    expect(rippled.mode).toBe('patrol'); // the echo loses you
   });
 
   it('chase → patrol after CHASE_MEMORY_MS without a fresh sight', () => {
@@ -166,8 +268,10 @@ describe('updateEcho', () => {
       loseMemoryAt: 3000,
       nextSenseAt: 0,
     });
-    expect(updateEcho(chasing, player, mirrors, rt, g, anchors, 2999, 1 / 120).mode).toBe('chase');
-    const lost = updateEcho(chasing, player, mirrors, rt, g, anchors, 3000, 1 / 120);
+    expect(updateEcho(chasing, player, mirrors, rt, [], g, anchors, 2999, 1 / 120).mode).toBe(
+      'chase',
+    );
+    const lost = updateEcho(chasing, player, mirrors, rt, [], g, anchors, 3000, 1 / 120);
     expect(lost.mode).toBe('patrol');
     expect(lost.target).toEqual(g.cellAt(anchors[0]!.x, anchors[0]!.y)); // back on the anchor
   });
@@ -180,7 +284,7 @@ describe('updateEcho', () => {
     applyFog(rt, 2, 0);
     const anchors = [{ x: 8, y: 0 }];
     const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
-    const e = updateEcho(echoAt(-8, 0), player, mirrors, rt, g, anchors, 1000, 0.5);
+    const e = updateEcho(echoAt(-8, 0), player, mirrors, rt, [], g, anchors, 1000, 0.5);
     expect(e.mode).toBe('confused');
     expect(e.target).toBeNull();
     expect(e.field).toBeNull();
@@ -195,7 +299,7 @@ describe('updateEcho', () => {
     const one = [mir(1, -7, 0)];
     const rtOne = initMirrorRuntime(one);
     applyFog(rtOne, 1, 0);
-    expect(updateEcho(echoAt(-8, 0), player, one, rtOne, g, anchors, 1000, 0.5).mode).toBe(
+    expect(updateEcho(echoAt(-8, 0), player, one, rtOne, [], g, anchors, 1000, 0.5).mode).toBe(
       'patrol',
     );
     // two fogged but one clear eye within CONFUSE_UNFOGGED_R → senses and chases instead
@@ -203,7 +307,9 @@ describe('updateEcho', () => {
     const rtMix = initMirrorRuntime(mix);
     applyFog(rtMix, 1, 0);
     applyFog(rtMix, 2, 0);
-    expect(updateEcho(echoAt(-8, 0), player, mix, rtMix, g, anchors, 1000, 0.5).mode).toBe('chase');
+    expect(updateEcho(echoAt(-8, 0), player, mix, rtMix, [], g, anchors, 1000, 0.5).mode).toBe(
+      'chase',
+    );
   });
 
   it('patrol movement advances toward the next flow cell and rotates anchors on arrival', () => {
@@ -220,6 +326,7 @@ describe('updateEcho', () => {
       player,
       noMirrors,
       [],
+      [],
       g,
       anchors,
       0,
@@ -229,7 +336,7 @@ describe('updateEcho', () => {
     expect(e.y).toBeCloseTo(0);
     expect(e.heading).toBeCloseTo(Math.PI / 2); // heading 0 = north = -y → east is π/2
     // standing on the anchor center: arrival rotates to the next anchor and walks back
-    e = updateEcho({ ...e, x: 8, y: 0 }, player, noMirrors, [], g, anchors, 10, 1 / 120);
+    e = updateEcho({ ...e, x: 8, y: 0 }, player, noMirrors, [], [], g, anchors, 10, 1 / 120);
     expect(e.anchorIdx).toBe(1);
     expect(e.x).toBeLessThan(8);
   });
@@ -248,7 +355,7 @@ describe('updateEcho', () => {
     });
     let dist = Math.hypot(e.x - player.x, e.y - player.y);
     for (let i = 0; i < 240 && dist > 1e-9; i++) {
-      e = updateEcho(e, player, [], [], g, anchors, 5000 + i * 8, 1 / 120);
+      e = updateEcho(e, player, [], [], [], g, anchors, 5000 + i * 8, 1 / 120);
       const next = Math.hypot(e.x - player.x, e.y - player.y);
       expect(next).toBeLessThan(dist); // every step closes
       dist = next;
@@ -268,7 +375,7 @@ describe('updateEcho', () => {
       loseMemoryAt: 10_000,
       nextSenseAt: 1_000_000,
     });
-    const next = updateEcho(e, player, [], [], g, anchors, 5000, 1 / 120);
+    const next = updateEcho(e, player, [], [], [], g, anchors, 5000, 1 / 120);
     expect(next.x).toBeCloseTo(1.5 - ECHO_SPEED / 120); // toward (0,0), not toward x=30
     expect(next.y).toBeCloseTo(0);
   });
