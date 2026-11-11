@@ -7,6 +7,7 @@ import {
   TIER_FIVE_FLOORS,
   TIER_FOUR_FLOORS,
   TIER_ONE_FLOORS,
+  TIER_SIX_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
 } from '../engine/constants';
@@ -47,37 +48,40 @@ export function floorSeed(c: Campaign): string {
  *  here — but LEAVING a Dwaar floor re-arms the tier flag for the tier
  *  below (Act I continues past Dwaar I), so the single `tierComplete` flag
  *  always reads "the CURRENT tier's threshold has been claimed".
- *  T5: the campaign is TERMINAL at floor 50 (Dwaar V closes Act II, spec
- *  §2.3) — descend there is a NO-OP that returns the same object, so the
- *  tier screen is the end of the house until Act III exists. (The T4-era
- *  terminus at 40 is retired: 40 → 41 is a real descent now — Act II
- *  opens.) */
+ *  T6: the campaign is TERMINAL at floor 60 (Dwaar VI closes the house's
+ *  second act of floors) — descend there is a NO-OP that returns the same
+ *  object, so the tier screen is the end of the house until Act III exists.
+ *  (The T5-era terminus at 50 is retired: 50 → 51 is a real descent now —
+ *  the Furnace Wings open, and Dwaar V's claim joins the interstitial
+ *  cascade like II/III/IV.) */
 export function descend(c: Campaign): Campaign {
-  if (c.floor >= TIER_FIVE_FLOORS) return c; // Act II ends at 50 — no floor 51 yet
+  if (c.floor >= TIER_SIX_FLOORS) return c; // the house ends at 60 — no floor 61 yet
   const next: Campaign = { ...c, floor: c.floor + 1 };
   return isDwaar(c.floor) ? { ...next, tierComplete: false } : next;
 }
 
 /** Truth-Shard claim: only takes effect standing on a Dwaar floor —
- *  Dwaar I (10), Dwaar II (20), Dwaar III (30), Dwaar IV (40) or Dwaar V
- *  (50). The flag stays single: each tier's completion sets it again after
- *  the descent from the tier above re-armed it. */
+ *  Dwaar I (10), Dwaar II (20), Dwaar III (30), Dwaar IV (40), Dwaar V
+ *  (50) or Dwaar VI (60). The flag stays single: each tier's completion
+ *  sets it again after the descent from the tier above re-armed it. */
 export function completeTier(c: Campaign): Campaign {
   return isDwaar(c.floor) ? { ...c, tierComplete: true } : c;
 }
 
 /** Which tier a floor belongs to: 1–10 → 1, 11–20 → 2, 21–30 → 3,
- *  31–40 → 4, 41–50 → 5. */
-export function tierOf(floor: number): 1 | 2 | 3 | 4 | 5 {
-  return floor > TIER_FOUR_FLOORS
-    ? 5
-    : floor > TIER_THREE_FLOORS
-      ? 4
-      : floor > TIER_TWO_FLOORS
-        ? 3
-        : floor > TIER_ONE_FLOORS
-          ? 2
-          : 1;
+ *  31–40 → 4, 41–50 → 5, 51–60 → 6. */
+export function tierOf(floor: number): 1 | 2 | 3 | 4 | 5 | 6 {
+  return floor > TIER_FIVE_FLOORS
+    ? 6
+    : floor > TIER_FOUR_FLOORS
+      ? 5
+      : floor > TIER_THREE_FLOORS
+        ? 4
+        : floor > TIER_TWO_FLOORS
+          ? 3
+          : floor > TIER_ONE_FLOORS
+            ? 2
+            : 1;
 }
 
 /** The Dwaar threshold halls occupy the last floor of each tier. */
@@ -87,37 +91,46 @@ export function isDwaar(floor: number): boolean {
     floor === TIER_TWO_FLOORS ||
     floor === TIER_THREE_FLOORS ||
     floor === TIER_FOUR_FLOORS ||
-    floor === TIER_FIVE_FLOORS
+    floor === TIER_FIVE_FLOORS ||
+    floor === TIER_SIX_FLOORS
   );
 }
 
-// ---- the sentinel rotation (T5, spec §4.6) --------------------------------
+// ---- the sentinel rotation (T5, extended T6, spec §4.6) --------------------
 // The ladder STOPS GROWING: tiers 2–4 each added a Sentinel and the bare
 // `>=` gates expressed that. Act II rotates instead — floors 41–49 hunt with
-// Taal alone (Gher and Aavart rest — the ratified change; they were
-// unreachable code past 40 anyway, since 41–50 did not exist), and Dwaar V
-// (50) is the first ALL-FOUR duel. These presence functions replace the bare
-// gates at every spawn/feed site; every floor 1–40 reads EXACTLY as the old
-// gates did (the rotation only ever changes behavior where none existed).
+// Taal alone (Gher and Aavart rest — the ratified change), Dwaar V (50) was
+// the first ALL-FOUR duel, and T6's Furnace Wings turn the wheel again: TAAL
+// RESTS on 51–59 (the FIRST rest of his career — his beat-water pairing was
+// the Flood's gimmick; the Furnace is Gher+Aavart's home and the heat
+// re-tunes the fight), Gher and Aavart RETURN from rest to walk 51–60, and
+// Dwaar VI (60) calls all four down — the four-Sentinel crucible. These
+// presence functions replace the bare gates at every spawn/feed site; every
+// floor 1–40 reads EXACTLY as the old gates did (the rotation only ever
+// changes behavior where none existed).
 
 /** The beat-walker: his cameo floor (5) is a separate gate — from the
- *  Sentinel floor (11) up he walks EVERY floor, Act II included. */
+ *  Sentinel floor (11) through the Flood's close (50) he walked EVERY floor,
+ *  but the Furnace gives him his first rest (51–59); the Dwaar VI crucible
+ *  calls him back down (60). */
 export function taalPresent(floor: number): boolean {
-  return floor >= TAAL_SENTINEL_FLOOR;
+  return (floor >= TAAL_SENTINEL_FLOOR && floor <= TIER_FIVE_FLOORS) || floor === TIER_SIX_FLOORS;
 }
 
 /** The Encircler: from the Gardens (21) through the Carnival (40) — exactly
- *  the accumulated ladder he has always walked, floors 1–40 frozen — then he
- *  rests on the Flood Halls (41–49, the ratified rotation) until the Dwaar V
- *  duel calls all four down (50). */
+ *  the accumulated ladder he has always walked, floors 1–40 frozen — he
+ *  rested on the Flood Halls (41–49, the ratified T5 rotation) until the
+ *  Dwaar V duel called him down (50); the Furnace is HIS home tier now and
+ *  he walks every floor of it (50–60). */
 export function gherPresent(floor: number): boolean {
-  return (floor >= GHER_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) || floor === TIER_FIVE_FLOORS;
+  return (floor >= GHER_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) || floor >= TIER_FIVE_FLOORS;
 }
 
-/** The Ambusher: the Carnival (31–40) — then he rests on the Flood Halls
- *  until the Dwaar V duel calls all four down (50). */
+/** The Ambusher: the Carnival (31–40), the T5 rest (41–49), the Dwaar V
+ *  duel (50) — and like the Encircler he returns for the whole Furnace
+ *  (50–60). */
 export function aavartPresent(floor: number): boolean {
-  return (floor >= AVART_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) || floor === TIER_FIVE_FLOORS;
+  return (floor >= AVART_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) || floor >= TIER_FIVE_FLOORS;
 }
 
 /** Best-time save key for the current floor (per-floor bucket, not per-run). */
@@ -159,10 +172,27 @@ export function bestKey(c: Campaign): string {
  *  beacons = 4 on every floor;
  *  braid = 0.30 + 0.004*(floor-41);
  *  chhayaDelayMs = max(3000, 3600 - 60*(floor-41)) (Dwaar V 2900 — the
- *  sunken arena floods, Chhaya does not wait). */
+ *  sunken arena floods, Chhaya does not wait).
+ *
+ *  T6 — floors 51..TIER_SIX_FLOORS (the Furnace Wings):
+ *  echoes = 4 on every procedural floor, Dwaar VI ALONE carrying 5 (the
+ *  four-Sentinel crucible duel is the tier's apex — the tier's teeth are
+ *  the heat and the warden-guarded decoys, not the echo count);
+ *  beacons = 4 on every floor;
+ *  braid = 0.32 + 0.004*(floor-51);
+ *  chhayaDelayMs = max(2900, 3500 - 60*(floor-51)) (Dwaar VI 2800 — the
+ *  crucible burns, Chhaya does not wait). */
 export function floorParams(floor: number): FloorRamp {
-  const f = Math.min(Math.max(floor, 1), TIER_FIVE_FLOORS);
+  const f = Math.min(Math.max(floor, 1), TIER_SIX_FLOORS);
   const dwaar = isDwaar(f);
+  if (f > TIER_FIVE_FLOORS) {
+    return {
+      echoes: dwaar ? 5 : 4,
+      beacons: 4,
+      braid: 0.32 + 0.004 * (f - TIER_FIVE_FLOORS - 1),
+      chhayaDelayMs: dwaar ? 2800 : Math.max(2900, 3500 - 60 * (f - TIER_FIVE_FLOORS - 1)),
+    };
+  }
   if (f > TIER_FOUR_FLOORS) {
     return {
       echoes: dwaar ? 5 : 4,
@@ -322,9 +352,39 @@ export const DWAAR_V_LAYOUT: readonly string[] = [
   '#############',
 ];
 
+/** Hand-authored Dwaar VI — the crucible forge, floor 60, where the
+ *  campaign's second act of floors closes on the four-Sentinel duel (Taal
+ *  back from rest). 13×13 like its elders, 101 open cells: TWIN PARALLEL
+ *  FORGE CORRIDORS — two long 3-wide halls (cols 1–3 and 9–11, rows 1–11,
+ *  33 cells each — the campaign's longest corridors) run the forge's length,
+ *  joined at the ends by the open cross runs and joined in the MIDDLE by a
+ *  central 3×3 CRUCIBLE CHAMBER through EXACTLY 4 connecting gaps (the W/E
+ *  pairs (4,5)/(8,7) and (4,7)/(8,5) — the only openings on the crucible's
+ *  perimeter; its N/S faces and the W/E middles stay wall, the forge mass).
+ *  The forge's chimneys stand as three-wide wall blocks on the cross runs
+ *  (rows 2 and 10) and single studs on rows 1 and 11. Invariant under 180°
+ *  rotation so the exit mirrors the entrance; all 101 open cells form one
+ *  connected component — four Sentinels need the room to walk their beats. */
+export const DWAAR_VI_LAYOUT: readonly string[] = [
+  '#############',
+  '#.....#.....#',
+  '#....###....#',
+  '#...........#',
+  '#...#####...#',
+  '#...........#',
+  '#...#...#...#',
+  '#...........#',
+  '#...#####...#',
+  '#...........#',
+  '#....###....#',
+  '#.....#.....#',
+  '#############',
+];
+
 /** The hand-authored layout of a Dwaar floor: Dwaar I at 10, Dwaar II at 20,
- *  Dwaar III at 30, Dwaar IV at 40, Dwaar V at 50. */
+ *  Dwaar III at 30, Dwaar IV at 40, Dwaar V at 50, Dwaar VI at 60. */
 function dwaarLayout(floor: number): readonly string[] {
+  if (floor === TIER_SIX_FLOORS) return DWAAR_VI_LAYOUT;
   if (floor === TIER_FIVE_FLOORS) return DWAAR_V_LAYOUT;
   if (floor === TIER_FOUR_FLOORS) return DWAAR_IV_LAYOUT;
   if (floor === TIER_THREE_FLOORS) return DWAAR_III_LAYOUT;
@@ -335,7 +395,7 @@ function dwaarLayout(floor: number): readonly string[] {
  *  the entrance; a FloorGrid built from this opens edges between adjacent
  *  open cells only — see maze.floorFromGrid). Defaults to Dwaar I; floor 20
  *  reads DWAAR_II_LAYOUT, floor 30 DWAAR_III_LAYOUT, floor 40
- *  DWAAR_IV_LAYOUT, floor 50 DWAAR_V_LAYOUT. */
+ *  DWAAR_IV_LAYOUT, floor 50 DWAAR_V_LAYOUT, floor 60 DWAAR_VI_LAYOUT. */
 export function dwaarGrid(floor: number = DWAAR_FLOOR): {
   width: number;
   height: number;

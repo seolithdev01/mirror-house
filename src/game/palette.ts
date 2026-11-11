@@ -113,15 +113,18 @@ export const TIER_FIVE_PALETTE: TierPalette = {
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
  *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
  *  retired. T4/T4: tier 4 wears the Carnival palette — the documented
- *  tier-one stand-in (T4/T1's fallthrough) is retired by that commit.
+ *  tier-one stand-in (T4/T1's fallthrough) is retired by this commit.
  *  T5/T4: tier 5 wears the Flood Halls' drowned indigo-green — the
  *  documented Carnival stand-in (T5/T1's fallthrough) is retired here,
- *  the same retire-the-stand-in pattern one tier down. */
-export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5): TierPalette {
+ *  the same retire-the-stand-in pattern one tier down.
+ *  T6/T1: tier 6 rides the Flood Halls' drowned indigo-green as the
+ *  DOCUMENTED STAND-IN until the Furnace's ember/copper lands (T6/T4 —
+ *  the same retire-the-stand-in pattern one tier down). */
+export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
   if (tier === 4) return TIER_FOUR_PALETTE;
-  if (tier === 5) return TIER_FIVE_PALETTE;
+  if (tier === 5 || tier === 6) return TIER_FIVE_PALETTE; // 6 = stand-in until T6/T4
   return TIER_ONE_PALETTE;
 }
 

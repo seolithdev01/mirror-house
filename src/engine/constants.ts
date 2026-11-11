@@ -87,10 +87,15 @@ export const AVART_LEAD_S = 1.8; // seconds of travel projected at a full sprint
 // interstitial cascade) and the stairs at 40 open into Act II.
 export const TIER_FOUR_FLOORS = 40;
 // T5 — the Flood Halls: floors 41–49 procedural ramp, 50 = Dwaar V (the
-// sunken arena; Truth-Shard V closes the tier on the full tier screen — the
-// row-9 apex duel, all four Sentinels). The campaign is TERMINAL at 50:
-// descend() is a no-op there until Act III exists.
+// sunken arena; the row-9 apex duel, all four Sentinels — Truth-Shard V
+// claims the tier mid-descent as the interstitial, T6/T1: the full screen
+// moved to Dwaar VI).
 export const TIER_FIVE_FLOORS = 50;
+// T6 — the Furnace Wings: floors 51–59 procedural ramp, 60 = Dwaar VI (the
+// crucible forge; Truth-Shard VI closes the tier on the full tier screen —
+// the four-Sentinel duel, Taal back from rest). The campaign is TERMINAL at
+// 60: descend() is a no-op there until Act III exists.
+export const TIER_SIX_FLOORS = 60;
 // T4/T3 — the distorting mirrors: while UNfogged carnival glass sees the
 // player, every enemy's mirror-sight reads them displaced by the mirror's
 // fixed per-id delta — axis-aligned cells, capped here. Fog the glass and the

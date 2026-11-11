@@ -141,6 +141,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.tier3': 'T3', // T3/T1 — the Reflecting-Gardens suffix: L24 · T3
     'chip.tier4': 'T4', // T4/T1 — the Carnival-of-Faces suffix: L34 · T4
     'chip.tier5': 'T5', // T5/T1 — the Flood-Halls suffix: L44 · T5
+    'chip.tier6': 'T6', // T6/T1 — the Furnace-Wings suffix: L54 · T6
     // overlays and banners
     'overlay.failCaught': 'Caught by the glass',
     'overlay.failCollapse': 'The mirrors collapsed',
@@ -173,9 +174,17 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // T5/T1 — Dwaar IV joins the interstitial cascade (the full screen is the
     // TIER close's now — Dwaar V's).
     'overlay.shardInterstitial4': '✦ Truth-Shard IV claimed — the house deepens…',
+    // T6/T1 — Dwaar V joins the cascade too (the full screen is the TIER
+    // close's now — Dwaar VI's): the shard banks mid-descent into the
+    // Furnace Wings.
+    'overlay.shardInterstitial5': '✦ Truth-Shard V claimed — the house deepens…',
     // T5/T1 — the Dwaar V tier screen (floor 50, the row-9 apex duel): the
     // one full screen Act II keeps, the campaign's terminal close.
+    // T6/T1 — the screen retires downward: Dwaar V cascades (above) and the
+    // full screen is Dwaar VI's — the four-Sentinel crucible's close, the
+    // campaign's terminal close (descend() is a no-op at 60 until Act III).
     'overlay.tierTitle5': '✦ Truth-Shard V claimed — Tier V complete',
+    'overlay.tierTitle6': '✦ Truth-Shard VI claimed — Tier VI complete',
     // T5/T1 — the Act II opening banner: the first floor-41 build of a
     // session raises it for 3s, once per session.
     'overlay.actBanner': 'ACT II — THE DECEPTION',
@@ -353,6 +362,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.tier3': 'चरण 3', // T3/T1 — प्रतिबिंब-उद्यान प्रत्यय: स्तर 24 · चरण 3
     'chip.tier4': 'चरण 4', // T4/T1 — आरसी-का-मेला प्रत्यय: स्तर 34 · चरण 4
     'chip.tier5': 'चरण 5', // T5/T1 — बाढ़ की हॉलें प्रत्यय: स्तर 44 · चरण 5
+    'chip.tier6': 'चरण 6', // T6/T1 — भट्टी की भुजाओं का प्रत्यय: स्तर 54 · चरण 6
     // परदे और पट्टियाँ — घर की आवाज़ में, पर संक्षेप में
     'overlay.failCaught': 'काँच ने आपको पकड़ लिया',
     'overlay.failCollapse': 'दर्पण ढह गए',
@@ -378,8 +388,14 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'overlay.actNote': 'अंक II: धोखा — घर अब आपकी नक़ल करने लगेगा…',
     // T5/T1 — द्वार IV अंतराल-श्रृंखला में शामिल (पूर्ण परदा अब द्वार V का है)
     'overlay.shardInterstitial4': '✦ सत्य-शार्ड IV प्राप्त — घर और गहरा होता है…',
+    // T6/T1 — द्वार V भी अंतराल-श्रृंखला में (पूर्ण परदा अब द्वार VI का है):
+    // शार्ड भट्टी की भुजाओं में उतरते हुए जमा होता है।
+    'overlay.shardInterstitial5': '✦ सत्य-शार्ड V प्राप्त — घर और गहरा होता है…',
     // T5/T1 — द्वार V का चरण-परदा (मंज़िल 50, नौवीं पंक्ति का शिखर-द्वंद्व)
+    // T6/T1 — परदा नीचे उतर गया: द्वार V अंतराल में, पूर्ण परदा द्वार VI का —
+    // चार-रक्षक की भट्ठी का समापन, अभियान का अंतिम परदा।
     'overlay.tierTitle5': '✦ सत्य-शार्ड V प्राप्त — चरण V पूर्ण',
+    'overlay.tierTitle6': '✦ सत्य-शार्ड VI प्राप्त — चरण VI पूर्ण',
     // T5/T1 — अंक II का उद्घाटन-बैनर: सत्र के पहले मंज़िल-41 निर्माण पर 3 सेकंड
     'overlay.actBanner': 'अंक II — धोखा',
     'overlay.actBannerNote': 'घर ने आपकी नक़ल करना शुरू कर दी है।',
@@ -459,6 +475,7 @@ export const CHIP_KEYS: readonly string[] = [
   'chip.tier3',
   'chip.tier4',
   'chip.tier5',
+  'chip.tier6',
   'tab.ask',
   'tab.hint',
   'tab.lore',

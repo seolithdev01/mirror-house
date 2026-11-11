@@ -28,6 +28,7 @@ import {
   TAAL_FLOOR,
   TIER_FIVE_FLOORS,
   TIER_FOUR_FLOORS,
+  TIER_SIX_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
   WALK_SPEED,
@@ -243,7 +244,9 @@ function bootFloorFromUrl(): number {
   // T3/T1 — widened with the campaign: floors 21–30 jump too (the e2e legs).
   // T4/T1 — and 31–40: the carnival legs jump the same way. T5/T1 — and
   // 41–50: the Flood Halls (Act II's banner + Dwaar V's duel are jumpable).
-  return Number.isInteger(n) && n >= 1 && n <= TIER_FIVE_FLOORS ? n : 1;
+  // T6/T1 — and 51–60: the Furnace Wings (the rotation rest + Dwaar VI's
+  // crucible are jumpable).
+  return Number.isInteger(n) && n >= 1 && n <= TIER_SIX_FLOORS ? n : 1;
 }
 /** Migration reads the legacy localStorage meta v1 ONCE; unreadable → null
  *  (a fresh default, never a dead boot). The localStorage copy is left in
@@ -425,26 +428,30 @@ let gherFigure: GherFigure | null = null;
 let aavart: AvartState | null = null;
 let aavartFigure: AavartFigure | null = null;
 // T5/T2 — the mirror-you decoys (Act II's first form): the house sends glass
-// copies of the Surveyor ahead on the Flood Halls. State + per-copy figures
-// are 1:1 by spawn order; buildFloor owns both (the teardown rides
-// floorDisposers with the rest of the stage), resetFloor kills every copy
-// with the attempt, and the spawn clock arms only on campaign floors 41–50.
+// copies of the Surveyor ahead on the Act II floors (41–60 — T6/T1 widens
+// the stream through the Furnace Wings). State + per-copy figures are 1:1
+// by spawn order; buildFloor owns both (the teardown rides floorDisposers
+// with the rest of the stage), resetFloor kills every copy with the
+// attempt, and the spawn clock arms only on campaign floors 41–60.
 // The rng is re-seeded per floor build (`{seed}:decoys`) — deterministic,
 // no Math.random anywhere in the house.
 let decoys: DecoyState[] = [];
 let decoyFigures: DecoyFigure[] = [];
 let decoyRng: Rng = createRng('decoys');
-let nextDecoySpawnAt = Infinity; // armed by buildFloor/resetFloor on 41–50 only
+let nextDecoySpawnAt = Infinity; // armed by buildFloor/resetFloor on 41–60 only
 let decoyIdNext = 0;
 /** The jittered spawn cadence: DECOY_SPAWN_EVERY_MS scaled 0.8–1.2× by the
  *  floor rng — the house keeps no metronome. */
 function decoySpawnInterval(): number {
   return DECOY_SPAWN_EVERY_MS * (0.8 + 0.4 * decoyRng.next());
 }
-/** The copies walk the campaign's Flood Halls only — a venue floor is the
- *  sponsor's stage, and the house's deceptions stay home (M6 isolation). */
+/** The copies walk the campaign's Act II floors only (41–60 — the T6/T1
+ *  ratification widens the stream through the Furnace Wings; the rng stays
+ *  per-floor `{seed}:decoys`, and heat adds no floorObjects draws) — a venue
+ *  floor is the sponsor's stage, and the house's deceptions stay home
+ *  (M6 isolation). */
 function decoysActiveFloor(): boolean {
-  return venue === null && tierOf(campaign.floor) === 5;
+  return venue === null && tierOf(campaign.floor) >= 5;
 }
 /** One copy spawn — the single path the sim's jittered clock and the DEV
  *  faucet (`forceDecoy`) both take: spawnDecoy's gates (alive < MAX_ALIVE,
@@ -462,13 +469,15 @@ function spawnOneDecoy(now: number): { x: number; y: number } | null {
   pushCaption(`decoy-spawn-${spawned.id}`, t(lang, 'caption.decoySpawn'));
   return { x: spawned.x, y: spawned.y };
 }
-// T5/T3 — the rising water: active on the SAME floors the decoys walk (the
-// Flood Halls, campaign 41–50; a venue floor never floods). The level itself
-// is DERIVED — waterLevel(runElapsedMs(phase, now)) — so the clock needs no
-// reset anywhere; the one cached read (waterLevelNow) is zeroed in resetFloor,
-// where the glass's un-shrink rides the same sync (lastWaterScale below).
+// T5/T3 — the rising water: the FLOOD HALLS' own modifier (campaign 41–50;
+// a venue floor never floods, and the T6 Furnace burns dry — heat is the
+// Wings' modifier, not the flood; the decoy stream widens past 50, the water
+// does not). The level itself is DERIVED — waterLevel(runElapsedMs(phase,
+// now)) — so the clock needs no reset anywhere; the one cached read
+// (waterLevelNow) is zeroed in resetFloor, where the glass's un-shrink rides
+// the same sync (lastWaterScale below).
 function waterActiveFloor(): boolean {
-  return decoysActiveFloor();
+  return venue === null && tierOf(campaign.floor) === 5;
 }
 /** Dwaar V (floor 50, the sunken arena) floods on DWAAR_V_WATER_S — 1.5× the
  *  ramp's clock — because the row-9 apex duel runs against the water. */
@@ -743,6 +752,7 @@ function aainaContext(): HintContext {
     // T3 — the Encircler: a tier-3 floor and him within 8 m. Slotted beside
     // the taalSentinel rule — the third Sentinel's counter is the feint.
     // T5/T1 — reads the rotation: he rests on 41–49, walks the V duel.
+    // T6/T1 — and the whole Furnace (51–60): the Wings are his home tier.
     gherNear:
       gherPresent(campaign.floor) &&
       gher !== null &&
@@ -750,6 +760,7 @@ function aainaContext(): HintContext {
     // T4 — the Ambusher: a tier-4 floor and him within 8 m. Slotted beside
     // the other Sentinel rules — the fourth keeper's counter is your pace.
     // T5/T1 — reads the rotation: he rests on 41–49, walks the V duel.
+    // T6/T1 — and the whole Furnace (51–60) beside the Encircler.
     avartNear:
       aavartPresent(campaign.floor) &&
       aavart !== null &&
@@ -1197,9 +1208,10 @@ function teardownFloor(): void {
 /** The floor chip: `L02` on the tier-one ramp; tier two floors carry the
  *  `· T2` suffix (`L14 · T2`), tier three the `· T3` suffix (`L24 · T3`),
  *  tier four the `· T4` suffix (`L34 · T4`), tier five the `· T5` suffix
- *  (`L44 · T5`); the threshold floors name their Dwaar (`L10 · DWAAR I ✦`,
- *  `L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`, `L40 · DWAAR IV ✦`,
- *  `L50 · DWAAR V ✦`).
+ *  (`L44 · T5`), tier six the `· T6` suffix (`L54 · T6`); the threshold
+ *  floors name their Dwaar (`L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`,
+ *  `L30 · DWAAR III ✦`, `L40 · DWAAR IV ✦`, `L50 · DWAAR V ✦`,
+ *  `L60 · DWAAR VI ✦`).
  *  M4/T6: the `L`/`स्तर` prefix, the `DWAAR`/`द्वार` name and the tier
  *  suffix localize. */
 function floorChipLabel(c: Campaign): string {
@@ -1214,19 +1226,23 @@ function floorChipLabel(c: Campaign): string {
             ? 'IV'
             : c.floor === TIER_FIVE_FLOORS
               ? 'V'
-              : 'III';
+              : c.floor === TIER_SIX_FLOORS
+                ? 'VI'
+                : 'III';
     return `${tag} · ${t(lang, 'chip.dwaar')} ${numeral} ✦`;
   }
   const tier = tierOf(c.floor);
-  return tier === 5
-    ? `${tag} · ${t(lang, 'chip.tier5')}`
-    : tier === 4
-      ? `${tag} · ${t(lang, 'chip.tier4')}`
-      : tier === 3
-        ? `${tag} · ${t(lang, 'chip.tier3')}`
-        : tier === 2
-          ? `${tag} · ${t(lang, 'chip.tier')}`
-          : tag;
+  return tier === 6
+    ? `${tag} · ${t(lang, 'chip.tier6')}`
+    : tier === 5
+      ? `${tag} · ${t(lang, 'chip.tier5')}`
+      : tier === 4
+        ? `${tag} · ${t(lang, 'chip.tier4')}`
+        : tier === 3
+          ? `${tag} · ${t(lang, 'chip.tier3')}`
+          : tier === 2
+            ? `${tag} · ${t(lang, 'chip.tier')}`
+            : tag;
 }
 
 /** Build the campaign's current floor. Floors 1–9 come from the procedural
@@ -1255,21 +1271,23 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     pack !== null
       ? generateFloor({ ...TIER_ONE, seed, ...vp!.mazeOverrides }) // always procedural, pack-shaped
       : isDwaar(c.floor)
-        ? floorFromGrid(dwaarGrid(c.floor), seed) // Dwaar I (10), II (20), III (30), IV (40) or V (50)
+        ? floorFromGrid(dwaarGrid(c.floor), seed) // Dwaar I (10) … V (50), VI (60)
         : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
   exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
   // The tier dresses the stage (T2/T3): campaign floors 11–20 wear the Hall
   // of Ancestors palette, 21–30 the Reflecting Gardens, 31–40 the Carnival
-  // of Faces, 41–50 the Flood Halls — the same floorAccent lattice
-  // re-tinted, tiers 1–10 keep the night-blue tier-one set untouched. The
-  // melody moves with it (T3/T4): Durga pentatonic on tier-2 floors, the
-  // pastoral pentatonic AND the flute voice (sine) on tier-3, the
-  // mischievous pentatonic back on the triangle (the reed's wink) on tier-4,
-  // the dark pentatonic on the triangle (the reed gone under) on tier-5 —
-  // swapped live (next note uses them; the drone root never moves).
-  // T5/T4: the tier-5 stand-in (the carnival groove) retires — the Flood
-  // Halls dress AND hum as themselves.
+  // of Faces, 41–50 the Flood Halls, 51–60 the Furnace Wings — the same
+  // floorAccent lattice re-tinted, tiers 1–10 keep the night-blue tier-one
+  // set untouched. The melody moves with it (T3/T4): Durga pentatonic on
+  // tier-2 floors, the pastoral pentatonic AND the flute voice (sine) on
+  // tier-3, the mischievous pentatonic back on the triangle (the reed's
+  // wink) on tier-4, the dark pentatonic on the triangle (the reed gone
+  // under) on tier-5 — swapped live (next note uses them; the drone root
+  // never moves). T5/T4: the tier-5 stand-in (the carnival groove) retires —
+  // the Flood Halls dress AND hum as themselves. T6/T1: tier 6 rides the
+  // Flood Halls' pair as the DOCUMENTED STAND-IN until the furnace palette
+  // and urgent scale land (T6/T4 — the retire-the-stand-in pattern).
   // Venue side-floors stay tier-one dressed — scale AND voice: a return
   // from a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
@@ -1280,6 +1298,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       3: TIER_THREE_SCALE,
       4: TIER_FOUR_SCALE,
       5: TIER_FIVE_SCALE, // T5/T4 — the dark pentatonic (the stand-in retires)
+      6: TIER_FIVE_SCALE, // T6/T1 stand-in until T6/T4's urgent scale
     } as const;
     const voiceByTier = {
       1: 'triangle',
@@ -1287,6 +1306,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       3: 'sine',
       4: 'triangle',
       5: 'triangle', // the reed stays — only the notes drown
+      6: 'triangle', // T6/T1 stand-in until T6/T4
     } as const;
     audio.setScale(scaleByTier[tier]);
     audio.setVoice(voiceByTier[tier]);
@@ -1532,6 +1552,9 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // already catches on every floor that far (taalOutcome). T5/T1 — the gate
   // reads taalPresent() now: the rotation changes nothing for him (he walks
   // every floor 11+ INCLUDING Act II — the one Sentinel who never rests).
+  // T6/T1 — that streak ENDS: the Furnace gives him his first rest (51–59),
+  // and the Dwaar VI crucible alone calls him back (60) — the four-Sentinel
+  // duel.
   if (pack === null && (c.floor === TAAL_FLOOR || taalPresent(c.floor))) {
     const fig = createTaal();
     scene.add(fig.group);
@@ -1556,8 +1579,9 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // accumulated; all three walked the Carnival). T5/T1 — the ROTATION: the
   // accumulation stops — gherPresent() rests him on the Flood Halls
   // (41–49) and calls him down ONLY for the Dwaar V duel (50); floors
-  // 21–30 read exactly as always. M6/T1 — never on a venue floor: the
-  // campaign's roads stay home.
+  // 21–30 read exactly as always. T6/T1 — he RETURNS from rest: the
+  // Furnace Wings are his home tier, gherPresent() walks him 50–60.
+  // M6/T1 — never on a venue floor: the campaign's roads stay home.
   if (pack === null && gherPresent(c.floor)) {
     const fig = createGher();
     scene.add(fig.group);
@@ -1580,7 +1604,9 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // state on the loop, null everywhere else. T5/T1 — the ROTATION:
   // aavartPresent() rests him on the Flood Halls (41–49) and calls him down
   // ONLY for the Dwaar V duel (50); floors 31–40 read exactly as always.
-  // M6/T1 — never on a venue floor: the campaign's pace stays home.
+  // T6/T1 — he RETURNS from rest: the Furnace Wings walk him 50–60 beside
+  // the Encircler. M6/T1 — never on a venue floor: the campaign's pace
+  // stays home.
   if (pack === null && aavartPresent(c.floor)) {
     const fig = createAavart();
     scene.add(fig.group);
@@ -1597,8 +1623,9 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
 
   // T5/T2 — the mirror-you decoys reset with the floor: any attempt's leftover
   // figures die here (teardownFloor already ran the previous floor's disposer,
-  // so the arrays are empty — this re-arms the clock on the Flood Halls only,
-  // seeded from THIS floor's seed like every other rng stream).
+  // so the arrays are empty — this re-arms the clock on the Act II floors
+  // only (41–60, T6/T1), seeded from THIS floor's seed like every other rng
+  // stream).
   decoyIdNext = 0;
   decoyRng = createRng(`${seed}:decoys`);
   nextDecoySpawnAt = decoysActiveFloor() ? performance.now() + decoySpawnInterval() : Infinity;
@@ -2312,8 +2339,8 @@ function frame(now: number): void {
         distortAnnounced = true;
         pushCaption('distort', t(lang, 'caption.distort'));
       }
-      // T5/T2 — the mirror-you decoys: on the Flood Halls the spawn clock
-      // fires on its jittered cadence (the gate: campaign floor 41–50, the
+      // T5/T2 — the mirror-you decoys: on the Act II floors the spawn clock
+      // fires on its jittered cadence (the gate: campaign floor 41–60, the
       // clock RUNNING — the sim loop also ticks during `ready`, and the
       // timer's framing is copies-after-your-first-step, so an idle player
       // draws nothing — plus alive < DECOY_MAX_ALIVE, checked inside
@@ -2579,13 +2606,14 @@ function frame(now: number): void {
     // procedural floors hold 0.8s behind the `descending…` overlay then
     // rebuild one floor deeper; a Dwaar claims its Truth-Shard. Dwaar I (10)
     // descends into the Hall of Ancestors, Dwaar II (20) into the Reflecting
-    // Gardens, Dwaar III (30) into the Carnival of Faces and Dwaar IV (40)
-    // into the Flood Halls — the interstitial cascade, tier-appropriately
-    // worded (T5/T1 ratified: IV joins II and III; the Act I close screen is
-    // retired — Act II announces itself with the floor-41 banner instead);
-    // Dwaar V (50) raises the TIER V completion screen (the row-9 apex
-    // duel's close) — the campaign is terminal there; descend() is a no-op,
-    // so the screen is the end of the house until Act III exists.
+    // Gardens, Dwaar III (30) into the Carnival of Faces, Dwaar IV (40) into
+    // the Flood Halls and Dwaar V (50) into the Furnace Wings — the
+    // interstitial cascade, tier-appropriately worded (T5/T1 ratified: IV
+    // joins II and III; T6/T1 ratified: V joins too — the Act I close screen
+    // is retired and Act II announced itself with the floor-41 banner);
+    // Dwaar VI (60) raises the TIER VI completion screen (the four-Sentinel
+    // crucible's close) — the campaign is terminal there; descend() is a
+    // no-op, so the screen is the end of the house until Act III exists.
     phase = clearRun(phase, now);
     if (venue !== null) {
       // M6/T1 — the SIDE-FLOOR clear: the sim halts and NOTHING banks — no
@@ -2615,23 +2643,24 @@ function frame(now: number): void {
       house = { ...house, shards: 0 };
       persist(true); // a cleared floor banks NOW — no debounce window
       updateShardsChip(); // chip flips from `banked (+pending)` to plain banked
-      if (isDwaar(campaign.floor) && tierOf(campaign.floor) === 5) {
-        // Dwaar V (50): Truth-Shard V claims the TIER — the full tier screen
-        // (Play again / Stay), the row-9 apex duel's close. No descendAt arms
-        // below, and campaign.descend is a no-op at 50 — the house ends here
-        // until Act III exists.
+      if (isDwaar(campaign.floor) && tierOf(campaign.floor) === 6) {
+        // Dwaar VI (60): Truth-Shard VI claims the TIER — the full tier screen
+        // (Play again / Stay), the four-Sentinel crucible's close. No descendAt
+        // arms below, and campaign.descend is a no-op at 60 — the house ends
+        // here until Act III exists.
         campaign = completeTier(campaign);
         save = mergeCampaign(save, campaign); // the tier close is a save event
         persist(true);
-        hud.showTierComplete({ tier: 5, floors: TIER_FIVE_FLOORS, shards: save.shards });
-        pushCaption('tier', t(lang, 'overlay.tierTitle5')); // the screen's own line
+        hud.showTierComplete({ tier: 6, floors: TIER_SIX_FLOORS, shards: save.shards });
+        pushCaption('tier', t(lang, 'overlay.tierTitle6')); // the screen's own line
       } else {
         if (isDwaar(campaign.floor)) {
-          // Dwaar I (10), II (20), III (30) and IV (40): the Truth-Shard is
-          // claimed and banked — but the descent continues DOWN. The stair
-          // door holds 0.8s like any ramp floor, then opens into the next
-          // tier's halls; the descent re-arms the tier flag so the new tier's
-          // floors pay their first-clear bonus (campaign.descend).
+          // Dwaar I (10), II (20), III (30), IV (40) and now V (50): the
+          // Truth-Shard is claimed and banked — but the descent continues
+          // DOWN. The stair door holds 0.8s like any ramp floor, then opens
+          // into the next tier's halls; the descent re-arms the tier flag so
+          // the new tier's floors pay their first-clear bonus
+          // (campaign.descend).
           campaign = completeTier(campaign);
           save = mergeCampaign(save, campaign); // the shard claim is a save event
           persist(true);
@@ -2639,16 +2668,19 @@ function frame(now: number): void {
           // interstitial in the tier screen's styling, never the tier screen
           // itself — the descend below proceeds exactly as on any ramp floor.
           // T3/T1: Dwaar II joins Dwaar I. T4/T1: Dwaar III cascades. T5/T1:
-          // Dwaar IV joins too (the full screen is the TIER close's now —
-          // Dwaar V's) and each banner names its own shard.
-          const shardWhich: 1 | 2 | 3 | 4 =
+          // Dwaar IV joins too (the full screen is the TIER close's now) and
+          // each banner names its own shard. T6/T1: Dwaar V joins the cascade
+          // (the full screen is Dwaar VI's — the campaign's terminal close).
+          const shardWhich: 1 | 2 | 3 | 4 | 5 =
             campaign.floor === DWAAR_FLOOR
               ? 1
               : campaign.floor === TIER_TWO_FLOORS
                 ? 2
                 : campaign.floor === TIER_THREE_FLOORS
                   ? 3
-                  : 4;
+                  : campaign.floor === TIER_FOUR_FLOORS
+                    ? 4
+                    : 5;
           hud.showShardInterstitial(shardWhich);
           pushCaption(
             'tier',
@@ -2660,7 +2692,9 @@ function frame(now: number): void {
                   ? 'overlay.shardInterstitial2'
                   : shardWhich === 3
                     ? 'overlay.shardInterstitial3'
-                    : 'overlay.shardInterstitial4',
+                    : shardWhich === 4
+                      ? 'overlay.shardInterstitial4'
+                      : 'overlay.shardInterstitial5',
             ),
           ); // the interstitial's own line
         }
