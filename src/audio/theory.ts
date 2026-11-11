@@ -19,6 +19,11 @@ export const TIER_THREE_SCALE: readonly number[] = [0, 2, 5, 7, 9];
  *  the funhouse grin (spec §6.1 row 4). */
 export const TIER_FOUR_SCALE: readonly number[] = [0, 2, 3, 7, 9];
 
+/** Tier-five mood: the Flood Halls' dark pentatonic — the minor frame with
+ *  no second and no sixth (flat third, open fourth and fifth, flat seventh):
+ *  the submerged scale the drowned halls hum (spec §6.1 row 5). */
+export const TIER_FIVE_SCALE: readonly number[] = [0, 3, 5, 7, 10];
+
 /** Standard equal-temperament MIDI-note-number → Hz. */
 export function midiToHz(semi: number): number {
   return 440 * Math.pow(2, (semi - 69) / 12);

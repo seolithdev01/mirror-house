@@ -4,6 +4,7 @@ import { APP_VERSION } from './appVersion';
 import { createAudioEngine } from './audio/engine';
 import {
   intensityFrom,
+  TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
   TIER_ONE_SCALE,
   TIER_THREE_SCALE,
@@ -444,6 +445,22 @@ function decoySpawnInterval(): number {
  *  sponsor's stage, and the house's deceptions stay home (M6 isolation). */
 function decoysActiveFloor(): boolean {
   return venue === null && tierOf(campaign.floor) === 5;
+}
+/** One copy spawn — the single path the sim's jittered clock and the DEV
+ *  faucet (`forceDecoy`) both take: spawnDecoy's gates (alive < MAX_ALIVE,
+ *  an open cell 8–12 BFS from the player), then state + figure + caption in
+ *  one move, so a forced copy is indistinguishable from a timed one. Returns
+ *  the copy's spawn spot (null when a gate held — the faucet surfaces it). */
+function spawnOneDecoy(now: number): { x: number; y: number } | null {
+  const spawned = spawnDecoy(decoys, player, floor.grid, decoyRng, decoyIdNext++, now);
+  if (spawned === null) return null;
+  decoys = [...decoys, spawned];
+  const fig = createDecoy(look); // an EXACT copy of your look — identical is the point
+  fig.group.position.set(spawned.x, 0, spawned.y);
+  scene.add(fig.group);
+  decoyFigures = [...decoyFigures, fig];
+  pushCaption(`decoy-spawn-${spawned.id}`, t(lang, 'caption.decoySpawn'));
+  return { x: spawned.x, y: spawned.y };
 }
 // T5/T3 — the rising water: active on the SAME floors the decoys walk (the
 // Flood Halls, campaign 41–50; a venue floor never floods). The level itself
@@ -1234,10 +1251,11 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // re-tinted, tiers 1–10 keep the night-blue tier-one set untouched. The
   // melody moves with it (T3/T4): Durga pentatonic on tier-2 floors, the
   // pastoral pentatonic AND the flute voice (sine) on tier-3, the
-  // mischievous pentatonic back on the triangle (the reed's wink) on tier-4
-  // — swapped live (next note uses them; the drone root never moves).
-  // T5/T1: tier 5 RIDES the carnival groove as the documented stand-in until
-  // the dark pentatonic lands (T5/T4 — the retire-the-stand-in pattern).
+  // mischievous pentatonic back on the triangle (the reed's wink) on tier-4,
+  // the dark pentatonic on the triangle (the reed gone under) on tier-5 —
+  // swapped live (next note uses them; the drone root never moves).
+  // T5/T4: the tier-5 stand-in (the carnival groove) retires — the Flood
+  // Halls dress AND hum as themselves.
   // Venue side-floors stay tier-one dressed — scale AND voice: a return
   // from a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
@@ -1247,14 +1265,14 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       2: TIER_TWO_SCALE,
       3: TIER_THREE_SCALE,
       4: TIER_FOUR_SCALE,
-      5: TIER_FOUR_SCALE, // T5/T1 stand-in until T5/T4's dark pentatonic
+      5: TIER_FIVE_SCALE, // T5/T4 — the dark pentatonic (the stand-in retires)
     } as const;
     const voiceByTier = {
       1: 'triangle',
       2: 'triangle',
       3: 'sine',
       4: 'triangle',
-      5: 'triangle', // T5/T1 stand-in until T5/T4
+      5: 'triangle', // the reed stays — only the notes drown
     } as const;
     audio.setScale(scaleByTier[tier]);
     audio.setVoice(voiceByTier[tier]);
@@ -2287,15 +2305,7 @@ function frame(now: number): void {
       // positions.
       if (decoysActiveFloor() && now >= nextDecoySpawnAt) {
         nextDecoySpawnAt = now + decoySpawnInterval();
-        const spawned = spawnDecoy(decoys, player, floor.grid, decoyRng, decoyIdNext++, now);
-        if (spawned !== null) {
-          decoys = [...decoys, spawned];
-          const fig = createDecoy(look); // an EXACT copy of your look — identical is the point
-          fig.group.position.set(spawned.x, 0, spawned.y);
-          scene.add(fig.group);
-          decoyFigures = [...decoyFigures, fig];
-          pushCaption(`decoy-spawn-${spawned.id}`, t(lang, 'caption.decoySpawn'));
-        }
+        spawnOneDecoy(now);
       }
       if (decoys.length > 0) decoys = updateDecoys(decoys, floor.grid, floor.exit, FIXED_STEP);
       echoes = echoes.map((e) => {
@@ -2881,6 +2891,13 @@ if (import.meta.env.DEV || testMode) {
     // T5/T2 — the LIVE copies (unshattered only): where each copy of you
     // stands. An empty array everywhere but the Flood Halls.
     decoys: () => decoys.filter((d) => !d.shattered).map((d) => ({ x: d.x, y: d.y })),
+    // T5/T4 dev faucet — force one copy spawn NOW (the game path stays the
+    // honest ~45s jittered clock; the e2e rides this to stay inside its
+    // budget). The same spawnOneDecoy the sim clock calls — MAX_ALIVE, the
+    // 8–12 window, the figure and the caption all hold — so a forced copy is
+    // indistinguishable from a timed one. Null off the Flood Halls or when a
+    // spawn gate held.
+    forceDecoy: () => (decoysActiveFloor() ? spawnOneDecoy(performance.now()) : null),
     // T5/T3 — the live water depth in meters (0 off the Flood Halls). The
     // e2e's flood leg reads it; the pinning comes from waterLevel.ts.
     waterLevel: () => waterLevelNow,

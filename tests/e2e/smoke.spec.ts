@@ -91,6 +91,13 @@ interface DebugHook {
   avartPos(): { x: number; y: number } | null;
   // T5/T2 — the LIVE mirror-you copies (unshattered only; empty off 41–50)
   decoys(): Array<{ x: number; y: number }>;
+  // T5/T4 dev faucet — force one copy spawn now (the same spawnOneDecoy path
+  // the jittered ~45s clock takes; null when a gate held or off the Flood
+  // Halls). The game path stays the honest timer — the e2e rides this.
+  forceDecoy(): { x: number; y: number } | null;
+  // T5/T3 — the live water depth in meters (derived from the run clock; 0
+  // off the Flood Halls and before the first input)
+  waterLevel(): number;
   // M6/T1 — the venue side-floor: which pack is live (null id = campaign
   // floor) and its floor's beacon total (the pack's own count).
   venue(): { active: boolean; id: string | null; beacons: number };
@@ -1892,5 +1899,122 @@ test('t4: aavart catches + distortion displaces', async ({ page }) => {
   });
   expect(truth.ap).toEqual({ x: truth.p.x, y: truth.p.y });
   expect(truth.mirrors.captured).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+// T5/T4 — Act II opens end to end. Floor 41 dresses tier 5 in the Flood
+// Halls' drowned indigo-green (the Carnival stand-in retires — its census is
+// pinned absent here), hums the dark pentatonic back on the triangle, and
+// the Act II banner rises on the first floor-41 build (its 3s clock hides
+// it). The rotation BEGINS: Gher and Aavart rest on 41–49, Taal walks alone.
+test('t5: floor 41 opens act two', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T5RUN&floor=41');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+      taal: h.taalPos(),
+      decoys: h.decoys(),
+      mirrors: h.mirrors(),
+      audio: h.audioState(),
+    };
+  });
+  expect(snap.tier).toBe(5);
+  expect(snap.floor).toBe(41);
+  expect(snap.gher, 'the rotation begins — the Encircler rests on 41–49').toBeNull();
+  expect(snap.avart, 'the rotation begins — the Ambusher rests on 41–49').toBeNull();
+  expect(snap.taal, 'the ladder accumulates — Taal walks the Flood Halls').not.toBeNull();
+  expect(snap.mirrors.distort, 'the distorting panes stay tier-4-only').toBe(0);
+  expect(snap.mirrors.portraits, 'the ancestor portraits stay tier-2-only').toBe(0);
+  expect(snap.decoys, 'no copy in the first seconds — the ~45s clock has not fired').toEqual([]);
+  // the dark pentatonic on the triangle (the seam tracks both from
+  // buildFloor, gesture or not)
+  expect(snap.audio.scale).toEqual([0, 3, 5, 7, 10]);
+  expect(snap.audio.voice).toBe('triangle');
+  // the Act II banner: up on THIS build, then gone when its clock expires
+  await expect(page.locator('#mh-act')).toBeVisible();
+  await expect(page.locator('#mh-act-title')).toHaveText('ACT II — THE DECEPTION');
+  await expect(page.locator('#mh-act-note')).toHaveText('The house has begun copying you.');
+  await expect(page.locator('#mh-act')).toBeHidden({ timeout: 5000 });
+  await expect(page.locator('#mh-floor')).toHaveText('L41 · T5');
+  expect(errors).toEqual([]);
+});
+
+// T5/T4 — the flood and the copies on one running floor. Leg 1: one step
+// arms the run clock and the derived level leaves 0 — then keeps climbing
+// (two reads 2s apart, strictly rising; the brief's 15s horizon proven live
+// instead of slept). Leg 2: the DEV faucet forces one copy (the honest ~45s
+// jittered clock stays the game path — forceDecoy runs the same
+// spawnOneDecoy the sim clock does), the copy WALKS the flow field, and a
+// warp onto it shatters it — +5 banked pending, exactly once (the live list
+// empties; a second pass pays nothing).
+test('t5: water rises and decoy walks', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T5RUN&floor=41');
+  await ready(page);
+  // leg 1 — one step starts the run; the flood is derived from its clock
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(300);
+  await page.keyboard.up('KeyW');
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.waterLevel() >
+      0,
+    null,
+    { timeout: 20000 },
+  );
+  const l1 = await page.evaluate(
+    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.waterLevel(),
+  );
+  await page.waitForTimeout(2000);
+  const l2 = await page.evaluate(
+    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.waterLevel(),
+  );
+  expect(l1, 'the flood rises the moment the run begins').toBeGreaterThan(0);
+  expect(l2, 'the flood keeps climbing').toBeGreaterThan(l1);
+
+  // leg 2 — the copy: forced, walking, worth 5 shards, shatterable once
+  const spot = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.forceDecoy();
+  });
+  expect(spot, 'the faucet spawns a copy on the Flood Halls').not.toBeNull();
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.decoys()
+        .length >= 1,
+    null,
+    { timeout: 2000 },
+  );
+  await page.waitForTimeout(700); // the copy strides at DECOY_SPEED — let it move
+  const walk = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    const ds = h.decoys();
+    return ds.length > 0 ? ds[0]! : null;
+  });
+  expect(walk, 'the live copy is on the board').not.toBeNull();
+  expect(
+    walk!.x !== spot!.x || walk!.y !== spot!.y,
+    'the copy has walked off its spawn cell toward the exit',
+  ).toBe(true);
+  await page.evaluate((p: { x: number; y: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(p.x, p.y);
+  }, walk!);
+  // the touch: +DECOY_SHARD banked pending on the next fixed step (50ms),
+  // and the shattered copy leaves the live list — the once-gate holds
+  await page.waitForFunction(
+    () => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.house().pendingShards === 5 && h.decoys().length === 0;
+    },
+    null,
+    { timeout: 2500 },
+  );
   expect(errors).toEqual([]);
 });

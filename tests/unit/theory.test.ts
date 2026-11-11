@@ -8,6 +8,7 @@ import {
   intensityFrom,
   midiToHz,
   nextMelodySemi,
+  TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
   TIER_ONE_SCALE,
   TIER_THREE_SCALE,
@@ -35,6 +36,13 @@ describe('scales', () => {
   // hiccup that makes the funhouse grin.
   it('tier four is the mischievous pentatonic set', () => {
     expect(TIER_FOUR_SCALE).toEqual([0, 2, 3, 7, 9]);
+  });
+
+  // T5/T4 — the Flood Halls' dark pentatonic (spec §6.1 row 5): the minor
+  // frame with no second and no sixth — flat third, open fourth and fifth,
+  // flat seventh. The submerged scale the drowned halls hum.
+  it('tier five is the dark pentatonic set', () => {
+    expect(TIER_FIVE_SCALE).toEqual([0, 3, 5, 7, 10]);
   });
 });
 
@@ -111,6 +119,20 @@ describe('nextMelodySemi', () => {
       expect(semi).toBeGreaterThanOrEqual(OCT);
       expect(semi).toBeLessThanOrEqual(OCT + 12);
       expect(mischievous.has(semi % 12)).toBe(true);
+    }
+  });
+
+  // T5/T4 — the flood walker walks the dark set only: every emitted note is a
+  // tier-five member inside the window (pcs of [0,3,5,7,10]).
+  it('after a tier-five swap the walk only emits dark-pentatonic members in the window', () => {
+    const rng = createRng('FLOOD-WALK');
+    let semi = OCT;
+    const dark = new Set(TIER_FIVE_SCALE.map((s) => (OCT + s) % 12));
+    for (let i = 0; i < 200; i++) {
+      semi = nextMelodySemi(rng, TIER_FIVE_SCALE, semi, 0.7, OCT);
+      expect(semi).toBeGreaterThanOrEqual(OCT);
+      expect(semi).toBeLessThanOrEqual(OCT + 12);
+      expect(dark.has(semi % 12)).toBe(true);
     }
   });
 

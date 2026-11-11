@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   floorAccent,
   paletteForTier,
+  TIER_FIVE_PALETTE,
   TIER_FOUR_PALETTE,
   TIER_ONE_PALETTE,
   TIER_THREE_PALETTE,
@@ -62,6 +63,8 @@ describe('palette', () => {
     expect(paletteForTier(3)).toBe(TIER_THREE_PALETTE);
     // T4/T4 — the Carnival dresses tier 4 (the tier-one stand-in retired)
     expect(paletteForTier(4)).toBe(TIER_FOUR_PALETTE);
+    // T5/T4 — the Flood Halls dress tier 5 (the Carnival stand-in retired)
+    expect(paletteForTier(5)).toBe(TIER_FIVE_PALETTE);
   });
 
   // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):
@@ -149,5 +152,40 @@ describe('palette', () => {
     // the two-tone checker flips to the plum floor pair
     expect(floorAccent(1, 1, TIER_FOUR_PALETTE)).toBe(0x402233);
     expect(floorAccent(2, 1, TIER_FOUR_PALETTE)).toBe(0x2e1a26);
+  });
+
+  // T5/T4 — the Flood Halls palette (floors 41–50, spec §4.6 row 5): drowned
+  // indigo-green — Act II's flooded wing. Green-black void, moss over a
+  // sea-dark floor, sage walls under sea-green ivory light. The slot NAMES
+  // hold one last time: the teal slot is the water kin (the Gardens' exact
+  // water-teal — the same water the halls rise with), the rose-diamond slot
+  // wears the moss accent.
+  it('tier-five values are exact (Flood Halls: drowned indigo-green/water-teal/moss)', () => {
+    expect(TIER_FIVE_PALETTE).toEqual({
+      void: 0x0a1414,
+      floorBase: 0x16281e,
+      floorLines: 0x1e3628,
+      teal: 0x3fae9a, // the water-teal slot — the flood's own glass
+      ivory: 0xdce8dc,
+      gold: 0xd9a441,
+      rose: 0x5a8a6a, // the moss slot
+      wallTop: 0x6a8a7a,
+      wallBottom: 0x2c3e34,
+      lantern: 0xd8ffe8,
+      entrance: 0x3fae9a,
+      exit: 0x5a8a6a,
+    });
+  });
+
+  it('floorAccent with the tier-five palette: same pattern, flood colors', () => {
+    // the rose-diamond slot becomes the moss accent; the gold lattice holds
+    expect(floorAccent(3, 3, TIER_FIVE_PALETTE)).toBe(0x5a8a6a);
+    expect(floorAccent(9, 3, TIER_FIVE_PALETTE)).toBe(0x5a8a6a);
+    expect(floorAccent(6, 2, TIER_FIVE_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(2, 12, TIER_FIVE_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(0, 0, TIER_FIVE_PALETTE)).toBe(0xd9a441);
+    // the two-tone checker flips to the drowned floor pair
+    expect(floorAccent(1, 1, TIER_FIVE_PALETTE)).toBe(0x1e3628);
+    expect(floorAccent(2, 1, TIER_FIVE_PALETTE)).toBe(0x16281e);
   });
 });

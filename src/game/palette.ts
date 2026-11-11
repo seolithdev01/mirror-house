@@ -88,17 +88,40 @@ export const TIER_FOUR_PALETTE: TierPalette = {
   exit: 0xffb347,
 };
 
+/** The Flood Halls (floors 41–50, T5): drowned indigo-green — Act II's
+ *  flooded wing. Green-black void, moss over a sea-dark floor, sage walls
+ *  under sea-green ivory light. The slot NAMES hold one last time: the teal
+ *  slot is the water kin (the Gardens' exact water-teal — the same water the
+ *  halls rise with), the rose-diamond slot wears the moss accent, so every
+ *  palette-driven pattern re-dresses itself with zero structural change
+ *  (the T2 precedent). */
+export const TIER_FIVE_PALETTE: TierPalette = {
+  void: 0x0a1414,
+  floorBase: 0x16281e,
+  floorLines: 0x1e3628,
+  teal: 0x3fae9a, // water-teal — the flood's own glass
+  ivory: 0xdce8dc,
+  gold: 0xd9a441,
+  rose: 0x5a8a6a, // moss
+  wallTop: 0x6a8a7a,
+  wallBottom: 0x2c3e34,
+  lantern: 0xd8ffe8,
+  entrance: 0x3fae9a,
+  exit: 0x5a8a6a,
+};
+
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
  *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
  *  retired. T4/T4: tier 4 wears the Carnival palette — the documented
- *  tier-one stand-in (T4/T1's fallthrough) is retired by this commit.
- *  T5/T1: tier 5 rides the Carnival palette as the DOCUMENTED STAND-IN
- *  until the Flood Halls' drowned indigo-green lands (T5/T4 — the same
- *  retire-the-stand-in pattern one tier down). */
+ *  tier-one stand-in (T4/T1's fallthrough) is retired by that commit.
+ *  T5/T4: tier 5 wears the Flood Halls' drowned indigo-green — the
+ *  documented Carnival stand-in (T5/T1's fallthrough) is retired here,
+ *  the same retire-the-stand-in pattern one tier down. */
 export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
-  if (tier === 4 || tier === 5) return TIER_FOUR_PALETTE; // 5 = stand-in until T5/T4
+  if (tier === 4) return TIER_FOUR_PALETTE;
+  if (tier === 5) return TIER_FIVE_PALETTE;
   return TIER_ONE_PALETTE;
 }
 
