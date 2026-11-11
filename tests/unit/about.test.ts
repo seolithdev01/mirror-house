@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 40 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio)', () => {
-    expect(FAQ).toHaveLength(40);
+  it('grows to 42 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair)', () => {
+    expect(FAQ).toHaveLength(42);
   });
 
   it('the T5 entry explains the mirror-you decoys — the lure and the shatter bounty', () => {
@@ -59,7 +59,8 @@ describe('faq — the beta launch pair', () => {
     expect(e, 'an entry about the mirror-you decoys exists').toBeDefined();
     expect(e!.a).toContain('Echo'); // the lure is the copy's job
     expect(e!.a).toContain('shatters'); // the touch is the bounty
-    expect(e!.a).toContain('41–50'); // the Flood Halls are where copies walk
+    expect(e!.a).toContain('41–60'); // copies walk the Flood Halls AND the Furnace Wings (t6)
+    expect(e!.a).toContain('guards the copy'); // the warden wards them now (t6)
   });
 
   it('the report-bugs answer names the Feedback button in the top-right', () => {
@@ -150,7 +151,22 @@ describe('faq — the beta launch pair', () => {
     expect(rotation, 'the wardens-rotation entry exists').toBeDefined();
     expect(rotation!.a).toContain('rotates its wardens'); // the house's word for it
     expect(rotation!.a).toContain('41–49'); // the rested ramp
-    expect(rotation!.a.toLowerCase()).toContain('never rests'); // Taal's exception
+    expect(rotation!.a.toLowerCase()).toContain('never rests'); // Taal's exception (qualified — he rests in the Wings now)
     expect(rotation!.a).toContain('Dwaar V'); // the all-four return
+  });
+
+  it('the Furnace pair teaches the tier and the rotation\u2019s turn (T6/T5)', () => {
+    const furnace = FAQ.find((f) => /below the flood halls/i.test(f.q));
+    expect(furnace, 'the Furnace Wings tier entry exists').toBeDefined();
+    expect(furnace!.a).toContain('L51 · T6'); // the chip readers see
+    expect(furnace!.a).toContain('12.5 seconds'); // the heat-fog evaporation
+    expect(furnace!.a).toContain('25 anger'); // the widened crack
+    expect(furnace!.a).toContain('Truth-Shard VI'); // Dwaar VI's claim
+    expect(furnace!.a.toLowerCase()).toContain('all four'); // the second all-four hall
+    const taal = FAQ.find((f) => /taal vanished below floor 50/i.test(f.q));
+    expect(taal, 'the Taal-rest entry exists').toBeDefined();
+    expect(taal!.a).toContain('first rest'); // the rotation's second turn
+    expect(taal!.a).toContain('51–60'); // the Wings are where he sits out
+    expect(taal!.a).toContain('Dwaar VI'); // the crucible calls him back
   });
 });

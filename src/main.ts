@@ -763,7 +763,9 @@ function aainaContext(): HintContext {
     taalPresent: campaign.floor === TAAL_FLOOR && taal !== null,
     // T2 — the Sentinel version: a tier-2 floor and him within 8 m. Different
     // advice than the cameo — this touch catches, so the crossing rule only
-    // now earns its urgency. T5/T1 — reads taalPresent() (he never rests).
+    // now earns its urgency. T5/T1 — reads taalPresent() (then he never
+    // rested; t6/T1's Wings give him his first rest — 51–59 — and the Dwaar
+    // VI crucible alone calls him back).
     taalSentinelNear:
       taalPresent(campaign.floor) &&
       taal !== null &&

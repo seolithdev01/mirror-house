@@ -24,7 +24,7 @@
 
 **Files:** `src/game/campaign.ts` (TIER_SIX_FLOORS, tierOf→6, isDwaar +60, ramp 51–60, `DWAAR_VI_LAYOUT` 13×13 furnace — twin parallel forge corridors joined by a central crucible chamber, 180°-symmetric+connected, ~100 open; presence fns: `taalPresent (f>=11 && f<=50) || f===60`, gher/aavart `>= 21/31` unchanged), `src/game/save.ts` (→ 60 same commit + tests: 55/60 round-trip, 61 rejected), constants, main/hud (chips `L54 · T6` / `DWAAR VI ✦`; `✦ Truth-Shard VI claimed — Tier VI complete` full screen; Dwaar V cascades to interstitial `✦ Truth-Shard V`), tests (ramp 51–60 pinned; layout predicates; tierOf 6; validator 55/60+61; **rotation truth table extended: 50→T/T/T, 51→F/F/T? NO — Chhaya always: 51→C+G+A = taalPresent FALSE, gher TRUE, aavart TRUE; 60→all TRUE; 49→taal T, gher F, aavart F; pins for 5/11/21/31/40/41/49/50/51/59/60**; descend-no-op-at-60).
 
-- [ ] Tests → RED → implement → GREEN; gates + 38/38. Commit `feat(t6): campaign to floor 60 — furnace wings, taal rests, validator widened`.
+- [x] Tests → RED → implement → GREEN; gates + 38/38. Commit `feat(t6): campaign to floor 60 — furnace wings, taal rests, validator widened`.
 
 ---
 
@@ -44,7 +44,7 @@ export function crackAngerFor(floor: number): number; // heatOn ? HEAT_CRACK_ANG
 
 Call sites: frost.ts `applyFog` takes duration (main passes `fogDurationMs(campaign.floor)`); crack paths pass `crackAngerFor(floor)` (Taals' anger-touch on heat floors? Taal rests on 51–59 — only Dwaar VI has him; his touch there uses the standard 20 — heat crack applies to PLAYER sprint-cracks only). Aaina hint `heatNear` (floors 51–60): "The furnace breathes — your frost melts fast, and every crack you leave burns wider."
 
-- [ ] Tests (heatOn bounds incl. 50/51/60/61; fogDuration/crackAnger both branches; frost uses passed duration — update frost signature + tests) → RED → implement → GREEN; gates + 38/38. Commit `feat(t6): heat — frost melts in half the time, cracks burn wider`.
+- [x] Tests (heatOn bounds incl. 50/51/60/61; fogDuration/crackAnger both branches; frost uses passed duration — update frost signature + tests) → RED → implement → GREEN; gates + 38/38. Commit `feat(t6): heat — frost melts in half the time, cracks burn wider`.
 
 ---
 
@@ -52,7 +52,7 @@ Call sites: frost.ts `applyFog` takes duration (main passes `fogDurationMs(campa
 
 **Files:** Modify `src/game/gher.ts` (`interceptCell` objective list gains alive decoy cells when any decoy is nearer to Gher's target logic — precise rule: Gher's objective candidates = uncaptured beacons + exit + ALIVE DECOY CELLS; the nearest-objective BFS decides — so a decoy crossing his sector pulls his seal onto it), `src/main.ts` (pass decoy cells into Gher's objective feed; caption once per floor when Gher first seals a decoy's cell: "The warden guards the copy."), tests (objective list includes decoy cells; Gher walks to a decoy's cell when it's nearest; player still primary when nearer).
 
-- [ ] Tests → RED → implement → GREEN; gates + 38/38. Commit `feat(t6): the house guards its copies — gher seals decoys`.
+- [x] Tests → RED → implement → GREEN; gates + 38/38. Commit `feat(t6): the house guards its copies — gher seals decoys`.
 
 ---
 
@@ -60,7 +60,7 @@ Call sites: frost.ts `applyFog` takes duration (main passes `fogDurationMs(campa
 
 **Files:** `src/game/palette.ts` (TIER_SIX_PALETTE per plan Task 4: void 0x140a06, floorBase 0x241610, floorLines 0x322016, teal→ember 0xd9743a, ivory 0xe8d8c8, gold 0xd9a441, rose→copper 0xb87333, wallTop 0x7a5c4a, wallBottom 0x3c2c1e, lantern 0xffd0a0, entrance 0xd9743a, exit 0xb87333), `src/audio/theory.ts` (TIER_SIX_SCALE [0,1,5,7,8]), main wiring (paletteForTier 6; setScale at buildFloor; heat dressing from T2), hook (`tier()`→6, `heat(): { on: boolean; fogMs: number; crackAnger: number }`), e2e 38→40: (a) `t6: floor 51 loads the furnace` — `?seed=T6RUN&floor=51` → tier 6, chip `L51 · T6`, taalPos() NULL + gherPos()/avartPos() non-null (rotation pinned), heat().on true + fogMs 12500; (b) `t6: heat cracks burn wider + aavart ambush` — addAnger-crack… simplest honest leg: sprint-crack a mirror near the player (warp + sprint into a standing mirror) → anger() jumps 25 (not 15); then warp onto avartPos → house().failed.
 
-- [ ] Tests (palette/scale/heat fns) → implement → e2e 40/40 → gates; live :4199 check (floor 51 furnace look + urgent scale + frost evaporation ~12.5s; floor 41 flood unchanged; floor 1 unchanged). Commit `feat(t6): furnace palette, urgent scale, tier-six e2e`.
+- [x] Tests (palette/scale/heat fns) → implement → e2e 40/40 → gates; live :4199 check (floor 51 furnace look + urgent scale + frost evaporation ~12.5s; floor 41 flood unchanged; floor 1 unchanged). Commit `feat(t6): furnace palette, urgent scale, tier-six e2e`.
 
 ---
 
@@ -68,7 +68,7 @@ Call sites: frost.ts `applyFog` takes duration (main passes `fogDurationMs(campa
 
 Spec §4.6 row 6 delivered + §2.3 Act II progress + §4.4 rotation note (Taal rests 51–59, returns at Dwaar VI); STATE_MACHINES (Campaign@60, rotation table extension, heat = derived modifier look-alike); README (Tier 6), CHANGELOG `[t6]`, FAQ +2 (the Furnace; decoys are guarded now); plan ticks; full gates + 40/40; bundle check.
 
-- [ ] Docs → gates → commit `docs(t6): delivery marks, how to survive the furnace`.
+- [x] Docs → gates → commit `docs(t6): delivery marks, how to survive the furnace`.
 
 ## Plan Self-Review
 

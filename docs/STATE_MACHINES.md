@@ -15,7 +15,7 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 651 unit tests + 38 Playwright tests, and the machine modules' own
+  suite is 715 unit tests + 40 Playwright tests, and the machine modules' own
   suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
@@ -36,7 +36,7 @@ a single value with named transitions.
 | 8   | **ViewMode**       | `focus` · `quad` · `overhead` · `tactical`                               | `src/game/viewMode.ts`                                          | Pure machine (M3/T3); `tactical` is the pause view                                                                                          |
 | 9   | **Aaina overlay**  | `closed` · `open{tab}`                                                   | `src/ui/aaina.ts`                                               | Diegetic panel — does **not** pause                                                                                                         |
 | 10  | **AudioEngine**    | `idle` · `running`                                                       | `src/audio/engine.ts`                                           | Starts on first gesture; `muted` is a flag, not a state                                                                                     |
-| 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete`                              | `src/game/campaign.ts`                                          | Pure data + transitions (M4/T1, grown to 50 floors in t5/T1 — terminal there, Act II's opening tier); the single `tierComplete` re-arms as each Dwaar is left |
+| 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete`                              | `src/game/campaign.ts`                                          | Pure data + transitions (M4/T1, grown to 60 floors in t6/T1 — terminal there for now, Act II's first two tiers); the single `tierComplete` re-arms as each Dwaar is left |
 
 ---
 
@@ -76,7 +76,10 @@ Not a stored field: a **derivation** over `(captured, foggedUntil, now)`.
 | otherwise                                    | `clear`                                                                                                                                       |
 
 `applyFog` is the only writer: a beacon sets `captured`; a standing mirror sets
-`foggedUntil = now + FOG_DURATION_MS`. `isFogged` is defined as
+`foggedUntil = now + duration` — the duration is **caller-owned** (t6/T2: `main.ts`
+passes `fogDurationMs(campaign.floor)`, the base 25 s everywhere and half of it
+in the Furnace Wings, so the machine itself stays floor- and heat-blind).
+`isFogged` is defined as
 `mirrorVisual(...) !== 'clear'`, so sight and display cannot disagree.
 
 **Orthogonal:** `cracked` is damage, not sight. It tints the glass, does not
@@ -249,8 +252,8 @@ frame; the scheduler smooths toward it (0.12 lerp per 50 ms wake-up).
 
 ## 11. Campaign — `src/game/campaign.ts`
 
-Pure data, not a phase machine (M4/T1, grown to five tiers — through Act II's
-opening — in t5/T1): the spine
+Pure data, not a phase machine (M4/T1, grown to six tiers — through Act II's
+first two — in t6/T1): the spine
 is `{ seedBase, floor, tierComplete }` and every transition returns a fresh
 object — callers (`main.ts`) rebind their `campaign` binding; nothing mutates
 in place.
@@ -258,14 +261,14 @@ in place.
 | From                             | Event                                  | To                                                                               |
 | -------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------- |
 | —                                | `newCampaign(seedBase)`                | `{ seedBase, floor: 1, tierComplete: false }`                                    |
-| `c.floor < 50`                   | `descend(c)` — the Stair Door was paid | `{ ...c, floor: floor + 1 }`; leaving a Dwaar also re-arms `tierComplete: false` |
-| `c.floor >= 50`                  | `descend(c)`                           | **unchanged, by reference** — the campaign is TERMINAL at 50 (Act III's door)    |
-| `isDwaar(c.floor)` (10/20/30/40/50) | `completeTier(c)` — Truth-Shard claim | `{ ...c, tierComplete: true }`                                                 |
+| `c.floor < 60`                   | `descend(c)` — the Stair Door was paid | `{ ...c, floor: floor + 1 }`; leaving a Dwaar also re-arms `tierComplete: false` |
+| `c.floor >= 60`                  | `descend(c)`                           | **unchanged, by reference** — the campaign is TERMINAL at 60 (Act III's door)    |
+| `isDwaar(c.floor)` (10/20/30/40/50/60) | `completeTier(c)` — Truth-Shard claim | `{ ...c, tierComplete: true }`                                                 |
 | any other floor                  | `completeTier(c)`                      | unchanged, **by reference** — the shard is claimed in a hall only                |
 
-**The tiers.** Floors 1–9, 11–19, 21–29, 31–39 and 41–49 are procedural —
+**The tiers.** Floors 1–9, 11–19, 21–29, 31–39, 41–49 and 51–59 are procedural —
 `generateFloor` seeded by `floorSeed(c) = seedBase:floor`, braided and
-stocked by `floorParams`; the five threshold floors are fixed hand-authored
+stocked by `floorParams`; the six threshold floors are fixed hand-authored
 13×13 halls: floor 10 the `DWAAR_LAYOUT` Dwaar I, floor 20 the broader
 `DWAAR_II_LAYOUT` (96 open cells — the Sentinel's beat needs the room), floor
 30 the `DWAAR_III_LAYOUT` garden hall — the most open of the first three (107
@@ -281,13 +284,21 @@ chamber standing open — and floor 50 the `DWAAR_V_LAYOUT` **sunken arena**
 promenade, a mid ring wall with exactly four gates at the compass midpoints,
 and an inner corridor circling the 3×3 sanctum — invariant under 180°
 rotation (the exit mirrors the entrance) and one connected component, because
-four Sentinels need the room to walk their beats (`dwaarGrid()` derives any
-hall's open cells, `maze.floorFromGrid` builds the grid).
-`tierOf(floor)` maps 1–10 → 1, 11–20 → 2, 21–30 → 3, 31–40 → 4 and 41–50 → 5 —
+four Sentinels need the room to walk their beats — and floor 60 the
+`DWAAR_VI_LAYOUT` **crucible forge** (101 open cells too, t6/T1): twin
+parallel forge corridors — two 3-wide halls (cols 1–3 and 9–11, rows 1–11,
+33 cells each, the campaign's longest) joined at the ends by the open cross
+runs and joined in the MIDDLE by a central 3×3 crucible chamber through
+EXACTLY 4 connecting gaps (the only openings on its perimeter; the forge
+mass stays wall) — invariant under 180° rotation (the exit mirrors the
+entrance) and one connected component (`dwaarGrid()` derives any hall's open
+cells, `maze.floorFromGrid` builds the grid).
+`tierOf(floor)` maps 1–10 → 1, 11–20 → 2, 21–30 → 3, 31–40 → 4, 41–50 → 5 and
+51–60 → 6 —
 the stage palette, music scale **and voice**, portrait spawns (tier 2 only),
 water spawns (tier 3 only), distort spawns (tier 4 only) and the Sentinels'
-gates all read it — and `isDwaar(floor)` widens to 10, 20, 30, 40 and 50.
-`floorParams` pins all five ramps: tier 1 echoes `min(5, 2 + floor − 1)`
+gates all read it — and `isDwaar(floor)` widens to 10, 20, 30, 40, 50 and 60.
+`floorParams` pins all six ramps: tier 1 echoes `min(5, 2 + floor − 1)`
 (Dwaar fixed 4), beacons 2,2,3,3,3,4,4,4,4,4, braid `0.12 + 0.01·(floor −
 1)`, Chhaya `max(4500, 7000 − 300·(floor − 1))` (Dwaar 4000); tier 2 echoes
 5,5,5,6,6,6,6,6,6,6 (Dwaar II fixed 5), beacons 4 throughout, braid
@@ -304,42 +315,55 @@ echoes **4 on every procedural floor, Dwaar V ALONE carrying 5** — the
 row-9 apex duel, where the tier's teeth are the rising water, the decoys and
 the all-four cast, not the echo count — beacons 4 throughout, braid
 `0.30 + 0.004·(floor − 41)`, Chhaya `max(3000, 3600 − 60·(floor − 41))`
-(Dwaar V 2900 — the sunken arena floods, Chhaya does not wait).
+(Dwaar V 2900 — the sunken arena floods, Chhaya does not wait); tier 6
+(t6/T1) echoes **4 on every procedural floor, Dwaar VI ALONE carrying 5** —
+the four-Sentinel crucible duel is the tier's apex, its teeth are the heat
+and the warden-guarded decoys, not the echo count — beacons 4 throughout,
+braid `0.32 + 0.004·(floor − 51)`, Chhaya `max(2900, 3500 − 60·(floor −
+51))` (Dwaar VI 2800 — the crucible burns, Chhaya does not wait).
 
 **Invariants.** `tierComplete` flips true only inside `completeTier` and only
 on a Dwaar floor — the single flag always reads "the CURRENT tier's threshold
 has been claimed", because `descend` re-arms it false the moment the player
 LEAVES a Dwaar: the house continues past Dwaar I into the Hall of Ancestors,
-past Dwaar II into the Gardens, past Dwaar III into the Carnival and past
-Dwaar IV into the Flood Halls, and each new tier's floors pay their
-first-clear bonus again on the re-armed flag. The Dwaar V tier screen's
+past Dwaar II into the Gardens, past Dwaar III into the Carnival, past
+Dwaar IV into the Flood Halls and past Dwaar V into the Furnace Wings, and
+each new tier's floors pay their
+first-clear bonus again on the re-armed flag. The Dwaar VI tier screen's
 ↻ Play again starts a `newCampaign` on a fresh random base instead of
-reopening the house. `floor` lives in 1..`TIER_FIVE_FLOORS` (the save
-validator widened in the same t5/T1 commit — 51 is the first rejection),
+reopening the house. `floor` lives in 1..`TIER_SIX_FLOORS` (the save
+validator widened in the same t6/T1 commit — 61 is the first rejection),
 `floorParams` clamps its input regardless, and **the campaign is TERMINAL at
-50**: `descend()` there returns its input unchanged, no `descendAt` arms
-below Dwaar V, and the tier-complete screen is the end of the house until
-tier 6 exists.
+60**: `descend()` there returns its input unchanged, no `descendAt` arms
+below Dwaar VI, and the tier-complete screen is the end of the house until
+tier 7 exists. (The T5-era terminus at 50 retired exactly as T4's did in t5:
+50 → 51 is a real descent that re-arms the flag for tier six.)
 
-**The Sentinels accumulate — then rotate (spec §4.4, t3/T4 + t4/T2 + t5/T1).**
+**The Sentinels accumulate — then rotate (spec §4.4, t3/T4 + t4/T2 + t5/T1 +
+t6/T1).**
 The lethal Sentinels read `campaign.floor` in `main.ts` — spawn-side data,
 not campaign state — through three presence functions (`taalPresent`,
 `gherPresent`, `aavartPresent`; t5/T1 replaced the bare `>=` gates so the
 rotation is one readable table, floors 1–40 pinned byte-identical by
-truth-table tests):
+truth-table tests, t6/T1 extending the table with rows 51/55/59/60):
 
-| Sentinel | Accumulation (tiers 1–4)     | The rotation (tier 5, floors 41–50)               |
-| -------- | ---------------------------- | ------------------------------------------------- |
-| Chhaya   | every floor from 1           | unchanged — she replays every path in the house   |
-| Taal     | every floor from 11          | **never rests** — `f >= 11`, Act II included      |
-| Gher     | every floor from 21          | **rests 41–49** — `21–40 ∥ 50` (the Dwaar V duel) |
-| Aavart   | every floor from 31          | **rests 41–49** — `31–40 ∥ 50` (the Dwaar V duel) |
+| Sentinel | Accumulation (tiers 1–4) | Tier 5 (floors 41–50)                        | Tier 6 (floors 51–60)                                |
+| -------- | ------------------------ | -------------------------------------------- | ---------------------------------------------------- |
+| Chhaya   | every floor from 1       | unchanged — she replays every path            | unchanged — she never rests at all                   |
+| Taal     | every floor from 11      | **never rests** — `f >= 11`, Act II included | **rests 51–59** — his FIRST rest; `(11–50) ∥ 60`     |
+| Gher     | every floor from 21      | **rests 41–49** — `21–40 ∥ 50` (Dwaar V)     | **walks the whole Wings** — `21–40 ∥ f >= 50`        |
+| Aavart   | every floor from 31      | **rests 41–49** — `31–40 ∥ 50` (Dwaar V)     | **walks the whole Wings** — `31–40 ∥ f >= 50`        |
 
 Taal: cameo on floor 5 (anger-only), Sentinel (`taalOutcome` → `'caught'`)
 on **every floor from 11 down** — the gate was widened from "the tier-2
-floors" to `floor ≥ TAAL_SENTINEL_FLOOR` so the ladder accumulates: he keeps
-his beat beside Gher and Aavart through the whole Carnival and walks the
-Flood Halls alone. Gher (`src/game/gher.ts`, t3/T2) joined at 21
+floors" to `floor ≥ TAAL_SENTINEL_FLOOR` so the ladder accumulates: he kept
+his beat beside Gher and Aavart through the whole Carnival and walked the
+Flood Halls alone — until t6/T1 gave him the rotation's first true rest
+(`taalPresent = (f >= TAAL_SENTINEL_FLOOR && f <= TIER_FIVE_FLOORS) || f ===
+TIER_SIX_FLOORS`): the beat-water pairing was the Flood's gimmick, the
+Furnace is Gher+Aavart's home and the heat re-tunes the fight, so Taal sits
+51–59 out and **only the Dwaar VI crucible calls him back down**. Gher
+(`src/game/gher.ts`, t3/T2) joined at 21
 (`GHER_SENTINEL_FLOOR`) — his tier-3-only gate was widened in t4/T2 to every
 floor from 21 down, the accumulation ratification found while wiring Aavart:
 no sensing at all, a pure prediction machine (`interceptCell` reads the
@@ -361,7 +385,11 @@ counter is the pace change. On 41–49 the ramp hunts with Chhaya + Taal only
 decoys instead of the cast), and at 50 `gherPresent`/`aavartPresent` call
 both down again: **Dwaar V is the first all-four-Sentinel hall** — row 9's
 apex (the Warden's Warrens) previewed at the close of Act II's opening
-tier. All spawn at the patrol anchor FARTHEST from the player (t3/T4's
+tier. On 51–59 the wheel turns the other way (t6/T1): **the Furnace Wings
+hunt with Chhaya + Gher + Aavart — the tier's own teeth are the heat and
+the guarded decoys — while Taal rests**, and at 60 `taalPresent` calls him
+back down: **Dwaar VI is the second all-four-Sentinel hall, the crucible**.
+All spawn at the patrol anchor FARTHEST from the player (t3/T4's
 fairness fix — never an anchor-on-spawn catch).
 
 **Tier-3 content, not new machines.** The Gardens dress by tier — palette,
@@ -401,40 +429,81 @@ signature systems beside the rotation above:
   the NEARER of player/copy as "the player" — lives in the echo sense (§4),
   not in a decoy mode. Touching a copy shatters it once for `DECOY_SHARD`
   shards (pending, forfeited with any fail like beacon shards). **"Protected
-  by enemies" and mistaken-for-the-player are deferred** to the deeper Act II
-  tiers (documented in spec §2.3) — this tier's copies are lures and
-  piggy-banks, nothing more. The copy wears an exact `createDecoy(look)`
+  by enemies" was deferred here** to the deeper Act II tiers (documented in
+  spec §2.3) — this tier's copies were lures and
+  piggy-banks, nothing more; the protection landed in tier 6 (the tier-6
+  content note below). Mistaken-for-the-player stays deferred. The copy wears
+  an exact `createDecoy(look)`
   clone of the player avatar; the overhead map tells them apart by shape
   (hollow gold ring vs your solid arrow), never by colour alone.
 - **The rising water** (`src/game/waterLevel.ts`, t5/T3) — a look-alike
   (below), not a machine: the level is a pure derived function of the run
   clock.
 
-**Tier interstitials (t2/T5, t3/T1, t4/T1, t5/T1).** Every Dwaar clear claims
+**Tier-6 content, not new machines (the Furnace Wings, t6/T1–T4).** The Wings
+dress by tier — the ember/copper-on-charcoal palette, the urgent
+Phrygian-adjacent pentatonic `[0,1,5,7,8]` (the melody voice stays the
+triangle) — and carry the tier's two signature systems beside the rotation
+above:
+
+- **The heat** (`src/game/heat.ts`, t6/T2) — a **derived modifier**, not a
+  machine (the look-alike row below): `heatOn(floor)` = 51 ≤ floor ≤ 60,
+  and everything the Furnace does hangs off that one derivation —
+  `fogDurationMs(floor)` (25 s cool → 12.5 s hot, `main.ts` passes it into
+  `applyFog`, which stays heat-blind — see §2) and `crackAngerFor(floor)`
+  (15 cool → 25 hot, `main.ts` passes it into `applyCrack` on the
+  sprint-crack path; Taal's +20 touch is anger, not a crack, and never
+  routes here). The dressing — the warm charcoal scene haze, the one low
+  ember point light, the static heat-shimmer gradient quad (reduced-flash
+  safe by construction: nothing animates) — is set per `buildFloor`, never
+  per frame, and re-derived from the stage palette first so leaving the
+  Wings restores the stage exactly. Aaina gained a `heatNear` hint kind
+  ("The furnace breathes — your frost melts fast, and every crack you leave
+  burns wider."), slotted chhaya → heatNear → anger → stuck.
+- **The warden guards the copies** (t6/T3) — Act II's decoy protection:
+  `gherObjectives(base, decoys, grid)` extends the Encircler's objective
+  candidate list (uncaptured beacons + stair door) with the ALIVE decoy
+  cells, and the nearest-objective BFS decides as always — a copy crossing
+  his sector pulls the seal onto it. `main.ts` feeds the list only where
+  Gher walks AND copies spawn (21–40's feed is byte-identical: `decoys` is
+  `[]` there; the live pairing is 50–60); `sealsDecoyCell` is the caption's
+  eye — once per floor build (`gherCopyAnnounced`, cleared in `buildFloor`
+  only, the `floodAnnounced` precedent), "The warden guards the copy." —
+  and `gherSeal()` joined the debug faucet as the ward's live witness.
+  Aavart keeps the bare objectives: the Ambusher reads the player, the
+  Warden reads the house. The decoy stream itself widened to 41–60
+  (`tierOf >= 5`); **the water did not** — `waterActiveFloor` stays
+  `tierOf === 5`, the Furnace burns dry (a flooding furnace contradicts
+  the heat).
+
+**Tier interstitials (t2/T5, t3/T1, t4/T1, t5/T1, t6/T1).** Every Dwaar clear claims
 its Truth-Shard and banks it at once; what the player SEES splits by tier.
-Dwaar I–IV raise a 1.8 s auto-dismiss banner (`✦ Truth-Shard I/II/III/IV
+Dwaar I–V raise a 1.8 s auto-dismiss banner (`✦ Truth-Shard I/II/III/IV/V
 claimed — the house deepens…`) and the descent continues exactly as on any
 ramp floor — the banner's hide clock is HUD-owned, so the 0.8 s descend hold
 and the floor rebuild beneath it never cut the celebration short (t3/T1
 moved Dwaar II here from the full screen; t4/T1 cascaded Dwaar III; t5/T1
-cascaded Dwaar IV — the full screen belongs to the TIER close now). Dwaar V
-raises the full tier screen (`✦ Truth-Shard V claimed — Tier V complete`,
+cascaded Dwaar IV; t6/T1 cascaded Dwaar V — the full screen belongs to the
+TIER close now). Dwaar VI
+raises the full tier screen (`✦ Truth-Shard VI claimed — Tier VI complete`,
 floors and banked shards counted, Play again / Stay) — the campaign's
-terminal close, the row-9 apex duel's reward. ACT II itself announces with
+terminal close, the four-Sentinel crucible's reward. ACT II itself announces with
 the **opening banner**, not a screen: the FIRST floor-41 build of a session
 raises `ACT II — THE DECEPTION` + `The house has begun copying you.` (en/hi)
 for 3 s — once per session (the flag lives for the page's lifetime, never
 the save; rebuilds of 41 stay quiet, venue floors never see it). The split
 is presentation only — the campaign machinery above is byte-identical at all
-five thresholds.
+six thresholds.
 
 **Derived:** `floorSeed`/`bestKey` (`seedBase:floor` — every floor is its own
 best-time bucket), `tierOf`, `isDwaar`, the presence functions, the
 `floorParams` ramp, and the HUD floor chip (`L02` on the tier-1 ramp,
 `L14 · T2` in the Hall, `L24 · T3` in the Gardens, `L34 · T4` in the
-Carnival, `L44 · T5` in the Flood Halls, and the threshold floors naming
+Carnival, `L44 · T5` in the Flood Halls, `L54 · T6` in the Furnace Wings,
+and the threshold floors naming
 their Dwaar — `L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`,
-`L40 · DWAAR IV ✦`, `L50 · DWAAR V ✦`, localized `स्तर`/`द्वार` in Hindi).
+`L40 · DWAAR IV ✦`, `L50 · DWAAR V ✦`, `L60 · DWAAR VI ✦`, localized
+`स्तर`/`द्वार` in Hindi).
 
 ---
 
@@ -462,6 +531,7 @@ their Dwaar — `L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III �
 | **Water ripple** (t3/T3)                  | Derived TTL data over a timestamp, not a machine (MirrorVisual's fog contract, one tier down): each pool carries `rippledAt: number \| null`; `rippleState(at, now)` = `at !== null && now < at + WATER_RIPPLE_MS` (10 s, exclusive expiry). The trigger is a per-fixed-step proximity check (`rippleTrigger`), the dimmed 3D patch and the dimmed map dot both read the same derivation — sight and display cannot disagree. Standing in a pool past the TTL re-ripples it (the fog-refresh semantics). |
 | **Distortion** (t4/T3)                    | The player's apparent position, not a machine: while the first unfogged distort pane in list order sees the player (within `SENSE_RANGE`, clear mirror↔player LOS), `distort.ts apparentPlayer` returns the true spot displaced by that pane's fixed per-id delta (`distortDelta`, ±`DISTORT_MAX_CELLS` axis-aligned cells); otherwise the truth. Derived once per fixed step and consumed by the echo sense check, the chase cell and the map pings — fog the seeing pane and the next step tells the truth again. The pane's fog state itself is MirrorVisual (§2), nothing more. |
 | **Water level** (t5/T3)                   | A pure derived function of the run clock, not a machine: `waterLevel(runElapsedMs(phase, now))` = `min(WATER_MAX_M, elapsed/WATER_FULL_S · WATER_MAX_M)` from the run's first input (Dwaar V's sunken arena floods on the faster `DWAAR_V_WATER_S`; off the Flood Halls the level is pinned 0). Everything the flood does is one of three derivations over that number: `speedFactor` (everyone wades at ×`WATER_SLOW` past 0.6 m — main multiplies the movement dt; the decoys are exempt, copies don't drown), `eyeBlind` (a standing mirror stops being an Echo eye past `WATER_EYE_OFF_M` — `sensesPlayer` skips it), and `mirrorWaterScale` (the glass visibly sinks: `scale.y = max(0.4, 1 − level/2)`). The translucent flood plane rides `waterLevelNow`, refetched per frame; a fail/restart rewinds the clock, so the level never survives a floor. |
+| **Heat** (t6/T2)                          | A derived modifier, not a machine — a look-alike in the water-level's exact shape, one tier down: `heatOn(floor)` = `51 ≤ floor ≤ 60` (`HEAT_FLOOR_START`..`TIER_SIX_FLOORS`) is the whole state, and nothing is stored anywhere. Every effect is one derivation over the floor number: `fogDurationMs(floor)` (the fog's stay — `FOG_DURATION_MS` cool, halved hot, passed INTO `applyFog` by `main.ts` so the MirrorVisual machine stays heat-blind, §2) and `crackAngerFor(floor)` (the sprint-crack's anger — `CRACK_ANGER` cool, `HEAT_CRACK_ANGER` 25 hot, passed INTO `applyCrack`). No transitions, no flags: a floor is hot or it is not, and the number follows. Taal's +20 touch is anger, not a crack — it never routes through here. The furnace dressing (haze colour, ember light, static shimmer quad) is per-`buildFloor` scene state, re-derived from `heatOn` each rebuild, never per frame. |
 
 ---
 
@@ -476,8 +546,8 @@ their Dwaar — `L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III �
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **651/651** unit ·
-**38/38** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
+`npm run typecheck` clean · `npm run lint` clean · **715/715** unit ·
+**40/40** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
 wiring, descend to floor 2, save round-trip resume, Hindi chrome via
 `?lang=hi`; 5 for m5: rebind forward through the settings overlay, Space
 toggles the focused ⚙ checkbox, `?perf=low` low path, export/import
@@ -492,7 +562,10 @@ the distort census, the mischievous scale), Aavart catches and the carnival
 glass displaces — `apparentPlayer()` reads the pane's exact lie until fogged;
 2 for t5: floor 41 opens Act II (tier 5, the banner, the rotation — Gher and
 Aavart null, Taal live), the water rises and a decoy walks to shatter for
-shards).
+shards; 2 for t6: floor 51 loads the furnace (tier 6, `taalPos()` NULL — the
+rest — `gherPos()`/`avartPos()` live, `heat()` on with 12 500 ms fogs and
+25-anger cracks, the `[0,1,5,7,8]` scale), a sprint-crack burns 25 anger and
+`gherSeal()` lands on the guarded copy's cell).
 
 ---
 

@@ -7,6 +7,74 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t6] — 2026-11-11 — the Furnace Wings (Tier 6, floors 51–60) — ACT II deepens
+
+The campaign runs to sixty — the burning tier, where the heat melts your frost, the rotation turns, and the house starts guarding its copies.
+
+- **Floors 51–60** — the Furnace Wings: a tier-6 ramp (four beacons, braids to
+  0.352 by floor 59, Chhaya 3.5 s behind tightening to 2.9 s, 2.8 s in
+  Dwaar VI) carrying **four Echoes on every procedural floor, Dwaar VI alone
+  carrying five — the crucible duel is the tier's apex, and its teeth are
+  the heat and the guarded copies, not the echo count** — the `L54 · T6`
+  floor chip, and **Dwaar VI** at floor 60: the crucible forge (101 open
+  cells), twin parallel forge corridors — two 3-wide halls running the
+  forge's length, the campaign's longest — joined at the ends by the open
+  cross runs and joined in the middle by a central 3×3 crucible chamber
+  through EXACTLY 4 connecting gaps, 180°-symmetric (the exit mirrors the
+  entrance) and one connected component. The save validator widened to 60
+  in the same commit as the ramp (**the binding held a fifth time**; 61 is
+  the first rejection).
+- **The heat** — `src/game/heat.ts` (pure): on 51–60 a fogged pane
+  **evaporates in half the time** (`FOG_DURATION_MS × 0.5` — 12.5 s, not
+  25 s; `applyFog` gained a caller-owned duration so frost stays
+  heat-blind) and every sprint-crack **burns 25 anger, not 15**
+  (`applyCrack` gained the caller-owned amount; Taal's +20 touch is anger,
+  not a crack, and never routes through it). Furnace dressing rides
+  `buildFloor`, never the frame loop: the scene haze shifts warm charcoal,
+  one low ember point light, and a **static** heat-shimmer gradient quad
+  (reduced-flash safe by construction — nothing animates; the plan's
+  "slow sine" was retired). Aaina's `heatNear` hint sells the warning:
+  "The furnace breathes — your frost melts fast, and every crack you leave
+  burns wider."
+- **The rotation turns (spec §4.4)** — the wheel's second half-turn:
+  **Taal takes his first rest** — `taalPresent` = `(11–50) ∥ 60`; the
+  beat-walker who walked every floor from 11 through 50 sits the Wings out
+  (the beat-water pairing was the Flood's gimmick, the Furnace is
+  Gher+Aavart's home, the heat re-tunes the fight) — while **Gher and
+  Aavart walk every floor 51–60** (`(21/31–40) ∥ f ≥ 50` — their ratified
+  41–49 rest window unchanged, the t5 e2e's floor-41 pins holding). Chhaya
+  never rests. **Dwaar VI (60) calls all four down — the second
+  all-four-Sentinel hall.** Truth table extended with rows 51/55/59/60;
+  rows 1–50 byte-identical to t5's.
+- **The house guards its copies (Act II's deception deepens)** — the decoy
+  stream widens to 41–60 (`tierOf ≥ 5`; **the water does not** — the flood
+  stays the Flood Halls' own, the Furnace burns dry), and `gherObjectives`
+  extends the Encircler's objective candidates with the **alive decoy
+  cells**: a copy crossing his sector pulls the seal straight onto it
+  (`sealsDecoyCell` is the caption's eye — once per floor build,
+  "The warden guards the copy.", en+hi; `gherSeal()` joins the debug
+  faucet as the ward's live witness). Aavart keeps the bare objectives —
+  the Ambusher reads the player, the Warden reads the house. Shard-farming
+  a copy is genuinely risky now.
+- **Furnace dressing** — the ember/copper-on-charcoal palette (the teal
+  slot wears ember, the rose slot copper, the lattice glows ember-gold)
+  and the urgent Phrygian-adjacent pentatonic `[0,1,5,7,8]` with the
+  melody on the triangle. New tester hook field: `heat()`; `gherSeal()`
+  landed with the ward. Interstitial cascade grows again: **Dwaar V joins
+  the 1.8 s claim banner** and the full screen moves down to **Dwaar VI's
+  tier close** (`✦ Truth-Shard VI claimed — Tier VI complete`, sixty floors
+  and banked shards counted, ↻ Play again / Stay) — the campaign's terminal
+  screen, the house's end until tier 7 exists.
+- **Close-out** — §4.6 row 6 delivered, §2.3's Act II row marked deepened
+  (the decoys' second element — enemies protect the copies — is live;
+  mistaken-for-a-copy stays deferred) and the §4.4 delivered note extended
+  with the rotation's turn in the spec; §13.1's scope note refreshed to t6.
+  README gains the Tier 6 + ACT II DEEPENS section; the FAQ grows to 42
+  (the Furnace, the rotation's turn — Taal rests there); STATE_MACHINES'
+  Campaign section refreshed for 60 floors, the rotation table's tier-6
+  column, the tier-6 content note and the heat look-alike row. 715 unit +
+  40 e2e green.
+
 ## [t5] — 2026-11-11 — the Flood Halls (Tier 5, floors 41–50) — ACT II opens
 
 The campaign runs to fifty and the second act begins — the drowned tier, where the house starts copying you.
