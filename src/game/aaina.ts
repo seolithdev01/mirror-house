@@ -22,6 +22,11 @@ export interface HintContext {
   /** T4 — the AMBUSHER is close: a tier-4 floor (≥ 31) and Aavart within
    *  8 m. The one Sentinel whose counter is your own stride. */
   avartNear: boolean;
+  /** T6/T2 — a FURNACE floor (51–60): the heat is on, so the frost melts in
+   *  half the time and every sprint-crack angers the house far more. The
+   *  tier's standing advice — below the Sentinels and the shadow, above the
+   *  temper threshold. */
+  heatNear: boolean;
   exitUnlocked: boolean;
   hintsUsed: number;
 }
@@ -35,6 +40,7 @@ export type HintKind =
   | 'taalSentinel'
   | 'gherNear'
   | 'avartNear'
+  | 'heatNear'
   | 'anger'
   | 'stuck';
 
@@ -61,6 +67,8 @@ export const HINTS: Record<HintKind, string> = {
   gherNear: 'He does not chase — he closes the road ahead. Feint, then go the other way.',
   avartNear:
     'He leaps where you are GOING — the faster you run, the further he reaches. Change your pace.',
+  heatNear:
+    'The furnace breathes — your frost melts fast, and every crack you leave burns wider.',
   chhaya:
     'She is close — your own footsteps, seconds late, and quicker the deeper you go. Never retrace your path; bend your trail instead. And if you must, step through a True Mirror (Space) to somewhere your past never walked.',
   anger:
@@ -84,6 +92,8 @@ export function nextHint(ctx: HintContext): Hint {
   else if (ctx.avartNear)
     kind = 'avartNear'; // T4: the Ambusher — the pace rule, beside the feint
   else if (ctx.chhayaNear) kind = 'chhaya';
+  else if (ctx.heatNear)
+    kind = 'heatNear'; // T6/T2: the Furnace's standing rule — below the shadow, above the temper
   else if (ctx.anger >= ANGER_HINT_AT) kind = 'anger';
   else kind = 'stuck';
   return { kind, text: HINTS[kind] };

@@ -196,6 +196,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'hint.tactical': '{key} — tactical pause',
     'hint.tacticalMarks': 'Tactical — click toggles waypoints · Esc clears them',
     'hint.tacticalResume': 'Tactical pause — Esc resumes',
+    // T6/T2 — the Furnace's standing advice, authored in both languages (the
+    // Aaina panel itself speaks English content by design — src/ui/aaina.ts)
+    'hint.heatNear': 'The furnace breathes — your frost melts fast, and every crack you leave burns wider.',
     // Aaina's tab labels (her content stays English)
     'tab.ask': 'Ask',
     'tab.hint': 'Hint',
@@ -406,6 +409,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'hint.tactical': '{key} — रणनीति विराम',
     'hint.tacticalMarks': 'रणनीति — क्लिक वेपॉइंट बदलता है · Esc मिटाता है',
     'hint.tacticalResume': 'रणनीति विराम — Esc जारी रखें',
+    // T6/T2 — भट्ठी की स्थायी सलाह, दोनों भाषाओं में रचित (आईना की बातें
+    // अँग्रेज़ी में रहेंगी — src/ui/aaina.ts देखें)
+    'hint.heatNear': 'भट्ठी की साँस चलती है — तुम्हारा तुषार जल्दी पिघलता है, और तुम जो दरार छोड़ते हो वह चौड़ी जलती है।',
     // आईना के टैब (उनकी बातें अँग्रेज़ी में रहेंगी)
     'tab.ask': 'पूछें',
     'tab.hint': 'संकेत',

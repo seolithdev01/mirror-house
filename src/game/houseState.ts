@@ -30,14 +30,24 @@ export function initHouseState(): HouseState {
   return { anger: 0, attempts: 0, shards: 0, crackedAny: false };
 }
 
-/** Crack one mirror: +CRACK_ANGER anger, once per mirror (the runtime's
- *  `cracked` flag guards re-cracks — the same mirror never angers twice).
+/** Crack one mirror: +`anger` (default CRACK_ANGER — the house's usual
+ *  15-per-crack temper), once per mirror (the runtime's `cracked` flag guards
+ *  re-cracks — the same mirror never angers twice). T6/T2 — the caller owns
+ *  the amount: main passes `crackAngerFor(campaign.floor)`, so a sprint-crack
+ *  in the Furnace costs 25 (HEAT_CRACK_ANGER) and a cool-floor crack still
+ *  costs the default 15. Taal's anger-touch is NOT a crack and does not route
+ *  through here — it stays TAAL_TOUCH_ANGER (+20) on the cameo floors.
  *  Returns the state unchanged when the id is unknown or already cracked. */
-export function applyCrack(h: HouseState, rt: MirrorRuntime[], id: number): HouseState {
+export function applyCrack(
+  h: HouseState,
+  rt: MirrorRuntime[],
+  id: number,
+  anger: number = CRACK_ANGER,
+): HouseState {
   const m = rt.find((r) => r.id === id);
   if (!m || m.cracked) return h;
   m.cracked = true;
-  return { ...h, anger: h.anger + CRACK_ANGER, crackedAny: true };
+  return { ...h, anger: h.anger + anger, crackedAny: true };
 }
 
 /** The house collapses — fail the floor — at ANGER_MAX anger. */

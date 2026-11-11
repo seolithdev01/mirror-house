@@ -62,6 +62,23 @@ describe('houseState', () => {
     expect(h0.crackedAny).toBe(false);
   });
 
+  it('applyCrack: the caller owns the anger amount — heat floors crack wider (T6/T2)', () => {
+    // T6/T2 — main passes crackAngerFor(campaign.floor): 25 in the Furnace,
+    // CRACK_ANGER everywhere else. The once-per-mirror guard reads the same.
+    const mirrors = [m(0, 'standing', 0, 0), m(1, 'standing', 1, 1)];
+    const runtime = rt(mirrors);
+    const h1 = applyCrack(initHouseState(), runtime, 0, 25);
+    expect(h1.anger).toBe(25);
+    expect(h1.crackedAny).toBe(true);
+    expect(runtime[0]!.cracked).toBe(true);
+    // re-crack: no further anger even at the heat amount
+    const h2 = applyCrack(h1, runtime, 0, 25);
+    expect(h2).toEqual(h1);
+    // a second heat crack stacks 25 on 25
+    const h3 = applyCrack(h2, runtime, 1, 25);
+    expect(h3.anger).toBe(50);
+  });
+
   it('isCollapse at ANGER_MAX: 6 cracks hold, the 7th collapses', () => {
     const mirrors = Array.from({ length: 7 }, (_, i) => m(i, 'standing', i, 0));
     const runtime = rt(mirrors);

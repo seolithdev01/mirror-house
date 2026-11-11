@@ -4,6 +4,7 @@ import { Dir, FloorGrid } from '../../src/engine/grid';
 import {
   CHASE_MEMORY_MS,
   ECHO_SPEED,
+  FOG_DURATION_MS,
   SENSE_INTERVAL_MS,
   WATER_RIPPLE_MS,
 } from '../../src/engine/constants';
@@ -85,7 +86,7 @@ describe('sensesPlayer', () => {
     const echo = echoAt(-1.5, 0);
     const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
     expect(sensesPlayer(echo, player, mirrors, rt, [], g, 1000)).toBe(true);
-    applyFog(rt, 1, 1000);
+    applyFog(rt, 1, 1000, FOG_DURATION_MS);
     expect(sensesPlayer(echo, player, mirrors, rt, [], g, 2000)).toBe(false);
   });
 
@@ -104,7 +105,7 @@ describe('sensesPlayer', () => {
     const rt = initMirrorRuntime(mirrors);
     const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
     expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt, [], g, 1000)).toBe(true);
-    applyFog(rt, 1, 1000); // fogging the pane blinds the eye, standing-style
+    applyFog(rt, 1, 1000, FOG_DURATION_MS); // fogging the pane blinds the eye, standing-style
     expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt, [], g, 2000)).toBe(false);
   });
 
@@ -171,7 +172,7 @@ describe('sensesPlayer — water eyes (T3)', () => {
     // fog the only mirror; the still pool keeps the echo's eye open
     const mirrors = [mir(1, 0, 0)];
     const rt = initMirrorRuntime(mirrors);
-    applyFog(rt, 1, 0);
+    applyFog(rt, 1, 0, FOG_DURATION_MS);
     const near = initWaterRuntime([{ x: 0, y: 0 }]);
     expect(
       sensesPlayer(echoAt(-1.5, 0), { x: 1.5, y: 0, heading: 0 }, mirrors, rt, near, g, 0),
@@ -280,8 +281,8 @@ describe('updateEcho', () => {
     const g = openGrid();
     const mirrors = [mir(1, -7, 0), mir(2, -6, 0)];
     const rt = initMirrorRuntime(mirrors);
-    applyFog(rt, 1, 0);
-    applyFog(rt, 2, 0);
+    applyFog(rt, 1, 0, FOG_DURATION_MS);
+    applyFog(rt, 2, 0, FOG_DURATION_MS);
     const anchors = [{ x: 8, y: 0 }];
     const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
     const e = updateEcho(echoAt(-8, 0), player, mirrors, rt, [], g, anchors, 1000, 0.5);
@@ -298,15 +299,15 @@ describe('updateEcho', () => {
     // only one fogged mirror → patrol
     const one = [mir(1, -7, 0)];
     const rtOne = initMirrorRuntime(one);
-    applyFog(rtOne, 1, 0);
+    applyFog(rtOne, 1, 0, FOG_DURATION_MS);
     expect(updateEcho(echoAt(-8, 0), player, one, rtOne, [], g, anchors, 1000, 0.5).mode).toBe(
       'patrol',
     );
     // two fogged but one clear eye within CONFUSE_UNFOGGED_R → senses and chases instead
     const mix = [mir(1, -7, 0), mir(2, -6, 0), mir(3, -5, 0)];
     const rtMix = initMirrorRuntime(mix);
-    applyFog(rtMix, 1, 0);
-    applyFog(rtMix, 2, 0);
+    applyFog(rtMix, 1, 0, FOG_DURATION_MS);
+    applyFog(rtMix, 2, 0, FOG_DURATION_MS);
     expect(updateEcho(echoAt(-8, 0), player, mix, rtMix, [], g, anchors, 1000, 0.5).mode).toBe(
       'chase',
     );

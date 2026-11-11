@@ -6,7 +6,6 @@
 import {
   BREATH_RECHARGE_PER_S,
   FOG_COST,
-  FOG_DURATION_MS,
   FOG_RANGE,
   FROST_CONE_COS,
 } from '../engine/constants';
@@ -90,17 +89,21 @@ export function fogTarget(
 }
 
 /** Beacon fog is permanent (captured); every other fogable glass — standing,
- *  portraits, T4's distort — lasts FOG_DURATION_MS from `now` (a distort
- *  mirror is NOT a beacon: fogging it restores the truth for 25 s, banks
- *  nothing, and the pane can be re-fogged when the lie returns). */
-export function applyFog(rt: MirrorRuntime[], id: number, now: number): void {
+ *  portraits, T4's distort — lasts `durationMs` from `now` (a distort mirror
+ *  is NOT a beacon: fogging it restores the truth for the duration, banks
+ *  nothing, and the pane can be re-fogged when the lie returns).
+ *  T6/T2 — the caller owns the duration (main passes
+ *  `fogDurationMs(campaign.floor)`: the base 25 s on the cool floors, 12.5 s
+ *  in the Furnace); this module stays floor-agnostic and heat-blind. Beacons
+ *  ignore it — a capture is forever whatever the air is doing. */
+export function applyFog(rt: MirrorRuntime[], id: number, now: number, durationMs: number): void {
   const m = rt.find((r) => r.id === id);
   if (!m) return;
   if (m.kind === 'beacon') {
     m.captured = true;
     m.foggedUntil = null;
   } else {
-    m.foggedUntil = now + FOG_DURATION_MS;
+    m.foggedUntil = now + durationMs;
   }
 }
 

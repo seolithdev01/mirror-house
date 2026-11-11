@@ -210,7 +210,7 @@ describe('apparentPlayer', () => {
     const g = openGrid();
     const mirrors = [dMir(1, 0, 0, 2, 0)];
     const rt = initMirrorRuntime(mirrors);
-    applyFog(rt, 1, 1000);
+    applyFog(rt, 1, 1000, FOG_DURATION_MS);
     expect(rt[0]!.captured).toBe(false); // NOT a beacon
     expect(rt[0]!.foggedUntil).toBe(1000 + FOG_DURATION_MS);
     expect(apparentPlayer(playerAt(4, 0), mirrors, rt, g, 1000)).toEqual({ x: 4, y: 0 });
@@ -289,7 +289,7 @@ describe('sensesPlayer — the displaced range check', () => {
     const echo = echoAt(-1.5, 0);
     const player = playerAt(1.5, 0);
     expect(sensesPlayer(echo, player, mirrors, rt, [], g, 1000)).toBe(true);
-    applyFog(rt, 1, 1000);
+    applyFog(rt, 1, 1000, FOG_DURATION_MS);
     expect(sensesPlayer(echo, player, mirrors, rt, [], g, 2000)).toBe(false);
   });
 });

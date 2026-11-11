@@ -91,6 +91,7 @@ describe('i18n — key parity', () => {
       'hint.step',
       'hint.push',
       'hint.sealed',
+      'hint.heatNear', // T6/T2 — the Furnace's hint line, authored in both languages
       'tab.ask',
       'tab.hint',
       'tab.lore',
@@ -176,6 +177,22 @@ describe('i18n — the T6 tier-six chrome', () => {
   it('the tier-six chip suffix exists in both languages', () => {
     expect(STRINGS.en['chip.tier6']).toBe('T6');
     expect(STRINGS.hi['chip.tier6']!).toMatch(/[\u0900-\u097F]/);
+  });
+});
+
+// T6/T2 — the Furnace's hint line: the tier's standing advice, authored in
+// both languages (the table carries it; the Aaina panel itself speaks
+// English content by design — see src/ui/aaina.ts).
+describe('i18n — the T6 heat hint line', () => {
+  it('en pins the furnace line verbatim', () => {
+    expect(STRINGS.en['hint.heatNear']).toBe(
+      'The furnace breathes — your frost melts fast, and every crack you leave burns wider.',
+    );
+  });
+
+  it('hi carries its own authored line (Devanagari, never a copy of en)', () => {
+    expect(STRINGS.hi['hint.heatNear']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['hint.heatNear']).not.toBe(STRINGS.en['hint.heatNear']);
   });
 });
 

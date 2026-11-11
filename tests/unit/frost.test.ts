@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
+import { FOG_DURATION_MS } from '../../src/engine/constants';
 import { Dir, FloorGrid } from '../../src/engine/grid';
 import {
   applyFog,
@@ -69,16 +70,33 @@ describe('frost', () => {
   });
   it('applyFog: standing times out, beacon is captured forever', () => {
     const rt = initMirrorRuntime([m(1, 'standing', 0, 0), m(2, 'beacon', 0, 0)]);
-    applyFog(rt, 1, 1000);
+    applyFog(rt, 1, 1000, FOG_DURATION_MS);
     expect(isFogged(rt[0]!, 2000)).toBe(true);
     expect(isFogged(rt[0]!, 26001)).toBe(false);
-    applyFog(rt, 2, 1000);
+    applyFog(rt, 2, 1000, FOG_DURATION_MS);
     expect(isFogged(rt[1]!, 999_999)).toBe(true);
     expect(rt[1]!.captured).toBe(true);
   });
+  it('applyFog: the caller owns the duration — a passed duration times out at now + duration (T6/T2)', () => {
+    // T6/T2 — main passes fogDurationMs(campaign.floor): the base 25 s on the
+    // cool floors, 12.5 s in the Furnace. applyFog itself stays floor-agnostic
+    // (pure, heat-blind): whatever duration it is handed is the whole truth.
+    const rt = initMirrorRuntime([m(1, 'standing', 0, 0)]);
+    applyFog(rt, 1, 1000, 12_500);
+    expect(rt[0]!.foggedUntil).toBe(1000 + 12_500);
+    expect(isFogged(rt[0]!, 13_500)).toBe(true);
+    expect(isFogged(rt[0]!, 1000 + 12_500 + 1)).toBe(false);
+  });
+  it('applyFog: a beacon capture ignores the duration — captured is forever (T6/T2)', () => {
+    const rt = initMirrorRuntime([m(2, 'beacon', 0, 0)]);
+    applyFog(rt, 2, 1000, 12_500);
+    expect(rt[0]!.captured).toBe(true);
+    expect(rt[0]!.foggedUntil).toBeNull();
+    expect(isFogged(rt[0]!, 999_999)).toBe(true);
+  });
   it('applyFog: portrait fog is TIMED like standing — never a capture (T2)', () => {
     const rt = initMirrorRuntime([m(1, 'portrait', 0, 0)]);
-    applyFog(rt, 1, 1000);
+    applyFog(rt, 1, 1000, FOG_DURATION_MS);
     expect(rt[0]!.captured).toBe(false);
     expect(isFogged(rt[0]!, 2000)).toBe(true);
     expect(isFogged(rt[0]!, 26_001)).toBe(false);
@@ -91,17 +109,17 @@ describe('frost', () => {
 
   it('mirrorVisual: captured beats an unexpired fog; expired fog reads clear', () => {
     const rt = initMirrorRuntime([m(1, 'standing', 0, 0), m(2, 'beacon', 0, 0)]);
-    applyFog(rt, 1, 1000);
+    applyFog(rt, 1, 1000, FOG_DURATION_MS);
     expect(mirrorVisual(rt[0]!, 1000)).toBe('fogged');
     expect(mirrorVisual(rt[0]!, 26_001)).toBe('clear');
-    applyFog(rt, 2, 1000);
+    applyFog(rt, 2, 1000, FOG_DURATION_MS);
     expect(mirrorVisual(rt[1]!, 999_999)).toBe('captured');
   });
 
   it('isFogged is exactly "not clear" — the two can never disagree', () => {
     const rt = initMirrorRuntime([m(1, 'standing', 0, 0)]);
     for (const now of [0, 999, 1000, 26_000, 26_001, 1e9]) {
-      applyFog(rt, 1, 1000);
+      applyFog(rt, 1, 1000, FOG_DURATION_MS);
       expect(isFogged(rt[0]!, now)).toBe(mirrorVisual(rt[0]!, now) !== 'clear');
     }
     expect(isFogged(rt[0]!, 2000)).toBe(true);

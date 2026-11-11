@@ -118,6 +118,7 @@ import {
   initHouseState,
   isCollapse,
 } from './game/houseState';
+import { crackAngerFor, fogDurationMs, heatOn } from './game/heat';
 import { parseLook } from './game/look';
 import { apparentPlayer as computeApparent } from './game/distort';
 import { diagnosticsSnapshot, keymapDiffCount, recordError, type RingError } from './game/feedback';
@@ -360,6 +361,11 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDraw
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, PROFILES[preset].pixelRatioCap));
 const scene = new THREE.Scene();
 const VOID_COLOR = 0x0b1026; // the night the house floats in — background, fog, map-mode clear
+// T6/T2 — the Furnace Wings' dressing: the haze turns warm charcoal and one
+// low ember light breathes under the floor (both restored per buildFloor —
+// the base palette re-dresses first, the heat overrides only on 51–60).
+const HEAT_FOG_COLOR = 0x1a0e06; // the furnace's warm charcoal haze
+const HEAT_EMBER_COLOR = 0xd9743a; // the low forge glow (T6/T4's ember accent)
 // T2/T4 (carried one-liners) — the void and the fog re-dress with the stage
 // palette at every buildFloor; boot pins the tier-one pair, so floors 1–10
 // render exactly as they did before the tier existed.
@@ -765,6 +771,10 @@ function aainaContext(): HintContext {
       aavartPresent(campaign.floor) &&
       aavart !== null &&
       Math.hypot(aavart.x - player.x, aavart.y - player.y) < 8,
+    // T6/T2 — the Furnace's standing rule: a hot floor (51–60) earns the
+    // heat hint — frost melts fast, cracks burn wider. It outranks her
+    // temper threshold but never the Sentinels or the shadow.
+    heatNear: heatOn(campaign.floor),
     chasing: echoes.filter((e) => e.mode === 'chase').length,
     exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
     hintsUsed,
@@ -852,7 +862,9 @@ function tryFrost(now: number): void {
   if (!rt) return;
   if (rt.captured) return; // re-frosting a captured beacon buys nothing — keep the breath
   const wasCaptured = rt.captured;
-  applyFog(mirrorRuntime, target.id, now);
+  // T6/T2 — the caller owns the duration: the heat halves it in the Furnace
+  // (12.5 s), the cool floors keep the base 25 s (frost.ts stays heat-blind).
+  applyFog(mirrorRuntime, target.id, now, fogDurationMs(campaign.floor));
   breath = updateBreath(breath, 0, true);
   if (!wasCaptured && rt.captured) {
     // Beacon shards bank as pending in the house state — awarded at clear.
@@ -943,7 +955,50 @@ function syncWaterLevelVisuals(): void {
 // tier-one cream here is the boot default.
 const lantern = new THREE.PointLight(0xffd9a0, 22, 18, 1.8);
 scene.add(lantern, new THREE.AmbientLight(0x3a3f55, 0.7));
+// T6/T2 — the Furnace's low ember glow: ONE point light, warm copper, parked
+// low near the floor center. Intensity 0 everywhere except the heat floors,
+// where buildFloor raises it — the same set-and-forget contract as the
+// walking lantern's color (set per buildFloor, never per frame).
+const emberLight = new THREE.PointLight(HEAT_EMBER_COLOR, 0, 34, 1.6);
+emberLight.position.set(0, 0.9, 0); // low, mid-floor — the forge breathes from below
+scene.add(emberLight);
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 60);
+scene.add(camera); // the heat shimmer rides the camera as a child (below)
+// T6/T2 — the Furnace's heat shimmer: ONE static warm-gradient quad riding
+// the camera — the haze of looking through hot air. REDUCED-FLASH SAFE BY
+// CONSTRUCTION: the gradient is painted once and NEVER animates (no sine
+// opacity, no pulse, no flicker — the plan's animated shimmer retired for a
+// static gradient); it just fades from ember-warm at the bottom of the view
+// to clear overhead, and only shows on the heat floors (buildFloor).
+function makeHeatShimmerCanvas(): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = 2;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return canvas;
+  const grad = ctx.createLinearGradient(0, canvas.height, 0, 0); // view bottom (hot) → top (clear)
+  grad.addColorStop(0, 'rgba(217, 116, 58, 0.16)'); // HEAT_EMBER_COLOR at its lowest whisper
+  grad.addColorStop(0.55, 'rgba(217, 116, 58, 0)');
+  grad.addColorStop(1, 'rgba(217, 116, 58, 0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+const heatShimmerGeo = new THREE.PlaneGeometry(4.4, 3.2); // covers the 75° frustum at 1 m, any aspect
+const heatShimmer = new THREE.Mesh(
+  heatShimmerGeo,
+  new THREE.MeshBasicMaterial({
+    map: canvasTexture(makeHeatShimmerCanvas(), 1, 1),
+    transparent: true,
+    depthTest: false, // an overlay, not scenery — it never occludes or clips
+    depthWrite: false,
+  }),
+);
+heatShimmer.position.set(0, 0, -1); // just ahead of the camera's near plane (0.1)
+heatShimmer.renderOrder = 999; // over the stage, under nothing that matters
+heatShimmer.frustumCulled = false; // always covers the view, whatever the aspect
+heatShimmer.visible = false; // the cool floors (1–50) show nothing at all
+camera.add(heatShimmer);
 
 // M3/T3 view modes. `view` is the one ViewMode value; [V] walks cycleView
 // (focus → quad → overhead → focus). tactical is T4's Esc pause — unreachable
@@ -1327,6 +1382,19 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   voidColor.setHex(stagePalette.void);
   voidFog.color.setHex(stagePalette.void);
   lantern.color.setHex(stagePalette.lantern);
+  // T6/T2 — the Furnace's dressing, re-derived every buildFloor so leaving
+  // the Wings restores the stage exactly: on a heat floor the haze shifts
+  // warm charcoal (the fog AND the background — they share the pair above),
+  // the one low ember light breathes under the floor, and the static heat
+  // shimmer covers the view; on any cool floor all three revert to nothing
+  // (the palette's own void, ember intensity 0, shimmer hidden).
+  const hot = heatOn(c.floor);
+  if (hot) {
+    voidColor.setHex(HEAT_FOG_COLOR);
+    voidFog.color.setHex(HEAT_FOG_COLOR);
+  }
+  emberLight.intensity = hot ? 26 : 0;
+  heatShimmer.visible = hot;
   const stage = buildFloorScene(floor, stagePalette);
   sceneBuilt = stage;
   scene.add(stage.group);
@@ -2436,7 +2504,12 @@ function frame(now: number): void {
       if (sprintMoving && active(phase)) {
         const target = crackTarget(allMirrors, mirrorRuntime, player, true);
         if (target) {
-          house = applyCrack(house, mirrorRuntime, target.id);
+          // T6/T2 — the caller owns the anger: 15 per crack on the cool
+          // floors, 25 in the Furnace (crackAngerFor). Taal's +20 anger-touch
+          // below is NOT a crack — it keeps TAAL_TOUCH_ANGER on the cameo
+          // floors (floor ≤ 10 only; from 11 up his touch is the caught fail,
+          // and on 51–59 he rests anyway).
+          house = applyCrack(house, mirrorRuntime, target.id, crackAngerFor(campaign.floor));
           visuals.find((_, i) => allMirrors[i]!.id === target.id)?.bind.setCracked(true);
           if (isCollapse(house)) failFloor('collapse');
         }
