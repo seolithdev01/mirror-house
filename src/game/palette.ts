@@ -142,13 +142,16 @@ export const TIER_SIX_PALETTE: TierPalette = {
  *  the same retire-the-stand-in pattern one tier down.
  *  T6/T4: tier 6 wears the Furnace Wings' ember/copper-on-charcoal — the
  *  documented Flood stand-in (T6/T1's fallthrough) is retired here, the
- *  same retire-the-stand-in pattern one tier down. */
-export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6): TierPalette {
+ *  same retire-the-stand-in pattern one tier down.
+ *  T7/T1: tier 7 rides the Furnace Wings' ember/copper-on-charcoal as the
+ *  DOCUMENTED STAND-IN until the Library's moonlit lavender lands (T7/T3 —
+ *  the same retire-the-stand-in pattern one tier down). */
+export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
   if (tier === 4) return TIER_FOUR_PALETTE;
   if (tier === 5) return TIER_FIVE_PALETTE;
-  if (tier === 6) return TIER_SIX_PALETTE;
+  if (tier === 6 || tier === 7) return TIER_SIX_PALETTE; // 7 = stand-in until T7/T3
   return TIER_ONE_PALETTE;
 }
 

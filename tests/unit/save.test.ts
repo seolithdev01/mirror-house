@@ -120,9 +120,9 @@ describe('save: validateSave', () => {
 
   it('rejects malformed progress', () => {
     expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 0 })))).toBeNull();
-    // T6 widened the legal floor range to TIER_SIX_FLOORS (60): 51, 55 and
-    // 60 are valid campaign floors; 61 is the first rejection.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 61 })))).toBeNull();
+    // T7 widened the legal floor range to TIER_SEVEN_FLOORS (70): 51, 61,
+    // 65 and 70 are valid campaign floors; 71 is the first rejection.
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 71 })))).toBeNull();
     expect(
       validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 2.5 }))),
     ).toBeNull();
@@ -681,7 +681,7 @@ describe('tier-5 progress range + save round-trip (t5)', () => {
 
 // T6/T1 — THE BINDING (the T2 lesson, FIFTH time): the validator widens to
 // TIER_SIX_FLOORS = 60 in the SAME commit the campaign ramps to 60, or every
-// tier-6 save wipes on reload. 61 is the first rejection.
+// tier-6 save wipes on reload. 61 was the first rejection — until T7 moved it.
 describe('tier-6 progress range + save round-trip (t6)', () => {
   it('accepts tier-six floors 51, 55 and 60 as valid progress', () => {
     for (const floor of [51, 55, 60]) {
@@ -691,8 +691,10 @@ describe('tier-6 progress range + save round-trip (t6)', () => {
     }
   });
 
-  it('rejects 61 — the first floor past TIER_SIX_FLOORS (the campaign is terminal at 60)', () => {
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 61 })))).toBeNull();
+  it('rejects junk past the campaign — 61 went LEGAL in T7, junk never validates', () => {
+    // T7/T1 — 61 is a LEGAL tier-seven floor now; the first rejection moved
+    // to 71 (see the tier-seven describe below). This pin keeps proving the
+    // boundary exists at all: junk past the campaign never validates.
     expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
   });
 
@@ -709,5 +711,38 @@ describe('tier-6 progress range + save round-trip (t6)', () => {
     );
     expect(last).not.toBeNull();
     expect(last?.progress).toEqual({ seedBase: 'T6KEEP', floor: 60, tierComplete: true });
+  });
+});
+
+// T7/T1 — THE BINDING (the T2 lesson, SIXTH time): the validator widens to
+// TIER_SEVEN_FLOORS = 70 in the SAME commit the campaign ramps to 70, or every
+// tier-7 save wipes on reload. 71 is the first rejection.
+describe('tier-7 progress range + save round-trip (t7)', () => {
+  it('accepts tier-seven floors 61, 65 and 70 as valid progress', () => {
+    for (const floor of [61, 65, 70]) {
+      const restored = validateSave(mutated((r) => (r.progress = { ...good.progress, floor })));
+      expect(restored, `floor ${floor}`).not.toBeNull();
+      expect(restored?.progress.floor).toBe(floor);
+    }
+  });
+
+  it('rejects 71 — the first floor past TIER_SEVEN_FLOORS (the campaign is terminal at 70)', () => {
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 71 })))).toBeNull();
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+  });
+
+  it('a floor-65 and a floor-70 save survive serialize → validate (the tier-7 reload wipe)', () => {
+    const s = defaultSave();
+    s.progress = { seedBase: 'T7KEEP', floor: 65, tierComplete: false };
+    const mid = validateSave(JSON.parse(serializeSave(s)));
+    expect(mid).not.toBeNull();
+    expect(mid?.progress.floor).toBe(65);
+    const last = validateSave(
+      JSON.parse(
+        serializeSave({ ...s, progress: { ...s.progress, floor: 70, tierComplete: true } }),
+      ),
+    );
+    expect(last).not.toBeNull();
+    expect(last?.progress).toEqual({ seedBase: 'T7KEEP', floor: 70, tierComplete: true });
   });
 });

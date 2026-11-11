@@ -31,6 +31,7 @@ import {
   TAAL_FLOOR,
   TIER_FIVE_FLOORS,
   TIER_FOUR_FLOORS,
+  TIER_SEVEN_FLOORS,
   TIER_SIX_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
@@ -256,8 +257,9 @@ function bootFloorFromUrl(): number {
   // T4/T1 — and 31–40: the carnival legs jump the same way. T5/T1 — and
   // 41–50: the Flood Halls (Act II's banner + Dwaar V's duel are jumpable).
   // T6/T1 — and 51–60: the Furnace Wings (the rotation rest + Dwaar VI's
-  // crucible are jumpable).
-  return Number.isInteger(n) && n >= 1 && n <= TIER_SIX_FLOORS ? n : 1;
+  // crucible are jumpable). T7/T1 — and 61–70: the Whisper Library (Taal's
+  // return + the Dwaar VII duet are jumpable).
+  return Number.isInteger(n) && n >= 1 && n <= TIER_SEVEN_FLOORS ? n : 1;
 }
 /** Migration reads the legacy localStorage meta v1 ONCE; unreadable → null
  *  (a fresh default, never a dead boot). The localStorage copy is left in
@@ -1297,10 +1299,11 @@ function teardownFloor(): void {
 /** The floor chip: `L02` on the tier-one ramp; tier two floors carry the
  *  `· T2` suffix (`L14 · T2`), tier three the `· T3` suffix (`L24 · T3`),
  *  tier four the `· T4` suffix (`L34 · T4`), tier five the `· T5` suffix
- *  (`L44 · T5`), tier six the `· T6` suffix (`L54 · T6`); the threshold
- *  floors name their Dwaar (`L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`,
- *  `L30 · DWAAR III ✦`, `L40 · DWAAR IV ✦`, `L50 · DWAAR V ✦`,
- *  `L60 · DWAAR VI ✦`).
+ *  (`L44 · T5`), tier six the `· T6` suffix (`L54 · T6`), tier seven the
+ *  `· T7` suffix (`L64 · T7`); the threshold floors name their Dwaar
+ *  (`L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`,
+ *  `L40 · DWAAR IV ✦`, `L50 · DWAAR V ✦`, `L60 · DWAAR VI ✦`,
+ *  `L70 · DWAAR VII ✦`).
  *  M4/T6: the `L`/`स्तर` prefix, the `DWAAR`/`द्वार` name and the tier
  *  suffix localize. */
 function floorChipLabel(c: Campaign): string {
@@ -1317,21 +1320,25 @@ function floorChipLabel(c: Campaign): string {
               ? 'V'
               : c.floor === TIER_SIX_FLOORS
                 ? 'VI'
-                : 'III';
+                : c.floor === TIER_SEVEN_FLOORS
+                  ? 'VII'
+                  : 'III';
     return `${tag} · ${t(lang, 'chip.dwaar')} ${numeral} ✦`;
   }
   const tier = tierOf(c.floor);
-  return tier === 6
-    ? `${tag} · ${t(lang, 'chip.tier6')}`
-    : tier === 5
-      ? `${tag} · ${t(lang, 'chip.tier5')}`
-      : tier === 4
-        ? `${tag} · ${t(lang, 'chip.tier4')}`
-        : tier === 3
-          ? `${tag} · ${t(lang, 'chip.tier3')}`
-          : tier === 2
-            ? `${tag} · ${t(lang, 'chip.tier')}`
-            : tag;
+  return tier === 7
+    ? `${tag} · ${t(lang, 'chip.tier7')}`
+    : tier === 6
+      ? `${tag} · ${t(lang, 'chip.tier6')}`
+      : tier === 5
+        ? `${tag} · ${t(lang, 'chip.tier5')}`
+        : tier === 4
+          ? `${tag} · ${t(lang, 'chip.tier4')}`
+          : tier === 3
+            ? `${tag} · ${t(lang, 'chip.tier3')}`
+            : tier === 2
+              ? `${tag} · ${t(lang, 'chip.tier')}`
+              : tag;
 }
 
 /** Build the campaign's current floor. Floors 1–9 come from the procedural
@@ -1360,24 +1367,27 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     pack !== null
       ? generateFloor({ ...TIER_ONE, seed, ...vp!.mazeOverrides }) // always procedural, pack-shaped
       : isDwaar(c.floor)
-        ? floorFromGrid(dwaarGrid(c.floor), seed) // Dwaar I (10) … V (50), VI (60)
+        ? floorFromGrid(dwaarGrid(c.floor), seed) // Dwaar I (10) … V (50), VI (60), VII (70)
         : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
   exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
   // The tier dresses the stage (T2/T3): campaign floors 11–20 wear the Hall
   // of Ancestors palette, 21–30 the Reflecting Gardens, 31–40 the Carnival
-  // of Faces, 41–50 the Flood Halls, 51–60 the Furnace Wings — the same
-  // floorAccent lattice re-tinted, tiers 1–10 keep the night-blue tier-one
-  // set untouched. The melody moves with it (T3/T4): Durga pentatonic on
-  // tier-2 floors, the pastoral pentatonic AND the flute voice (sine) on
-  // tier-3, the mischievous pentatonic back on the triangle (the reed's
-  // wink) on tier-4, the dark pentatonic on the triangle (the reed gone
-  // under) on tier-5 — swapped live (next note uses them; the drone root
-  // never moves). T5/T4: the tier-5 stand-in (the carnival groove) retires —
-  // the Flood Halls dress AND hum as themselves. T6/T4: the tier-6 stand-in
-  // retires too — the Furnace dresses in ember/copper-on-charcoal and hums
-  // the urgent Phrygian-adjacent pentatonic, still on the triangle (the
-  // reed endures the heat; only the rung tightens).
+  // of Faces, 41–50 the Flood Halls, 51–60 the Furnace Wings, 61–70 the
+  // Whisper Library — the same floorAccent lattice re-tinted, tiers 1–10
+  // keep the night-blue tier-one set untouched. The melody moves with it
+  // (T3/T4): Durga pentatonic on tier-2 floors, the pastoral pentatonic AND
+  // the flute voice (sine) on tier-3, the mischievous pentatonic back on the
+  // triangle (the reed's wink) on tier-4, the dark pentatonic on the
+  // triangle (the reed gone under) on tier-5 — swapped live (next note uses
+  // them; the drone root never moves). T5/T4: the tier-5 stand-in (the
+  // carnival groove) retires — the Flood Halls dress AND hum as themselves.
+  // T6/T4: the tier-6 stand-in retires too — the Furnace dresses in
+  // ember/copper-on-charcoal and hums the urgent Phrygian-adjacent
+  // pentatonic, still on the triangle (the reed endures the heat; only the
+  // rung tightens). T7/T1: tier 7 rides the Furnace's pair as the DOCUMENTED
+  // STAND-IN until the Library's moonlit dressing and whispered voice land
+  // (T7/T3 — the same retire-the-stand-in pattern one tier down).
   // Venue side-floors stay tier-one dressed — scale AND voice: a return
   // from a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
@@ -1389,6 +1399,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       4: TIER_FOUR_SCALE,
       5: TIER_FIVE_SCALE, // T5/T4 — the dark pentatonic (the stand-in retires)
       6: TIER_SIX_SCALE, // T6/T4 — the urgent pentatonic (the stand-in retires)
+      7: TIER_SIX_SCALE, // T7/T1 stand-in until T7/T3's whispered scale
     } as const;
     const voiceByTier = {
       1: 'triangle',
@@ -1397,6 +1408,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       4: 'triangle',
       5: 'triangle', // the reed stays — only the notes drown
       6: 'triangle', // the reed endures the heat — only the rung tightens
+      7: 'triangle', // T7/T1 stand-in until T7/T3's whispered sine
     } as const;
     audio.setScale(scaleByTier[tier]);
     audio.setVoice(voiceByTier[tier]);
@@ -1658,9 +1670,11 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // already catches on every floor that far (taalOutcome). T5/T1 — the gate
   // reads taalPresent() now: the rotation changes nothing for him (he walks
   // every floor 11+ INCLUDING Act II — the one Sentinel who never rests).
-  // T6/T1 — that streak ENDS: the Furnace gives him his first rest (51–59),
-  // and the Dwaar VI crucible alone calls him back (60) — the four-Sentinel
-  // duel.
+  // T6/T1 — that streak ENDS: the Furnace gives him his first rest (51–59).
+  // T7/T1 — the rest EXTENDS through 65 (the Dwaar VI crucible replays
+  // without him — the ratified net change on the old floors) and he RETURNS
+  // at TAAL_RETURN_FLOOR (66): the beat in the silence, walking the Library's
+  // last five floors into the Dwaar VII duet.
   if (pack === null && (c.floor === TAAL_FLOOR || taalPresent(c.floor))) {
     const fig = createTaal();
     scene.add(fig.group);
@@ -1687,6 +1701,8 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // (41–49) and calls him down ONLY for the Dwaar V duel (50); floors
   // 21–30 read exactly as always. T6/T1 — he RETURNS from rest: the
   // Furnace Wings are his home tier, gherPresent() walks him 50–60.
+  // T7/T1 — the Library gives him the whole tier off EXCEPT the Dwaar VII
+  // duet (70): the Taal+Gher duet in the stacks, the tier's apex.
   // M6/T1 — never on a venue floor: the campaign's roads stay home.
   if (pack === null && gherPresent(c.floor)) {
     const fig = createGher();
@@ -1711,7 +1727,9 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // aavartPresent() rests him on the Flood Halls (41–49) and calls him down
   // ONLY for the Dwaar V duel (50); floors 31–40 read exactly as always.
   // T6/T1 — he RETURNS from rest: the Furnace Wings walk him 50–60 beside
-  // the Encircler. M6/T1 — never on a venue floor: the campaign's pace
+  // the Encircler. T7/T1 — the Library rests him ENTIRELY (61–70): tier 7
+  // belongs to the hearing Echoes and the duet; he returns in tier 8.
+  // M6/T1 — never on a venue floor: the campaign's pace
   // stays home.
   if (pack === null && aavartPresent(c.floor)) {
     const fig = createAavart();
@@ -2746,13 +2764,14 @@ function frame(now: number): void {
     // rebuild one floor deeper; a Dwaar claims its Truth-Shard. Dwaar I (10)
     // descends into the Hall of Ancestors, Dwaar II (20) into the Reflecting
     // Gardens, Dwaar III (30) into the Carnival of Faces, Dwaar IV (40) into
-    // the Flood Halls and Dwaar V (50) into the Furnace Wings — the
-    // interstitial cascade, tier-appropriately worded (T5/T1 ratified: IV
-    // joins II and III; T6/T1 ratified: V joins too — the Act I close screen
-    // is retired and Act II announced itself with the floor-41 banner);
-    // Dwaar VI (60) raises the TIER VI completion screen (the four-Sentinel
-    // crucible's close) — the campaign is terminal there; descend() is a
-    // no-op, so the screen is the end of the house until Act III exists.
+    // the Flood Halls, Dwaar V (50) into the Furnace Wings and Dwaar VI (60)
+    // into the Whisper Library — the interstitial cascade,
+    // tier-appropriately worded (T5/T1 ratified: IV joins II and III; T6/T1
+    // ratified: V joins too; T7/T1 ratified: VI joins as well — the T6 tier
+    // screen retired downward and the stairs at 60 open into the Library);
+    // Dwaar VII (70) raises the TIER VII completion screen (the Taal+Gher
+    // duet's close) — the campaign is terminal there; descend() is a no-op,
+    // so the screen is the end of the house until tier 8 exists.
     phase = clearRun(phase, now);
     if (venue !== null) {
       // M6/T1 — the SIDE-FLOOR clear: the sim halts and NOTHING banks — no
@@ -2782,20 +2801,20 @@ function frame(now: number): void {
       house = { ...house, shards: 0 };
       persist(true); // a cleared floor banks NOW — no debounce window
       updateShardsChip(); // chip flips from `banked (+pending)` to plain banked
-      if (isDwaar(campaign.floor) && tierOf(campaign.floor) === 6) {
-        // Dwaar VI (60): Truth-Shard VI claims the TIER — the full tier screen
-        // (Play again / Stay), the four-Sentinel crucible's close. No descendAt
-        // arms below, and campaign.descend is a no-op at 60 — the house ends
-        // here until Act III exists.
+      if (isDwaar(campaign.floor) && tierOf(campaign.floor) === 7) {
+        // Dwaar VII (70): Truth-Shard VII claims the TIER — the full tier
+        // screen (Play again / Stay), the Taal+Gher duet's close. No descendAt
+        // arms below, and campaign.descend is a no-op at 70 — the house ends
+        // here until tier 8 exists.
         campaign = completeTier(campaign);
         save = mergeCampaign(save, campaign); // the tier close is a save event
         persist(true);
-        hud.showTierComplete({ tier: 6, floors: TIER_SIX_FLOORS, shards: save.shards });
-        pushCaption('tier', t(lang, 'overlay.tierTitle6')); // the screen's own line
+        hud.showTierComplete({ tier: 7, floors: TIER_SEVEN_FLOORS, shards: save.shards });
+        pushCaption('tier', t(lang, 'overlay.tierTitle7')); // the screen's own line
       } else {
         if (isDwaar(campaign.floor)) {
-          // Dwaar I (10), II (20), III (30), IV (40) and now V (50): the
-          // Truth-Shard is claimed and banked — but the descent continues
+          // Dwaar I (10), II (20), III (30), IV (40), V (50) and now VI (60):
+          // the Truth-Shard is claimed and banked — but the descent continues
           // DOWN. The stair door holds 0.8s like any ramp floor, then opens
           // into the next tier's halls; the descent re-arms the tier flag so
           // the new tier's floors pay their first-clear bonus
@@ -2808,9 +2827,11 @@ function frame(now: number): void {
           // itself — the descend below proceeds exactly as on any ramp floor.
           // T3/T1: Dwaar II joins Dwaar I. T4/T1: Dwaar III cascades. T5/T1:
           // Dwaar IV joins too (the full screen is the TIER close's now) and
-          // each banner names its own shard. T6/T1: Dwaar V joins the cascade
-          // (the full screen is Dwaar VI's — the campaign's terminal close).
-          const shardWhich: 1 | 2 | 3 | 4 | 5 =
+          // each banner names its own shard. T6/T1: Dwaar V joins the cascade.
+          // T7/T1: Dwaar VI joins as well (the full screen is Dwaar VII's —
+          // the campaign's terminal close; the stairs at 60 open into the
+          // Library).
+          const shardWhich: 1 | 2 | 3 | 4 | 5 | 6 =
             campaign.floor === DWAAR_FLOOR
               ? 1
               : campaign.floor === TIER_TWO_FLOORS
@@ -2819,7 +2840,9 @@ function frame(now: number): void {
                   ? 3
                   : campaign.floor === TIER_FOUR_FLOORS
                     ? 4
-                    : 5;
+                    : campaign.floor === TIER_SIX_FLOORS
+                      ? 6
+                      : 5;
           hud.showShardInterstitial(shardWhich);
           pushCaption(
             'tier',
@@ -2833,7 +2856,9 @@ function frame(now: number): void {
                     ? 'overlay.shardInterstitial3'
                     : shardWhich === 4
                       ? 'overlay.shardInterstitial4'
-                      : 'overlay.shardInterstitial5',
+                      : shardWhich === 6
+                        ? 'overlay.shardInterstitial6'
+                        : 'overlay.shardInterstitial5',
             ),
           ); // the interstitial's own line
         }

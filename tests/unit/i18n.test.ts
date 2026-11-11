@@ -82,12 +82,15 @@ describe('i18n — key parity', () => {
       'overlay.shardInterstitial4', // T5/T1 — Dwaar IV joins the cascade
       'overlay.tierTitle5', // T5/T1 — the Dwaar V screen names Tier V
       'overlay.tierTitle6', // T6/T1 — the Dwaar VI screen names Tier VI
+      'overlay.tierTitle7', // T7/T1 — the Dwaar VII screen names Tier VII
       'overlay.shardInterstitial5', // T6/T1 — Dwaar V joins the cascade
+      'overlay.shardInterstitial6', // T7/T1 — Dwaar VI joins the cascade
       'overlay.actBanner', // T5/T1 — the Act II opening banner
       'overlay.actBannerNote', // T5/T1 — its "the house copies you" line
       'chip.tier', // T2/T1 — the `L14 · T2` floor-chip suffix
       'chip.tier5', // T5/T1 — the `L44 · T5` floor-chip suffix
       'chip.tier6', // T6/T1 — the `L54 · T6` floor-chip suffix
+      'chip.tier7', // T7/T1 — the `L64 · T7` floor-chip suffix
       'hint.step',
       'hint.push',
       'hint.sealed',
@@ -177,6 +180,35 @@ describe('i18n — the T6 tier-six chrome', () => {
   it('the tier-six chip suffix exists in both languages', () => {
     expect(STRINGS.en['chip.tier6']).toBe('T6');
     expect(STRINGS.hi['chip.tier6']!).toMatch(/[\u0900-\u097F]/);
+  });
+});
+
+// T7/T1 — the Whisper Library chrome: the Dwaar VII tier screen, Dwaar VI
+// joining the interstitial cascade, and the `L64 · T7` floor-chip suffix.
+describe('i18n — the T7 tier-seven chrome', () => {
+  it('Truth-Shard VII names Tier VII complete on the full tier screen', () => {
+    expect(STRINGS.en['overlay.tierTitle7']).toBe('✦ Truth-Shard VII claimed — Tier VII complete');
+    expect(STRINGS.hi['overlay.tierTitle7']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['overlay.tierTitle7']).not.toBe(STRINGS.en['overlay.tierTitle7']);
+  });
+
+  it('Dwaar VI joins the interstitial cascade with its own shard line', () => {
+    expect(STRINGS.en['overlay.shardInterstitial6']).toBe(
+      '✦ Truth-Shard VI claimed — the house deepens…',
+    );
+    expect(STRINGS.hi['overlay.shardInterstitial6']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['overlay.shardInterstitial6']).not.toBe(
+      STRINGS.en['overlay.shardInterstitial6'],
+    );
+  });
+
+  it('the tier-seven chip suffix exists in both languages', () => {
+    expect(STRINGS.en['chip.tier7']).toBe('T7');
+    expect(STRINGS.hi['chip.tier7']!).toMatch(/[\u0900-\u097F]/);
+  });
+
+  it('chip.tier7 is enumerated as a chip (single-line hi discipline applies)', () => {
+    expect(CHIP_KEYS).toContain('chip.tier7');
   });
 });
 

@@ -13,6 +13,7 @@ import {
   DWAAR_LAYOUT,
   DWAAR_V_LAYOUT,
   DWAAR_VI_LAYOUT,
+  DWAAR_VII_LAYOUT,
   dwaarGrid,
   floorParams,
   floorSeed,
@@ -26,9 +27,11 @@ import {
   BEAT_TICK_MS,
   DWAAR_FLOOR,
   TAAL_FLOOR,
+  TAAL_RETURN_FLOOR,
   TIER_ONE_FLOORS,
   TIER_FIVE_FLOORS,
   TIER_FOUR_FLOORS,
+  TIER_SEVEN_FLOORS,
   TIER_SIX_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
@@ -96,6 +99,14 @@ describe('campaign constants', () => {
 
   it('T6 — pins the tier-six campaign constant — 60 floors, Dwaar VI on the last (the Furnace Wings)', () => {
     expect(TIER_SIX_FLOORS).toBe(60);
+  });
+
+  it('T7 — pins the tier-seven campaign constant — 70 floors, Dwaar VII on the last (the Whisper Library)', () => {
+    expect(TIER_SEVEN_FLOORS).toBe(70);
+  });
+
+  it('T7 — pins the beat-walker\u2019s return floor — Taal comes back mid-tier at 66', () => {
+    expect(TAAL_RETURN_FLOOR).toBe(66);
   });
 });
 
@@ -167,6 +178,34 @@ describe('tierOf', () => {
     // carnival glass — its heat is the modifier (T6/T2), and the floorObjects
     // rng streams stay pinned (no new draws on 51–60)
     for (let f = TIER_FIVE_FLOORS + 1; f <= TIER_SIX_FLOORS; f++) {
+      expect(tierOf(f) === 2, `floor ${f} portraits gate`).toBe(false);
+      expect(tierOf(f) === 3, `floor ${f} water gate`).toBe(false);
+      expect(tierOf(f) === 4, `floor ${f} distort gate`).toBe(false);
+    }
+  });
+
+  it('T7 — splits the campaign at floor 60: 61–70 → 7 (the Whisper Library)', () => {
+    expect(tierOf(61)).toBe(7);
+    expect(tierOf(64)).toBe(7);
+    expect(tierOf(66)).toBe(7);
+    expect(tierOf(69)).toBe(7);
+    expect(tierOf(70)).toBe(7);
+    // 60 keeps its own tier — and 70 is a tier of its OWN too, never a
+    // relabel of anything below (the dressing gates and the tier screens
+    // read equality and must keep reading false)
+    expect(tierOf(60)).toBe(6);
+    expect(tierOf(70)).not.toBe(2);
+    expect(tierOf(70)).not.toBe(3);
+    expect(tierOf(70)).not.toBe(4);
+    expect(tierOf(70)).not.toBe(5);
+    expect(tierOf(70)).not.toBe(6);
+  });
+
+  it('T7 — the tier-exclusive dressing gates stay put on the Whisper Library too', () => {
+    // the Library hangs no ancestor portraits, pools no water and mounts no
+    // carnival glass — its hearing Echoes are the tier's teeth (T7/T2), and
+    // the floorObjects rng streams stay pinned (no new draws on 61–70)
+    for (let f = TIER_SIX_FLOORS + 1; f <= TIER_SEVEN_FLOORS; f++) {
       expect(tierOf(f) === 2, `floor ${f} portraits gate`).toBe(false);
       expect(tierOf(f) === 3, `floor ${f} water gate`).toBe(false);
       expect(tierOf(f) === 4, `floor ${f} distort gate`).toBe(false);
@@ -314,16 +353,43 @@ describe('descend', () => {
     expect(at50.floor).toBe(50); // original untouched
   });
 
-  it('T6 — descend at floor 60 is a NO-OP returning the same object (terminal until Act III)', () => {
-    // Dwaar VI closes the campaign's second act of floors: there is no floor
-    // 61 until Act III exists, so the stair door at 60 opens onto the tier
+  it('T7 — walks the whole campaign 1..70', () => {
+    let c = newCampaign('CCCC');
+    for (let i = 2; i <= TIER_SEVEN_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(TIER_SEVEN_FLOORS);
+  });
+
+  it('T7 — leaving Dwaar VI re-arms the tier flag for tier seven (the Library opens)', () => {
+    // the T7 ratification: Dwaar VI no longer CLOSES the campaign — the claim
+    // at 60 banks and the stairs into the Whisper Library clear the flag so
+    // tier-seven floors pay their first-clear bonus (the tier screen is
+    // Dwaar VII's now).
+    const d = descend({ seedBase: 'DDDD', floor: TIER_SIX_FLOORS, tierComplete: true });
+    expect(d).toEqual({ seedBase: 'DDDD', floor: 61, tierComplete: false });
+  });
+
+  it('T7 — the T6 no-op at 60 is RETIRED: 60 → 61 is a real descent now', () => {
+    // the terminal floor moved to 70 (Act III still does not exist, but the
+    // Whisper Library does); purity preserved exactly as at every earlier
+    // terminus retirement (40 in T5, 50 in T6)
+    const at60 = { seedBase: 'VVVV', floor: TIER_SIX_FLOORS, tierComplete: true };
+    const d = descend(at60);
+    expect(d.floor).toBe(61);
+    expect(d).not.toBe(at60);
+    expect(at60.floor).toBe(60); // original untouched
+    expect(d.tierComplete).toBe(false); // the descent re-arms the flag
+  });
+
+  it('T7 — descend at floor 70 is a NO-OP returning the same object (terminal until tier 8)', () => {
+    // Dwaar VII closes the campaign's third act of floors: there is no floor
+    // 71 until tier 8 exists, so the stair door at 70 opens onto the tier
     // screen and the descend itself must refuse — the SAME object back, not
     // a copy.
-    const at60 = { seedBase: 'VVVV', floor: TIER_SIX_FLOORS, tierComplete: true };
-    expect(descend(at60)).toBe(at60);
-    expect(descend(at60)).toEqual({ seedBase: 'VVVV', floor: 60, tierComplete: true });
+    const at70 = { seedBase: 'XXXX', floor: TIER_SEVEN_FLOORS, tierComplete: true };
+    expect(descend(at70)).toBe(at70);
+    expect(descend(at70)).toEqual({ seedBase: 'XXXX', floor: 70, tierComplete: true });
     // the flag survives the no-op untouched (no re-arm past the tier close)
-    expect(at60.tierComplete).toBe(true);
+    expect(at70.tierComplete).toBe(true);
   });
 });
 
@@ -413,6 +479,22 @@ describe('completeTier', () => {
       expect(completeTier(c), `floor ${floor}`).toEqual(c);
     }
   });
+
+  it('T7 — flags completion at Dwaar VII, the single flag set a seventh time at floor 70', () => {
+    let c = newCampaign('DDDD');
+    for (let i = 1; i < TIER_SEVEN_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(70);
+    expect(c.tierComplete).toBe(false); // the descent from 60 re-armed it
+    const done = completeTier(c);
+    expect(done.tierComplete).toBe(true);
+  });
+
+  it('T7 — is a no-op on tier-seven procedural floors 61..69', () => {
+    for (const floor of [61, 65, 69]) {
+      const c = { seedBase: 'KKKK', floor, tierComplete: false };
+      expect(completeTier(c), `floor ${floor}`).toEqual(c);
+    }
+  });
 });
 
 describe('isDwaar', () => {
@@ -450,7 +532,14 @@ describe('isDwaar', () => {
     expect(isDwaar(TIER_SIX_FLOORS)).toBe(true);
     expect(isDwaar(60)).toBe(true);
     for (const floor of [51, 55, 59]) expect(isDwaar(floor), `floor ${floor}`).toBe(false);
-    expect(isDwaar(61)).toBe(false); // past the tier close — never a Dwaar
+    expect(isDwaar(61)).toBe(false); // a Library ramp floor — procedural, never a Dwaar
+  });
+
+  it('T7 — Dwaar VII joins the set at floor 70; 61..69 stay procedural', () => {
+    expect(isDwaar(TIER_SEVEN_FLOORS)).toBe(true);
+    expect(isDwaar(70)).toBe(true);
+    for (const floor of [61, 65, 69]) expect(isDwaar(floor), `floor ${floor}`).toBe(false);
+    expect(isDwaar(71)).toBe(false); // past the tier close — never a Dwaar
   });
 });
 
@@ -525,12 +614,12 @@ describe('floorParams tier-two ramp (floors 11–20 pinned)', () => {
       expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(4000);
   });
 
-  it('clamps floors past the campaign to the terminal floor (T6: Dwaar VI)', () => {
+  it('clamps floors past the campaign to the terminal floor (T7: Dwaar VII)', () => {
     // T3 pinned this to the Dwaar III values; T4 moved it to Dwaar IV's row;
-    // T5 to Dwaar V's; T6 widens the campaign to 60 — the clamp lands on
-    // Dwaar VI's row.
-    expect(floorParams(99)).toEqual(floorParams(TIER_SIX_FLOORS));
-    expect(floorParams(99)).not.toEqual(floorParams(TIER_FIVE_FLOORS));
+    // T5 to Dwaar V's; T6 to Dwaar VI's; T7 widens the campaign to 70 — the
+    // clamp lands on Dwaar VII's row.
+    expect(floorParams(99)).toEqual(floorParams(TIER_SEVEN_FLOORS));
+    expect(floorParams(99)).not.toEqual(floorParams(TIER_SIX_FLOORS));
   });
 
   it('leaves every tier-one pin untouched (the tier-one experience is frozen)', () => {
@@ -1055,6 +1144,71 @@ describe('floorParams tier-six ramp (floors 51–60 pinned)', () => {
   });
 });
 
+// T7/T1 — the Whisper Library ramp. Echoes hold at the Furnace's 4 (Dwaar VII
+// ALONE carrying 5 — the Taal+Gher duet is the tier's apex); beacons hold at
+// 4; braid keeps the +0.004 tread from a 0.36 base; the delay keeps its −60
+// slide toward the 2700 clamp, Dwaar VII arriving early at 2600 — the stacks
+// hush and Chhaya does not wait.
+describe('floorParams tier-seven ramp (floors 61–70 pinned)', () => {
+  // echoes = 4 on every procedural floor (Dwaar VII fixed 5); beacons 4;
+  // braid = 0.36 + 0.004*(f-61);
+  // chhayaDelayMs = max(2700, 3300 - 60*(f-61)) (Dwaar VII 2600).
+  const pinned: [number, number, number, number, number][] = [
+    // floor, echoes, beacons, braid, chhayaDelayMs
+    [61, 4, 4, 0.36, 3300],
+    [62, 4, 4, 0.364, 3240],
+    [63, 4, 4, 0.368, 3180],
+    [64, 4, 4, 0.372, 3120],
+    [65, 4, 4, 0.376, 3060],
+    [66, 4, 4, 0.38, 3000],
+    [67, 4, 4, 0.384, 2940],
+    [68, 4, 4, 0.388, 2880],
+    [69, 4, 4, 0.392, 2820],
+    [70, 5, 4, 0.396, 2600],
+  ];
+
+  it('matches the pinned ramp for every tier-seven floor', () => {
+    expect(pinned.length).toBe(TIER_SEVEN_FLOORS - TIER_SIX_FLOORS);
+    for (const [floor, echoes, beacons, braid, delay] of pinned) {
+      const p = floorParams(floor);
+      expect(p.echoes, `floor ${floor} echoes`).toBe(echoes);
+      expect(p.beacons, `floor ${floor} beacons`).toBe(beacons);
+      expect(p.braid, `floor ${floor} braid`).toBeCloseTo(braid, 10);
+      expect(p.chhayaDelayMs, `floor ${floor} chhayaDelayMs`).toBe(delay);
+    }
+  });
+
+  it('delays never drop below the 2700 clamp on tier-seven procedural floors', () => {
+    for (let f = TIER_SIX_FLOORS + 1; f < TIER_SEVEN_FLOORS; f++)
+      expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(2700);
+  });
+
+  it('Dwaar VII alone carries 5 echoes — the duet hall', () => {
+    for (let f = TIER_SIX_FLOORS + 1; f < TIER_SEVEN_FLOORS; f++)
+      expect(floorParams(f).echoes, `floor ${f}`).toBe(4);
+    expect(floorParams(TIER_SEVEN_FLOORS).echoes).toBe(5);
+    expect(floorParams(TIER_SEVEN_FLOORS).chhayaDelayMs).toBe(2600);
+  });
+
+  it('leaves every earlier tier pin untouched (floors 1–60 are frozen)', () => {
+    // braid rides toBeCloseTo — 0.32 + 0.004*9 is not the literal 0.356 in
+    // IEEE doubles (the T5/T6 suites' documented pitfall); the ramp math
+    // itself is untouched, only its precision
+    const p60 = floorParams(60);
+    expect(p60.echoes).toBe(5);
+    expect(p60.beacons).toBe(4);
+    expect(p60.braid).toBeCloseTo(0.356, 10);
+    expect(p60.chhayaDelayMs).toBe(2800);
+    expect(floorParams(51)).toEqual({ echoes: 4, beacons: 4, braid: 0.32, chhayaDelayMs: 3500 });
+    const p50 = floorParams(50);
+    expect(p50.echoes).toBe(5);
+    expect(p50.beacons).toBe(4);
+    expect(p50.braid).toBeCloseTo(0.336, 10);
+    expect(p50.chhayaDelayMs).toBe(2900);
+    expect(floorParams(10)).toEqual({ echoes: 4, beacons: 4, braid: 0.21, chhayaDelayMs: 4000 });
+  });
+});
+
 // T5/T1 — the sentinel ROTATION (spec §4.6 "escalate combinations", row 9
 // "all four"): the ladder stops accumulating. Floors 41–49 hunt with Taal
 // ALONE (Gher and Aavart rest — they were unreachable-code past 40 anyway);
@@ -1137,8 +1291,11 @@ describe('sentinel presence (the rotation)', () => {
     for (const floor of [51, 54, 58, 59]) expect(taalPresent(floor), `floor ${floor}`).toBe(false);
     // he keeps the T5 apex duel he has always walked...
     expect(taalPresent(50)).toBe(true);
-    // ...and the Dwaar VI crucible calls him back — the four-Sentinel duel
-    expect(taalPresent(60)).toBe(true);
+    // T7 — the rest EXTENDS through the Dwaar VI crucible (60) and the
+    // Library's first five floors (61–65): the ratified net change on the
+    // old floors is 60–65 gaining rest. The T6 "crucible calls him back"
+    // pin retires with the tier screen itself (now Dwaar VII's).
+    expect(taalPresent(60)).toBe(false);
   });
 
   it('T6 — gher/aavart RETURN from rest: they walk every Furnace floor 51–60', () => {
@@ -1148,14 +1305,68 @@ describe('sentinel presence (the rotation)', () => {
     }
   });
 
-  it('T6 — the truth table extends: 51–59 are Gher+Aavart (no Taal), 60 is all-four', () => {
+  it('T6 — the truth table extends: 51–59 are Gher+Aavart (no Taal), 60 is Gher+Aavart', () => {
     // rows 1–50 above are UNTOUCHED — the extension appends the Furnace only.
     // Chhaya walks every floor as always (she has no presence gate).
+    // T7 — floor 60's taal cell flips to rest (the ratified net change on the
+    // old floors: Taal's rest extends 60–65); Gher and Aavart KEEP the
+    // Furnace they have always walked — their T7 rest starts at 61.
     const table: [number, boolean, boolean, boolean][] = [
       [51, false, true, true],
       [55, false, true, true],
       [59, false, true, true],
-      [60, true, true, true],
+      [60, false, true, true],
+    ];
+    for (const [f, taal, gher, aavart] of table) {
+      expect(taalPresent(f), `floor ${f} taal`).toBe(taal);
+      expect(gherPresent(f), `floor ${f} gher`).toBe(gher);
+      expect(aavartPresent(f), `floor ${f} aavart`).toBe(aavart);
+    }
+  });
+
+  it('T7 — taalPresent RETURNS at 66 — the beat in the silence', () => {
+    // the rotation's third turn: the rest extends 51–65 (60–65 newly resting,
+    // see the T6 row above) and the beat-walker walks the Library's last five
+    // floors — his ticks are noise HE ignores but you cannot miss (T7/T2)
+    for (const floor of [61, 64, 65]) expect(taalPresent(floor), `floor ${floor}`).toBe(false);
+    for (const floor of [66, 67, 69, 70]) expect(taalPresent(floor), `floor ${floor}`).toBe(true);
+  });
+
+  it('T7 — gherPresent rests 61–69 and joins ONLY at the Dwaar VII duet (70)', () => {
+    // the Furnace stays his home tier (50–60, untouched by T7); the quiet
+    // stacks give him the whole tier off except the duet — the ratified
+    // Encircler cameo, Taal + Gher in the library
+    for (const floor of [61, 64, 65, 66, 69]) expect(gherPresent(floor), `floor ${floor}`).toBe(
+      false,
+    );
+    expect(gherPresent(70)).toBe(true);
+    // and every floor ≤ 60 reads exactly as the T6 rotation did
+    for (const floor of [50, 51, 55, 59, 60]) expect(gherPresent(floor), `floor ${floor}`).toBe(
+      true,
+    );
+    for (const floor of [41, 45, 49]) expect(gherPresent(floor), `floor ${floor}`).toBe(false);
+  });
+
+  it('T7 — aavartPresent rests ALL of tier 7 (61–70) — he returns in tier 8', () => {
+    for (const floor of [61, 64, 65, 66, 69, 70])
+      expect(aavartPresent(floor), `floor ${floor}`).toBe(false);
+    // and every floor ≤ 60 reads exactly as the T6 rotation did
+    for (const floor of [50, 51, 55, 59, 60]) expect(aavartPresent(floor), `floor ${floor}`).toBe(
+      true,
+    );
+    for (const floor of [41, 45, 49]) expect(aavartPresent(floor), `floor ${floor}`).toBe(false);
+  });
+
+  it('T7 — the truth table extends: 61–65 are EMPTY, 66–69 Taal alone, 70 the duet', () => {
+    // rows 1–60 above stay as pinned (the ONE ratified flip is Taal's 60 cell,
+    // re-pinned above). The quiet library: nobody walks 61–65; Taal's beat
+    // enters the silence at 66; Dwaar VII is the Taal+Gher duet (Aavart rests).
+    const table: [number, boolean, boolean, boolean][] = [
+      [61, false, false, false],
+      [65, false, false, false],
+      [66, true, false, false],
+      [69, true, false, false],
+      [70, true, true, false],
     ];
     for (const [f, taal, gher, aavart] of table) {
       expect(taalPresent(f), `floor ${f} taal`).toBe(taal);
@@ -1388,5 +1599,128 @@ describe('dwaarGrid floor 60', () => {
     expect(dwaarGrid(TIER_THREE_FLOORS).open.length).toBe(107);
     expect(dwaarGrid(TIER_FOUR_FLOORS).open.length).toBe(101);
     expect(dwaarGrid(TIER_FIVE_FLOORS).open.length).toBe(101);
+  });
+});
+
+// T7/T1 — Dwaar VII, the reading room (floor 70, the Taal+Gher duet where the
+// beat-walker returns from rest). 13×13 like its elders, 95 open cells: LONG
+// PARALLEL SHELF-WALLS — four long wall runs (the stacks) laid across the
+// hall on rows 3/5/7/9, each row a run (or a run pair) with single-cell gaps,
+// separated by fully-open single-cell aisles (rows 2/4/6/8/10) — and four
+// READING ALCOVES at the shelf ends, one per shelf, each an open nook
+// sandwiched between the shelf's end and a stub wall (180°-mirrored pairs).
+// Invariant under 180° rotation so the exit mirrors the entrance; all 95
+// open cells form one connected component — the duet needs the room to walk
+// its beats, and the blind Echoes need stacks to listen past.
+describe('DWAAR_VII_LAYOUT — the reading room (floor 70, the campaign closes)', () => {
+  const isOpen = (x: number, y: number): boolean => DWAAR_VII_LAYOUT[y]![x] === '.';
+  const count = (layout: readonly string[]): number =>
+    layout.reduce((n, row) => n + [...row].filter((c) => c === '.').length, 0);
+
+  it('is 13 rows of 13 chars, walls and open cells only', () => {
+    expect(DWAAR_VII_LAYOUT.length).toBe(13);
+    for (const row of DWAAR_VII_LAYOUT) {
+      expect(row.length).toBe(13);
+      expect(row).toMatch(/^[#.]{13}$/);
+    }
+  });
+
+  it('is symmetric under 180° rotation', () => {
+    for (let y = 0; y < 13; y++)
+      for (let x = 0; x < 13; x++)
+        expect(DWAAR_VII_LAYOUT[y]![x]).toBe(DWAAR_VII_LAYOUT[12 - y]![12 - x]);
+  });
+
+  it('holds 95 open cells — the ~95 the plan targets', () => {
+    expect(count(DWAAR_VII_LAYOUT)).toBe(95);
+    expect(count(DWAAR_VII_LAYOUT)).toBeGreaterThanOrEqual(90);
+    expect(count(DWAAR_VII_LAYOUT)).toBeLessThanOrEqual(105);
+  });
+
+  it('carries four long parallel shelf-walls on rows 3/5/7/9', () => {
+    // each shelf row holds a contiguous wall RUN of at least 5 cells — the
+    // stacks — with rows 2/4/6/8/10 standing fully open between them (the
+    // single-cell aisles a reader walks)
+    const longestRun = (y: number): number => {
+      let best = 0;
+      let run = 0;
+      for (let x = 1; x < 12; x++) {
+        run = isOpen(x, y) ? 0 : run + 1;
+        best = Math.max(best, run);
+      }
+      return best;
+    };
+    for (const y of [3, 5, 7, 9]) expect(longestRun(y), `shelf row ${y}`).toBeGreaterThanOrEqual(5);
+    for (const y of [2, 4, 6, 8, 10]) {
+      for (let x = 1; x < 12; x++) expect(isOpen(x, y), `aisle ${x},${y}`).toBe(true);
+    }
+  });
+
+  it('carries four reading alcoves at the shelf ends (180°-mirrored pairs)', () => {
+    // an alcove = an open cell tucked between walls on its E and W sides and
+    // open to the aisles N and S — a nook at a shelf's end; away from the
+    // outer corridor columns (x stays interior, 2..10)
+    const alcoves: Array<[number, number]> = [];
+    for (let y = 1; y < 12; y++)
+      for (let x = 2; x < 11; x++)
+        if (
+          isOpen(x, y) &&
+          !isOpen(x - 1, y) &&
+          !isOpen(x + 1, y) &&
+          isOpen(x, y - 1) &&
+          isOpen(x, y + 1)
+        )
+          alcoves.push([x, y]);
+    expect(alcoves.sort((a, b) => a[1] - b[1] || a[0] - b[0])).toEqual([
+      [3, 3],
+      [9, 5],
+      [3, 7],
+      [9, 9],
+    ]); // (3,3)↔(9,9) and (9,5)↔(3,7) — the 180° pairs
+  });
+
+  it('all open cells are connected (BFS via maze bfsDistances)', () => {
+    const { grid, open } = layoutGrid(DWAAR_VII_LAYOUT);
+    const entrance = open[0]!; // first open cell row-major = (1,1)
+    const dist = bfsDistances(grid, entrance);
+    const reached = Array.from(dist).filter((d) => d >= 0).length;
+    expect(open.length).toBe(95);
+    expect(reached).toBe(open.length); // every open cell reachable, walls sealed off
+  });
+
+  it('entrance/exit are derivable: (1,1) → farthest open cell (11,11), 20 steps', () => {
+    const { grid, open } = layoutGrid(DWAAR_VII_LAYOUT);
+    const entrance = open[0]!;
+    expect(entrance).toEqual({ x: 1, y: 1 });
+    const dist = bfsDistances(grid, entrance);
+    let best = 0;
+    for (let i = 1; i < dist.length; i++) if (dist[i]! > dist[best]!) best = i;
+    const exit: CellIndex = { x: best % 13, y: Math.floor(best / 13) };
+    expect(exit).toEqual({ x: 11, y: 11 }); // bottom-right mirror of the entrance
+    expect(dist[best]).toBe(20); // a real traverse of the stacks
+  });
+});
+
+describe('dwaarGrid floor 70', () => {
+  it('derives the Dwaar VII open-cell set from DWAAR_VII_LAYOUT', () => {
+    const g = dwaarGrid(TIER_SEVEN_FLOORS);
+    expect(g.width).toBe(13);
+    expect(g.height).toBe(13);
+    expect(g.open.length).toBe(95);
+    expect(g.open[0]).toEqual({ x: 1, y: 1 });
+    for (const c of g.open) expect(DWAAR_VII_LAYOUT[c.y]![c.x]).toBe('.');
+    const seen = new Set(g.open.map((c) => `${c.x},${c.y}`));
+    expect(seen.size).toBe(g.open.length); // no duplicates
+    const sorted = [...g.open].sort((a, b) => a.y - b.y || a.x - b.x);
+    expect(g.open).toEqual(sorted); // row-major order (entrance = first open cell)
+  });
+
+  it('still defaults to Dwaar I and keeps every elder hall on its own floor', () => {
+    expect(dwaarGrid().open.length).toBe(83); // Dwaar I unchanged
+    expect(dwaarGrid(TIER_TWO_FLOORS).open.length).toBe(96);
+    expect(dwaarGrid(TIER_THREE_FLOORS).open.length).toBe(107);
+    expect(dwaarGrid(TIER_FOUR_FLOORS).open.length).toBe(101);
+    expect(dwaarGrid(TIER_FIVE_FLOORS).open.length).toBe(101);
+    expect(dwaarGrid(TIER_SIX_FLOORS).open.length).toBe(101);
   });
 });

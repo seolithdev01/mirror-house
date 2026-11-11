@@ -92,10 +92,19 @@ export const TIER_FOUR_FLOORS = 40;
 // moved to Dwaar VI).
 export const TIER_FIVE_FLOORS = 50;
 // T6 — the Furnace Wings: floors 51–59 procedural ramp, 60 = Dwaar VI (the
-// crucible forge; Truth-Shard VI closes the tier on the full tier screen —
-// the four-Sentinel duel, Taal back from rest). The campaign is TERMINAL at
-// 60: descend() is a no-op there until Act III exists.
+// crucible forge; Truth-Shard VI claims the tier mid-descent — the duet-tier
+// close below it). T7 retired the terminus at 60: the stairs open into the
+// Whisper Library and descend() walks on.
 export const TIER_SIX_FLOORS = 60;
+// T7 — the Whisper Library: floors 61–69 procedural ramp, 70 = Dwaar VII (the
+// reading room; the Taal+Gher duet — Truth-Shard VII closes the tier on the
+// full tier screen, the campaign's terminal close until tier 8 exists:
+// descend() is a no-op there).
+export const TIER_SEVEN_FLOORS = 70;
+// T7 — the beat-walker's RETURN: Taal's rest (his first, 51–59 in T6)
+// extends through 65 and he walks the Library's last five floors (66–70) —
+// his beat ticks are noise he ignores but you cannot miss.
+export const TAAL_RETURN_FLOOR = 66;
 // T4/T3 — the distorting mirrors: while UNfogged carnival glass sees the
 // player, every enemy's mirror-sight reads them displaced by the mirror's
 // fixed per-id delta — axis-aligned cells, capped here. Fog the glass and the
