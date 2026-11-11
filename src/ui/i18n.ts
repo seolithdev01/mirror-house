@@ -220,7 +220,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // M5/T6 — the accessible name for every ✕-only close button
     'aria.close': 'Close',
     'misc.playAgain': '↻ Play again',
-    'misc.stay': 'Stay — wander the hall',
+    // t4 minor (rides t5/T5) — "walk" says exactly what Stay grants; "wander"
+    // implied a free-roam verb the grid doesn't have.
+    'misc.stay': 'Stay — walk the hall',
     'toast.exported': 'Save exported',
     'toast.rejected': 'Save file rejected',
     'faq.title': 'Mirror House — FAQ',
@@ -419,7 +421,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // M5/T6 — केवल ✕ वाले बंद बटनों का सुगम नाम
     'aria.close': 'बंद करें',
     'misc.playAgain': '↻ फिर से खेलें',
-    'misc.stay': 'रुकें — हॉल में घूमें',
+    'misc.stay': 'रुकें — हॉल में चलें',
     'toast.exported': 'सेव निर्यात हुआ',
     'toast.rejected': 'सेव फ़ाइल अस्वीकृत',
     'faq.title': 'मिरर हाउस — सहायता',

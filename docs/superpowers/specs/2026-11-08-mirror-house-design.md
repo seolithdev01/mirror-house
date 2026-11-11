@@ -52,7 +52,7 @@ You are **the Surveyor** — a heritage architect sent to appraise the palace be
 | Act                       | Floors              | Arc                                                                                                                                                                                                                                    |
 | ------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **I — The Trap**          | 1–40 (Tiers 1–4)    | Learn the house's rules. Meet Aaina. Discover the Echoes are former guests' peeled reflections. First truth: _the house keeps people by copying them._ — **closed 2026-11-10 (t4)**: all forty floors delivered (§4.6 rows 1–4); Dwaar IV's clear raises the act-completion screen (`ACT I COMPLETE — The Trap`, the campaign's floors and banked shards counted, with the Act II tease)                                   |
-| **II — The Deception**    | 41–80 (Tiers 5–8)   | The house starts impersonating _you_ — mirror-you decoys that enemies protect and you may be mistaken for. Allies behind glass may be copies. Second truth: _the house can no longer tell originals from copies — including itself._   |
+| **II — The Deception**    | 41–80 (Tiers 5–8)   | The house starts impersonating _you_ — mirror-you decoys that enemies protect and you may be mistaken for. Allies behind glass may be copies. Second truth: _the house can no longer tell originals from copies — including itself._ — **opened 2026-11-11 (t5)**: floors 41–50 delivered (§4.6 row 5), the first floor-41 build raising `ACT II — THE DECEPTION` (the house has begun copying you); the decoys' **first form — lures** — is live (an Echo reads the nearer of you and a copy as "you"; touching a copy shatters it for shards); the full form — enemies _protect_ the decoys, and you may be mistaken for one — is deferred to the deeper tiers   |
 | **III — The Ground Door** | 81–100 (Tiers 9–10) | The Foundations have no mirrors at all — nothing to hide behind, nothing to hide _behind you_. The door opens only for someone carrying all **ten Truth-Shards** (one per tier, from each Sentinel hall) — proof of being an original. |
 
 **Endings (post-beta):** _Escape_ (any completion), _True Escape_ (all ten shards — the house lets go), and a hidden _Stay_ ending (you choose the glass). Beta delivers Act I's opening fully polished.
@@ -117,12 +117,22 @@ You carry the Glazier's **Frost Lantern**. Aim at any standing mirror and fog it
 
 Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → Tier 4 Aavart → Tiers 5–10 escalate combinations, speeds, sense ranges, and tier mechanics. Each tier ends in a **Dwaar** (threshold) — that tier's lead Sentinel in a handcrafted duel-hall, guarding the floor's **Truth-Shard**.
 
-> **Delivered note (recorded 2026-11-10, t4).** The ladder **accumulates** — a
+> **Delivered note (recorded 2026-11-11, t5).** The ladder **accumulates** — a
 > new tier's Sentinel joins, the old ones stay: **all four walk by tier 4** —
 > Chhaya always (from floor 1), Taal from 11 (his spawn gate was widened from
 > "the tier-2 floors" to _every floor from 11 down_), Gher from 21 (the same
 > widening landed with t4, found while wiring Aavart), and Aavart from 31 —
-> Chhaya, Taal and Gher walk the whole Carnival of Faces beside Aavart.
+> Chhaya, Taal and Gher walk the whole Carnival of Faces beside Aavart. Tier 5
+> then begins the **rotation** — the escalation of §4.6's "escalate
+> combinations" without compounding the cast: **Taal always walks (every floor
+> ≥ 11, Act II included — the one warden who never rests); Gher (21–40) and
+> Aavart (31–40) sit the Flood Halls' procedural ramp out (41–49), and both
+> return for a single hall** — the Dwaar V duel at floor 50, the first
+> all-four-Sentinel arena: **row 9's apex (the Warden's Warrens, where all
+> four hunt together on every floor) previewed at the end of Act II's opening
+> tier**. The bare `>=` gates became presence functions
+> (`taalPresent`/`gherPresent`/`aavartPresent`) — floors 1–40 read
+> byte-identical, pinned by truth-table tests.
 
 ### 4.5 Economy & progression
 
@@ -139,7 +149,7 @@ Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → T
 | 2    | 11–20  | Hall of Ancestors    | Taal; portrait mirrors show _other_ floors            | Reverent, slow pulse — delivered 2026-11-10 (t2) |
 | 3    | 21–30  | Reflecting Gardens   | Water-mirrors (can't fog water — ripple them), Gher   | Pastoral, flute-lead — delivered 2026-11-10 (t3) |
 | 4    | 31–40  | Carnival of Faces    | Distorting mirrors displace your mirror-image, Aavart | Playful, mischievous groove — delivered 2026-11-10 (t4) |
-| 5    | 41–50  | The Flood Halls      | Rising water halves mirror height; Act II begins      | Submerged, filtered                              |
+| 5    | 41–50  | The Flood Halls      | Rising water halves mirror height; Act II begins      | Submerged, filtered — delivered 2026-11-11 (t5)  |
 | 6    | 51–60  | The Furnace Wings    | Heat fogs mirrors at range but cracks spread faster   | Urgent, percussive                               |
 | 7    | 61–70  | The Whisper Library  | Sound-based Echoes (they hear, not see)               | Sparse, whispered                                |
 | 8    | 71–80  | The Frozen Atrium    | All mirrors pre-fogged — _you_ unfog to lure          | Austere, cold strings                            |
@@ -399,17 +409,21 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 > M4 criterion is the human one: **five strangers completing Tier 1 unaided**.
 > It needs real humans: recruit them, watch them, close this line.
 
-> **Scope today (recorded 2026-11-10, t4).** This section is the Tier 1 beta
+> **Scope today (recorded 2026-11-11, t5).** This section is the Tier 1 beta
 > scope, delivered as written above; on top of it, the post-beta content
-> milestones have run to the **close of Act I** — **Tier 2, floors 11–20**
+> milestones have **opened Act II** — **Tier 2, floors 11–20**
 > (§4.6 row 2: the Hall of Ancestors, Taal the lethal Sentinel, ancestor
 > portraits, Dwaar II), **Tier 3, floors 21–30** (§4.6 row 3: the Reflecting
-> Gardens, Gher the Encircler, water-mirrors, Dwaar III) and **Tier 4, floors
+> Gardens, Gher the Encircler, water-mirrors, Dwaar III), **Tier 4, floors
 > 31–40** (§4.6 row 4: the Carnival of Faces, Aavart the Ambusher, distorting
-> mirrors, Dwaar IV — the act-completion screen of §2.3). 562 unit + 36 e2e
-> green. **Acts II and III (floors 41–100) remain future content**: the
-> campaign is terminal at floor 40 — `descend()` is a no-op there and the act
-> screen is the end of the house until Act II is built.
+> mirrors, Dwaar IV — Act I closes) and **Tier 5, floors 41–50** (§4.6 row 5:
+> the Flood Halls — the mirror-you decoys' first form, the rising water, the
+> sentinel rotation and the all-four Dwaar V duel; the act opens with the
+> `ACT II — THE DECEPTION` banner on floor 41). 651 unit + 38 e2e
+> green. **The rest of Act II (tiers 6–8, floors 51–80) and Act III
+> (floors 81–100) remain future content**: the campaign is terminal at
+> floor 50 — `descend()` is a no-op there and the Dwaar V tier screen is the
+> end of the house until tier 6 is built.
 
 ### 13.2 Milestones (part-time, ~13 weeks)
 
@@ -465,6 +479,14 @@ Production on CF Pages (custom subdomain) **first** — the web beta never waits
 > the user sending the invites — labels + the public kickoff issue ride the
 > merge (no addresses in it); the §13.1 five-stranger gate then runs through
 > this kit.
+>
+> **Playtest INVITED (2026-11-10).** The gate's clock started: the five
+> personalized invites went out via Gmail (the drafts stay git-ignored in
+> `docs/invites/`; the redacted template remains the committed record), each
+> naming its tester's seed link and the kit (`docs/TESTERS.md`,
+> `docs/TEST-CASES.md`, `?test=1`). Reports arrive as labeled GitHub issues
+> or replies to the feedback email; the §13.1 gate closes on 5/5 strangers
+> reaching floor 10 without developer help.
 
 ---
 

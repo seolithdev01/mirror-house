@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 37 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy)', () => {
-    expect(FAQ).toHaveLength(37);
+  it('grows to 40 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio)', () => {
+    expect(FAQ).toHaveLength(40);
   });
 
   it('the T5 entry explains the mirror-you decoys — the lure and the shatter bounty', () => {
@@ -128,5 +128,29 @@ describe('faq — the beta launch pair', () => {
     expect(aavart!.a).toContain('1.2 seconds'); // the retarget window the trick rides
     expect(aavart!.a.toLowerCase()).toContain('dim beat'); // Taal still walks
     expect(aavart!.a.toLowerCase()).toContain('feint'); // Gher still reads the heading
+    expect(aavart!.a.toLowerCase()).not.toContain('crawl'); // the t4 minor: no creep-speed control exists
+  });
+
+  it('the Flood Halls trio teaches the tier, the flood and the rotation (T5/T5)', () => {
+    const flood = FAQ.find((f) => /below the carnival of faces/i.test(f.q));
+    expect(flood, 'the Flood Halls tier entry exists').toBeDefined();
+    expect(flood!.a).toContain('L41 · T5'); // the chip readers see
+    expect(flood!.a).toContain('ACT II'); // the act opens on floor 41
+    expect(flood!.a).toContain('mirror-you decoys'); // Act II's signature, cross-referenced
+    expect(flood!.a).toContain('Truth-Shard V'); // Dwaar V's claim
+    expect(flood!.a.toLowerCase()).toContain('all four'); // the apex duel at 50
+    const water = FAQ.find((f) => /halls are flooding/i.test(f.q));
+    expect(water, 'the flooding-halls entry exists').toBeDefined();
+    expect(water!.a).toContain('1.2 m'); // the full depth
+    expect(water!.a).toContain('three minutes'); // the rise clock (two in Dwaar V)
+    expect(water!.a).toContain('0.6 m'); // the wade threshold
+    expect(water!.a).toContain('0.9 m'); // the eye-blind threshold
+    expect(water!.a).toContain('85'); // the wade factor
+    const rotation = FAQ.find((f) => /gher and aavart vanished/i.test(f.q));
+    expect(rotation, 'the wardens-rotation entry exists').toBeDefined();
+    expect(rotation!.a).toContain('rotates its wardens'); // the house's word for it
+    expect(rotation!.a).toContain('41–49'); // the rested ramp
+    expect(rotation!.a.toLowerCase()).toContain('never rests'); // Taal's exception
+    expect(rotation!.a).toContain('Dwaar V'); // the all-four return
   });
 });

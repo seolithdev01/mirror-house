@@ -7,6 +7,79 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t5] — 2026-11-11 — the Flood Halls (Tier 5, floors 41–50) — ACT II opens
+
+The campaign runs to fifty and the second act begins — the drowned tier, where the house starts copying you.
+
+- **Floors 41–50** — the Flood Halls: a tier-5 ramp (four beacons, braids to
+  0.332 by floor 49, Chhaya 3.6 s behind tightening to 3.1 s, 2.9 s in
+  Dwaar V) carrying **four Echoes on every procedural floor, Dwaar V alone
+  carrying five — a step back from the Carnival's five, the playability call
+  that gives the tier's new teeth room: the water and the copies own the
+  stage, not the echo count** — the `L44 · T5` floor chip, and **Dwaar V** at
+  floor 50: the sunken arena (101 open cells), concentric rings — a two-cell
+  outer promenade, a mid ring wall with exactly four gates at the compass
+  midpoints, an inner corridor circling the 3×3 sanctum — 180°-symmetric
+  (the exit mirrors the entrance) and one connected component, because four
+  Sentinels need the room. The save validator widened to 50 in the same
+  commit as the ramp (the binding held a fourth time; 51 is the first
+  rejection).
+- **ACT II opens (spec §2.3)** — the first floor-41 build of a session raises
+  the act banner (`ACT II — THE DECEPTION — The house has begun copying
+  you.`, en+hi) for 3 s, once per session (rebuilds of 41 stay quiet). The
+  interstitial cascade grows: Dwaar IV joins Dwaar I/II/III's 1.8 s claim
+  banner, and the full screen moves down to **Dwaar V's tier close**
+  (`✦ Truth-Shard V claimed — Tier V complete`, floors and banked shards
+  counted, ↻ Play again / Stay) — the campaign's terminal screen, the house's
+  end until tier 6 exists.
+- **Mirror-you decoys (Act II's first form)** — `src/game/decoy.ts`: every
+  ~45 s (36–54 s, jittered) the house plants an exact glass clone of your
+  avatar 8–12 BFS cells away (two alive at most) and it flow-walks toward the
+  exit at 2.0 m/s, forever — it cannot hurt you, frost ignores it, and it
+  never drowns. The lure: **an Echo chases the nearer of you and a copy**.
+  The bounty: walk into a copy and it shatters once for **+5 pending shards**
+  (forfeited with any fail, like beacon shards). On the overhead map the copy
+  is the hollow gold ring, your arrow the solid one. The full Act II form —
+  enemies protecting the decoys, you being mistaken for one — is documented
+  in spec §2.3 as deferred to the deeper tiers. Dev faucet `forceDecoy()`
+  skips the spawn clock (disclosed; the e2e rides it).
+- **The halls flood** — `src/game/waterLevel.ts`: from your first input the
+  water rises **linearly for 180 s to 1.2 m** (Dwaar V's sunken arena: 120 s
+  — the duel is a race). Past 0.6 m everyone wades at **×0.85** (the copies
+  exempt — copies don't drown); past 0.9 m **the standing glass stops being
+  an eye** (`sensesPlayer` skips it — the flood blinds mirrors for free);
+  the glass visibly sinks toward half height as it goes, the translucent
+  teal-green plane climbing with the level, and the caption warns once
+  (`The halls are flooding…`). The level is pure derived data — a function of
+  the run clock, nothing stored.
+- **The rotation begins (spec §4.4)** — the ladder stops accumulating and
+  starts rotating: the bare `>=` gates became presence functions
+  (`taalPresent`/`gherPresent`/`aavartPresent`, floors 1–40 pinned
+  byte-identical by truth-table tests). **Taal never rests** (every floor
+  ≥ 11, Act II included); **Gher (21–40) and Aavart (31–40) sit the 41–49
+  ramp out** and both return for one hall — **Dwaar V, the first
+  all-four-Sentinel duel**, row 9's apex (the Warden's Warrens) previewed at
+  the close of Act II's opening tier.
+- **Flood dressing** — the drowned indigo-green palette (the teal slot wears
+  the water's kin tone; the lattice glows lantern-pale) and the dark
+  pentatonic `[0,3,5,7,10]` with the melody back on the triangle. New tester
+  hook fields: `tier()`, `waterLevel()`, `decoys()`.
+- **t4 minors rider** — the three recorded review minors land here:
+  the FAQ's Aavart answer no longer says "turn a corner at a crawl" (a
+  creep-speed control the shipped game never had — the counter now reads
+  "stand still or change your pace"); the e2e distortion assertion imports
+  `CELL_SIZE` instead of the literal `4`; and the tier screen's Stay button
+  relabels to **"Stay — walk the hall"** (hi: हॉल में चलें).
+- **Close-out** — §4.6 row 5 delivered and the §2.3 Act II row marked opened
+  in the spec (the §4.4 delivered note now carries the rotation table —
+  Taal ≥ 11 always; Gher 21–40 + Dwaar V; Aavart 31–40 + Dwaar V; row 9's
+  full apex stays future; §13.1's scope note and §13.4's playtest INVITED
+  mark refreshed); README gains the Tier 5 + ACT II OPENS section; the FAQ
+  grows to 40 (the Flood Halls, the flooding halls, the wardens' rotation —
+  the decoy entry landed with the copies); STATE_MACHINES' Campaign section
+  refreshed for 50 floors, the presence/rotation table, the decoy content
+  note and the water-level look-alike. 651 unit + 38 e2e green.
+
 ## [t4] — 2026-11-10 — the Carnival of Faces (Tier 4, floors 31–40) — ACT I closes
 
 The campaign runs to forty and the first act ends — the funhouse tier, where the glass lies about you.

@@ -58,7 +58,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What hunts me?',
-    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya prowl from floor 1; Taal keeps the beat on floor 5 as a cameo and walks every floor from 11 down as the Sentinel — there his touch catches. The ladder accumulates: Gher joins at floor 21, Aavart at floor 31 — by the Carnival of Faces all four walk the house together, and Act I closes at floor 40.',
+    a: 'Echoes — hollow reflections of past guests, blind to everything but clear glass — and four Sentinels: Chhaya who walks your past, Taal who moves on the beat, Gher who seals exits, Aavart who predicts. The Echoes and Chhaya prowl from floor 1; Taal keeps the beat on floor 5 as a cameo and walks every floor from 11 down as the Sentinel — there his touch catches. The ladder accumulates through Act I — Gher joins at floor 21, Aavart at floor 31, all four walking the Carnival — and Act I closes at floor 40. Then the house rotates its wardens: Taal walks the Flood Halls alone, and Gher and Aavart return for one hall — the all-four Dwaar V duel at floor 50.',
   },
   {
     q: 'What is below the Dwaar — the Hall of Ancestors?',
@@ -94,11 +94,23 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'Aavart keeps intercepting me below floor 30 — how do I get past him?',
-    a: "That is Aavart the Ambusher, the fourth Sentinel, and he reads the one thing the others ignore: your pace. He projects where your stride is committed — up to 1.8 seconds of travel ahead at a full sprint — and runs there at the fastest Sentinel pace in the house, cutting the corner before you reach it. Stand still and his lead collapses onto your own next step; sprint and he meets you nearly three cells down the road. The counter is the trick Aaina sells: change your pace. Walk where you meant to sprint, stop dead mid-corridor, turn a corner at a crawl — his projection retargets only every 1.2 seconds, so a pace changed inside that window leaves him ambushing an empty road. And remember the ladder accumulates: Taal still keeps his beat and Gher still reads your heading down here, so cross Taal on the dim beat, feint Gher, and walk where Aavart expected you to run.",
+    a: "That is Aavart the Ambusher, the fourth Sentinel, and he reads the one thing the others ignore: your pace. He projects where your stride is committed — up to 1.8 seconds of travel ahead at a full sprint — and runs there at the fastest Sentinel pace in the house, cutting the corner before you reach it. Stand still and his lead collapses onto your own next step; sprint and he meets you nearly three cells down the road. The counter is the trick Aaina sells: stand still or change your pace. Walk where you meant to sprint, stop dead mid-corridor — his projection retargets only every 1.2 seconds, so a pace changed inside that window leaves him ambushing an empty road. And remember the ladder accumulates: Taal still keeps his beat and Gher still reads your heading down here, so cross Taal on the dim beat, feint Gher, and walk where Aavart expected you to run.",
   },
   {
     q: 'The house sends a copy of me — what is that?',
     a: 'That is a mirror-you decoy — it means Act II has begun and you are walking the Flood Halls (floors 41–50). Every 45 seconds or so the house plants a glass copy of you at a cell 8–12 cells away, and it walks toward the exit at its own steady pace, ignoring you completely. It cannot hurt you, frost does not touch it, and it does not drown. But the Echoes cannot tell a copy from the original: a copy nearer to an Echo than you are becomes "you" as far as its mirror-sight is concerned — it senses, pings and gives chase after YOUR COPY. That is the decoy\u2019s job: bait. Walk up to a copy and touch it, and it shatters — five shards banked toward the floor\u2019s clear, exactly like beacon shards (a failed floor forfeits them). Two copies may stand at once, the caption names each one the house sends, and on the overhead map the copy is the hollow gold circle while the solid gold arrow is the you that is real.',
+  },
+  {
+    q: 'What is below the Carnival of Faces — the Flood Halls?',
+    a: 'Floors 41–50: Tier 5 — and ACT II opens here. Below Dwaar IV the palace drowns — drowned indigo-green walls, teal glass, pale lantern light — and the music submerges with it: the melody walks a dark pentatonic ([0,3,5,7,10]) on the triangle. The floor chip reads L41 · T5 up to L49 · T5, and the first floor-41 build of a session raises the act banner: ACT II — THE DECEPTION — the house has begun copying you. The loop never changes, but the house has new tricks: the mirror-you decoys just above, halls that flood as you play (the flooding halls just below), and the wardens rotate — Taal walks this tier alone (see the rotation below). Four Echoes a floor, four beacons, Chhaya 3.6 s behind tightening to 3.1 s (2.9 s in Dwaar V). Floor 50 is Dwaar V, the sunken arena — concentric rings, four gates, all FOUR Sentinels walking it together — and clearing it claims ✦ Truth-Shard V, the full tier screen, and the end of the house for now: floors 51–100 are future content.',
+  },
+  {
+    q: 'The halls are flooding — what is the water doing?',
+    a: "Tier 5's signature: from your first step on a Flood Halls floor (41–50) the water rises, reaching its full 1.2 m depth three minutes in (Dwaar V's sunken arena floods in two — the duel is a race). Three things change as it climbs, all read off one level. Past 0.6 m deep EVERYONE wades at 85 % speed — you, the Echoes, the Sentinels; the copies don't (they never drown). Past 0.9 m the standing glass has sunk far enough that it stops being an Echo eye entirely — the flood blinds the mirrors for you, frost-free, and the drowned panes look it: shrunken toward half height. And the caption warns you once: The halls are flooding…. Your verbs never change, your plan does: take the long crossings early while you can still run, let the water blind the corridors you would have frosted anyway, and never count on wading away from a chase in a flooded hall — everyone is slow down there.",
+  },
+  {
+    q: 'Gher and Aavart vanished below floor 40 — where did they go?',
+    a: 'Nowhere — they are resting. The house rotates its wardens: the ladder that accumulated Sentinels through Act I (Taal at 11, Gher at 21, Aavart at 31 — each staying on every floor below) pauses its escalation on the Flood Halls ramp. Floors 41–49 hunt you with Chhaya and Taal alone — Taal NEVER rests, his beat walks every floor from 11 down, Act II included. Gher the Encircler and Aavart the Ambusher sit 41–49 out, and the house calls them down together for exactly one hall: floor 50, the Dwaar V duel — the first arena where all four Sentinels walk together, a preview of the Warden\u2019s Warrens still to come. Do not read the quiet ramp as safety: the water and the copies are the tier\u2019s teeth, and the full hunt is waiting at the threshold.',
   },
   {
     q: 'How do I fog mirrors — and why bother?',
@@ -154,7 +166,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What is this beta — and what is coming next?',
-    a: 'The open beta of a game being built in the open: Tier 1 — the ten floors, Chhaya and Taal, the Dwaar and Truth-Shard I — is complete, tuned, and saving on your device, and the launch kit (About, feedback, tester guides) is what you are looking at. Below it the descent has run to the close of ACT I: Tier 2 — the Hall of Ancestors, floors 11–20, the Sentinel Taal, the ancestor portraits, Dwaar II and Truth-Shard II — Tier 3 — the Reflecting Gardens, floors 21–30, Gher the Encircler, the water-mirrors, the flute-led pastoral score, Dwaar III and Truth-Shard III — and Tier 4 — the Carnival of Faces, floors 31–40, Aavart the Ambusher, the distorting mirrors, Dwaar IV and Truth-Shard IV — are delivered and playable now; the act screen on floor 40’s clear is the end of the house for now. On the roadmap: Act II — The Deception (the house starts copying you), more venue packs for local ventures, and more of Aaina’s tongue. Your saves survive the beta; where the house wobbles, the Feedback button in the top-right wants to hear about it.',
+    a: 'The open beta of a game being built in the open: Tier 1 — the ten floors, Chhaya and Taal, the Dwaar and Truth-Shard I — is complete, tuned, and saving on your device, and the launch kit (About, feedback, tester guides) is what you are looking at. Below it the descent has closed ACT I and opened ACT II: Tier 2 — the Hall of Ancestors, floors 11–20, the Sentinel Taal, the ancestor portraits, Dwaar II and Truth-Shard II — Tier 3 — the Reflecting Gardens, floors 21–30, Gher the Encircler, the water-mirrors, the flute-led pastoral score, Dwaar III and Truth-Shard III — Tier 4 — the Carnival of Faces, floors 31–40, Aavart the Ambusher, the distorting mirrors, Dwaar IV and Truth-Shard IV — and Tier 5 — the Flood Halls, floors 41–50, the mirror-you decoys, the rising water, the wardens\u2019 rotation, Dwaar V and Truth-Shard V — are delivered and playable now; the Dwaar V tier screen on floor 50\u2019s clear is the end of the house for now. On the roadmap: the rest of Act II — the Furnace Wings, the Whisper Library and the Frozen Atrium (floors 51–80) —, more venue packs for local ventures, and more of Aaina’s tongue. Your saves survive the beta; where the house wobbles, the Feedback button in the top-right wants to hear about it.',
   },
 ];
 
@@ -167,7 +179,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 37
+  // M4/T6 — the heading and the close button are chrome (localized); the 40
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

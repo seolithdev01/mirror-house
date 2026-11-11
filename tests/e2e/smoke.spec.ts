@@ -3,6 +3,9 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
+// t4 minor (rides t5/T5) — the distortion lie is exact delta·CELL_SIZE, so the
+// assertion reads the engine's constant, not a literal that could drift.
+import { CELL_SIZE } from '../../src/engine/constants';
 
 interface DebugHook {
   getPlayer(): { x: number; y: number; heading: number };
@@ -262,13 +265,13 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('step003: FAQ opens with 37 entries and H toggles', async ({ page }) => {
+test('step003: FAQ opens with 40 entries and H toggles', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=FAQ');
   await ready(page);
   await page.locator('#mh-faq').click();
-  // 37 since T5/T2 — the mirror-you decoys entry joined (Act II's first form)
-  await expect(page.locator('#mh-faq-box details')).toHaveCount(37);
+  // 40 since t5/T5 — the Flood Halls trio joined the T5/T2 decoy entry
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(40);
   await page.keyboard.press('KeyH'); // closes
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens
@@ -1851,8 +1854,11 @@ test('t4: aavart catches + distortion displaces', async ({ page }) => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     return { p: h.getPlayer(), ap: h.apparentPlayer() };
   });
-  // the lie is exact: the pane's stored delta, cells to meters (CELL_SIZE 4)
-  expect(seen.ap).toEqual({ x: seen.p.x + dm.dx * 4, y: seen.p.y + dm.dy * 4 });
+  // the lie is exact: the pane's stored delta, cells to meters
+  expect(seen.ap).toEqual({
+    x: seen.p.x + dm.dx * CELL_SIZE,
+    y: seen.p.y + dm.dy * CELL_SIZE,
+  });
 
   // fog the pane — the standing-glass capture geometry, 1 m off the glass
   const d = Math.hypot(dm.m!.cx - dm.m!.x, dm.m!.cy - dm.m!.z); // cell center → wall
