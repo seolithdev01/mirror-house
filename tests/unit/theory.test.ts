@@ -11,6 +11,7 @@ import {
   TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
   TIER_ONE_SCALE,
+  TIER_SIX_SCALE,
   TIER_THREE_SCALE,
   TIER_TWO_SCALE,
 } from '../../src/audio/theory';
@@ -43,6 +44,14 @@ describe('scales', () => {
   // flat seventh. The submerged scale the drowned halls hum.
   it('tier five is the dark pentatonic set', () => {
     expect(TIER_FIVE_SCALE).toEqual([0, 3, 5, 7, 10]);
+  });
+
+  // T6/T4 — the Furnace Wings' urgent scale (spec §6.1 row 6): the
+  // Phrygian-adjacent pentatonic — root, flat second (the Phrygian bite),
+  // fourth, fifth, flat sixth — the tense rung the crucible hums while the
+  // heat climbs.
+  it('tier six is the urgent Phrygian-adjacent pentatonic set', () => {
+    expect(TIER_SIX_SCALE).toEqual([0, 1, 5, 7, 8]);
   });
 });
 
@@ -133,6 +142,20 @@ describe('nextMelodySemi', () => {
       expect(semi).toBeGreaterThanOrEqual(OCT);
       expect(semi).toBeLessThanOrEqual(OCT + 12);
       expect(dark.has(semi % 12)).toBe(true);
+    }
+  });
+
+  // T6/T4 — the furnace walker walks the urgent set only: every emitted note
+  // is a tier-six member inside the window (pcs of [0,1,5,7,8]).
+  it('after a tier-six swap the walk only emits urgent-pentatonic members in the window', () => {
+    const rng = createRng('FURNACE-WALK');
+    let semi = OCT;
+    const urgent = new Set(TIER_SIX_SCALE.map((s) => (OCT + s) % 12));
+    for (let i = 0; i < 200; i++) {
+      semi = nextMelodySemi(rng, TIER_SIX_SCALE, semi, 0.7, OCT);
+      expect(semi).toBeGreaterThanOrEqual(OCT);
+      expect(semi).toBeLessThanOrEqual(OCT + 12);
+      expect(urgent.has(semi % 12)).toBe(true);
     }
   });
 

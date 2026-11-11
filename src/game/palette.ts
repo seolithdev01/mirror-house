@@ -110,6 +110,29 @@ export const TIER_FIVE_PALETTE: TierPalette = {
   exit: 0x5a8a6a,
 };
 
+/** The Furnace Wings (floors 51–60, T6): ember/copper on charcoal — the
+ *  forge's crucible light. Charred void and floor, ember flame in the glass
+ *  slots, copper in the rose-diamond slot, forge-stone walls under lamplight
+ *  the color of heated metal. The slot NAMES hold one last time: the teal
+ *  slot wears the ember (the forge's flame — the same hue the T2 heat
+ *  dressing already breathes into the haze), the rose-diamond slot wears
+ *  copper, so every palette-driven pattern re-dresses itself with zero
+ *  structural change (the T2 precedent). */
+export const TIER_SIX_PALETTE: TierPalette = {
+  void: 0x140a06,
+  floorBase: 0x241610,
+  floorLines: 0x322016,
+  teal: 0xd9743a, // ember — the forge's flame glass
+  ivory: 0xe8d8c8,
+  gold: 0xd9a441,
+  rose: 0xb87333, // copper
+  wallTop: 0x7a5c4a,
+  wallBottom: 0x3c2c1e,
+  lantern: 0xffd0a0,
+  entrance: 0xd9743a,
+  exit: 0xb87333,
+};
+
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
  *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
  *  retired. T4/T4: tier 4 wears the Carnival palette — the documented
@@ -117,14 +140,15 @@ export const TIER_FIVE_PALETTE: TierPalette = {
  *  T5/T4: tier 5 wears the Flood Halls' drowned indigo-green — the
  *  documented Carnival stand-in (T5/T1's fallthrough) is retired here,
  *  the same retire-the-stand-in pattern one tier down.
- *  T6/T1: tier 6 rides the Flood Halls' drowned indigo-green as the
- *  DOCUMENTED STAND-IN until the Furnace's ember/copper lands (T6/T4 —
- *  the same retire-the-stand-in pattern one tier down). */
+ *  T6/T4: tier 6 wears the Furnace Wings' ember/copper-on-charcoal — the
+ *  documented Flood stand-in (T6/T1's fallthrough) is retired here, the
+ *  same retire-the-stand-in pattern one tier down. */
 export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
   if (tier === 4) return TIER_FOUR_PALETTE;
-  if (tier === 5 || tier === 6) return TIER_FIVE_PALETTE; // 6 = stand-in until T6/T4
+  if (tier === 5) return TIER_FIVE_PALETTE;
+  if (tier === 6) return TIER_SIX_PALETTE;
   return TIER_ONE_PALETTE;
 }
 

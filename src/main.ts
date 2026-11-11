@@ -7,6 +7,7 @@ import {
   TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
   TIER_ONE_SCALE,
+  TIER_SIX_SCALE,
   TIER_THREE_SCALE,
   TIER_TWO_SCALE,
 } from './audio/theory';
@@ -1352,9 +1353,10 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // wink) on tier-4, the dark pentatonic on the triangle (the reed gone
   // under) on tier-5 — swapped live (next note uses them; the drone root
   // never moves). T5/T4: the tier-5 stand-in (the carnival groove) retires —
-  // the Flood Halls dress AND hum as themselves. T6/T1: tier 6 rides the
-  // Flood Halls' pair as the DOCUMENTED STAND-IN until the furnace palette
-  // and urgent scale land (T6/T4 — the retire-the-stand-in pattern).
+  // the Flood Halls dress AND hum as themselves. T6/T4: the tier-6 stand-in
+  // retires too — the Furnace dresses in ember/copper-on-charcoal and hums
+  // the urgent Phrygian-adjacent pentatonic, still on the triangle (the
+  // reed endures the heat; only the rung tightens).
   // Venue side-floors stay tier-one dressed — scale AND voice: a return
   // from a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
@@ -1365,7 +1367,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       3: TIER_THREE_SCALE,
       4: TIER_FOUR_SCALE,
       5: TIER_FIVE_SCALE, // T5/T4 — the dark pentatonic (the stand-in retires)
-      6: TIER_FIVE_SCALE, // T6/T1 stand-in until T6/T4's urgent scale
+      6: TIER_SIX_SCALE, // T6/T4 — the urgent pentatonic (the stand-in retires)
     } as const;
     const voiceByTier = {
       1: 'triangle',
@@ -1373,7 +1375,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       3: 'sine',
       4: 'triangle',
       5: 'triangle', // the reed stays — only the notes drown
-      6: 'triangle', // T6/T1 stand-in until T6/T4
+      6: 'triangle', // the reed endures the heat — only the rung tightens
     } as const;
     audio.setScale(scaleByTier[tier]);
     audio.setVoice(voiceByTier[tier]);
@@ -3058,6 +3060,14 @@ if (import.meta.env.DEV || testMode) {
     // T5/T3 — the live water depth in meters (0 off the Flood Halls). The
     // e2e's flood leg reads it; the pinning comes from waterLevel.ts.
     waterLevel: () => waterLevelNow,
+    // T6/T4 — the Furnace's derived modifier read-out: is this floor hot, how
+    // long a fog lasts here (25s cool / 12.5s hot), what one sprint-crack
+    // costs (15 cool / 25 hot). heat.ts owns the math; this is its live view.
+    heat: () => ({
+      on: heatOn(campaign.floor),
+      fogMs: fogDurationMs(campaign.floor),
+      crackAnger: crackAngerFor(campaign.floor),
+    }),
     // T5/T3 — the glass's eye state this frame (true while level > 0.9 m):
     // the e2e can watch echo silence arrive with the flood.
     mirrorEyeOff: () => eyeBlind(waterLevelNow),

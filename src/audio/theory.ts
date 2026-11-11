@@ -24,6 +24,11 @@ export const TIER_FOUR_SCALE: readonly number[] = [0, 2, 3, 7, 9];
  *  the submerged scale the drowned halls hum (spec §6.1 row 5). */
 export const TIER_FIVE_SCALE: readonly number[] = [0, 3, 5, 7, 10];
 
+/** Tier-six mood: the Furnace Wings' urgent scale — the Phrygian-adjacent
+ *  pentatonic (root, flat second's bite, fourth, fifth, flat sixth): the
+ *  tense rung the crucible hums while the heat climbs (spec §6.1 row 6). */
+export const TIER_SIX_SCALE: readonly number[] = [0, 1, 5, 7, 8];
+
 /** Standard equal-temperament MIDI-note-number → Hz. */
 export function midiToHz(semi: number): number {
   return 440 * Math.pow(2, (semi - 69) / 12);

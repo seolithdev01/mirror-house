@@ -6,6 +6,7 @@ import {
   TIER_FIVE_PALETTE,
   TIER_FOUR_PALETTE,
   TIER_ONE_PALETTE,
+  TIER_SIX_PALETTE,
   TIER_THREE_PALETTE,
   TIER_TWO_PALETTE,
 } from '../../src/game/palette';
@@ -65,6 +66,8 @@ describe('palette', () => {
     expect(paletteForTier(4)).toBe(TIER_FOUR_PALETTE);
     // T5/T4 — the Flood Halls dress tier 5 (the Carnival stand-in retired)
     expect(paletteForTier(5)).toBe(TIER_FIVE_PALETTE);
+    // T6/T4 — the Furnace Wings dress tier 6 (the Flood stand-in retired)
+    expect(paletteForTier(6)).toBe(TIER_SIX_PALETTE);
   });
 
   // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):
@@ -187,5 +190,40 @@ describe('palette', () => {
     // the two-tone checker flips to the drowned floor pair
     expect(floorAccent(1, 1, TIER_FIVE_PALETTE)).toBe(0x1e3628);
     expect(floorAccent(2, 1, TIER_FIVE_PALETTE)).toBe(0x16281e);
+  });
+
+  // T6/T4 — the Furnace Wings palette (floors 51–60, spec §4.6 row 6):
+  // ember/copper on charcoal — the forge's crucible light. The slot NAMES
+  // hold one last time: the teal slot wears the ember glass (the forge's
+  // flame), the rose-diamond slot wears the copper accent, so every
+  // palette-driven pattern re-dresses itself with zero structural change
+  // (the T2 precedent).
+  it('tier-six values are exact (Furnace Wings: ember/copper on charcoal)', () => {
+    expect(TIER_SIX_PALETTE).toEqual({
+      void: 0x140a06,
+      floorBase: 0x241610,
+      floorLines: 0x322016,
+      teal: 0xd9743a, // the ember slot — the forge's flame glass
+      ivory: 0xe8d8c8,
+      gold: 0xd9a441,
+      rose: 0xb87333, // the copper slot
+      wallTop: 0x7a5c4a,
+      wallBottom: 0x3c2c1e,
+      lantern: 0xffd0a0,
+      entrance: 0xd9743a,
+      exit: 0xb87333,
+    });
+  });
+
+  it('floorAccent with the tier-six palette: same pattern, furnace colors', () => {
+    // the rose-diamond slot becomes the copper accent; the gold lattice holds
+    expect(floorAccent(3, 3, TIER_SIX_PALETTE)).toBe(0xb87333);
+    expect(floorAccent(9, 3, TIER_SIX_PALETTE)).toBe(0xb87333);
+    expect(floorAccent(6, 2, TIER_SIX_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(2, 12, TIER_SIX_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(0, 0, TIER_SIX_PALETTE)).toBe(0xd9a441);
+    // the two-tone checker flips to the charred floor pair
+    expect(floorAccent(1, 1, TIER_SIX_PALETTE)).toBe(0x322016);
+    expect(floorAccent(2, 1, TIER_SIX_PALETTE)).toBe(0x241610);
   });
 });

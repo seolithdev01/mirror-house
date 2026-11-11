@@ -5,7 +5,8 @@ import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 // t4 minor (rides t5/T5) — the distortion lie is exact delta·CELL_SIZE, so the
 // assertion reads the engine's constant, not a literal that could drift.
-import { CELL_SIZE } from '../../src/engine/constants';
+// T6/T4 — the furnace's fog leg reads FOG_DURATION_MS the same way.
+import { CELL_SIZE, FOG_DURATION_MS } from '../../src/engine/constants';
 
 interface DebugHook {
   getPlayer(): { x: number; y: number; heading: number };
@@ -85,11 +86,17 @@ interface DebugHook {
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
   // T2/T4 — the tier the stage is dressed in (venue side-floors read 1)
-  tier(): 1 | 2 | 3 | 4 | 5;
+  tier(): 1 | 2 | 3 | 4 | 5 | 6;
   // T2/T4 — the Sentinel's exact spot for warps (null off his floors)
   taalPos(): { x: number; y: number } | null;
   // T3/T4 — the Encircler's exact spot for e2e warps (null off tier 3)
   gherPos(): { x: number; y: number } | null;
+  // T6/T3 — the Encircler's ADOPTED seal cell (null while he holds — the
+  // feint). The live witness for the decoy ward: the seal ON a copy's cell.
+  gherSeal(): { x: number; y: number } | null;
+  // T6/T4 — the Furnace's derived modifier read-out (on / fogMs / crackAnger;
+  // heat.ts owns the math — this is its live view through the faucet).
+  heat(): { on: boolean; fogMs: number; crackAnger: number };
   // T4/T4 — the Ambusher's exact spot for e2e warps (null off tier 4)
   avartPos(): { x: number; y: number } | null;
   // T5/T2 — the LIVE mirror-you copies (unshattered only; empty off 41–50)
@@ -2022,5 +2029,185 @@ test('t5: water rises and decoy walks', async ({ page }) => {
     null,
     { timeout: 2500 },
   );
+  expect(errors).toEqual([]);
+});
+
+// T6/T4 — the Furnace opens end to end. Floor 51 dresses tier 6 in the
+// Furnace Wings' ember/copper-on-charcoal (the Flood stand-in retires — its
+// census is pinned absent here), hums the urgent Phrygian-adjacent
+// pentatonic still on the triangle (the reed endures the heat), and the
+// rotation's first REST lands: Taal sits out 51–59 while Gher and Aavart
+// walk the Furnace. Heat() reads hot: a fog evaporates in half the time and
+// every sprint-crack costs 25 — the e2e reads both through the faucet (the
+// crack leg proves the 25 in anger, not just the read-out).
+test('t6: floor 51 loads the furnace', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T6RUN&floor=51');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+      taal: h.taalPos(),
+      heat: h.heat(),
+      decoys: h.decoys(),
+      mirrors: h.mirrors(),
+      audio: h.audioState(),
+    };
+  });
+  expect(snap.tier).toBe(6);
+  expect(snap.floor).toBe(51);
+  expect(snap.taal, 'the rotation rests — Taal sits out 51–59 (his beat was the Flood pairing)').toBeNull();
+  expect(snap.gher, 'the Furnace is Gher/Aavart\u2019s home — the Encircler walks').not.toBeNull();
+  expect(snap.avart, 'the Ambusher walks the crucible too').not.toBeNull();
+  expect(snap.heat.on, 'the furnace breathes on 51').toBe(true);
+  expect(snap.heat.fogMs, 'frost utility halves — a fog evaporates in 12.5s').toBe(
+    FOG_DURATION_MS / 2,
+  );
+  expect(snap.heat.crackAnger, 'cracks burn wider — 25 a crack, not 15').toBe(25);
+  expect(snap.mirrors.distort, 'the distorting panes stay tier-4-only').toBe(0);
+  expect(snap.mirrors.portraits, 'the ancestor portraits stay tier-2-only').toBe(0);
+  expect(snap.mirrors.water, 'the standing pools stay tier-3-only').toBe(0);
+  expect(snap.decoys, 'no copy in the first seconds — the ~45s clock has not fired').toEqual([]);
+  // the urgent pentatonic on the triangle (the seam tracks both from
+  // buildFloor, gesture or not)
+  expect(snap.audio.scale).toEqual([0, 1, 5, 7, 8]);
+  expect(snap.audio.voice).toBe('triangle');
+  await expect(page.locator('#mh-floor')).toHaveText('L51 · T6');
+  expect(errors).toEqual([]);
+});
+
+// T6/T4 — heat on the body, the warden on the copy. Leg 1: a sprint-crack in
+// the Furnace costs 25 anger (the cool floors' 15) — warp a lunge from a
+// standing pane, hold the sprint key for a few fixed steps, and watch the
+// house jump by HEAT_CRACK_ANGER exactly. Leg 2: the decoy ward end to end —
+// force one copy (the honest clock's own path), park the player one walkable
+// cell off its CURRENT cell facing it (self-correcting: the copy strides, so
+// every poll re-parks), and the copy's cell becomes the nearest road: the
+// seal lands ON it and gherSeal() witnesses the ward the game speaks of.
+test('t6: heat cracks burn wider + gher guards the copy', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T6RUN&floor=51');
+  await ready(page);
+  // leg 1 — the expensive crack
+  const m = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.mirrorAt('standing');
+  });
+  expect(m, 'a standing pane hangs in the Furnace').not.toBeNull();
+  const d = Math.hypot(m!.cx - m!.x, m!.cy - m!.z); // mount offset: cell center → wall
+  const sx = m!.x + ((m!.cx - m!.x) / d) * 0.85; // a lunge inside CRACK_RANGE (1.0 m)
+  const sz = m!.z + ((m!.cy - m!.z) / d) * 0.85;
+  const heading = Math.atan2(m!.x - sx, -(m!.z - sz)); // heading 0 = north (−z)
+  await page.evaluate(
+    ({ sx, sz, heading }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      h.warp(sx, sz, heading);
+    },
+    { sx, sz, heading },
+  );
+  await page.keyboard.down('ShiftLeft');
+  await page.keyboard.down('KeyW');
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.house()
+        .crackedAny,
+    null,
+    { timeout: 4000 },
+  );
+  await page.keyboard.up('KeyW');
+  await page.keyboard.up('ShiftLeft');
+  const anger = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.anger();
+  });
+  expect(anger, 'one furnace crack — 25, not the cool floors\u2019 15').toBe(25);
+
+  // leg 2 — the warden guards the copy
+  const spot = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.forceDecoy();
+  });
+  expect(spot, 'the faucet spawns a copy in the Furnace (copies walk 41–60)').not.toBeNull();
+  // solve the grid's width/height from any mirror's cell index ↔ center-meters
+  // pair (cellCenter: (i − (W−1)/2)·CELL), then the decoy's cell reads out
+  // exactly as grid.cellAt maps it.
+  const CELL = CELL_SIZE;
+  const grid = await page.evaluate(
+    (cell: number) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      const m = h.mirrorAt('standing')!;
+      return {
+        w: Math.round(2 * (m.cellX - m.cx / cell) + 1),
+        h: Math.round(2 * (m.cellY - m.cy / cell) + 1),
+      };
+    },
+    CELL,
+  );
+  // N/E/S/W step vectors, Dir order (grid.ts DIR_VECTOR)
+  const dirs = [
+    { d: 0, dx: 0, dy: -1 },
+    { d: 1, dx: 1, dy: 0 },
+    { d: 2, dx: 0, dy: 1 },
+    { d: 3, dx: -1, dy: 0 },
+  ];
+  await page.waitForFunction(
+    ({
+      cell,
+      w,
+      h: gh,
+      dirs,
+    }: {
+      cell: number;
+      w: number;
+      h: number;
+      dirs: Array<{ d: number; dx: number; dy: number }>;
+    }) => {
+      const hook = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      const copy = hook.decoys()[0];
+      if (copy === undefined) {
+        // self-heal: a copy that walked into us (exit on the far side) is
+        // gone — force another. The +5 pending shards are not asserted here.
+        hook.forceDecoy();
+        return false;
+      }
+      // the copy's cell, exactly as grid.cellAt maps meters → indices
+      const ccx = Math.floor(copy.x / cell + w / 2);
+      const ccy = Math.floor(copy.y / cell + gh / 2);
+      // canWalk takes CELL indices (grid.ts) — pick the walkable neighbor
+      // FARTHEST from the exit's bearing: the copy flow-walks toward the
+      // exit, so parking on the far side keeps it striding away from us
+      // (a walk-through would shatter it and empty the board).
+      const exit = hook.exitPos();
+      const ax = copy.x - exit.x;
+      const ay = copy.y - exit.z;
+      const al = Math.hypot(ax, ay) || 1;
+      let best: { v: { d: number; dx: number; dy: number }; score: number } | null = null;
+      for (const v of dirs) {
+        if (!hook.canWalk(ccx, ccy, v.d)) continue;
+        const score = (v.dx * ax + v.dy * ay) / al;
+        if (best === null || score > best.score) best = { v, score };
+      }
+      if (best === null) return false;
+      const px = copy.x + best.v.dx * cell;
+      const py = copy.y + best.v.dy * cell;
+      hook.warp(px, py, Math.atan2(copy.x - px, -(copy.y - py)));
+      // the adopted seal must stand ON the copy's cell (the ward witnessed)
+      const seal = hook.gherSeal();
+      return seal !== null && seal.x === ccx && seal.y === ccy;
+    },
+    { cell: CELL, w: grid.w, h: grid.h, dirs },
+    { timeout: 15000 },
+  );
+  const sealed = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { seal: h.gherSeal(), copy: h.decoys()[0] ?? null };
+  });
+  expect(sealed.seal, 'the Encircler\u2019s adopted seal sits on the copy\u2019s cell').not.toBeNull();
+  expect(sealed.copy, 'the copy is still alive under the ward').not.toBeNull();
   expect(errors).toEqual([]);
 });
