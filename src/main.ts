@@ -141,7 +141,14 @@ import {
   updateTaal,
   type TaalState,
 } from './game/taal';
-import { initGher, interceptCell, updateGher, type GherState } from './game/gher';
+import {
+  gherObjectives,
+  initGher,
+  interceptCell,
+  sealsDecoyCell,
+  updateGher,
+  type GherState,
+} from './game/gher';
 import { ambushCell, initAavart, updateAavart, type AvartState } from './game/avart';
 import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
 import { paletteForTier, TIER_ONE_PALETTE } from './game/palette';
@@ -505,6 +512,11 @@ let floorDisposers: Array<() => void> = []; // one floor's teardown, in order
 let waterLevelNow = 0;
 let floodPlane: THREE.Mesh | null = null;
 let floodAnnounced = false;
+// T6/T3 — the warden's once-per-floor line: the first frame his adopted seal
+// stands on a LIVE copy's cell speaks "the warden guards the copy" (cleared
+// by buildFloor only — a failed attempt re-runs the seal but not the
+// announcement, the floodAnnounced precedent).
+let gherCopyAnnounced = false;
 // Beacon gate: the stair door burns dim red until every beacon is frosted,
 // then returns to its built gold. Tint the material of the CURRENT floor's
 // stage (buildFloor refreshes both bindings).
@@ -1406,6 +1418,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   waterLevelNow = 0; // dry until the first input starts this floor's clock
   lastWaterScale = 1; // the fresh stage is built full-height — the sink tracker re-arms with it
   floodAnnounced = false; // the new floor speaks the flood once
+  gherCopyAnnounced = false; // T6/T3 — and the warden's copy ward once
   floorDisposers.push(() => {
     scene.remove(stage.group);
     disposeTree(stage.group);
@@ -2472,14 +2485,30 @@ function frame(now: number): void {
       // step — interceptCell reads the player's roads, no senses involved —
       // and updateGher adopts it on the 1s tick (a feint's null lands at
       // once; he holds mid-stride until the player commits again).
+      // T6/T3 — the house guards its copies: on the Act II floors the ALIVE
+      // decoy cells ride the feed (gherObjectives; the decoys array is empty
+      // below 41, which is the gate) — a copy crossing his sector pulls the
+      // seal onto it. Aavart below keeps the bare roads: the Ambusher reads
+      // the player, the Warden reads the house.
       if (gher !== null) {
         gher = updateGher(
           gher,
-          interceptCell(player, floor.grid, sentinelObjectives()),
+          interceptCell(
+            player,
+            floor.grid,
+            gherObjectives(sentinelObjectives(), decoys, floor.grid),
+          ),
           floor.grid,
           now,
           dtMove, // T5/T3 — the Encircler wades
         );
+        // The warden speaks once per FLOOR: the first adopted seal standing
+        // on a live copy's cell (same-step decoys array — the feed and this
+        // read share one snapshot, so the match is exact).
+        if (!gherCopyAnnounced && sealsDecoyCell(gher.interceptAt, decoys, floor.grid)) {
+          gherCopyAnnounced = true;
+          pushCaption('gher-decoy', t(lang, 'caption.gherDecoy'));
+        }
       }
       // The ambush (T4/T2): the freshest projection is offered every step —
       // ambushCell reads the player's direction AND speed (the one Sentinel
@@ -3010,6 +3039,10 @@ if (import.meta.env.DEV || testMode) {
     taalPos: () => (taal === null ? null : { x: taal.x, y: taal.y }),
     // T3/T4 — the Encircler's exact spot for e2e warps (null off tier 3).
     gherPos: () => (gher === null ? null : { x: gher.x, y: gher.y }),
+    // T6/T3 — the Encircler's ADOPTED seal cell (null while he holds — the
+    // feint). The live witness for the decoy ward: the seal ON a copy's cell
+    // is exactly what caption.gherDecoy speaks of.
+    gherSeal: () => (gher === null || gher.interceptAt === null ? null : { ...gher.interceptAt }),
     // T4/T4 — the Ambusher's exact spot for e2e warps (null off tier 4).
     avartPos: () => (aavart === null ? null : { x: aavart.x, y: aavart.y }),
     // T5/T2 — the LIVE copies (unshattered only): where each copy of you

@@ -7,9 +7,11 @@ import {
 } from '../../src/engine/constants';
 import {
   GHER_SPEED,
+  gherObjectives,
   initGher,
   interceptCell,
   INTERCEPT_CONE_COS,
+  sealsDecoyCell,
   updateGher,
   type GherState,
 } from '../../src/game/gher';
@@ -220,5 +222,107 @@ describe('Gher contract pins (T3)', () => {
     expect(GHER_SPEED).toBe(1.9);
     expect(GHER_INTERCEPT_MS).toBe(1000);
     expect(GHER_SENTINEL_FLOOR).toBe(21);
+  });
+});
+
+// T6/T3 — the house guards its copies. On the Act II floors the ALIVE decoy
+// cells join Gher's objective candidates (the caller feeds the decoys array —
+// empty on every floor below 41, which IS the gate); the nearest-objective
+// BFS decides as always, so a copy crossing his sector pulls his seal onto
+// it, and shattering copies near a sealed road becomes a real gamble.
+describe('gherObjectives — the copy feed (T6)', () => {
+  it('no decoys → the base list, untouched (the sub-41 gate is the empty array)', () => {
+    const base = [
+      { x: 4, y: 2 },
+      { x: 2, y: 1 },
+    ];
+    expect(gherObjectives(base, [], openGrid())).toEqual(base);
+  });
+
+  it('ALIVE copies join as cells (world meters → cell index)', () => {
+    // a live copy at (8,0) stands on cell (4,2): the feed is beacons + exit + copy
+    const feed = gherObjectives([{ x: 0, y: 2 }], [{ x: 8, y: 0, shattered: false }], openGrid());
+    expect(feed).toEqual([
+      { x: 0, y: 2 },
+      { x: 4, y: 2 },
+    ]);
+  });
+
+  it('shattered copies never join — tombstones are not roads', () => {
+    const feed = gherObjectives([{ x: 0, y: 2 }], [{ x: 8, y: 0, shattered: true }], openGrid());
+    expect(feed).toEqual([{ x: 0, y: 2 }]);
+  });
+
+  it('a copy standing on a base cell does not duplicate the entry', () => {
+    // the exit cell (4,2) holds a live copy — one entry, not two
+    const feed = gherObjectives([{ x: 4, y: 2 }], [{ x: 8, y: 0, shattered: false }], openGrid());
+    expect(feed).toEqual([{ x: 4, y: 2 }]);
+  });
+
+  it('never mutates its inputs', () => {
+    const base = [{ x: 0, y: 2 }];
+    const decoy = { x: 8, y: 0, shattered: false };
+    gherObjectives(base, [decoy], openGrid());
+    expect(base).toEqual([{ x: 0, y: 2 }]);
+    expect(decoy).toEqual({ x: 8, y: 0, shattered: false });
+  });
+});
+
+describe('interceptCell — the extended candidate list (T6)', () => {
+  it('a decoy cell NEAREST: the path leads to the copy (teeGrid, decoy at the spur end)', () => {
+    const g = teeGrid();
+    // the beacon sits 4 steps east at (4,2); the live copy stands on the spur
+    // end (2,1), 3 steps away — the nearest road is the copy's, and the seal
+    // lands on it
+    const feed = gherObjectives(
+      [{ x: 4, y: 2 }],
+      [{ x: 0, y: -4, shattered: false }], // (2,1)'s center — world meters
+      g,
+    );
+    expect(interceptCell({ x: -8, y: 0, heading: EAST }, g, feed)).toEqual({ x: 2, y: 1 });
+  });
+
+  it('the player-nearer objective: unchanged — a far copy cannot bend the road', () => {
+    const g = openGrid();
+    // the beacon stands 2 steps ahead at (2,2); a live copy wanders the far
+    // east end (4,2) — the seal stays the beacon road (the objective itself)
+    const feed = gherObjectives(
+      [{ x: 2, y: 2 }],
+      [{ x: 8, y: 0, shattered: false }],
+      g,
+    );
+    expect(interceptCell({ x: -8, y: 0, heading: EAST }, g, feed)).toEqual({ x: 2, y: 2 });
+  });
+
+  it('Gher WALKS to the decoy cell when it is his seal (the glide rides the flow field around the spur)', () => {
+    const g = teeGrid();
+    let walk = initGher([{ x: -8, y: 0 }], { x: 8, y: 0 })!;
+    const seal = { x: 2, y: 1 }; // the copy's cell
+    for (let i = 0; i < 800; i++) {
+      walk = updateGher(walk, seal, g, i * GHER_INTERCEPT_MS, STEP);
+      if (Math.abs(walk.x - 0) < 1e-6 && Math.abs(walk.y - -4) < 1e-6) break;
+    }
+    // the copy's cell center: (2−2)·4 = 0, (1−2)·4 = −4
+    expect(walk.interceptAt).toEqual(seal);
+    expect(walk.x).toBeCloseTo(0, 6);
+    expect(walk.y).toBeCloseTo(-4, 6);
+  });
+});
+
+describe('sealsDecoyCell — the caption eye (T6)', () => {
+  it('the seal on a LIVE copy\'s cell → true', () => {
+    const decoys = [{ x: 8, y: 0, shattered: false }]; // cell (4,2)
+    expect(sealsDecoyCell({ x: 4, y: 2 }, decoys, openGrid())).toBe(true);
+  });
+
+  it('the seal on a SHATTERED copy\'s cell → false (the tombstone guards nothing)', () => {
+    const decoys = [{ x: 8, y: 0, shattered: true }];
+    expect(sealsDecoyCell({ x: 4, y: 2 }, decoys, openGrid())).toBe(false);
+  });
+
+  it('null seal or a copy elsewhere → false', () => {
+    const decoys = [{ x: 0, y: -4, shattered: false }]; // cell (2,1)
+    expect(sealsDecoyCell(null, decoys, openGrid())).toBe(false);
+    expect(sealsDecoyCell({ x: 4, y: 2 }, decoys, openGrid())).toBe(false);
   });
 });

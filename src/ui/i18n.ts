@@ -225,6 +225,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // per shatter ({n} = DECOY_SHARD)
     'caption.decoySpawn': 'The house sends a copy of you ahead.',
     'caption.decoyShatter': 'The copy shatters. +{n} shards.',
+    // T6/T3 — Gher seals a live copy's cell: once per floor, the first seal
+    'caption.gherDecoy': 'The warden guards the copy.',
     // T5/T3 — the rising water: once per floor, as the level crosses 0.3 m
     'caption.flood': 'The halls are flooding…',
     // misc chrome
@@ -436,6 +438,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // और टूटने पर एक ({n} = DECOY_SHARD)
     'caption.decoySpawn': 'घर आपकी एक प्रतिलिपि आगे भेजता है।',
     'caption.decoyShatter': 'प्रतिलिपि बिखर गई। +{n} शार्ड।',
+    // T6/T3 — गेर जीवित प्रतिलिपि के सेल को सील करता है: प्रति तल एक बार
+    'caption.gherDecoy': 'रखवाला प्रतिलिपि की रखवाली करता है।',
     // T5/T3 — उठता पानी: प्रति तल एक बार, जब पानी 0.3 मी पार करता है
     'caption.flood': 'गलियाँ पानी से भरने लगी हैं…',
     // शेष क्रोम
