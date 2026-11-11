@@ -208,6 +208,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // T6/T2 — the Furnace's standing advice, authored in both languages (the
     // Aaina panel itself speaks English content by design — src/ui/aaina.ts)
     'hint.heatNear': 'The furnace breathes — your frost melts fast, and every crack you leave burns wider.',
+    // T7/T2 — the Library's standing advice, same dual-language authoring
+    'hint.whisperNear': 'They are blind here — but they listen. Walk. Never run the stacks.',
     // Aaina's tab labels (her content stays English)
     'tab.ask': 'Ask',
     'tab.hint': 'Hint',
@@ -236,6 +238,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.decoyShatter': 'The copy shatters. +{n} shards.',
     // T6/T3 — Gher seals a live copy's cell: once per floor, the first seal
     'caption.gherDecoy': 'The warden guards the copy.',
+    // T7/T2 — the noise economy: once per floor, the first noise-caused chase
+    'caption.noiseChase': 'A shelf-warden heard you.',
     // T5/T3 — the rising water: once per floor, as the level crosses 0.3 m
     'caption.flood': 'The halls are flooding…',
     // misc chrome
@@ -430,6 +434,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // T6/T2 — भट्ठी की स्थायी सलाह, दोनों भाषाओं में रचित (आईना की बातें
     // अँग्रेज़ी में रहेंगी — src/ui/aaina.ts देखें)
     'hint.heatNear': 'भट्ठी की साँस चलती है — तुम्हारा तुषार जल्दी पिघलता है, और तुम जो दरार छोड़ते हो वह चौड़ी जलती है।',
+    // T7/T2 — पुस्तकालय की स्थायी सलाह, वही दोनों-भाषा रीति
+    'hint.whisperNear': 'ये यहाँ अंधे हैं — पर सुनते हैं। चलिए। शेल्फ़ों के बीच कभी न दौड़ें।',
     // आईना के टैब (उनकी बातें अँग्रेज़ी में रहेंगी)
     'tab.ask': 'पूछें',
     'tab.hint': 'संकेत',
@@ -456,6 +462,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.decoyShatter': 'प्रतिलिपि बिखर गई। +{n} शार्ड।',
     // T6/T3 — गेर जीवित प्रतिलिपि के सेल को सील करता है: प्रति तल एक बार
     'caption.gherDecoy': 'रखवाला प्रतिलिपि की रखवाली करता है।',
+    // T7/T2 — शोर अर्थव्यवस्था: हर मंज़िल में एक बार, पहला शोर-जनित पीछा
+    'caption.noiseChase': 'शेल्फ़-रखवाले ने तुम्हें सुन लिया।',
     // T5/T3 — उठता पानी: प्रति तल एक बार, जब पानी 0.3 मी पार करता है
     'caption.flood': 'गलियाँ पानी से भरने लगी हैं…',
     // शेष क्रोम

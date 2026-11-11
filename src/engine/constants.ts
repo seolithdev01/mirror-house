@@ -105,6 +105,20 @@ export const TIER_SEVEN_FLOORS = 70;
 // extends through 65 and he walks the Library's last five floors (66–70) —
 // his beat ticks are noise he ignores but you cannot miss.
 export const TAAL_RETURN_FLOOR = 66;
+// T7/T2 — the noise economy: the Library's Echoes are blind (`ears`, not
+// `glass`) and track the player's NOISE instead of mirrors. A sprint rings
+// loud (every fixed step), a walk rings soft (one ping per
+// NOISE_WALK_EVERY_MS), frost/push/step-through ping once at the action, and
+// Taal's accent ticks ring a sprint-sized ping at his own position — the
+// loudest thing in the stacks. Pings live NOISE_TTL_MS and the ring holds at
+// most NOISE_MAX_EVENTS (drop-oldest beyond the cap). The events are
+// invisible by design: the economy is audio and knowledge, never the map.
+export const NOISE_SPRINT_R = 7; // m — a sprint's ring (every fixed step)
+export const NOISE_WALK_R = 4; // m — a walk's soft ring
+export const NOISE_ACTION_R = 2.5; // m — frost/push/step-through's single ping
+export const NOISE_WALK_EVERY_MS = 500; // ms between walk pings
+export const NOISE_TTL_MS = 1200; // ms a ping stays hearable
+export const NOISE_MAX_EVENTS = 24; // ring cap — drop-oldest beyond it
 // T4/T3 — the distorting mirrors: while UNfogged carnival glass sees the
 // player, every enemy's mirror-sight reads them displaced by the mirror's
 // fixed per-id delta — axis-aligned cells, capped here. Fog the glass and the

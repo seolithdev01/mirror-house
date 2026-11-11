@@ -27,12 +27,16 @@ export interface HintContext {
    *  tier's standing advice — below the Sentinels and the shadow, above the
    *  temper threshold. */
   heatNear: boolean;
+  /** T7/T2 — a WHISPER LIBRARY floor (tier 7): the Echoes are blind and
+   *  listen instead. The tier's standing advice — slotted BEFORE the shadow
+   *  (the stacks' rule outranks her proximity), after the Sentinels. */
+  whisperNear: boolean;
   exitUnlocked: boolean;
   hintsUsed: number;
 }
 
 export type HintKind =
-  'exit'
+  | 'exit'
   | 'beacons'
   | 'chhaya'
   | 'chase'
@@ -40,6 +44,7 @@ export type HintKind =
   | 'taalSentinel'
   | 'gherNear'
   | 'avartNear'
+  | 'whisperNear'
   | 'heatNear'
   | 'anger'
   | 'stuck';
@@ -69,6 +74,8 @@ export const HINTS: Record<HintKind, string> = {
     'He leaps where you are GOING — the faster you run, the further he reaches. Change your pace.',
   heatNear:
     'The furnace breathes — your frost melts fast, and every crack you leave burns wider.',
+  whisperNear:
+    'They are blind here — but they listen. Walk. Never run the stacks.',
   chhaya:
     'She is close — your own footsteps, seconds late, and quicker the deeper you go. Never retrace your path; bend your trail instead. And if you must, step through a True Mirror (Space) to somewhere your past never walked.',
   anger:
@@ -91,6 +98,8 @@ export function nextHint(ctx: HintContext): Hint {
     kind = 'gherNear'; // T3: the Encircler — the feint rule, beside the beat
   else if (ctx.avartNear)
     kind = 'avartNear'; // T4: the Ambusher — the pace rule, beside the feint
+  else if (ctx.whisperNear)
+    kind = 'whisperNear'; // T7: the Library's standing rule — blind wardens, loud footsteps
   else if (ctx.chhayaNear) kind = 'chhaya';
   else if (ctx.heatNear)
     kind = 'heatNear'; // T6/T2: the Furnace's standing rule — below the shadow, above the temper

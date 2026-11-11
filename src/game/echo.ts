@@ -23,6 +23,7 @@ import type { MirrorRef } from './floorObjects';
 import { lureTarget, type DecoyState } from './decoy';
 import { rippleState, type WaterRuntime } from './water';
 import type { PlayerState } from './player';
+import { loudestAt, type NoiseEvent } from './noise';
 
 export interface EchoState {
   id: number;
@@ -37,6 +38,12 @@ export interface EchoState {
   loseMemoryAt: number | null;
   nextSenseAt: number;
   stuckAwarded: boolean; // T6 awards SHARD_STUCK once per echo lured into a trap
+  /** T7/T2 — how this echo knows the world: 'glass' reads the mirrors (and
+   *  the pools, and the lure) exactly as tiers 1–6 always did; 'ears' reads
+   *  the noise ring alone — the Library's wardens are blind, and the mirror
+   *  eye logic never runs for them at all. Set at spawn from the floor's
+   *  tier; defaults to 'glass' so every earlier tier spawns byte-identical. */
+  sense: 'glass' | 'ears';
 }
 
 /** The runtime entry for a mirror ref (runtime arrays are id-keyed copies of
@@ -64,6 +71,10 @@ export function initEchoes(
   grid: FloorGrid,
   anchors: Array<{ x: number; y: number }>,
   now: number,
+  /** T7/T2 — the floor's sense: 'ears' on the Whisper Library (tier 7,
+   *  mirror-sight gone), 'glass' everywhere else. Default keeps the tiers
+   *  1–6 call sites (and their tests) byte-identical. */
+  sense: EchoState['sense'] = 'glass',
 ): EchoState[] {
   return spawns.map((s, i) => ({
     id: i,
@@ -78,6 +89,7 @@ export function initEchoes(
     loseMemoryAt: null,
     nextSenseAt: now,
     stuckAwarded: false,
+    sense,
   }));
 }
 
@@ -163,32 +175,41 @@ export function updateEcho(
    *  eye at all, so it counts NEITHER as fogged NOR as a seeing eye in the
    *  confusion census below. Defaults to false — tiers 1–4 byte-identical. */
   mirrorEyeOff = false,
+  /** T7/T2 — the noise ring: the ONLY sense an 'ears' echo has. 'glass'
+   *  echoes never read it (noise-immune, the tiers 1–6 pin); an ears echo
+   *  hears the nearest audible ping and chases where it came from. Defaults
+   *  to empty — every pre-T7 call site is byte-identical. */
+  noise: readonly NoiseEvent[] = [],
 ): EchoState {
   // Confused override: ≥2 frosted eyes within CONFUSE_FOGGED_R and no clear
   // eye within CONFUSE_UNFOGGED_R — the echo stalls and slowly spins.
   // T5/T3 — a water-blind pane is not an eye in any direction: skipped whole.
-  let foggedNear = 0;
-  let unfoggedNear = 0;
-  for (const m of mirrors) {
-    if (!sensesThrough(m)) continue;
-    if (mirrorEyeOff && m.kind !== 'true') continue;
-    const r = runtimeFor(rt, m);
-    if (!r) continue;
-    const d = Math.hypot(m.x - echo.x, m.z - echo.y);
-    if (isFogged(r, now)) {
-      if (d <= CONFUSE_FOGGED_R) foggedNear++;
-    } else if (d <= CONFUSE_UNFOGGED_R) {
-      unfoggedNear++;
+  // T7/T2 — 'ears' echoes have no glass to fog: the census (like every mirror
+  // eye read) is skipped whole for them; confusion is a glass-only state.
+  if (echo.sense === 'glass') {
+    let foggedNear = 0;
+    let unfoggedNear = 0;
+    for (const m of mirrors) {
+      if (!sensesThrough(m)) continue;
+      if (mirrorEyeOff && m.kind !== 'true') continue;
+      const r = runtimeFor(rt, m);
+      if (!r) continue;
+      const d = Math.hypot(m.x - echo.x, m.z - echo.y);
+      if (isFogged(r, now)) {
+        if (d <= CONFUSE_FOGGED_R) foggedNear++;
+      } else if (d <= CONFUSE_UNFOGGED_R) {
+        unfoggedNear++;
+      }
     }
-  }
-  if (foggedNear >= 2 && unfoggedNear === 0) {
-    return {
-      ...echo,
-      mode: 'confused',
-      target: null,
-      field: null,
-      heading: echo.heading + 2 * dtS,
-    };
+    if (foggedNear >= 2 && unfoggedNear === 0) {
+      return {
+        ...echo,
+        mode: 'confused',
+        target: null,
+        field: null,
+        heading: echo.heading + 2 * dtS,
+      };
+    }
   }
 
   // Sense check, at most once per SENSE_INTERVAL_MS per echo. T4/T3: the
@@ -198,13 +219,30 @@ export function updateEcho(
   // T5/T2: the same for the lure — when a nearer copy is the bait, both the
   // check and the remembered cell read the COPY (lureTarget), so the echo
   // chases the decoy's cell.
+  // T7/T2 — 'ears' echoes skip ALL of that: their one sense is the ring.
+  // On the same cadence, the nearest audible ping (loudestAt) becomes the
+  // remembered cell with the same CHASE_MEMORY_MS; a quiet ring leaves them
+  // to patrol. Memory/SENSE_INTERVAL semantics are unchanged.
   let { lastSensedCell, loseMemoryAt, nextSenseAt } = echo;
-  const bait = lureTarget(echo, apparent, decoys);
-  if (now >= nextSenseAt) {
-    nextSenseAt = now + SENSE_INTERVAL_MS;
-    if (sensesPlayer(echo, player, mirrors, rt, water, grid, now, apparent, decoys, mirrorEyeOff)) {
-      lastSensedCell = grid.cellAt(bait.x, bait.y);
-      loseMemoryAt = now + CHASE_MEMORY_MS;
+  if (echo.sense === 'ears') {
+    if (now >= nextSenseAt) {
+      nextSenseAt = now + SENSE_INTERVAL_MS;
+      const heard = loudestAt(noise, echo.x, echo.y);
+      if (heard !== null) {
+        lastSensedCell = grid.cellAt(heard.x, heard.y);
+        loseMemoryAt = now + CHASE_MEMORY_MS;
+      }
+    }
+  } else {
+    const bait = lureTarget(echo, apparent, decoys);
+    if (now >= nextSenseAt) {
+      nextSenseAt = now + SENSE_INTERVAL_MS;
+      if (
+        sensesPlayer(echo, player, mirrors, rt, water, grid, now, apparent, decoys, mirrorEyeOff)
+      ) {
+        lastSensedCell = grid.cellAt(bait.x, bait.y);
+        loseMemoryAt = now + CHASE_MEMORY_MS;
+      }
     }
   }
 

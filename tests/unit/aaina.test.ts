@@ -24,6 +24,7 @@ const ctx = (over: Partial<HintContext> = {}): HintContext => ({
   taalSentinelNear: false,
   gherNear: false,
   avartNear: false,
+  whisperNear: false,
   heatNear: false,
   exitUnlocked: false,
   hintsUsed: 0,
@@ -31,7 +32,7 @@ const ctx = (over: Partial<HintContext> = {}): HintContext => ({
 });
 
 describe('aaina — nextHint priority chain', () => {
-  it('selects each of the eleven kinds in priority order (hand-built contexts)', () => {
+  it('selects each of the twelve kinds in priority order (hand-built contexts)', () => {
     const cases: Array<{ name: string; c: HintContext; want: HintKind }> = [
       // 1. beacons: left to capture and the house is not collapsing — wins over everything
       {
@@ -93,6 +94,18 @@ describe('aaina — nextHint priority chain', () => {
         c: ctx({ gherNear: true, avartNear: true }),
         want: 'gherNear',
       },
+      // 7.5 whisperNear (T7/T2): the Library's standing rule — blind wardens,
+      //    loud footsteps — slotted BEFORE the shadow, after the Sentinels
+      {
+        name: 'whisperNear beats chhaya, heat and anger',
+        c: ctx({ whisperNear: true, chhayaNear: true, heatNear: true, anger: 90 }),
+        want: 'whisperNear',
+      },
+      {
+        name: 'avartNear beats whisperNear — the Sentinels outrank the tier note',
+        c: ctx({ whisperNear: true, avartNear: true }),
+        want: 'avartNear',
+      },
       // 8. chhaya: the shadow is close — wins over the heat and the anger
       { name: 'chhaya beats anger', c: ctx({ chhayaNear: true, anger: 90 }), want: 'chhaya' },
       // 9. heatNear (T6/T2): a Furnace floor — the tier's standing advice
@@ -131,7 +144,7 @@ describe('aaina — nextHint priority chain', () => {
     expect(nextHint(ctx({ exitUnlocked: true, beaconsLeft: 1 })).kind).toBe('beacons'); // beacons outrank exit
   });
 
-  it('HINTS covers all eleven kinds with non-empty in-voice lines', () => {
+  it('HINTS covers all twelve kinds with non-empty in-voice lines', () => {
     const kinds: HintKind[] = [
       'exit',
       'beacons',
@@ -141,6 +154,7 @@ describe('aaina — nextHint priority chain', () => {
       'taalSentinel',
       'gherNear',
       'avartNear',
+      'whisperNear',
       'heatNear',
       'anger',
       'stuck',
@@ -149,6 +163,12 @@ describe('aaina — nextHint priority chain', () => {
       expect(HINTS[k], k).toBeTruthy();
       expect(HINTS[k].length, k).toBeGreaterThan(20);
     }
+  });
+
+  it("pins the Library's line — the whisper rule, exactly (T7/T2)", () => {
+    expect(HINTS.whisperNear).toBe(
+      'They are blind here — but they listen. Walk. Never run the stacks.',
+    );
   });
 
   it("pins the Furnace's line — the heat rule, exactly (T6/T2)", () => {

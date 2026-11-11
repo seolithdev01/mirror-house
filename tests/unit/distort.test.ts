@@ -76,6 +76,7 @@ const echoAt = (x: number, y: number, over: Partial<EchoState> = {}): EchoState 
   loseMemoryAt: null,
   nextSenseAt: 0,
   stuckAwarded: false,
+  sense: 'glass',
   ...over,
 });
 

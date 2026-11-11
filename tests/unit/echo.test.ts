@@ -5,6 +5,9 @@ import {
   CHASE_MEMORY_MS,
   ECHO_SPEED,
   FOG_DURATION_MS,
+  NOISE_ACTION_R,
+  NOISE_SPRINT_R,
+  NOISE_WALK_R,
   SENSE_INTERVAL_MS,
   WATER_RIPPLE_MS,
 } from '../../src/engine/constants';
@@ -13,6 +16,7 @@ import type { MirrorRef } from '../../src/game/floorObjects';
 import type { PlayerState } from '../../src/game/player';
 import { initEchoes, sensesPlayer, updateEcho, type EchoState } from '../../src/game/echo';
 import { initWaterRuntime, type WaterRuntime } from '../../src/game/water';
+import type { NoiseEvent } from '../../src/game/noise';
 
 // One straight open corridor across the middle row of a 5x5 grid: row y=2,
 // whose cell centers lie on world y=0 (x = -8..8). All sense geometry stays
@@ -48,6 +52,7 @@ const echoAt = (x: number, y: number, over: Partial<EchoState> = {}): EchoState 
   loseMemoryAt: null,
   nextSenseAt: 0,
   stuckAwarded: false,
+  sense: 'glass',
   ...over,
 });
 
@@ -75,6 +80,14 @@ describe('initEchoes', () => {
     expect(es.map((e) => e.id)).toEqual([0, 1]);
     expect(es[0]).toMatchObject({ x: -8, y: 0, mode: 'patrol', anchorIdx: 0, nextSenseAt: 500 });
     expect(es[1]).toMatchObject({ x: 8, y: 0, anchorIdx: 1 });
+  });
+
+  it('defaults the sense to glass — tiers 1–6 spawn unchanged — and takes ears when asked (T7)', () => {
+    const g = openGrid();
+    const spawns = [{ x: -8, y: 0 }];
+    expect(initEchoes(spawns, g, [], 0).every((e) => e.sense === 'glass')).toBe(true);
+    expect(initEchoes(spawns, g, [], 0, 'glass').every((e) => e.sense === 'glass')).toBe(true);
+    expect(initEchoes(spawns, g, [], 0, 'ears').every((e) => e.sense === 'ears')).toBe(true);
   });
 });
 
@@ -544,5 +557,249 @@ describe('sensesPlayer — the eye-blind flood (T5)', () => {
     );
     expect(e.mode).toBe('patrol');
     expect(e.lastSensedCell).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T7/T2 — the Whisper Library: Echoes go blind and grow ears. An 'ears' echo
+// skips the mirror/lure eye logic ENTIRELY — no glass, no water eyes, no
+// confusion census — and its sense check is the noise ring: hears() starts a
+// chase at loudestAt()'s position (the nearest audible ping), on the SAME
+// SENSE_INTERVAL cadence with the SAME CHASE_MEMORY_MS memory as sight. No
+// noise → patrol. And the pin: tiers 1–6 'glass' echoes are noise-immune.
+// ---------------------------------------------------------------------------
+describe('initEchoes + updateEcho — the ears (T7)', () => {
+  const anchors = [{ x: -8, y: 0 }];
+  const player: PlayerState = { x: 300, y: 0, heading: 0 }; // far away: never seen, only heard
+  const sprintRing = (x: number, y: number, at: number): NoiseEvent[] => [
+    { x, y, r: NOISE_SPRINT_R, at },
+  ];
+
+  it('an ears echo chases the sprint ring: the nearest audible ping is the chase cell', () => {
+    const g = openGrid();
+    // dist(echo → ping) = 3 ≤ NOISE_SPRINT_R — clearly audible
+    const e = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000, sense: 'ears' }),
+      player,
+      [],
+      [],
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      player,
+      [],
+      false,
+      sprintRing(1.5, 0, 1000),
+    );
+    expect(e.mode).toBe('chase');
+    expect(e.lastSensedCell).toEqual(g.cellAt(1.5, 0)); // where the noise CAME FROM
+    expect(e.loseMemoryAt).toBe(1000 + CHASE_MEMORY_MS);
+    expect(e.nextSenseAt).toBe(1000 + SENSE_INTERVAL_MS); // the cadence is unchanged
+  });
+
+  it('between two audible pings the echo chases the NEARER one (loudestAt)', () => {
+    const g = openGrid();
+    const ring: NoiseEvent[] = [
+      { x: 20, y: 0, r: NOISE_SPRINT_R, at: 1000 }, // beyond radius of the echo — ignored
+      { x: 8, y: 0, r: NOISE_SPRINT_R, at: 1000 }, // 9.5m — out
+      { x: 2, y: 0, r: NOISE_SPRINT_R, at: 1000 }, // 3.5m — audible, the nearest
+      { x: 3, y: 0, r: NOISE_WALK_R, at: 1000 }, // 4.5m — audible but farther
+    ];
+    const e = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000, sense: 'ears' }),
+      player,
+      [],
+      [],
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      player,
+      [],
+      false,
+      ring,
+    );
+    expect(e.lastSensedCell).toEqual(g.cellAt(2, 0));
+  });
+
+  it('no noise (or only out-of-earshot noise) → patrol, the null-chase-target rule', () => {
+    const g = openGrid();
+    const quiet = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000, sense: 'ears' }),
+      player,
+      [],
+      [],
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      player,
+      [],
+      false,
+      [],
+    );
+    expect(quiet.mode).toBe('patrol');
+    const far = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000, sense: 'ears' }),
+      player,
+      [],
+      [],
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      player,
+      [],
+      false,
+      [{ x: 100, y: 0, r: NOISE_SPRINT_R, at: 1000 }],
+    );
+    expect(far.mode).toBe('patrol');
+    expect(far.lastSensedCell).toBeNull();
+  });
+
+  it('the sense cadence holds: no check before the interval, even under a loud ring', () => {
+    const g = openGrid();
+    const e = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000, sense: 'ears' }),
+      player,
+      [],
+      [],
+      [],
+      g,
+      anchors,
+      999, // 1ms before the tick
+      1 / 120,
+      player,
+      [],
+      false,
+      sprintRing(0, 0, 999), // ON the echo — deaf until the tick is due
+    );
+    expect(e.mode).toBe('patrol');
+    expect(e.lastSensedCell).toBeNull();
+  });
+
+  it('chase → patrol after CHASE_MEMORY_MS with the ring gone quiet', () => {
+    const g = openGrid();
+    const chasing = echoAt(-1.5, 0, {
+      sense: 'ears',
+      mode: 'chase',
+      lastSensedCell: { x: 2, y: 2 },
+      loseMemoryAt: 3000,
+      nextSenseAt: 10_000, // no fresh check — memory alone decides
+    });
+    expect(
+      updateEcho(chasing, player, [], [], [], g, anchors, 2999, 1 / 120, player, [], false, []).mode,
+    ).toBe('chase');
+    const lost = updateEcho(chasing, player, [], [], [], g, anchors, 3000, 1 / 120, player, [], false, []);
+    expect(lost.mode).toBe('patrol');
+    expect(lost.target).toEqual(g.cellAt(anchors[0]!.x, anchors[0]!.y)); // back on the anchor
+  });
+
+  it('an ears echo is blind to glass: shared mirrors, pools and confusion never touch it', () => {
+    const g = openGrid();
+    const mirrors = [mir(1, 0, 0)];
+    const rt = initMirrorRuntime(mirrors);
+    // a clear mirror both stand beside + a still pool — the sight would chase,
+    // and two fogged panes would confuse a glass echo. The ears echo: none of
+    // it applies — patrol without noise, no confused mode, ever.
+    const water = initWaterRuntime([{ x: 0, y: 0 }]);
+    applyFog(rt, 1, 0, FOG_DURATION_MS);
+    const e = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000, sense: 'ears' }),
+      { x: 1.5, y: 0, heading: 0 },
+      mirrors,
+      rt,
+      water,
+      g,
+      anchors,
+      1000,
+      1 / 120,
+    );
+    expect(e.mode).toBe('patrol');
+    expect(e.lastSensedCell).toBeNull();
+  });
+
+  it('an action ping (NOISE_ACTION_R) is heard at its own boundary, not a step beyond', () => {
+    const g = openGrid();
+    const atEdge = updateEcho(
+      echoAt(-2.5, 0, { nextSenseAt: 1000, sense: 'ears' }),
+      player,
+      [],
+      [],
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      player,
+      [],
+      false,
+      [{ x: 0, y: 0, r: NOISE_ACTION_R, at: 1000 }], // dist 2.5 = the radius
+    );
+    expect(atEdge.mode).toBe('chase');
+    const justOut = updateEcho(
+      echoAt(-2.51, 0, { nextSenseAt: 1000, sense: 'ears' }),
+      player,
+      [],
+      [],
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      player,
+      [],
+      false,
+      [{ x: 0, y: 0, r: NOISE_ACTION_R, at: 1000 }],
+    );
+    expect(justOut.mode).toBe('patrol');
+  });
+
+  it('PIN — a glass echo is noise-immune: a sprint ring on top of it never starts a chase', () => {
+    const g = openGrid();
+    // no mirrors at all: the only sense a glass echo has is unavailable, so
+    // the loudest ring in the house must leave it patrolling.
+    const e = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000 }),
+      { x: 300, y: 0, heading: 0 },
+      [],
+      [],
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      { x: 300, y: 0 },
+      [],
+      false,
+      sprintRing(-1.5, 0, 1000), // the ping lands EXACTLY on the echo
+    );
+    expect(e.mode).toBe('patrol');
+    expect(e.lastSensedCell).toBeNull();
+    // and with glass present but fogged — same silence: noise is not sight.
+    const mirrors = [mir(1, 0, 0)];
+    const rt = initMirrorRuntime(mirrors);
+    applyFog(rt, 1, 0, FOG_DURATION_MS);
+    const fogged = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000 }),
+      { x: 1.5, y: 0, heading: 0 },
+      mirrors,
+      rt,
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      { x: 1.5, y: 0 },
+      [],
+      false,
+      sprintRing(-1.5, 0, 1000),
+    );
+    expect(fogged.mode).toBe('patrol');
   });
 });

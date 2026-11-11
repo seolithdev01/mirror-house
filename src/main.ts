@@ -13,6 +13,7 @@ import {
 } from './audio/theory';
 import {
   ANGER_MAX,
+  BEAT_TICK_MS,
   CELL_SIZE,
   CHHAYA_PING_MS,
   CONTACT_RADIUS,
@@ -26,9 +27,14 @@ import {
   FIXED_STEP,
   FOG_COST,
   FOG_DURATION_MS,
+  NOISE_ACTION_R,
+  NOISE_SPRINT_R,
+  NOISE_WALK_EVERY_MS,
+  NOISE_WALK_R,
   SHARD_BEACON,
   SPRINT_SPEED,
   TAAL_FLOOR,
+  TAAL_RETURN_FLOOR,
   TIER_FIVE_FLOORS,
   TIER_FOUR_FLOORS,
   TIER_SEVEN_FLOORS,
@@ -85,6 +91,7 @@ import {
 import { bracketSamples, recordPath, sampleDelayed, type PathSample } from './game/chhaya';
 import { shatterDecoys, spawnDecoy, updateDecoys, type DecoyState } from './game/decoy';
 import { initEchoes, updateEcho } from './game/echo';
+import { emit, prune, type NoiseEvent } from './game/noise';
 import { createEchoMesh, disposeEchoMesh, syncEchoMesh } from './game/echoView';
 import {
   generateFloorObjects,
@@ -426,6 +433,26 @@ let doorStates = new Map<number, DoorAnim>();
 let doorById = new Map<number, SilveredDoor>();
 let echoes: ReturnType<typeof initEchoes> = [];
 let echoMeshes: THREE.Group[] = [];
+// T7/T2 — the noise economy: the ring of recent pings the Library's 'ears'
+// echoes hunt by (src/game/noise.ts owns the pure core). Fed every fixed step
+// while the sim is live: a sprint rings NOISE_SPRINT_R each step, a walk
+// rings NOISE_WALK_R per NOISE_WALK_EVERY_MS, the frost/push/step verbs ring
+// NOISE_ACTION_R once at the action, and on floors ≥ TAAL_RETURN_FLOOR Taal's
+// accent ticks ring a sprint-sized ping at his own position — the loudest
+// thing in the stacks. Everything here is per-floor (buildFloor owns the
+// reset); a venue side-floor behaves tier-one, so its echoes are glass and
+// the ring is inert there — the read-out below still stays honest.
+let noiseEvents: NoiseEvent[] = [];
+let nextWalkNoiseAt = 0; // the walk's 500ms cadence clock
+let lastTaalNoiseTick = -1; // the accent tick the beat last rang on (edge detector)
+let noiseChaseAnnounced = false; // the once-per-floor 'A shelf-warden heard you.' eye
+/** The floor's echo sense: the Library (tier 7) goes blind — 'ears' — and
+ *  every other floor (venue side-floors included: they behave tier-one)
+ *  keeps the glass sight tiers 1–6 have always had. One definition for the
+ *  three initEchoes call sites (build, reset, sport respawn). */
+function echoSenseForFloor(): 'glass' | 'ears' {
+  return venue === null && tierOf(campaign.floor) === 7 ? 'ears' : 'glass';
+}
 // M4/T3 — Taal's cameo (floor 5); T2 — the Sentinel from floor 11 up (the
 // ladder accumulates: he keeps the beat through the Gardens beside Gher).
 // State is null everywhere else; the figure
@@ -644,7 +671,12 @@ function resetFloor(now: number): void {
     v.bind.setFog('clear');
     v.bind.setCracked(false);
   }
-  echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, now);
+  echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, now, echoSenseForFloor());
+  // T7/T2 — the new attempt's ring starts silent: the old attempt's pings
+  // predate it, and the walk/beat clocks re-arm with the echoes.
+  noiseEvents = [];
+  nextWalkNoiseAt = 0;
+  lastTaalNoiseTick = -1;
   path = []; // Chhaya loses the trail; she hides on the next update
   chhaya.visible = false;
   chhayaAnnounced = false; // the new attempt's first sighting speaks again
@@ -800,6 +832,11 @@ function aainaContext(): HintContext {
       aavartPresent(campaign.floor) &&
       aavart !== null &&
       Math.hypot(aavart.x - player.x, aavart.y - player.y) < 8,
+    // T7/T2 — the Library's standing rule (tier 7): the wardens are blind
+    // and listen. Slotted BEFORE the shadow in her chain — the stacks' rule
+    // outranks even Chhaya's proximity. A venue floor never hints it (the
+    // same campaign gate heatNear carries).
+    whisperNear: venue === null && tierOf(campaign.floor) === 7,
     // T6/T2 — the Furnace's standing rule: a hot floor (51–60) earns the
     // heat hint — frost melts fast, cracks burn wider. It outranks her
     // temper threshold but never the Sentinels or the shadow. T6 final
@@ -902,6 +939,9 @@ function tryFrost(now: number): void {
     heatActiveFloor() ? fogDurationMs(campaign.floor) : FOG_DURATION_MS,
   );
   breath = updateBreath(breath, 0, true);
+  // T7/T2 — the verbs are NOISE: a frost's crunch pings NOISE_ACTION_R once
+  // at the action (the ring is inert where every echo is glass).
+  noiseEvents = emit(noiseEvents, player.x, player.y, NOISE_ACTION_R, now);
   if (!wasCaptured && rt.captured) {
     // Beacon shards bank as pending in the house state — awarded at clear.
     house = { ...house, shards: house.shards + SHARD_BEACON };
@@ -1456,6 +1496,12 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   lastWaterScale = 1; // the fresh stage is built full-height — the sink tracker re-arms with it
   floodAnnounced = false; // the new floor speaks the flood once
   gherCopyAnnounced = false; // T6/T3 — and the warden's copy ward once
+  // T7/T2 — the new floor's ring starts silent and its once-per-floor
+  // noise-chase line re-arms with the rest of the caption eyes.
+  noiseEvents = [];
+  nextWalkNoiseAt = 0;
+  lastTaalNoiseTick = -1;
+  noiseChaseAnnounced = false;
   floorDisposers.push(() => {
     scene.remove(stage.group);
     disposeTree(stage.group);
@@ -1645,7 +1691,13 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     // counts never climb across floors — the soak census's witness)
   });
 
-  echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, performance.now());
+  echoes = initEchoes(
+    objs.echoSpawns,
+    floor.grid,
+    objs.patrolAnchors,
+    performance.now(),
+    echoSenseForFloor(), // T7/T2 — the Library's wardens are born deaf to glass
+  );
   const meshes = echoes.map(() => {
     const mesh = createEchoMesh();
     scene.add(mesh);
@@ -1876,7 +1928,13 @@ function stayInDwaar(): void {
   hud.hideTier();
   dwaarFreeWalk = true;
   phase = createFloorRun(); // sanctioned live floor — ready, clock on first input
-  echoes = initEchoes(objs.echoSpawns, floor.grid, objs.patrolAnchors, performance.now());
+  echoes = initEchoes(
+    objs.echoSpawns,
+    floor.grid,
+    objs.patrolAnchors,
+    performance.now(),
+    echoSenseForFloor(), // T7/T2 — the sport respawn keeps the floor's own sense
+  );
   input.snapshotAndReset();
 }
 
@@ -2172,6 +2230,9 @@ function stepThrough(): void {
   // glass, 6s behind you.
   player = { x: tp.x, y: tp.y, heading: tp.heading };
   updateAvatar(avatar, player.x, player.y, player.heading, false, performance.now() / 1000);
+  // T7/T2 — the step rings once at its arrival (single NOISE_ACTION_R ping;
+  // inert where every echo is glass).
+  noiseEvents = emit(noiseEvents, player.x, player.y, NOISE_ACTION_R, performance.now());
 }
 
 function pushDoor(): void {
@@ -2184,6 +2245,9 @@ function pushDoor(): void {
     floor.grid.setOpen(target.cellX, target.cellY, target.wallDir);
     sceneBuilt.hideWallEdge(target.cellX, target.cellY, target.wallDir);
   } // no neighbor (degenerate boundary mount): the edge cannot open — the door still slides, and goes inert
+  // T7/T2 — the shove rings once (single NOISE_ACTION_R ping at the action;
+  // inert where every echo is glass).
+  noiseEvents = emit(noiseEvents, player.x, player.y, NOISE_ACTION_R, performance.now());
 }
 
 // M5/T2 — the ONE action dispatch: every press-verb routes through
@@ -2438,6 +2502,20 @@ function frame(now: number): void {
       const inputActive =
         inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
       if (inputActive) phase = startRun(phase, now); // first input starts the clock
+      // T7/T2 — the noise feed: every fixed step while the sim is live.
+      // Sprint rings loud (NOISE_SPRINT_R, every step — the roar); walk rings
+      // soft (NOISE_WALK_R, per NOISE_WALK_EVERY_MS — the creep); turning in
+      // place or standing is SILENT. The ring decays (prune) even when no new
+      // ping lands, so stillness drains the wardens' memory of you. Inert on
+      // tiers 1–6: their echoes are glass and never read the ring.
+      const stepping = inputFrame.forward !== 0 || inputFrame.strafe !== 0;
+      if (inputFrame.sprint && stepping) {
+        noiseEvents = emit(noiseEvents, player.x, player.y, NOISE_SPRINT_R, now);
+      } else if (stepping && now >= nextWalkNoiseAt) {
+        noiseEvents = emit(noiseEvents, player.x, player.y, NOISE_WALK_R, now);
+        nextWalkNoiseAt = now + NOISE_WALK_EVERY_MS;
+      }
+      noiseEvents = prune(noiseEvents, now);
       updateAvatar(avatar, player.x, player.y, player.heading, inputActive, now / 1000);
       breath = updateBreath(breath, FIXED_STEP, false); // recharge per fixed step
       // T3/T3 — the player's one verb against water: step close and it
@@ -2490,6 +2568,7 @@ function frame(now: number): void {
           apparent,
           decoys, // T5/T2 — the lure: a nearer copy is "the player" to the glass
           eyeOff, // T5/T3 — drowned glass is no eye (the true pair keeps its sight)
+          noiseEvents, // T7/T2 — the ears' one sense: the ring
         );
         // Map radar (T4): a successful sense check is the only writer of
         // loseMemoryAt, so a changed value marks this tick's check — ping at
@@ -2498,6 +2577,9 @@ function frame(now: number): void {
         // T4/T3 — while the carnival glass displaces you, the ping lands at
         // the APPARENT spot instead: the deception itself is visible on the
         // map (fog the pane and the radar snaps back to the truth).
+        // T7/T2 — the radar contract is sense-agnostic (an ears echo's
+        // hearing writes loseMemoryAt exactly like sight does), but the
+        // GLASS line is not: an ears echo is heard, never seen.
         if (next.loseMemoryAt !== e.loseMemoryAt) {
           pings.push(
             displaced
@@ -2507,12 +2589,21 @@ function frame(now: number): void {
           // M5/T3 — the caption rides the SAME detection point (never a
           // recompute): one id, one line per ttl window however often the
           // per-echo sense cadence re-fires it.
-          pushCaption('echo-sense', t(lang, 'caption.echoSense'));
+          if (next.sense === 'glass') pushCaption('echo-sense', t(lang, 'caption.echoSense'));
         }
         // M5/T3 — mode edges: the chase begins, the confusion lands. The
         // captions speak on the transition, so a held state never repeats.
-        if (next.mode === 'chase' && e.mode !== 'chase')
-          pushCaption('echo-chase', t(lang, 'caption.echoChase'));
+        // T7/T2 — an ears echo's chase is noise-caused by definition: the
+        // floor's FIRST one speaks the Library's own line; later edges keep
+        // the generic chase line.
+        if (next.mode === 'chase' && e.mode !== 'chase') {
+          if (next.sense === 'ears' && !noiseChaseAnnounced) {
+            noiseChaseAnnounced = true;
+            pushCaption('noise-chase', t(lang, 'caption.noiseChase'));
+          } else {
+            pushCaption('echo-chase', t(lang, 'caption.echoChase'));
+          }
+        }
         if (next.mode === 'confused' && e.mode !== 'confused')
           pushCaption('echo-confused', t(lang, 'caption.echoConfused'));
         // Stuck bounty: first confusion banks the award flag for this run.
@@ -2524,6 +2615,20 @@ function frame(now: number): void {
       // speed — same wall-clock now the lantern reads, so stride and glow
       // can never fall out of time.
       if (taal !== null) taal = updateTaal(taal, objs.patrolAnchors, floor.grid, now, dtMove); // T5/T3 — he wades too
+      // T7/T2 — the beat is NOISE on his return floors (≥ TAAL_RETURN_FLOOR,
+      // where he walks the Library): each accent tick rings a sprint-sized
+      // ping at his position. He himself ignores it — glass has no meaning
+      // for the ears echoes' targets — but YOU cannot miss it: the beat is
+      // the loudest thing in the stacks, and it teaches you where Taal is.
+      // Edge-detected on the absolute accent tick so the ~30 fixed steps per
+      // 250ms tick ring exactly one ping.
+      if (taal !== null && campaign.floor >= TAAL_RETURN_FLOOR) {
+        const tick = Math.floor(now / BEAT_TICK_MS);
+        if (tick % 2 === 0 && tick !== lastTaalNoiseTick) {
+          lastTaalNoiseTick = tick;
+          noiseEvents = emit(noiseEvents, taal.x, taal.y, NOISE_SPRINT_R, now);
+        }
+      }
       // The encirclement (T3/T2): the freshest prediction is offered every
       // step — interceptCell reads the player's roads, no senses involved —
       // and updateGher adopts it on the 1s tick (a feint's null lands at
