@@ -24,7 +24,7 @@
 
 **Files:** `src/game/campaign.ts` (TIER_SEVEN_FLOORS, tierOf→7, isDwaar +70, ramp 61–70, `DWAAR_VII_LAYOUT` 13×13 library — long parallel shelf-walls (full-height wall runs with single-cell gaps like stack aisles) + reading alcoves, 180°-symmetric+connected, ~95 open), `src/game/save.ts` (→ 70 same commit + tests: 65/70 round-trip, 71 rejected), constants, main/hud (chips `L64 · T7` / `DWAAR VII ✦`; `✦ Truth-Shard VII claimed — Tier VII complete` full screen; Dwaar VI cascades to interstitial), presence fns (taal `(11–50) || ≥66`; gher `((21–40)||50||70)` → simplify `((21–40) || f === 50 || f === 70)`; aavart `(31–40)||50` — rests all tier 7; chhaya always), tests (ramp 61–70; layout predicates; tierOf 7; validator 65/70+71; rotation truth table rows 5/11/21/31/40/41/49/50/51/60/61/65/66/69/70/71-validator; descend-no-op-at-70).
 
-- [ ] Tests → RED → implement → GREEN; gates + 40/40. Commit `feat(t7): campaign to floor 70 — whisper library, taal returns at 66, validator widened`.
+- [x] Tests → RED → implement → GREEN; gates + 40/40. Commit `feat(t7): campaign to floor 70 — whisper library, taal returns at 66, validator widened`.
 
 ---
 
@@ -43,7 +43,7 @@ export function loudestAt(list: readonly NoiseEvent[], ex: number, ey: number): 
 
 Echo hearing semantics (tier 7): sense tick unchanged (SENSE_INTERVAL_MS); on tick, `hears(noise, echo)` → chase `loudestAt(...)` position with CHASE_MEMORY_MS as today; no noise → patrol. Frost/push/step emit single NOISE_ACTION_R pings; sprint emits NOISE_SPRINT_R each fixed step; walk emits NOISE_WALK_R per NOISE_WALK_EVERY_MS. Reduced-flash: noise events are invisible by design (map shows nothing — the ECONOMY is audio/knowledge).
 
-- [ ] Tests (emit cap/eviction; hears radius boundaries; loudestAt nearest; tier-7 echo patrol-without-noise → chase-with-noise → memory-expiry; tier-1 echo unaffected by noise — sight-only pin) → RED → implement → GREEN; gates + 40/40. Commit `feat(t7): noise economy — the echoes listen`.
+- [x] Tests (emit cap/eviction; hears radius boundaries; loudestAt nearest; tier-7 echo patrol-without-noise → chase-with-noise → memory-expiry; tier-1 echo unaffected by noise — sight-only pin) → RED → implement → GREEN; gates + 40/40. Commit `feat(t7): noise economy — the echoes listen`.
 
 ---
 
@@ -51,7 +51,7 @@ Echo hearing semantics (tier 7): sense tick unchanged (SENSE_INTERVAL_MS); on ti
 
 **Files:** `src/game/palette.ts` (TIER_SEVEN_PALETTE per plan Task 3: void 0x0a0a12, floorBase 0x181824, floorLines 0x242436, teal→lavender 0x8a8ab8, ivory 0xe4e4f0, gold 0xd9a441, rose→dusk 0x6a6a9a, wallTop 0x5c5c78, wallBottom 0x2e2e44, lantern 0xe8e8ff, entrance 0x8a8ab8, exit 0xd9a441), `src/audio/theory.ts` (TIER_SEVEN_SCALE [0,2,3,7,8]; whisper = sine voice + intensity ceiling 0.55 on tier 7 — melody stays sparse), `paletteForTier` 7, main wiring (scale/voice at buildFloor; Dwaar VII duo wiring — taal + gher spawn at 70 via rotation gates already), hook (`tier()`→7, `noise(): number` — live noise-event count), e2e 40→42: (a) `t7: floor 61 loads the library` — `?seed=T7RUN&floor=61` → tier 7, chip `L61 · T7`, taalPos() NULL + gherPos()/avartPos() NULL (quiet library pinned); (b) `t7: echoes hear noise` — `&floor=66` → taalPos() non-null (return pinned); spawn hearing check via hook: `noise()` count rises while sprinting, and an echo within earshot flips to chase (warp echo adjacent via `enemyPos` + sprint 500ms → `house()`/mode evidence — expose `echoMode(i)` in the tester hook, additive).
 
-- [ ] Tests (palette/scale/voice/noise wiring) → implement → e2e 42/42 → gates; live :4199 check (floor 61 moonlit look, sprint → chase, creep → quiet; floor 66 Taal's beat; floor 1 unchanged). Commit `feat(t7): moonlit library, whispered flute, tier-seven e2e`.
+- [x] Tests (palette/scale/voice/noise wiring) → implement → e2e 42/42 → gates; live :4199 check (floor 61 moonlit look, sprint → chase, creep → quiet; floor 66 Taal's beat; floor 1 unchanged). Commit `feat(t7): moonlit library, whispered flute, tier-seven e2e`.
 
 ---
 
@@ -59,7 +59,7 @@ Echo hearing semantics (tier 7): sense tick unchanged (SENSE_INTERVAL_MS); on ti
 
 Spec §4.6 row 7 delivered; §4.4 rotation note (Taal rests 51–65, returns 66; Gher Dwaar-VII-only; Aavart rests all tier 7 — returns tier 8); STATE_MACHINES (Campaign@70, noise = derived events look-alike, rotation table); README (Tier 7), CHANGELOG `[t7]`, FAQ +2 (the Library — walk, don't run; the quiet wardens); plan ticks; full gates + 42/42; bundle check.
 
-- [ ] Docs → gates → commit `docs(t7): delivery marks, how to walk the stacks`.
+- [x] Docs → gates → commit `docs(t7): delivery marks, how to walk the stacks`.
 
 ## Plan Self-Review
 

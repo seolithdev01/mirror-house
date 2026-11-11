@@ -7,6 +7,83 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t7] — 2026-11-11 — the Whisper Library (Tier 7, floors 61–70) — ACT II listens
+
+The campaign runs to seventy — the listening tier, where the Echoes go blind and grow ears, the noise economy becomes the whole fight, and the beat returns mid-tier.
+
+- **Floors 61–70** — the Whisper Library: a tier-7 ramp (four beacons, braids
+  to 0.392 by floor 69, Chhaya 3.3 s behind tightening to 2.8 s, 2.6 s in
+  Dwaar VII) carrying **four Echoes on every procedural floor, Dwaar VII
+  alone carrying five — the Taal+Gher duet is the tier's apex, and its
+  teeth are the hearing Echoes and the noise economy, not the echo count**
+  — the `L64 · T7` floor chip, and **Dwaar VII** at floor 70: the library
+  stacks (95 open cells), four long parallel shelf-wall runs (rows 3/5/7/9)
+  separated by fully-open single-cell reading aisles, four reading alcoves
+  tucked at the shelf ends (180°-mirrored pairs (3,3)↔(9,9) and
+  (9,5)↔(3,7)), 180°-symmetric (the exit mirrors the entrance) and one
+  connected component — the duet needs the room to walk its beats and the
+  blind Echoes need stacks to listen past. The save validator widened to 70
+  in the same commit as the ramp (**the binding held a sixth time**; 71 is
+  the first rejection, round-trips pinned at 65 and 70).
+- **The noise economy** — `src/game/noise.ts` (pure): `NoiseEvent
+  {x, y, r, at}` pings in a TTL ring (`emit` appends and drops — 1200 ms
+  time-to-hear, 24-event cap drop-oldest; `hears` is the boundary-inclusive
+  radius check; `loudestAt` returns the NEAREST audible ping as the chase
+  target). `main.ts` feeds the ring while the sim is live: **a sprint rings
+  loud (7 m) every fixed step, a walk rings soft (4 m) per 500 ms,
+  standing still and turning in place are silent, and frost / push /
+  step-through ping once (2.5 m) at the action** — the verbs are noise.
+  The ring is invisible by design: no map draws, no floorObjects draws
+  (the rng streams stay pinned) — the economy is audio and knowledge.
+- **The Echoes hear, not see (spec §4.6 row 7)** — every echo gains a
+  spawn-time `sense: 'glass' | 'ears'` axis (`echoSenseForFloor()` =
+  tier 7 on the campaign, glass everywhere else; venue floors always
+  tier-one). An **ears** echo skips the confusion census and the
+  mirror/lure eye logic entirely — a fog blinds nothing down here and the
+  ≥2-fogged-eyes stall does not work — and on the usual sense tick it
+  chases `loudestAt(...)` with the same 2 s chase memory: ring it and it
+  hunts, go quiet and it forgets. **Glass echoes are noise-immune**
+  (unit-pinned: a ping landing exactly on a tier-1 echo moves nothing).
+  The first noise-caused chase per floor speaks the caption "A
+  shelf-warden heard you." (en+hi), and Aaina sells the tier's standing
+  rule (`whisperNear`, slotted before the shadow's warning): "They are
+  blind here — but they listen. Walk. Never run the stacks."
+- **The rotation's third turn (spec §4.4)** — the wheel hushes: **Taal's
+  rest lengthens through 65** (`taalPresent` = `(11–50) ∥ f ≥ 66` — the
+  ratified net change on the old floors is 60–65 gaining rest, so the
+  Dwaar VI crucible replays as the Gher+Aavart hall) and **the beat
+  returns at 66** (`TAAL_RETURN_FLOOR`) — mid-tier, walking 66–70, where
+  his every even-beat accent tick rings a 7 m ping at HIS position: noise
+  he ignores and the blind wardens cannot refuse to chase — the bait you
+  cannot miss and the best decoy in the house. **Gher keeps the Furnace
+  (50–60), rests 61–69, and joins ONLY at the Dwaar VII duet (70)**;
+  **Aavart rests all of tier 7 and returns in tier 8**; Chhaya never
+  rests. Truth table extended with rows 61/65/66/69/70 — and row 60
+  re-pinned `F,T,T` (the extended rest); rows 1–59 identical to t6's.
+- **Whispered dressing** — the moonlit lavender-grey palette (void
+  `0x0a0a12`, lavender glass, dusk rose, slate walls — the stand-in retired
+  per the per-tier pattern) and the whispered set `[0,2,3,7,8]` on the
+  sine, under `TIER_SEVEN_INTENSITY_CEILING` 0.55: the tier-7 audio feed
+  multiplies the intensity blend by 0.55, so a full chase tops out ≈ 0.52
+  and a calm floor sits ≈ 0.11 — the melody stays sparse whatever the
+  wardens do. Interstitial cascade grows once more: **Dwaar VI joins the
+  1.8 s claim banner** and the full screen moves down to **Dwaar VII's
+  tier close** (`✦ Truth-Shard VII claimed — Tier VII complete`, seventy
+  floors and banked shards counted, ↻ Play again / Stay) — the campaign's
+  terminal screen, the house's end until tier 8 exists. New tester hook
+  fields: `noise()` (the live ring's size) and `echoMode(i)` (the ears
+  witness).
+- **Close-out** — §4.6 row 7 delivered, §2.3's Act II row marked deepened
+  (the Echoes' inversion — they hear, not see — is live; mistaken-for-a-copy
+  stays deferred) and the §4.4 delivered note extended with the wheel's
+  third turn in the spec; §13.1's scope note refreshed to t7. README gains
+  the Tier 7 + ACT II LISTENS section (and its Tier 6 section re-marks the
+  crucible's replay without Taal); the FAQ grows to 44 (the Library — walk,
+  don't run; how the noise works — hearing vs seeing); STATE_MACHINES'
+  Campaign section refreshed for 70 floors, the rotation table's tier-7
+  column, the echo sense axis (§4), the tier-7 content note and the noise
+  ring look-alike row. 777 unit + 42 e2e green.
+
 ## [t6] — 2026-11-11 — the Furnace Wings (Tier 6, floors 51–60) — ACT II deepens
 
 The campaign runs to sixty — the burning tier, where the heat melts your frost, the rotation turns, and the house starts guarding its copies.

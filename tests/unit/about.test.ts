@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 42 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair)', () => {
-    expect(FAQ).toHaveLength(42);
+  it('grows to 44 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair)', () => {
+    expect(FAQ).toHaveLength(44);
   });
 
   it('the T5 entry explains the mirror-you decoys — the lure and the shatter bounty', () => {
@@ -59,7 +59,7 @@ describe('faq — the beta launch pair', () => {
     expect(e, 'an entry about the mirror-you decoys exists').toBeDefined();
     expect(e!.a).toContain('Echo'); // the lure is the copy's job
     expect(e!.a).toContain('shatters'); // the touch is the bounty
-    expect(e!.a).toContain('41–60'); // copies walk the Flood Halls AND the Furnace Wings (t6)
+    expect(e!.a).toContain('41–70'); // copies walk the Flood Halls, Wings AND Library (t7)
     expect(e!.a).toContain('guards the copy'); // the warden wards them now (t6)
   });
 
@@ -162,11 +162,27 @@ describe('faq — the beta launch pair', () => {
     expect(furnace!.a).toContain('12.5 seconds'); // the heat-fog evaporation
     expect(furnace!.a).toContain('25 anger'); // the widened crack
     expect(furnace!.a).toContain('Truth-Shard VI'); // Dwaar VI's claim
-    expect(furnace!.a.toLowerCase()).toContain('all four'); // the second all-four hall
+    expect(furnace!.a).toContain('Chhaya + Gher + Aavart'); // the crucible's t7 replay — Taal's extended rest
     const taal = FAQ.find((f) => /taal vanished below floor 50/i.test(f.q));
     expect(taal, 'the Taal-rest entry exists').toBeDefined();
     expect(taal!.a).toContain('first rest'); // the rotation's second turn
     expect(taal!.a).toContain('51–60'); // the Wings are where he sits out
-    expect(taal!.a).toContain('Dwaar VI'); // the crucible calls him back
+    expect(taal!.a).toContain('Dwaar VI'); // the crucible — which t7 now replays without him
+    expect(taal!.a).toContain('floor 66'); // the Library brings the beat back (t7)
+  });
+
+  it('the Library pair teaches the tier and the noise economy (T7/T4)', () => {
+    const library = FAQ.find((f) => /below the furnace wings/i.test(f.q));
+    expect(library, 'the Whisper Library tier entry exists').toBeDefined();
+    expect(library!.a).toContain('L61 · T7'); // the chip readers see
+    expect(library!.a).toContain('Truth-Shard VII'); // Dwaar VII's claim
+    expect(library!.a.toLowerCase()).toContain('duet'); // Taal + Gher — NOT an all-four apex
+    expect(library!.a).toContain('floor 66'); // Taal's mid-tier return
+    const noise = FAQ.find((f) => /how does the noise work/i.test(f.q));
+    expect(noise, 'the noise-economy entry exists').toBeDefined();
+    expect(noise!.a).toContain('7 meters'); // the sprint ring
+    expect(noise!.a).toContain('4 meters'); // the walk ring
+    expect(noise!.a).toContain('2.5 meters'); // the verbs' single ping
+    expect(noise!.a.toLowerCase()).toContain('noise-immune'); // glass echoes hear nothing
   });
 });

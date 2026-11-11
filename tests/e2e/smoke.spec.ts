@@ -279,13 +279,13 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('step003: FAQ opens with 42 entries and H toggles', async ({ page }) => {
+test('step003: FAQ opens with 44 entries and H toggles', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=FAQ');
   await ready(page);
   await page.locator('#mh-faq').click();
-  // 42 since t6/T5 — the Furnace pair joined the t5 Flood Halls trio
-  await expect(page.locator('#mh-faq-box details')).toHaveCount(42);
+  // 44 since t7/T4 — the Library pair joined the t6 Furnace + Taal-rest pair
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(44);
   await page.keyboard.press('KeyH'); // closes
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens

@@ -52,7 +52,7 @@ You are **the Surveyor** — a heritage architect sent to appraise the palace be
 | Act                       | Floors              | Arc                                                                                                                                                                                                                                    |
 | ------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **I — The Trap**          | 1–40 (Tiers 1–4)    | Learn the house's rules. Meet Aaina. Discover the Echoes are former guests' peeled reflections. First truth: _the house keeps people by copying them._ — **closed 2026-11-10 (t4)**: all forty floors delivered (§4.6 rows 1–4); Dwaar IV's clear raises the act-completion screen (`ACT I COMPLETE — The Trap`, the campaign's floors and banked shards counted, with the Act II tease)                                   |
-| **II — The Deception**    | 41–80 (Tiers 5–8)   | The house starts impersonating _you_ — mirror-you decoys that enemies protect and you may be mistaken for. Allies behind glass may be copies. Second truth: _the house can no longer tell originals from copies — including itself._ — **opened 2026-11-11 (t5)**: floors 41–50 delivered (§4.6 row 5), the first floor-41 build raising `ACT II — THE DECEPTION` (the house has begun copying you); the decoys' **first form — lures** — is live (an Echo reads the nearer of you and a copy as "you"; touching a copy shatters it for shards). **Deepened 2026-11-11 (t6)**: floors 51–60 delivered (§4.6 row 6 — the Furnace Wings); the decoys' **second element — enemies _protect_ the copies — is live** (Gher's seal reads alive decoy cells as objectives: a copy crossing his sector pulls the Encircler onto it, the caption admits it once per floor — "The warden guards the copy." — so shard-farming a copy is genuinely risky now); the third element — _you_ may be mistaken for a copy — remains deferred to the deeper tiers   |
+| **II — The Deception**    | 41–80 (Tiers 5–8)   | The house starts impersonating _you_ — mirror-you decoys that enemies protect and you may be mistaken for. Allies behind glass may be copies. Second truth: _the house can no longer tell originals from copies — including itself._ — **opened 2026-11-11 (t5)**: floors 41–50 delivered (§4.6 row 5), the first floor-41 build raising `ACT II — THE DECEPTION` (the house has begun copying you); the decoys' **first form — lures** — is live (an Echo reads the nearer of you and a copy as "you"; touching a copy shatters it for shards). **Deepened 2026-11-11 (t6)**: floors 51–60 delivered (§4.6 row 6 — the Furnace Wings); the decoys' **second element — enemies _protect_ the copies — is live** (Gher's seal reads alive decoy cells as objectives: a copy crossing his sector pulls the Encircler onto it, the caption admits it once per floor — "The warden guards the copy." — so shard-farming a copy is genuinely risky now). **Deepened 2026-11-11 (t7)**: floors 61–70 delivered (§4.6 row 7 — the Whisper Library); **the Echoes go blind and grow ears — the tier's own deception inverts the mirror**: mirror-sight is gone on 61–70, and the hunt tracks **noise** instead (a sprint rings loud, a walk rings soft, frost/push/step-through ping once — and from floor 66 Taal's returning beat is the loudest thing in the stacks, bait the blind wardens cannot refuse); the third element — _you_ may be mistaken for a copy — remains deferred to the deeper tiers   |
 | **III — The Ground Door** | 81–100 (Tiers 9–10) | The Foundations have no mirrors at all — nothing to hide behind, nothing to hide _behind you_. The door opens only for someone carrying all **ten Truth-Shards** (one per tier, from each Sentinel hall) — proof of being an original. |
 
 **Endings (post-beta):** _Escape_ (any completion), _True Escape_ (all ten shards — the house lets go), and a hidden _Stay_ ending (you choose the glass). Beta delivers Act I's opening fully polished.
@@ -117,7 +117,7 @@ You carry the Glazier's **Frost Lantern**. Aim at any standing mirror and fog it
 
 Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → Tier 4 Aavart → Tiers 5–10 escalate combinations, speeds, sense ranges, and tier mechanics. Each tier ends in a **Dwaar** (threshold) — that tier's lead Sentinel in a handcrafted duel-hall, guarding the floor's **Truth-Shard**.
 
-> **Delivered note (recorded 2026-11-11, t5; the wheel turns again — t6).** The
+> **Delivered note (recorded 2026-11-11, t5; the wheel turns again — t6, t7).** The
 > ladder **accumulates** — a new tier's Sentinel joins, the old ones stay:
 > **all four walk by tier 4** — Chhaya always (from floor 1), Taal from 11 (his
 > spawn gate was widened from "the tier-2 floors" to _every floor from 11
@@ -132,12 +132,23 @@ Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → T
 > home — both walk every floor 51–60, returning from rest — while Taal takes
 > the rotation's first true rest (51–59); the beat-walker who never missed a
 > floor from 11 through 50 sits the Wings out, and the Dwaar VI crucible at 60
-> calls him back down — the second all-four hall.** Chhaya never rests at all:
-> she replays every path in the house on every floor of all six tiers. The
-> bare `>=` gates became presence functions
+> calls him back down — the second all-four hall.** **Tier 7 hushes the wheel
+> (t7): the Whisper Library belongs to the hearing Echoes, and the wardens
+> keep the silence — Taal's rest lengthens through 65 (the t7 ratified net
+> change on the old floors: the Dwaar VI crucible now replays as the
+> Gher+Aavart hall, its call-down deferred) until the beat itself returns at
+> 66 — the beat in the silence, and in a house where the wardens listen his
+> accent ticks are the noise they cannot refuse to chase; Gher keeps the
+> Furnace he has always walked (50–60), rests the Library ramp 61–69, and is
+> called down for exactly one hall — the Dwaar VII duet at 70, Taal + Gher in
+> the stacks (a duet, not an apex — row 9's all-four Warrens stay tier 9's);
+> Aavart sits all of tier 7 out and returns in tier 8.** Chhaya never rests at
+> all: she replays every path in the house on every floor of all seven tiers.
+> The bare `>=` gates became presence functions
 > (`taalPresent`/`gherPresent`/`aavartPresent`) — floors 1–40 read
 > byte-identical, pinned by truth-table tests (rows 51/55/59/60 added with
-> t6).
+> t6; 61/65/66/69/70 with t7 — row 60 re-pinned `F,T,T`, Taal's extended
+> rest).
 
 ### 4.5 Economy & progression
 
@@ -156,7 +167,7 @@ Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → T
 | 4    | 31–40  | Carnival of Faces    | Distorting mirrors displace your mirror-image, Aavart | Playful, mischievous groove — delivered 2026-11-10 (t4) |
 | 5    | 41–50  | The Flood Halls      | Rising water halves mirror height; Act II begins      | Submerged, filtered — delivered 2026-11-11 (t5)  |
 | 6    | 51–60  | The Furnace Wings    | Heat fogs mirrors at range but cracks spread faster   | Urgent, percussive — delivered 2026-11-11 (t6)   |
-| 7    | 61–70  | The Whisper Library  | Sound-based Echoes (they hear, not see)               | Sparse, whispered                                |
+| 7    | 61–70  | The Whisper Library  | Sound-based Echoes (they hear, not see)               | Sparse, whispered — delivered 2026-11-11 (t7)    |
 | 8    | 71–80  | The Frozen Atrium    | All mirrors pre-fogged — _you_ unfog to lure          | Austere, cold strings                            |
 | 9    | 81–90  | The Warden's Warrens | All four Sentinels hunt together                      | Dread, low drone                                 |
 | 10   | 91–100 | The Foundations      | No mirrors at all — pure maze, the Glazier himself    | Resolve; silence between notes                   |
@@ -414,7 +425,7 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 > M4 criterion is the human one: **five strangers completing Tier 1 unaided**.
 > It needs real humans: recruit them, watch them, close this line.
 
-> **Scope today (recorded 2026-11-11, t6).** This section is the Tier 1 beta
+> **Scope today (recorded 2026-11-11, t7).** This section is the Tier 1 beta
 > scope, delivered as written above; on top of it, the post-beta content
 > milestones have **opened Act II** — **Tier 2, floors 11–20**
 > (§4.6 row 2: the Hall of Ancestors, Taal the lethal Sentinel, ancestor
@@ -424,14 +435,16 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 > mirrors, Dwaar IV — Act I closes), **Tier 5, floors 41–50** (§4.6 row 5:
 > the Flood Halls — the mirror-you decoys' first form, the rising water, the
 > sentinel rotation and the all-four Dwaar V duel; the act opens with the
-> `ACT II — THE DECEPTION` banner on floor 41) and **Tier 6, floors 51–60**
+> `ACT II — THE DECEPTION` banner on floor 41), **Tier 6, floors 51–60**
 > (§4.6 row 6: the Furnace Wings — the heat that melts frost and widens
-> cracks, the rotation's turn — Taal rests 51–59, Gher and Aavart walk the
-> Wings — the warden-guarded decoys and the all-four Dwaar VI crucible).
-> 715 unit + 40 e2e green. **The rest of Act II (tiers 7–8, floors 61–80)
+> cracks, the warden-guarded decoys and the Dwaar VI crucible) and
+> **Tier 7, floors 61–70** (§4.6 row 7: the Whisper Library — the Echoes go
+> blind and grow ears, the noise economy is the fight, Taal's beat returns at
+> 66 and the Dwaar VII duet closes the tier in the stacks).
+> 777 unit + 42 e2e green. **The rest of Act II (tier 8, floors 71–80)
 > and Act III (floors 81–100) remain future content**: the campaign is
-> terminal at floor 60 — `descend()` is a no-op there and the Dwaar VI tier
-> screen is the end of the house until tier 7 is built.
+> terminal at floor 70 — `descend()` is a no-op there and the Dwaar VII tier
+> screen is the end of the house until tier 8 is built.
 
 ### 13.2 Milestones (part-time, ~13 weeks)
 
