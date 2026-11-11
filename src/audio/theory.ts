@@ -29,6 +29,19 @@ export const TIER_FIVE_SCALE: readonly number[] = [0, 3, 5, 7, 10];
  *  tense rung the crucible hums while the heat climbs (spec §6.1 row 6). */
 export const TIER_SIX_SCALE: readonly number[] = [0, 1, 5, 7, 8];
 
+/** Tier-seven mood: the Whisper Library's whispered pentatonic — root,
+ *  second, flat third, fifth, flat sixth — the moonlit set the flute
+ *  breathes through the stacks (spec §6.1 row 7). */
+export const TIER_SEVEN_SCALE: readonly number[] = [0, 2, 3, 7, 8];
+
+/** T7/T3 — the whisper ceiling: tier 7's melody intensity never rises past
+ *  0.55. Main applies it in the per-frame audio feed as a MULTIPLIER on the
+ *  raw threat blend (the disclosed method): the blend never exceeds 1, so
+ *  ×ceiling caps the drive at 0.55 — and hushes the calm 0.2 floor to 0.11,
+ *  so the melody stays sparse, a whisper in the stacks, whatever the echoes
+ *  are doing. */
+export const TIER_SEVEN_INTENSITY_CEILING = 0.55;
+
 /** Standard equal-temperament MIDI-note-number → Hz. */
 export function midiToHz(semi: number): number {
   return 440 * Math.pow(2, (semi - 69) / 12);

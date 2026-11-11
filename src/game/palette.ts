@@ -133,6 +133,28 @@ export const TIER_SIX_PALETTE: TierPalette = {
   exit: 0xb87333,
 };
 
+/** The Whisper Library (floors 61–70, T7): moonlit lavender-grey — the
+ *  library by moonlight. Near-black void over a slate-blue floor, lavender
+ *  glass in the teal slot, dusk in the rose-diamond slot, moon-white lantern
+ *  light. The slot NAMES hold one last time: the teal slot wears the stacks'
+ *  lavender, the rose-diamond slot wears the dusk accent, so every
+ *  palette-driven pattern re-dresses itself with zero structural change
+ *  (the T2 precedent). */
+export const TIER_SEVEN_PALETTE: TierPalette = {
+  void: 0x0a0a12,
+  floorBase: 0x181824,
+  floorLines: 0x242436,
+  teal: 0x8a8ab8, // lavender — the moonlit stacks' glass
+  ivory: 0xe4e4f0,
+  gold: 0xd9a441,
+  rose: 0x6a6a9a, // dusk — the lattice diamonds in library dusk
+  wallTop: 0x5c5c78,
+  wallBottom: 0x2e2e44,
+  lantern: 0xe8e8ff,
+  entrance: 0x8a8ab8,
+  exit: 0xd9a441,
+};
+
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
  *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
  *  retired. T4/T4: tier 4 wears the Carnival palette — the documented
@@ -143,15 +165,16 @@ export const TIER_SIX_PALETTE: TierPalette = {
  *  T6/T4: tier 6 wears the Furnace Wings' ember/copper-on-charcoal — the
  *  documented Flood stand-in (T6/T1's fallthrough) is retired here, the
  *  same retire-the-stand-in pattern one tier down.
- *  T7/T1: tier 7 rides the Furnace Wings' ember/copper-on-charcoal as the
- *  DOCUMENTED STAND-IN until the Library's moonlit lavender lands (T7/T3 —
- *  the same retire-the-stand-in pattern one tier down). */
+ *  T7/T3: tier 7 wears the Whisper Library's moonlit lavender-grey — the
+ *  documented Furnace stand-in (T7/T1's fallthrough) is retired here, the
+ *  same retire-the-stand-in pattern one tier down. */
 export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
   if (tier === 4) return TIER_FOUR_PALETTE;
   if (tier === 5) return TIER_FIVE_PALETTE;
-  if (tier === 6 || tier === 7) return TIER_SIX_PALETTE; // 7 = stand-in until T7/T3
+  if (tier === 6) return TIER_SIX_PALETTE;
+  if (tier === 7) return TIER_SEVEN_PALETTE; // T7/T3 — the stand-in retires
   return TIER_ONE_PALETTE;
 }
 

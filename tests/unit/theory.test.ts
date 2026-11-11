@@ -11,6 +11,8 @@ import {
   TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
   TIER_ONE_SCALE,
+  TIER_SEVEN_INTENSITY_CEILING,
+  TIER_SEVEN_SCALE,
   TIER_SIX_SCALE,
   TIER_THREE_SCALE,
   TIER_TWO_SCALE,
@@ -52,6 +54,21 @@ describe('scales', () => {
   // heat climbs.
   it('tier six is the urgent Phrygian-adjacent pentatonic set', () => {
     expect(TIER_SIX_SCALE).toEqual([0, 1, 5, 7, 8]);
+  });
+
+  // T7/T3 — the Whisper Library's whispered pentatonic (spec §6.1 row 7):
+  // root, second, flat third, fifth, flat sixth — the moonlit set the flute
+  // breathes through the stacks, played sparse under the whisper ceiling.
+  it('tier seven is the whispered pentatonic set', () => {
+    expect(TIER_SEVEN_SCALE).toEqual([0, 2, 3, 7, 8]);
+  });
+
+  // T7/T3 — the whisper ceiling: the Library's melody intensity never rises
+  // past 0.55. Main applies it as the multiplier on the raw threat blend (the
+  // input never exceeds 1, so ×ceiling IS the ceiling — the calm 0.2 floor
+  // hushes to 0.11), disclosed there; this pins the constant itself.
+  it('the whisper ceiling is exact (0.55)', () => {
+    expect(TIER_SEVEN_INTENSITY_CEILING).toBe(0.55);
   });
 });
 
@@ -156,6 +173,20 @@ describe('nextMelodySemi', () => {
       expect(semi).toBeGreaterThanOrEqual(OCT);
       expect(semi).toBeLessThanOrEqual(OCT + 12);
       expect(urgent.has(semi % 12)).toBe(true);
+    }
+  });
+
+  // T7/T3 — the whisper walker walks the whispered set only: every emitted
+  // note is a tier-seven member inside the window (pcs of [0,2,3,7,8]).
+  it('after a tier-seven swap the walk only emits whispered members in the window', () => {
+    const rng = createRng('LIBRARY-WALK');
+    let semi = OCT;
+    const whispered = new Set(TIER_SEVEN_SCALE.map((s) => (OCT + s) % 12));
+    for (let i = 0; i < 200; i++) {
+      semi = nextMelodySemi(rng, TIER_SEVEN_SCALE, semi, 0.55, OCT);
+      expect(semi).toBeGreaterThanOrEqual(OCT);
+      expect(semi).toBeLessThanOrEqual(OCT + 12);
+      expect(whispered.has(semi % 12)).toBe(true);
     }
   });
 

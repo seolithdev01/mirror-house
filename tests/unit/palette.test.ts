@@ -6,6 +6,7 @@ import {
   TIER_FIVE_PALETTE,
   TIER_FOUR_PALETTE,
   TIER_ONE_PALETTE,
+  TIER_SEVEN_PALETTE,
   TIER_SIX_PALETTE,
   TIER_THREE_PALETTE,
   TIER_TWO_PALETTE,
@@ -68,6 +69,8 @@ describe('palette', () => {
     expect(paletteForTier(5)).toBe(TIER_FIVE_PALETTE);
     // T6/T4 — the Furnace Wings dress tier 6 (the Flood stand-in retired)
     expect(paletteForTier(6)).toBe(TIER_SIX_PALETTE);
+    // T7/T3 — the Whisper Library dresses tier 7 (the Furnace stand-in retired)
+    expect(paletteForTier(7)).toBe(TIER_SEVEN_PALETTE);
   });
 
   // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):
@@ -225,5 +228,40 @@ describe('palette', () => {
     // the two-tone checker flips to the charred floor pair
     expect(floorAccent(1, 1, TIER_SIX_PALETTE)).toBe(0x322016);
     expect(floorAccent(2, 1, TIER_SIX_PALETTE)).toBe(0x241610);
+  });
+
+  // T7/T3 — the Whisper Library palette (floors 61–70, spec §4.6 row 7):
+  // moonlit lavender-grey — the library by moonlight. Near-black void over a
+  // slate-blue floor, lavender glass in the teal slot, dusk in the rose-diamond
+  // slot, moon-white lantern light. The slot NAMES hold one last time (the T2
+  // precedent): every palette-driven pattern re-dresses itself with zero
+  // structural change — and the Furnace stand-in retires with this commit.
+  it('tier-seven values are exact (Whisper Library: moonlit lavender-grey)', () => {
+    expect(TIER_SEVEN_PALETTE).toEqual({
+      void: 0x0a0a12,
+      floorBase: 0x181824,
+      floorLines: 0x242436,
+      teal: 0x8a8ab8, // the lavender slot — the moonlit stacks' glass
+      ivory: 0xe4e4f0,
+      gold: 0xd9a441,
+      rose: 0x6a6a9a, // the dusk slot — the lattice diamonds in library dusk
+      wallTop: 0x5c5c78,
+      wallBottom: 0x2e2e44,
+      lantern: 0xe8e8ff,
+      entrance: 0x8a8ab8,
+      exit: 0xd9a441,
+    });
+  });
+
+  it('floorAccent with the tier-seven palette: same pattern, library colors', () => {
+    // the rose-diamond slot becomes the dusk accent; the gold lattice holds
+    expect(floorAccent(3, 3, TIER_SEVEN_PALETTE)).toBe(0x6a6a9a);
+    expect(floorAccent(9, 3, TIER_SEVEN_PALETTE)).toBe(0x6a6a9a);
+    expect(floorAccent(6, 2, TIER_SEVEN_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(2, 12, TIER_SEVEN_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(0, 0, TIER_SEVEN_PALETTE)).toBe(0xd9a441);
+    // the two-tone checker flips to the slate-blue floor pair
+    expect(floorAccent(1, 1, TIER_SEVEN_PALETTE)).toBe(0x242436);
+    expect(floorAccent(2, 1, TIER_SEVEN_PALETTE)).toBe(0x181824);
   });
 });

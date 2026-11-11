@@ -7,6 +7,8 @@ import {
   TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
   TIER_ONE_SCALE,
+  TIER_SEVEN_INTENSITY_CEILING,
+  TIER_SEVEN_SCALE,
   TIER_SIX_SCALE,
   TIER_THREE_SCALE,
   TIER_TWO_SCALE,
@@ -1425,9 +1427,11 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // T6/T4: the tier-6 stand-in retires too — the Furnace dresses in
   // ember/copper-on-charcoal and hums the urgent Phrygian-adjacent
   // pentatonic, still on the triangle (the reed endures the heat; only the
-  // rung tightens). T7/T1: tier 7 rides the Furnace's pair as the DOCUMENTED
-  // STAND-IN until the Library's moonlit dressing and whispered voice land
-  // (T7/T3 — the same retire-the-stand-in pattern one tier down).
+  // rung tightens). T7/T3: the tier-7 stand-in retires — the Library dresses
+  // in moonlit lavender-grey and hums the whispered pentatonic back on the
+  // flute (the sine returns; the reed breathes, it does not speak), and the
+  // frame feed hushes the intensity through TIER_SEVEN_INTENSITY_CEILING so
+  // the melody stays sparse (see the audio feed below).
   // Venue side-floors stay tier-one dressed — scale AND voice: a return
   // from a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
@@ -1439,7 +1443,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       4: TIER_FOUR_SCALE,
       5: TIER_FIVE_SCALE, // T5/T4 — the dark pentatonic (the stand-in retires)
       6: TIER_SIX_SCALE, // T6/T4 — the urgent pentatonic (the stand-in retires)
-      7: TIER_SIX_SCALE, // T7/T1 stand-in until T7/T3's whispered scale
+      7: TIER_SEVEN_SCALE, // T7/T3 — the whispered pentatonic (the stand-in retires)
     } as const;
     const voiceByTier = {
       1: 'triangle',
@@ -1448,7 +1452,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       4: 'triangle',
       5: 'triangle', // the reed stays — only the notes drown
       6: 'triangle', // the reed endures the heat — only the rung tightens
-      7: 'triangle', // T7/T1 stand-in until T7/T3's whispered sine
+      7: 'sine', // T7/T3 — the whisper: the flute returns for the Library
     } as const;
     audio.setScale(scaleByTier[tier]);
     audio.setVoice(voiceByTier[tier]);
@@ -2837,12 +2841,22 @@ function frame(now: number): void {
   renderCaptions(hud.captionBar, captions, now);
   // Audio feed (M3/T6): one threat→music intensity per frame — anger, pursuit
   // pressure, failing, cleared — smoothed inside the engine's scheduler.
-  audioIntensity = intensityFrom({
+  // T7/T3 — the whisper ceiling: on the Library's floors the raw blend is
+  // scaled by TIER_SEVEN_INTENSITY_CEILING (0.55) before the feed — the
+  // disclosed method is the ×ceiling MULTIPLY, not a hard clamp: the blend
+  // never exceeds 1, so the multiply caps the drive at 0.55 (a chase tops
+  // out ≈0.52) AND hushes the calm 0.2 floor to 0.11, keeping the melody
+  // sparse — a whisper in the stacks. Every other tier feeds the blend raw.
+  const rawIntensity = intensityFrom({
     anger: house.anger,
     chasing: echoes.filter((e) => e.mode === 'chase').length,
     failing: phase.kind === 'failing',
     cleared: phase.kind === 'cleared',
   });
+  audioIntensity =
+    venue === null && tierOf(campaign.floor) === 7
+      ? rawIntensity * TIER_SEVEN_INTENSITY_CEILING
+      : rawIntensity;
   audio.setIntensity(audioIntensity);
   if (!aaina.root.hidden) refreshAaina(); // she reads the floor while you walk it
   syncFogVisuals(now);
@@ -3286,6 +3300,14 @@ if (import.meta.env.DEV || testMode) {
       const e = echoes[i];
       return e ? { x: e.x, y: e.y } : null;
     },
+    // T7/T3 — the live noise ring's size (the economy's fuel gauge: pings
+    // currently hearable anywhere; 0 on a quiet floor, ~NOISE_MAX_EVENTS
+    // under a held sprint). Read-only — the ring itself stays internal.
+    noise: () => noiseEvents.length,
+    // T7/T3 — echo i's live mode ('patrol' | 'chase' | 'confused'; null past
+    // the board) — the ears-witness: on tier 7 a patrol→chase flip IS the
+    // hearing proof (glass never runs there).
+    echoMode: (i: number) => echoes[i]?.mode ?? null,
     chhayaPos: () => sampleDelayed(path, performance.now(), chhayaDelayMs()),
     mirrorAt: (kind: string) => {
       const m =

@@ -85,8 +85,15 @@ interface DebugHook {
   visitedCount(): number;
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
-  // T2/T4 — the tier the stage is dressed in (venue side-floors read 1)
-  tier(): 1 | 2 | 3 | 4 | 5 | 6;
+  // T2/T4 — the tier the stage is dressed in (venue side-floors read 1;
+  // T7/T3 — the Whisper Library reads 7)
+  tier(): 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  // T7/T3 — the live noise ring's size (pings hearable right now; the
+  // economy's fuel gauge — rises under a sprint, decays on silence)
+  noise(): number;
+  // T7/T3 — echo i's live mode ('patrol' | 'chase' | 'confused'; null past
+  // the board): the ears-witness for the hearing leg
+  echoMode(i: number): string | null;
   // T2/T4 — the Sentinel's exact spot for warps (null off his floors)
   taalPos(): { x: number; y: number } | null;
   // T3/T4 — the Encircler's exact spot for e2e warps (null off tier 3)
@@ -2209,5 +2216,224 @@ test('t6: heat cracks burn wider + gher guards the copy', async ({ page }) => {
   });
   expect(sealed.seal, 'the Encircler\u2019s adopted seal sits on the copy\u2019s cell').not.toBeNull();
   expect(sealed.copy, 'the copy is still alive under the ward').not.toBeNull();
+  expect(errors).toEqual([]);
+});
+
+// T7/T3 — the Whisper Library loads. Floor 61 dresses tier 7 (the Furnace
+// stand-in retired): the hook reads 7, the chip carries `· T7`, and the
+// rotation RESTS — Taal sits out until his 66 return, Gher joins only at
+// Dwaar VII (70), Aavart rests the whole tier. The stage is moonlit (the
+// palette pins live in the unit suite; the streams pin here: no portraits,
+// pools, distort panes, or flood — the tier-2/3/4/5 draws stay home). The
+// whisper carries the walk: the seventh scale on the sine flute, and the
+// calm 0.2 intensity hushed to 0.11 by the ×0.55 whisper ceiling — the
+// disclosed method, witnessed through the audio seam. And the economy's
+// fuel flows: a sprint rings the noise hook while it lasts.
+test('t7: floor 61 loads the library', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T7RUN&floor=61');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      taal: h.taalPos(),
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+      echoes: h.enemyCount(),
+      mirrors: h.mirrors(),
+      decoys: h.decoys(),
+      audio: h.audioState(),
+    };
+  });
+  expect(snap.tier).toBe(7);
+  expect(snap.floor).toBe(61);
+  expect(snap.taal, 'the rotation rests — Taal returns only at 66').toBeNull();
+  expect(snap.gher, 'Gher joins only at Dwaar VII (70)').toBeNull();
+  expect(snap.avart, 'the Ambusher rests the whole tier').toBeNull();
+  expect(snap.echoes, 'the stacks are guarded — 4 wardens on a tier-7 floor').toBe(4);
+  expect(snap.mirrors.distort, 'the distorting panes stay tier-4-only').toBe(0);
+  expect(snap.mirrors.portraits, 'the ancestor portraits stay tier-2-only').toBe(0);
+  expect(snap.mirrors.water, 'the standing pools stay tier-3-only').toBe(0);
+  expect(snap.decoys, 'no copy in the first seconds — the ~45s clock has not fired').toEqual([]);
+  // the whispered pair: the seventh scale on the sine flute (the seam tracks
+  // both from buildFloor, gesture or not), and the calm floor's intensity
+  // hushed 0.2 → 0.11 by the ceiling multiply
+  expect(snap.audio.scale).toEqual([0, 2, 3, 7, 8]);
+  expect(snap.audio.voice).toBe('sine');
+  expect(snap.audio.intensity).toBeCloseTo(0.11, 5);
+  await expect(page.locator('#mh-floor')).toHaveText('L61 · T7');
+  // the fuel: a held sprint rings the noise hook within the first steps
+  await page.keyboard.down('ShiftLeft');
+  await page.keyboard.down('KeyW');
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.noise() >
+      0,
+    null,
+    { timeout: 4000 },
+  );
+  await page.keyboard.up('KeyW');
+  await page.keyboard.up('ShiftLeft');
+  expect(errors).toEqual([]);
+});
+
+// T7/T3 — Taal's return + the ears end to end. Leg 1: floor 66 pins the
+// rotation — the Sentinel walks the stacks again (his first beat since 50;
+// he rests 51–65), while Gher and Aavart still sit out. Leg 2: the hearing
+// economy — pick the warden FARTHEST from Taal (his beat rings sprint-sized
+// pings that would out-shout ours near him), park one cell off its shoulder
+// (~5.7 m — inside the 7 m sprint ring) facing down an open road away from
+// it, and sprint: noise() rises, and within a sense tick (250 ms) the echo
+// flips patrol → chase — the hearing proof, since glass never runs on
+// tier 7. Then stand still — the creep's silence — and the ring decays
+// (TTL 1.2 s) while the memory lapses (2 s): the warden returns to patrol.
+test('t7: taal returns at 66 + echoes hear noise', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T7RUN&floor=66');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      taal: h.taalPos(),
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+    };
+  });
+  expect(snap.tier).toBe(7);
+  expect(snap.floor).toBe(66);
+  expect(snap.taal, 'Taal returns mid-tier — 66 is his first beat since 50').not.toBeNull();
+  expect(snap.gher, 'Gher joins only at Dwaar VII').toBeNull();
+  expect(snap.avart, 'the Ambusher rests all tier 7').toBeNull();
+  await expect(page.locator('#mh-floor')).toHaveText('L66 · T7');
+
+  // leg 2 — pick the runway warden and the sprint-away spot in ONE in-page
+  // pass (he patrols while we compute; no round-trip lag). Geometry mirrors
+  // the t6 ward leg: cell indices ↔ meters via the derived W/H, CELL = 4 m.
+  const CELL = CELL_SIZE;
+  const target = await page.evaluate(
+    (cell: number) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      const taal = h.taalPos();
+      // the warden farthest from the beat (his pings never reach past 7 m)
+      // that is ALSO patrolling right now — an echo already chasing a stale
+      // Taal ping cannot witness our sprint leg cleanly
+      let best = -1;
+      let bestD = -1;
+      for (let i = 0; i < h.enemyCount(); i++) {
+        if (h.echoMode(i) !== 'patrol') continue;
+        const p = h.enemyPos(i);
+        if (p === null) continue;
+        const d = taal === null ? Infinity : Math.hypot(p.x - taal.x, p.y - taal.y);
+        if (d > bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+      if (best < 0 || bestD < 9) return null; // no warden clear of the beat
+      const e = h.enemyPos(best)!;
+      // derive the grid's width/height from a standing mirror's cell↔meters pair
+      const m = h.mirrorAt('standing');
+      if (m === null) return null;
+      const w = Math.round(2 * (m.cellX - m.cx / cell) + 1);
+      const gh = Math.round(2 * (m.cellY - m.cy / cell) + 1);
+      const ecx = Math.floor(e.x / cell + w / 2);
+      const ecy = Math.floor(e.y / cell + gh / 2);
+      // N/E/S/W step vectors, Dir order (grid.ts DIR_VECTOR)
+      const dirs = [
+        { d: 0, dx: 0, dy: -1 },
+        { d: 1, dx: 1, dy: 0 },
+        { d: 2, dx: 0, dy: 1 },
+        { d: 3, dx: -1, dy: 0 },
+      ];
+      // a stand cell 1 diagonal step off the warden (√2·4 ≈ 5.7 m — inside
+      // the 7 m ring, far enough that his arrival cell ≠ our cell), with an
+      // open road pointing AWAY from him: sprint down it and the trail's
+      // nearest ping stays at our back while we gain 3.6 m of head start.
+      let pick: {
+        i: number;
+        px: number;
+        py: number;
+        heading: number;
+        patrol: string | null;
+      } | null = null;
+      let bestDot = 0.4; // roughly-away or better
+      for (const o of [
+        { dx: 1, dy: 1 },
+        { dx: 1, dy: -1 },
+        { dx: -1, dy: 1 },
+        { dx: -1, dy: -1 },
+      ]) {
+        const sx = ecx + o.dx;
+        const sy = ecy + o.dy;
+        if (sx < 0 || sy < 0 || sx >= w || sy >= gh) continue;
+        // away unit vector (from the stand cell, pointing off the warden)
+        const al = Math.hypot(o.dx, o.dy);
+        let road: { v: { d: number; dx: number; dy: number }; dot: number } | null = null;
+        for (const v of dirs) {
+          if (!h.canWalk(sx, sy, v.d)) continue;
+          const dot = (v.dx * o.dx + v.dy * o.dy) / al;
+          if (road === null || dot > road.dot) road = { v, dot };
+        }
+        if (road === null || road.dot <= bestDot) continue;
+        bestDot = road.dot;
+        const cx = (sx + 0.5 - w / 2) * cell;
+        const cy = (sy + 0.5 - gh / 2) * cell;
+        pick = {
+          i: best,
+          px: cx,
+          py: cy,
+          heading: Math.atan2(road.v.dx, -road.v.dy), // heading 0 = north (−z)
+          patrol: h.echoMode(best),
+        };
+      }
+      return pick;
+    },
+    CELL,
+  );
+  expect(target, 'a warden with an away-road off the beat exists').not.toBeNull();
+  expect(
+    target!.patrol,
+    'the warden patrols before the noise (pre-check)',
+  ).toBe('patrol');
+  await page.evaluate(
+    ({ px, py, heading }: { px: number; py: number; heading: number }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      h.warp(px, py, heading);
+    },
+    { px: target!.px, py: target!.py, heading: target!.heading },
+  );
+  // the roar: sprint down the away-road — the ring fills, the warden's ears
+  // catch it on its next sense tick, the mode flips
+  await page.keyboard.down('ShiftLeft');
+  await page.keyboard.down('KeyW');
+  await page.waitForFunction(
+    (i: number) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      return h.noise() > 0 && h.echoMode(i) === 'chase';
+    },
+    target!.i,
+    { timeout: 4000 },
+  );
+  await page.keyboard.up('KeyW');
+  await page.keyboard.up('ShiftLeft');
+  // the creep's silence: stand still — the pings decay (TTL 1.2 s), the
+  // memory lapses (2 s past the last heard tick), the warden goes back to
+  // its patrol
+  await page.waitForFunction(
+    (i: number) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      return h.echoMode(i) === 'patrol';
+    },
+    target!.i,
+    { timeout: 9000 },
+  );
   expect(errors).toEqual([]);
 });
