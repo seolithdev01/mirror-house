@@ -79,7 +79,12 @@ describe('i18n — key parity', () => {
       'overlay.tierTitle',
       'overlay.tierTitle2', // T2/T1 — the Dwaar II screen names Tier II
       'overlay.shardInterstitial', // T2/T5 — Dwaar I's 1.8s claim banner
+      'overlay.shardInterstitial4', // T5/T1 — Dwaar IV joins the cascade
+      'overlay.tierTitle5', // T5/T1 — the Dwaar V screen names Tier V
+      'overlay.actBanner', // T5/T1 — the Act II opening banner
+      'overlay.actBannerNote', // T5/T1 — its "the house copies you" line
       'chip.tier', // T2/T1 — the `L14 · T2` floor-chip suffix
+      'chip.tier5', // T5/T1 — the `L44 · T5` floor-chip suffix
       'hint.step',
       'hint.push',
       'hint.sealed',
@@ -105,6 +110,44 @@ describe('i18n — the T2/T5 Truth-Shard I interstitial', () => {
     const hi = STRINGS.hi['overlay.shardInterstitial']!;
     expect(hi).toMatch(/[\u0900-\u097F]/);
     expect(hi).not.toBe(STRINGS.en['overlay.shardInterstitial']);
+  });
+});
+
+// T5/T1 — Act II opens: the once-per-session banner on the first floor-41
+// build, and the tier-five chrome (Truth-Shard V screen, Dwaar IV cascade).
+describe('i18n — the T5 Act II banner + tier-five chrome', () => {
+  it('the act banner names the act and the deception, verbatim', () => {
+    expect(STRINGS.en['overlay.actBanner']).toBe('ACT II — THE DECEPTION');
+    expect(STRINGS.en['overlay.actBannerNote']).toBe('The house has begun copying you.');
+  });
+
+  it('the act banner carries authored hindi (Devanagari, never a copy of en)', () => {
+    for (const k of ['overlay.actBanner', 'overlay.actBannerNote']) {
+      const hi = STRINGS.hi[k]!;
+      expect(hi, k).toMatch(/[\u0900-\u097F]/);
+      expect(hi, k).not.toBe(STRINGS.en[k]);
+    }
+  });
+
+  it('Truth-Shard V names Tier V complete on the full tier screen', () => {
+    expect(STRINGS.en['overlay.tierTitle5']).toBe('✦ Truth-Shard V claimed — Tier V complete');
+    expect(STRINGS.hi['overlay.tierTitle5']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['overlay.tierTitle5']).not.toBe(STRINGS.en['overlay.tierTitle5']);
+  });
+
+  it('Dwaar IV joins the interstitial cascade with its own shard line', () => {
+    expect(STRINGS.en['overlay.shardInterstitial4']).toBe(
+      '✦ Truth-Shard IV claimed — the house deepens…',
+    );
+    expect(STRINGS.hi['overlay.shardInterstitial4']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['overlay.shardInterstitial4']).not.toBe(
+      STRINGS.en['overlay.shardInterstitial4'],
+    );
+  });
+
+  it('the tier-five chip suffix exists in both languages', () => {
+    expect(STRINGS.en['chip.tier5']).toBe('T5');
+    expect(STRINGS.hi['chip.tier5']!).toMatch(/[\u0900-\u097F]/);
   });
 });
 

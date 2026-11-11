@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
+  AVART_SENTINEL_FLOOR,
   DWAAR_FLOOR,
+  GHER_SENTINEL_FLOOR,
+  TAAL_SENTINEL_FLOOR,
+  TIER_FIVE_FLOORS,
   TIER_FOUR_FLOORS,
   TIER_ONE_FLOORS,
   TIER_THREE_FLOORS,
@@ -43,33 +47,37 @@ export function floorSeed(c: Campaign): string {
  *  here — but LEAVING a Dwaar floor re-arms the tier flag for the tier
  *  below (Act I continues past Dwaar I), so the single `tierComplete` flag
  *  always reads "the CURRENT tier's threshold has been claimed".
- *  T4: the campaign is TERMINAL at floor 40 (Dwaar IV closes Act I, spec
+ *  T5: the campaign is TERMINAL at floor 50 (Dwaar V closes Act II, spec
  *  §2.3) — descend there is a NO-OP that returns the same object, so the
- *  act-completion screen is the end of the house until Act II exists. */
+ *  tier screen is the end of the house until Act III exists. (The T4-era
+ *  terminus at 40 is retired: 40 → 41 is a real descent now — Act II
+ *  opens.) */
 export function descend(c: Campaign): Campaign {
-  if (c.floor >= TIER_FOUR_FLOORS) return c; // Act I ends at 40 — no floor 41 yet
+  if (c.floor >= TIER_FIVE_FLOORS) return c; // Act II ends at 50 — no floor 51 yet
   const next: Campaign = { ...c, floor: c.floor + 1 };
   return isDwaar(c.floor) ? { ...next, tierComplete: false } : next;
 }
 
 /** Truth-Shard claim: only takes effect standing on a Dwaar floor —
- *  Dwaar I (10), Dwaar II (20), Dwaar III (30) or Dwaar IV (40). The flag
- *  stays single: each tier's completion sets it again after the descent
- *  from the tier above re-armed it. */
+ *  Dwaar I (10), Dwaar II (20), Dwaar III (30), Dwaar IV (40) or Dwaar V
+ *  (50). The flag stays single: each tier's completion sets it again after
+ *  the descent from the tier above re-armed it. */
 export function completeTier(c: Campaign): Campaign {
   return isDwaar(c.floor) ? { ...c, tierComplete: true } : c;
 }
 
 /** Which tier a floor belongs to: 1–10 → 1, 11–20 → 2, 21–30 → 3,
- *  31–40 → 4. */
-export function tierOf(floor: number): 1 | 2 | 3 | 4 {
-  return floor > TIER_THREE_FLOORS
-    ? 4
-    : floor > TIER_TWO_FLOORS
-      ? 3
-      : floor > TIER_ONE_FLOORS
-        ? 2
-        : 1;
+ *  31–40 → 4, 41–50 → 5. */
+export function tierOf(floor: number): 1 | 2 | 3 | 4 | 5 {
+  return floor > TIER_FOUR_FLOORS
+    ? 5
+    : floor > TIER_THREE_FLOORS
+      ? 4
+      : floor > TIER_TWO_FLOORS
+        ? 3
+        : floor > TIER_ONE_FLOORS
+          ? 2
+          : 1;
 }
 
 /** The Dwaar threshold halls occupy the last floor of each tier. */
@@ -78,8 +86,38 @@ export function isDwaar(floor: number): boolean {
     floor === DWAAR_FLOOR ||
     floor === TIER_TWO_FLOORS ||
     floor === TIER_THREE_FLOORS ||
-    floor === TIER_FOUR_FLOORS
+    floor === TIER_FOUR_FLOORS ||
+    floor === TIER_FIVE_FLOORS
   );
+}
+
+// ---- the sentinel rotation (T5, spec §4.6) --------------------------------
+// The ladder STOPS GROWING: tiers 2–4 each added a Sentinel and the bare
+// `>=` gates expressed that. Act II rotates instead — floors 41–49 hunt with
+// Taal alone (Gher and Aavart rest — the ratified change; they were
+// unreachable code past 40 anyway, since 41–50 did not exist), and Dwaar V
+// (50) is the first ALL-FOUR duel. These presence functions replace the bare
+// gates at every spawn/feed site; every floor 1–40 reads EXACTLY as the old
+// gates did (the rotation only ever changes behavior where none existed).
+
+/** The beat-walker: his cameo floor (5) is a separate gate — from the
+ *  Sentinel floor (11) up he walks EVERY floor, Act II included. */
+export function taalPresent(floor: number): boolean {
+  return floor >= TAAL_SENTINEL_FLOOR;
+}
+
+/** The Encircler: from the Gardens (21) through the Carnival (40) — exactly
+ *  the accumulated ladder he has always walked, floors 1–40 frozen — then he
+ *  rests on the Flood Halls (41–49, the ratified rotation) until the Dwaar V
+ *  duel calls all four down (50). */
+export function gherPresent(floor: number): boolean {
+  return (floor >= GHER_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) || floor === TIER_FIVE_FLOORS;
+}
+
+/** The Ambusher: the Carnival (31–40) — then he rests on the Flood Halls
+ *  until the Dwaar V duel calls all four down (50). */
+export function aavartPresent(floor: number): boolean {
+  return (floor >= AVART_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) || floor === TIER_FIVE_FLOORS;
 }
 
 /** Best-time save key for the current floor (per-floor bucket, not per-run). */
@@ -112,10 +150,27 @@ export function bestKey(c: Campaign): string {
  *  Sentinels walk tier 4, so the echoes yield the stage);
  *  beacons = 4 on every floor;
  *  braid = 0.28 + 0.004*(floor-31);
- *  chhayaDelayMs = max(3200, 3800 - 60*(floor-31)) (Dwaar IV 3000). */
+ *  chhayaDelayMs = max(3200, 3800 - 60*(floor-31)) (Dwaar IV 3000).
+ *
+ *  T5 — floors 41..TIER_FIVE_FLOORS (the Flood Halls):
+ *  echoes = 4 on every procedural floor, Dwaar V ALONE carrying 5 (the
+ *  row-9 apex duel — the tier's teeth are the rising water, the mirror-you
+ *  decoys and the first all-four-Sentinel duel, not the echo count);
+ *  beacons = 4 on every floor;
+ *  braid = 0.30 + 0.004*(floor-41);
+ *  chhayaDelayMs = max(3000, 3600 - 60*(floor-41)) (Dwaar V 2900 — the
+ *  sunken arena floods, Chhaya does not wait). */
 export function floorParams(floor: number): FloorRamp {
-  const f = Math.min(Math.max(floor, 1), TIER_FOUR_FLOORS);
+  const f = Math.min(Math.max(floor, 1), TIER_FIVE_FLOORS);
   const dwaar = isDwaar(f);
+  if (f > TIER_FOUR_FLOORS) {
+    return {
+      echoes: dwaar ? 5 : 4,
+      beacons: 4,
+      braid: 0.3 + 0.004 * (f - TIER_FOUR_FLOORS - 1),
+      chhayaDelayMs: dwaar ? 2900 : Math.max(3000, 3600 - 60 * (f - TIER_FOUR_FLOORS - 1)),
+    };
+  }
   if (f > TIER_THREE_FLOORS) {
     return {
       echoes: 5,
@@ -241,9 +296,36 @@ export const DWAAR_IV_LAYOUT: readonly string[] = [
   '#############',
 ];
 
+/** Hand-authored Dwaar V — the sunken arena, floor 50, where Act II closes
+ *  on the row-9 apex duel (all four Sentinels). 13×13 like its elders, 101
+ *  open cells: CONCENTRIC RINGS — a broad outer ring corridor two cells
+ *  thick (the promenade, like Dwaar II's), a mid ring WALL (20 cells) with
+ *  EXACTLY 4 gaps at the compass midpoints (the arena's four gates), an
+ *  inner corridor circling the 3×3 inner sanctum at the center. No pillars:
+ *  the sunken arena floor stands clean where Dwaar II hung its columns.
+ *  Invariant under 180° rotation so the exit mirrors the entrance; all 101
+ *  open cells form one connected component — four Sentinels need the room
+ *  to walk their beats. */
+export const DWAAR_V_LAYOUT: readonly string[] = [
+  '#############',
+  '#...........#',
+  '#...........#',
+  '#..###.###..#',
+  '#..#.....#..#',
+  '#..#.....#..#',
+  '#...........#',
+  '#..#.....#..#',
+  '#..#.....#..#',
+  '#..###.###..#',
+  '#...........#',
+  '#...........#',
+  '#############',
+];
+
 /** The hand-authored layout of a Dwaar floor: Dwaar I at 10, Dwaar II at 20,
- *  Dwaar III at 30, Dwaar IV at 40. */
+ *  Dwaar III at 30, Dwaar IV at 40, Dwaar V at 50. */
 function dwaarLayout(floor: number): readonly string[] {
+  if (floor === TIER_FIVE_FLOORS) return DWAAR_V_LAYOUT;
   if (floor === TIER_FOUR_FLOORS) return DWAAR_IV_LAYOUT;
   if (floor === TIER_THREE_FLOORS) return DWAAR_III_LAYOUT;
   return floor === TIER_TWO_FLOORS ? DWAAR_II_LAYOUT : DWAAR_LAYOUT;
@@ -253,7 +335,7 @@ function dwaarLayout(floor: number): readonly string[] {
  *  the entrance; a FloorGrid built from this opens edges between adjacent
  *  open cells only — see maze.floorFromGrid). Defaults to Dwaar I; floor 20
  *  reads DWAAR_II_LAYOUT, floor 30 DWAAR_III_LAYOUT, floor 40
- *  DWAAR_IV_LAYOUT. */
+ *  DWAAR_IV_LAYOUT, floor 50 DWAAR_V_LAYOUT. */
 export function dwaarGrid(floor: number = DWAAR_FLOOR): {
   width: number;
   height: number;

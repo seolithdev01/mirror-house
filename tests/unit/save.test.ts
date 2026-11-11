@@ -120,9 +120,9 @@ describe('save: validateSave', () => {
 
   it('rejects malformed progress', () => {
     expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 0 })))).toBeNull();
-    // T4 widened the legal floor range to TIER_FOUR_FLOORS (40): 31, 35 and
-    // 40 are valid campaign floors; 41 is the first rejection.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 41 })))).toBeNull();
+    // T5 widened the legal floor range to TIER_FIVE_FLOORS (50): 41, 45 and
+    // 50 are valid campaign floors; 51 is the first rejection.
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 51 })))).toBeNull();
     expect(
       validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 2.5 }))),
     ).toBeNull();
@@ -621,8 +621,10 @@ describe('tier-4 progress range + save round-trip (t4)', () => {
     }
   });
 
-  it('rejects 41 — the first floor past TIER_FOUR_FLOORS (the campaign is terminal at 40)', () => {
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 41 })))).toBeNull();
+  it('rejects floors past the campaign — 41 went LEGAL in T5, junk never validates', () => {
+    // T5/T1 — 41 is a LEGAL tier-five floor now; the first rejection moved
+    // to 51 (see the tier-five describe below). This pin keeps proving the
+    // boundary exists at all: junk past the campaign never validates.
     expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
   });
 
@@ -639,5 +641,38 @@ describe('tier-4 progress range + save round-trip (t4)', () => {
     );
     expect(last).not.toBeNull();
     expect(last?.progress).toEqual({ seedBase: 'T4KEEP', floor: 40, tierComplete: true });
+  });
+});
+
+// T5/T1 — THE BINDING (the T2 lesson, FOURTH time): the validator widens to
+// TIER_FIVE_FLOORS = 50 in the SAME commit the campaign ramps to 50, or every
+// tier-5 save wipes on reload. 51 is the first rejection.
+describe('tier-5 progress range + save round-trip (t5)', () => {
+  it('accepts tier-five floors 41, 45 and 50 as valid progress', () => {
+    for (const floor of [41, 45, 50]) {
+      const restored = validateSave(mutated((r) => (r.progress = { ...good.progress, floor })));
+      expect(restored, `floor ${floor}`).not.toBeNull();
+      expect(restored?.progress.floor).toBe(floor);
+    }
+  });
+
+  it('rejects 51 — the first floor past TIER_FIVE_FLOORS (the campaign is terminal at 50)', () => {
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 51 })))).toBeNull();
+    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+  });
+
+  it('a floor-45 and a floor-50 save survive serialize → validate (the tier-5 reload wipe)', () => {
+    const s = defaultSave();
+    s.progress = { seedBase: 'T5KEEP', floor: 45, tierComplete: false };
+    const mid = validateSave(JSON.parse(serializeSave(s)));
+    expect(mid).not.toBeNull();
+    expect(mid?.progress.floor).toBe(45);
+    const last = validateSave(
+      JSON.parse(
+        serializeSave({ ...s, progress: { ...s.progress, floor: 50, tierComplete: true } }),
+      ),
+    );
+    expect(last).not.toBeNull();
+    expect(last?.progress).toEqual({ seedBase: 'T5KEEP', floor: 50, tierComplete: true });
   });
 });

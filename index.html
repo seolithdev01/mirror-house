@@ -274,6 +274,40 @@
       #mh-shard[hidden] {
         display: none;
       }
+      /* T5/T1 — the Act II opening banner: the act's name over its one-line
+         threat ("The house has begun copying you."), the shard interstitial's
+         centered-card shape dressed in the act close's rose — the act-turn
+         tint (T4/T1's `.act` family). Auto-dismisses from hud.ts after 3s;
+         raised once per session on the first floor-41 build. */
+      #mh-act {
+        position: fixed;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 15;
+        max-width: min(480px, 90vw);
+        background: #0b1026;
+        border: 1px solid #c2548a;
+        border-radius: 10px;
+        padding: 16px 26px 14px;
+        color: #f2e9d8;
+        font: calc(15px * var(--mh-text-scale, 1))/1.6 system-ui;
+        text-align: center;
+        pointer-events: none;
+      }
+      #mh-act-title {
+        color: #c2548a;
+        font-size: calc(20px * var(--mh-text-scale, 1));
+        font-weight: 600;
+        letter-spacing: 0.08em;
+      }
+      #mh-act-note {
+        margin: 6px 0 0;
+        color: #9fb4c8;
+      }
+      #mh-act[hidden] {
+        display: none;
+      }
       /* M4/T2 — tier-complete screen: Truth-Shard I, final stats, Play again /
          Stay. A modal in the FAQ's image, above the HUD. */
       #mh-tier-overlay {
@@ -835,6 +869,7 @@
       body.mh-reduced-flash #mh-cleared,
       body.mh-reduced-flash #mh-descend,
       body.mh-reduced-flash #mh-shard,
+      body.mh-reduced-flash #mh-act,
       body.mh-reduced-flash #mh-fail,
       body.mh-reduced-flash #mh-hint,
       body.mh-reduced-flash #mh-toast,
@@ -868,6 +903,7 @@
       body.mh-reduced-flash #mh-cleared[hidden],
       body.mh-reduced-flash #mh-descend[hidden],
       body.mh-reduced-flash #mh-shard[hidden],
+      body.mh-reduced-flash #mh-act[hidden],
       body.mh-reduced-flash #mh-fail[hidden],
       body.mh-reduced-flash #mh-hint[hidden],
       body.mh-reduced-flash #mh-toast[hidden],

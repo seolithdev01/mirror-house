@@ -83,9 +83,14 @@ export const AVART_SENTINEL_FLOOR = 31; // from here Aavart walks every tier-4 f
 export const AVART_INTERCEPT_MS = 1200; // his reaction time: how often the projection retargets
 export const AVART_LEAD_S = 1.8; // seconds of travel projected at a full sprint
 // T4 — the Carnival of Faces: floors 31–39 procedural ramp, 40 = Dwaar IV
-// (the funhouse hall; Truth-Shard IV closes ACT I — spec §2.3). The campaign
-// is TERMINAL at 40: descend() is a no-op there until Act II exists.
+// (the funhouse hall). Truth-Shard IV banks mid-descent (T5/T1: IV joins the
+// interstitial cascade) and the stairs at 40 open into Act II.
 export const TIER_FOUR_FLOORS = 40;
+// T5 — the Flood Halls: floors 41–49 procedural ramp, 50 = Dwaar V (the
+// sunken arena; Truth-Shard V closes the tier on the full tier screen — the
+// row-9 apex duel, all four Sentinels). The campaign is TERMINAL at 50:
+// descend() is a no-op there until Act III exists.
+export const TIER_FIVE_FLOORS = 50;
 // T4/T3 — the distorting mirrors: while UNfogged carnival glass sees the
 // player, every enemy's mirror-sight reads them displaced by the mirror's
 // fixed per-id delta — axis-aligned cells, capped here. Fog the glass and the

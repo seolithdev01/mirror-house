@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { FloorGrid, Dir, type CellIndex } from '../../src/engine/grid';
 import { bfsDistances } from '../../src/game/maze';
 import {
+  aavartPresent,
   bestKey,
   completeTier,
   descend,
@@ -10,11 +11,14 @@ import {
   DWAAR_III_LAYOUT,
   DWAAR_IV_LAYOUT,
   DWAAR_LAYOUT,
+  DWAAR_V_LAYOUT,
   dwaarGrid,
   floorParams,
   floorSeed,
+  gherPresent,
   isDwaar,
   newCampaign,
+  taalPresent,
   tierOf,
 } from '../../src/game/campaign';
 import {
@@ -22,6 +26,7 @@ import {
   DWAAR_FLOOR,
   TAAL_FLOOR,
   TIER_ONE_FLOORS,
+  TIER_FIVE_FLOORS,
   TIER_FOUR_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
@@ -82,6 +87,10 @@ describe('campaign constants', () => {
   it('pins the tier-four campaign constant — 40 floors, Dwaar IV on the last (Act I closes)', () => {
     expect(TIER_FOUR_FLOORS).toBe(40);
   });
+
+  it('T5 — pins the tier-five campaign constant — 50 floors, Dwaar V on the last (Act II opens)', () => {
+    expect(TIER_FIVE_FLOORS).toBe(50);
+  });
 });
 
 describe('tierOf', () => {
@@ -106,6 +115,29 @@ describe('tierOf', () => {
     expect(tierOf(34)).toBe(4);
     expect(tierOf(39)).toBe(4);
     expect(tierOf(40)).toBe(4);
+  });
+
+  it('T5 — splits the campaign at floor 40: 41–50 → 5 (the Flood Halls)', () => {
+    expect(tierOf(41)).toBe(5);
+    expect(tierOf(44)).toBe(5);
+    expect(tierOf(49)).toBe(5);
+    expect(tierOf(50)).toBe(5);
+    // and 50 is a tier of its OWN — never a relabel of 2/3/4 (the dressing
+    // gates below read equality against 2/3/4 and must keep reading false)
+    expect(tierOf(50)).not.toBe(2);
+    expect(tierOf(50)).not.toBe(3);
+    expect(tierOf(50)).not.toBe(4);
+  });
+
+  it('T5 — the tier-exclusive dressing gates stay put: portraits t2, water t3, distort t4', () => {
+    // the placement gates in the floor builder read `tierOf(floor) === N`
+    // equality — every Act II floor must fail all three so the Flood Halls
+    // hang no ancestor portraits, pool no water and mount no carnival glass
+    for (let f = TIER_FOUR_FLOORS + 1; f <= TIER_FIVE_FLOORS; f++) {
+      expect(tierOf(f) === 2, `floor ${f} portraits gate`).toBe(false);
+      expect(tierOf(f) === 3, `floor ${f} water gate`).toBe(false);
+      expect(tierOf(f) === 4, `floor ${f} distort gate`).toBe(false);
+    }
   });
 });
 
@@ -189,15 +221,40 @@ describe('descend', () => {
     expect(c.floor).toBe(TIER_FOUR_FLOORS);
   });
 
-  it('T4 — descend at floor 40 is a NO-OP returning the same object (the campaign is terminal)', () => {
-    // §2.3 — Act I ends at Dwaar IV: there is no floor 41 until Act II
-    // exists, so the stair door at 40 opens onto the act screen and the
+  it('T5 — walks the whole campaign 1..50', () => {
+    let c = newCampaign('CCCC');
+    for (let i = 2; i <= TIER_FIVE_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(TIER_FIVE_FLOORS);
+  });
+
+  it('T5 — leaving Dwaar IV re-arms the tier flag for tier five (Act II opens)', () => {
+    // the T5 ratification: Act I no longer CLOSES the campaign at 40 — the
+    // claim at floor 40 banks, and the stairs into the Flood Halls clear the
+    // flag so tier-five floors pay their first-clear bonus (the act screen
+    // is retired; the Act II banner greets floor 41 instead).
+    const d = descend({ seedBase: 'DDDD', floor: TIER_FOUR_FLOORS, tierComplete: true });
+    expect(d).toEqual({ seedBase: 'DDDD', floor: 41, tierComplete: false });
+  });
+
+  it('T5 — descend at floor 50 is a NO-OP returning the same object (the campaign is terminal)', () => {
+    // §2.3 — Dwaar V closes Act II: there is no floor 51 until Act III
+    // exists, so the stair door at 50 opens onto the tier screen and the
     // descend itself must refuse — the SAME object back, not a copy.
-    const at40 = { seedBase: 'TTTT', floor: TIER_FOUR_FLOORS, tierComplete: true };
-    expect(descend(at40)).toBe(at40);
-    expect(descend(at40)).toEqual({ seedBase: 'TTTT', floor: 40, tierComplete: true });
-    // the flag survives the no-op untouched (no re-arm past the act close)
-    expect(at40.tierComplete).toBe(true);
+    const at50 = { seedBase: 'TTTT', floor: TIER_FIVE_FLOORS, tierComplete: true };
+    expect(descend(at50)).toBe(at50);
+    expect(descend(at50)).toEqual({ seedBase: 'TTTT', floor: 50, tierComplete: true });
+    // the flag survives the no-op untouched (no re-arm past the tier close)
+    expect(at50.tierComplete).toBe(true);
+  });
+
+  it('T5 — the campaign walks straight through the old Act I terminus', () => {
+    // the T4 no-op at 40 is RETIRED: 40 → 41 is a real descent now (the
+    // terminal floor moved to 50), purity preserved
+    const at40 = { seedBase: 'UUUU', floor: 40, tierComplete: false };
+    const d = descend(at40);
+    expect(d.floor).toBe(41);
+    expect(d).not.toBe(at40);
+    expect(at40.floor).toBe(40); // original untouched
   });
 });
 
@@ -255,6 +312,22 @@ describe('completeTier', () => {
     const c = { seedBase: 'HHHH', floor: 37, tierComplete: false };
     expect(completeTier(c)).toEqual(c);
   });
+
+  it('T5 — flags completion at Dwaar V, the single flag set a fifth time at floor 50', () => {
+    let c = newCampaign('DDDD');
+    for (let i = 1; i < TIER_FIVE_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(50);
+    expect(c.tierComplete).toBe(false); // the descent from 40 re-armed it
+    const done = completeTier(c);
+    expect(done.tierComplete).toBe(true);
+  });
+
+  it('T5 — is a no-op on tier-five procedural floors 41..49', () => {
+    for (const floor of [41, 45, 49]) {
+      const c = { seedBase: 'IIII', floor, tierComplete: false };
+      expect(completeTier(c), `floor ${floor}`).toEqual(c);
+    }
+  });
 });
 
 describe('isDwaar', () => {
@@ -278,7 +351,14 @@ describe('isDwaar', () => {
     expect(isDwaar(40)).toBe(true);
     expect(isDwaar(31)).toBe(false);
     expect(isDwaar(39)).toBe(false);
-    expect(isDwaar(41)).toBe(false); // past the act close — never a Dwaar
+    expect(isDwaar(41)).toBe(false); // Act II's first ramp floor — never a Dwaar
+  });
+
+  it('T5 — Dwaar V joins the set at floor 50; 41..49 stay procedural', () => {
+    expect(isDwaar(TIER_FIVE_FLOORS)).toBe(true);
+    expect(isDwaar(50)).toBe(true);
+    for (const floor of [41, 44, 49]) expect(isDwaar(floor), `floor ${floor}`).toBe(false);
+    expect(isDwaar(51)).toBe(false); // past the tier close — never a Dwaar
   });
 });
 
@@ -353,11 +433,11 @@ describe('floorParams tier-two ramp (floors 11–20 pinned)', () => {
       expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(4000);
   });
 
-  it('clamps floors past the campaign to the terminal floor (T4: Dwaar IV)', () => {
-    // T3 pinned this to the Dwaar III values; T4 widened the campaign to 40,
-    // so the clamp now lands on Dwaar IV's ramp row.
-    expect(floorParams(99)).toEqual(floorParams(TIER_FOUR_FLOORS));
-    expect(floorParams(99)).not.toEqual(floorParams(TIER_THREE_FLOORS));
+  it('clamps floors past the campaign to the terminal floor (T5: Dwaar V)', () => {
+    // T3 pinned this to the Dwaar III values; T4 moved it to Dwaar IV's row;
+    // T5 widens the campaign to 50, so the clamp lands on Dwaar V's row.
+    expect(floorParams(99)).toEqual(floorParams(TIER_FIVE_FLOORS));
+    expect(floorParams(99)).not.toEqual(floorParams(TIER_FOUR_FLOORS));
   });
 
   it('leaves every tier-one pin untouched (the tier-one experience is frozen)', () => {
@@ -753,5 +833,250 @@ describe('dwaarGrid floor 40', () => {
     expect(seen.size).toBe(g.open.length); // no duplicates
     const sorted = [...g.open].sort((a, b) => a.y - b.y || a.x - b.x);
     expect(g.open).toEqual(sorted); // row-major order (entrance = first open cell)
+  });
+});
+
+// T5/T1 — the Flood Halls ramp. Echoes step DOWN again (4 on every floor,
+// Dwaar V alone carries 5 — the hall's teeth are the rising water and the
+// first all-four-Sentinel duel, per the plan's Global Constraints; beacons
+// hold at 4; braid keeps the +0.004 tread; the delay keeps its −60 slide
+// toward the 3000 clamp, Dwaar V arriving early at 2900 — the sunken arena
+// floods, Chhaya does not wait).
+describe('floorParams tier-five ramp (floors 41–50 pinned)', () => {
+  // echoes = 4 on every procedural floor (Dwaar V fixed 5); beacons 4;
+  // braid = 0.30 + 0.004*(f-41);
+  // chhayaDelayMs = max(3000, 3600 - 60*(f-41)) (Dwaar V 2900).
+  const pinned: [number, number, number, number, number][] = [
+    // floor, echoes, beacons, braid, chhayaDelayMs
+    [41, 4, 4, 0.3, 3600],
+    [42, 4, 4, 0.304, 3540],
+    [43, 4, 4, 0.308, 3480],
+    [44, 4, 4, 0.312, 3420],
+    [45, 4, 4, 0.316, 3360],
+    [46, 4, 4, 0.32, 3300],
+    [47, 4, 4, 0.324, 3240],
+    [48, 4, 4, 0.328, 3180],
+    [49, 4, 4, 0.332, 3120],
+    [50, 5, 4, 0.336, 2900],
+  ];
+
+  it('matches the pinned ramp for every tier-five floor', () => {
+    expect(pinned.length).toBe(TIER_FIVE_FLOORS - TIER_FOUR_FLOORS);
+    for (const [floor, echoes, beacons, braid, delay] of pinned) {
+      const p = floorParams(floor);
+      expect(p.echoes, `floor ${floor} echoes`).toBe(echoes);
+      expect(p.beacons, `floor ${floor} beacons`).toBe(beacons);
+      expect(p.braid, `floor ${floor} braid`).toBeCloseTo(braid, 10);
+      expect(p.chhayaDelayMs, `floor ${floor} chhayaDelayMs`).toBe(delay);
+    }
+  });
+
+  it('delays never drop below the 3000 clamp on tier-five procedural floors', () => {
+    for (let f = TIER_FOUR_FLOORS + 1; f < TIER_FIVE_FLOORS; f++)
+      expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(3000);
+  });
+
+  it('Dwaar V alone carries 5 echoes — the apex duel hall', () => {
+    for (let f = TIER_FOUR_FLOORS + 1; f < TIER_FIVE_FLOORS; f++)
+      expect(floorParams(f).echoes, `floor ${f}`).toBe(4);
+    expect(floorParams(TIER_FIVE_FLOORS).echoes).toBe(5);
+    expect(floorParams(TIER_FIVE_FLOORS).chhayaDelayMs).toBe(2900);
+  });
+
+  it('leaves every earlier tier pin untouched (floors 1–40 are frozen)', () => {
+    // braid rides toBeCloseTo — 0.28 + 0.004*9 is not the literal 0.316 in
+    // IEEE doubles; the ramp math itself is untouched, only its precision
+    const p40 = floorParams(40);
+    expect(p40.echoes).toBe(5);
+    expect(p40.beacons).toBe(4);
+    expect(p40.braid).toBeCloseTo(0.316, 10);
+    expect(p40.chhayaDelayMs).toBe(3000);
+    expect(floorParams(31)).toEqual({ echoes: 5, beacons: 4, braid: 0.28, chhayaDelayMs: 3800 });
+    expect(floorParams(30)).toEqual({ echoes: 6, beacons: 4, braid: 0.276, chhayaDelayMs: 3400 });
+    expect(floorParams(10)).toEqual({ echoes: 4, beacons: 4, braid: 0.21, chhayaDelayMs: 4000 });
+  });
+});
+
+// T5/T1 — the sentinel ROTATION (spec §4.6 "escalate combinations", row 9
+// "all four"): the ladder stops accumulating. Floors 41–49 hunt with Taal
+// ALONE (Gher and Aavart rest — they were unreachable-code past 40 anyway);
+// floor 50's Dwaar V is the first ALL-FOUR duel. Every floor 1–40 reads
+// exactly as the bare >= gates did — the rotation only ever adds behavior
+// where none existed.
+describe('sentinel presence (the rotation)', () => {
+  it('taalPresent: from floor 11 up, everywhere — unchanged by T5', () => {
+    expect(taalPresent(1)).toBe(false);
+    expect(taalPresent(5)).toBe(false); // his cameo is the TAAL_FLOOR gate, not presence
+    expect(taalPresent(10)).toBe(false);
+    expect(taalPresent(11)).toBe(true);
+    expect(taalPresent(20)).toBe(true);
+    expect(taalPresent(21)).toBe(true);
+    expect(taalPresent(31)).toBe(true);
+    expect(taalPresent(41)).toBe(true);
+    expect(taalPresent(49)).toBe(true);
+    expect(taalPresent(50)).toBe(true);
+  });
+
+  it('gherPresent: Gardens + Carnival as always (21–40, frozen) — resting on 41–49, dueling at 50', () => {
+    expect(gherPresent(1)).toBe(false);
+    expect(gherPresent(20)).toBe(false);
+    expect(gherPresent(21)).toBe(true);
+    expect(gherPresent(25)).toBe(true);
+    expect(gherPresent(30)).toBe(true);
+    // floors 1–40 are FROZEN: the Carnival keeps its three-Sentinel ladder
+    // (T4's accumulation — the t4 e2e pins Gher on tier 4), the ratified
+    // rest window is 41–49 ONLY
+    expect(gherPresent(31)).toBe(true);
+    expect(gherPresent(35)).toBe(true);
+    expect(gherPresent(40)).toBe(true);
+    expect(gherPresent(41)).toBe(false);
+    expect(gherPresent(45)).toBe(false);
+    expect(gherPresent(49)).toBe(false);
+    expect(gherPresent(50)).toBe(true); // the all-four duel
+  });
+
+  it('aavartPresent: the Carnival (31–40) plus the Dwaar V duel — resting on 41–49', () => {
+    expect(aavartPresent(1)).toBe(false);
+    expect(aavartPresent(30)).toBe(false);
+    expect(aavartPresent(31)).toBe(true);
+    expect(aavartPresent(35)).toBe(true);
+    expect(aavartPresent(40)).toBe(true);
+    expect(aavartPresent(41)).toBe(false);
+    expect(aavartPresent(45)).toBe(false);
+    expect(aavartPresent(49)).toBe(false);
+    expect(aavartPresent(50)).toBe(true); // the all-four duel
+  });
+
+  it('the truth table — floors 1–40 produce identical results to the bare >= gates', () => {
+    // floor → [taal, gher, aavart]. Rows 1–40 ARE today's ladder (the t4
+    // e2e pins 31 and 40 all-three; the ratified rest window is 41–49 only);
+    // 41/45/49 are Taal-alone, 50 is the all-four duel.
+    const table: [number, boolean, boolean, boolean][] = [
+      [1, false, false, false],
+      [5, false, false, false],
+      [11, true, false, false],
+      [20, true, false, false],
+      [21, true, true, false],
+      [30, true, true, false],
+      [31, true, true, true],
+      [40, true, true, true],
+      [41, true, false, false],
+      [45, true, false, false],
+      [49, true, false, false],
+      [50, true, true, true],
+    ];
+    for (const [f, taal, gher, aavart] of table) {
+      expect(taalPresent(f), `floor ${f} taal`).toBe(taal);
+      expect(gherPresent(f), `floor ${f} gher`).toBe(gher);
+      expect(aavartPresent(f), `floor ${f} aavart`).toBe(aavart);
+    }
+  });
+});
+
+// T5/T1 — Dwaar V, the sunken arena (floor 50, the row-9 apex duel). 13×13
+// like its elders, 101 open cells: CONCENTRIC RINGS — a broad outer ring
+// corridor (two cells thick, like Dwaar II's promenade), a mid ring WALL
+// with EXACTLY 4 gaps at the compass midpoints, an inner corridor circling
+// the 3×3 inner sanctum (the flood pool's eye). No pillars — the arena floor
+// stands clean where Dwaar II hung columns. Invariant under 180° rotation so
+// the exit mirrors the entrance; all 101 open cells form one connected
+// component — four Sentinels need the room to walk their beats.
+describe('DWAAR_V_LAYOUT — the sunken arena (floor 50, Act II closes)', () => {
+  const isOpen = (x: number, y: number): boolean => DWAAR_V_LAYOUT[y]![x] === '.';
+  const cheb = (x: number, y: number): number => Math.max(Math.abs(x - 6), Math.abs(y - 6));
+
+  it('is 13 rows of 13 chars, walls and open cells only', () => {
+    expect(DWAAR_V_LAYOUT.length).toBe(13);
+    for (const row of DWAAR_V_LAYOUT) {
+      expect(row.length).toBe(13);
+      expect(row).toMatch(/^[#.]{13}$/);
+    }
+  });
+
+  it('is symmetric under 180° rotation', () => {
+    for (let y = 0; y < 13; y++)
+      for (let x = 0; x < 13; x++) expect(DWAAR_V_LAYOUT[y]![x]).toBe(DWAAR_V_LAYOUT[12 - y]![12 - x]);
+  });
+
+  it('holds 101 open cells — in the ~95–105 band the plan targets', () => {
+    const count = (layout: readonly string[]): number =>
+      layout.reduce((n, row) => n + [...row].filter((c) => c === '.').length, 0);
+    expect(count(DWAAR_V_LAYOUT)).toBe(101);
+    expect(count(DWAAR_V_LAYOUT)).toBeGreaterThanOrEqual(95);
+    expect(count(DWAAR_V_LAYOUT)).toBeLessThanOrEqual(105);
+  });
+
+  it('carries the concentric rings: open promenade, ONE mid ring wall, open sanctum', () => {
+    // d ≥ 4 — the outer ring corridor, two cells thick, fully open (72 cells)
+    for (let y = 1; y < 12; y++)
+      for (let x = 1; x < 12; x++)
+        if (cheb(x, y) >= 4) expect(isOpen(x, y), `outer ring ${x},${y}`).toBe(true);
+    // d = 3 — the mid ring: a wall ring of 20 cells with EXACTLY 4 gaps at
+    // the compass midpoints (N, E, S, W — the four doors into the arena)
+    const ring: Array<[number, number]> = [];
+    for (let y = 3; y <= 9; y++)
+      for (let x = 3; x <= 9; x++) if (cheb(x, y) === 3) ring.push([x, y]);
+    expect(ring.length).toBe(24);
+    const openRing = ring.filter(([x, y]) => isOpen(x, y));
+    expect(openRing).toEqual([
+      [6, 3],
+      [3, 6],
+      [9, 6],
+      [6, 9],
+    ]); // N, W, E, S — the arena's four gates
+    // d ≤ 2 — the inner corridor and the 3×3 sanctum, fully open (25 cells)
+    for (let y = 4; y <= 8; y++)
+      for (let x = 4; x <= 8; x++)
+        if (cheb(x, y) <= 2) expect(isOpen(x, y), `inner ${x},${y}`).toBe(true);
+    // and the sanctum itself is the exact 3×3 center
+    for (let y = 5; y <= 7; y++)
+      for (let x = 5; x <= 7; x++) expect(isOpen(x, y), `sanctum ${x},${y}`).toBe(true);
+  });
+
+  it('stands pillarless — the sunken arena is clean where Dwaar II hung columns', () => {
+    expect(pillarCount(DWAAR_V_LAYOUT)).toBe(0);
+  });
+
+  it('all open cells are connected (BFS via maze bfsDistances)', () => {
+    const { grid, open } = layoutGrid(DWAAR_V_LAYOUT);
+    const entrance = open[0]!; // first open cell row-major = (1,1)
+    const dist = bfsDistances(grid, entrance);
+    const reached = Array.from(dist).filter((d) => d >= 0).length;
+    expect(open.length).toBe(101);
+    expect(reached).toBe(open.length); // every open cell reachable, walls sealed off
+  });
+
+  it('entrance/exit are derivable: (1,1) → farthest open cell (11,11), 20 steps', () => {
+    const { grid, open } = layoutGrid(DWAAR_V_LAYOUT);
+    const entrance = open[0]!;
+    expect(entrance).toEqual({ x: 1, y: 1 });
+    const dist = bfsDistances(grid, entrance);
+    let best = 0;
+    for (let i = 1; i < dist.length; i++) if (dist[i]! > dist[best]!) best = i;
+    const exit: CellIndex = { x: best % 13, y: Math.floor(best / 13) };
+    expect(exit).toEqual({ x: 11, y: 11 }); // bottom-right mirror of the entrance
+    expect(dist[best]).toBe(20); // a real traverse of the arena
+  });
+});
+
+describe('dwaarGrid floor 50', () => {
+  it('derives the Dwaar V open-cell set from DWAAR_V_LAYOUT', () => {
+    const g = dwaarGrid(TIER_FIVE_FLOORS);
+    expect(g.width).toBe(13);
+    expect(g.height).toBe(13);
+    expect(g.open.length).toBe(101);
+    expect(g.open[0]).toEqual({ x: 1, y: 1 });
+    for (const c of g.open) expect(DWAAR_V_LAYOUT[c.y]![c.x]).toBe('.');
+    const seen = new Set(g.open.map((c) => `${c.x},${c.y}`));
+    expect(seen.size).toBe(g.open.length); // no duplicates
+    const sorted = [...g.open].sort((a, b) => a.y - b.y || a.x - b.x);
+    expect(g.open).toEqual(sorted); // row-major order (entrance = first open cell)
+  });
+
+  it('still defaults to Dwaar I and keeps every elder hall on its own floor', () => {
+    expect(dwaarGrid().open.length).toBe(83); // Dwaar I unchanged
+    expect(dwaarGrid(TIER_TWO_FLOORS).open.length).toBe(96);
+    expect(dwaarGrid(TIER_THREE_FLOORS).open.length).toBe(107);
+    expect(dwaarGrid(TIER_FOUR_FLOORS).open.length).toBe(101);
   });
 });

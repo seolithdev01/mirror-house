@@ -82,7 +82,7 @@ interface DebugHook {
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
   // T2/T4 — the tier the stage is dressed in (venue side-floors read 1)
-  tier(): 1 | 2 | 3 | 4;
+  tier(): 1 | 2 | 3 | 4 | 5;
   // T2/T4 — the Sentinel's exact spot for warps (null off his floors)
   taalPos(): { x: number; y: number } | null;
   // T3/T4 — the Encircler's exact spot for e2e warps (null off tier 3)
