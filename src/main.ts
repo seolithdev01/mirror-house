@@ -16,6 +16,7 @@ import {
   CELL_SIZE,
   CHHAYA_PING_MS,
   CONTACT_RADIUS,
+  CRACK_ANGER,
   DESCEND_MS,
   DECOY_SHARD,
   DECOY_SPAWN_EVERY_MS,
@@ -24,6 +25,7 @@ import {
   EXIT_LOCKED_EMISSIVE,
   FIXED_STEP,
   FOG_COST,
+  FOG_DURATION_MS,
   SHARD_BEACON,
   SPRINT_SPEED,
   TAAL_FLOOR,
@@ -498,6 +500,16 @@ function waterActiveFloor(): boolean {
 function dwaarWaterFast(): boolean {
   return campaign.floor === TIER_FIVE_FLOORS;
 }
+/** T6 final-review fix — the Furnace's heat is the CAMPAIGN's modifier, so it
+ *  carries the same `venue === null` gate decoysActiveFloor/waterActiveFloor
+ *  use: a venue side-floor ALWAYS behaves tier-one (25 s fog, 15-anger
+ *  cracks, no heatNear hint, no furnace dressing) no matter which campaign
+ *  floor sponsored it. The one definition every heat read shares — the
+ *  dressing (buildFloor), the fog duration (tryFrost), the crack anger
+ *  (frame), Aaina's heatNear, and the dev heat() read-out. */
+function heatActiveFloor(): boolean {
+  return venue === null && heatOn(campaign.floor);
+}
 // T3/T3 — the water-mirrors: runtime pools (rippledAt mutated in place, the
 // MirrorRuntime precedent) + their visual patches. Empty arrays on every
 // tier-1/2/venue floor; buildFloor owns both, the teardown rides
@@ -788,8 +800,9 @@ function aainaContext(): HintContext {
       Math.hypot(aavart.x - player.x, aavart.y - player.y) < 8,
     // T6/T2 — the Furnace's standing rule: a hot floor (51–60) earns the
     // heat hint — frost melts fast, cracks burn wider. It outranks her
-    // temper threshold but never the Sentinels or the shadow.
-    heatNear: heatOn(campaign.floor),
+    // temper threshold but never the Sentinels or the shadow. T6 final
+    // review — the heat is the campaign's: a venue floor never hints it.
+    heatNear: heatActiveFloor(),
     chasing: echoes.filter((e) => e.mode === 'chase').length,
     exitUnlocked: exitUnlocked(allMirrors, mirrorRuntime),
     hintsUsed,
@@ -879,7 +892,13 @@ function tryFrost(now: number): void {
   const wasCaptured = rt.captured;
   // T6/T2 — the caller owns the duration: the heat halves it in the Furnace
   // (12.5 s), the cool floors keep the base 25 s (frost.ts stays heat-blind).
-  applyFog(mirrorRuntime, target.id, now, fogDurationMs(campaign.floor));
+  // T6 final review — the heat is the campaign's: a venue floor keeps 25 s.
+  applyFog(
+    mirrorRuntime,
+    target.id,
+    now,
+    heatActiveFloor() ? fogDurationMs(campaign.floor) : FOG_DURATION_MS,
+  );
   breath = updateBreath(breath, 0, true);
   if (!wasCaptured && rt.captured) {
     // Beacon shards bank as pending in the house state — awarded at clear.
@@ -1403,8 +1422,10 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // warm charcoal (the fog AND the background — they share the pair above),
   // the one low ember light breathes under the floor, and the static heat
   // shimmer covers the view; on any cool floor all three revert to nothing
-  // (the palette's own void, ember intensity 0, shimmer hidden).
-  const hot = heatOn(c.floor);
+  // (the palette's own void, ember intensity 0, shimmer hidden). T6 final
+  // review — the heat is the campaign's: a venue side-floor keeps the
+  // tier-one stage whatever Furnace floor sponsored it.
+  const hot = heatActiveFloor();
   if (hot) {
     voidColor.setHex(HEAT_FOG_COLOR);
     voidFog.color.setHex(HEAT_FOG_COLOR);
@@ -2493,23 +2514,29 @@ function frame(now: number): void {
       // decoy cells ride the feed (gherObjectives; the decoys array is empty
       // below 41, which is the gate) — a copy crossing his sector pulls the
       // seal onto it. Aavart below keeps the bare roads: the Ambusher reads
-      // the player, the Warden reads the house.
+      // the player, the Warden reads the house. T6 final review — the ward
+      // is the Furnace's own, documented from the Wings down: one condition
+      // gates the feed to heatOn(campaign.floor), so only 51–60 have guarded
+      // copies and Dwaar V reverts to its t5 walk (unguarded, the +5 free).
+      // The same snapshot feeds the caption's eye, so a seal that merely
+      // coincides with a copy on a base road never speaks the ward on 50.
+      const guarded = heatOn(campaign.floor) ? decoys : [];
       if (gher !== null) {
         gher = updateGher(
           gher,
           interceptCell(
             player,
             floor.grid,
-            gherObjectives(sentinelObjectives(), decoys, floor.grid),
+            gherObjectives(sentinelObjectives(), guarded, floor.grid),
           ),
           floor.grid,
           now,
           dtMove, // T5/T3 — the Encircler wades
         );
         // The warden speaks once per FLOOR: the first adopted seal standing
-        // on a live copy's cell (same-step decoys array — the feed and this
-        // read share one snapshot, so the match is exact).
-        if (!gherCopyAnnounced && sealsDecoyCell(gher.interceptAt, decoys, floor.grid)) {
+        // on a live copy's cell (same-step snapshot — the feed and this read
+        // share one array, so the match is exact).
+        if (!gherCopyAnnounced && sealsDecoyCell(gher.interceptAt, guarded, floor.grid)) {
           gherCopyAnnounced = true;
           pushCaption('gher-decoy', t(lang, 'caption.gherDecoy'));
         }
@@ -2541,8 +2568,14 @@ function frame(now: number): void {
           // floors, 25 in the Furnace (crackAngerFor). Taal's +20 anger-touch
           // below is NOT a crack — it keeps TAAL_TOUCH_ANGER on the cameo
           // floors (floor ≤ 10 only; from 11 up his touch is the caught fail,
-          // and on 51–59 he rests anyway).
-          house = applyCrack(house, mirrorRuntime, target.id, crackAngerFor(campaign.floor));
+          // and on 51–59 he rests anyway). T6 final review — the heat is the
+          // campaign's: a venue floor cracks at the cool 15.
+          house = applyCrack(
+            house,
+            mirrorRuntime,
+            target.id,
+            heatActiveFloor() ? crackAngerFor(campaign.floor) : CRACK_ANGER,
+          );
           visuals.find((_, i) => allMirrors[i]!.id === target.id)?.bind.setCracked(true);
           if (isCollapse(house)) failFloor('collapse');
         }
@@ -3064,12 +3097,17 @@ if (import.meta.env.DEV || testMode) {
     waterLevel: () => waterLevelNow,
     // T6/T4 — the Furnace's derived modifier read-out: is this floor hot, how
     // long a fog lasts here (25s cool / 12.5s hot), what one sprint-crack
-    // costs (15 cool / 25 hot). heat.ts owns the math; this is its live view.
-    heat: () => ({
-      on: heatOn(campaign.floor),
-      fogMs: fogDurationMs(campaign.floor),
-      crackAnger: crackAngerFor(campaign.floor),
-    }),
+    // costs (15 cool / 25 hot). heat.ts owns the math; this is its live view
+    // — T6 final review: it views the GATED heat, so a venue floor reads
+    // tier-one here exactly as it plays.
+    heat: () => {
+      const hot = heatActiveFloor();
+      return {
+        on: hot,
+        fogMs: hot ? fogDurationMs(campaign.floor) : FOG_DURATION_MS,
+        crackAnger: hot ? crackAngerFor(campaign.floor) : CRACK_ANGER,
+      };
+    },
     // T5/T3 — the glass's eye state this frame (true while level > 0.9 m):
     // the e2e can watch echo silence arrive with the flood.
     mirrorEyeOff: () => eyeBlind(waterLevelNow),
