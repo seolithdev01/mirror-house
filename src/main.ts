@@ -77,12 +77,7 @@ import {
   type HintKind,
 } from './game/aaina';
 import { bracketSamples, recordPath, sampleDelayed, type PathSample } from './game/chhaya';
-import {
-  shatterDecoys,
-  spawnDecoy,
-  updateDecoys,
-  type DecoyState,
-} from './game/decoy';
+import { shatterDecoys, spawnDecoy, updateDecoys, type DecoyState } from './game/decoy';
 import { initEchoes, updateEcho } from './game/echo';
 import { createEchoMesh, disposeEchoMesh, syncEchoMesh } from './game/echoView';
 import {
@@ -190,6 +185,7 @@ import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
 import { parseTestMode } from './game/testMode';
 import { canvasTexture, makeWaterCanvas } from './game/textures';
 import { initWaterRuntime, rippleState, rippleTrigger, type WaterRuntime } from './game/water';
+import { eyeBlind, mirrorWaterScale, speedFactor, waterLevel } from './game/waterLevel';
 import {
   cycleView,
   exitTactical,
@@ -449,6 +445,18 @@ function decoySpawnInterval(): number {
 function decoysActiveFloor(): boolean {
   return venue === null && tierOf(campaign.floor) === 5;
 }
+// T5/T3 — the rising water: active on the SAME floors the decoys walk (the
+// Flood Halls, campaign 41–50; a venue floor never floods). The level itself
+// is DERIVED — waterLevel(runElapsedMs(phase, now)) — so there is no state to
+// reset anywhere; resetFloor's phase re-arm to `ready` is the whole reset.
+function waterActiveFloor(): boolean {
+  return decoysActiveFloor();
+}
+/** Dwaar V (floor 50, the sunken arena) floods on DWAAR_V_WATER_S — 1.5× the
+ *  ramp's clock — because the row-9 apex duel runs against the water. */
+function dwaarWaterFast(): boolean {
+  return campaign.floor === TIER_FIVE_FLOORS;
+}
 // T3/T3 — the water-mirrors: runtime pools (rippledAt mutated in place, the
 // MirrorRuntime precedent) + their visual patches. Empty arrays on every
 // tier-1/2/venue floor; buildFloor owns both, the teardown rides
@@ -456,6 +464,14 @@ function decoysActiveFloor(): boolean {
 let waterRt: WaterRuntime[] = [];
 let waterPatches: THREE.Mesh[] = []; // 1:1 with waterRt — the material IS the ripple read-out
 let floorDisposers: Array<() => void> = []; // one floor's teardown, in order
+// T5/T3 — the flood's live read-out: the depth this frame derived from the
+// run clock (0 off the Flood Halls), the stage's water plane (buildFloor owns
+// it — the teardown rides the stage group's usual disposer), and the
+// once-per-floor caption's eye (reset by buildFloor only — a failed attempt
+// recedes the water but not the announcement).
+let waterLevelNow = 0;
+let floodPlane: THREE.Mesh | null = null;
+let floodAnnounced = false;
 // Beacon gate: the stair door burns dim red until every beacon is frosted,
 // then returns to its built gold. Tint the material of the CURRENT floor's
 // stage (buildFloor refreshes both bindings).
@@ -853,6 +869,33 @@ function syncFogVisuals(now: number): void {
     v.bind.setFog(state);
   }
 }
+
+// T5/T3 — the flood's frame-time visuals, ONE derivation per frame from the
+// live level (waterLevelNow):
+//  · the plane rises: position.y = level, hidden while the stage is dry —
+//    tiers 1–4 never see it at all;
+//  · the glass sinks: every drownable mirror (HeroMirror, cheap standing/
+//    beacon, portrait, distort, true) takes scale.y = mirrorWaterScale(level)
+//    with its BASE kept planted (position.y follows the shortened pane, so
+//    the glass visibly drowns instead of floating). Silvered doors are walls,
+//    not glass — they stay. The decoy figures are exempt (copies don't
+//    drown); on a dry floor the scale is 1 and the position is the built one,
+//    so the loop is a no-op everywhere the house never floods.
+function syncWaterLevelVisuals(): void {
+  if (floodPlane !== null) {
+    floodPlane.visible = waterLevelNow > 0.005;
+    floodPlane.position.y = waterLevelNow;
+  }
+  const s = mirrorWaterScale(waterLevelNow);
+  if (s === 1) return; // dry floor (or the flood has not begun): nothing sank
+  for (let i = 0; i < visuals.length; i++) {
+    if (allMirrors[i]!.kind === 'silvered') continue; // a door is a wall
+    const v = visuals[i]!;
+    const mesh = v.hero !== null ? v.hero.mesh : (v.bind as CheapMirror).mesh;
+    mesh.scale.y = s;
+    mesh.position.y = 0.15 + 1.2 * s; // keep the pane's base planted (built center 1.35 = 0.15 + 1.2)
+  }
+}
 // The walking lantern rides the player (position set per frame below); its
 // flame re-dresses with the stage palette at buildFloor (T2/T4) — the
 // tier-one cream here is the boot default.
@@ -1237,6 +1280,11 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   scene.add(stage.group);
   exitMarkerMat = stage.exitMarker.material as THREE.MeshStandardMaterial;
   exitUnlockedTint = exitMarkerMat.emissive.getHex();
+  // T5/T3 — this floor's flood plane (hidden until the clock raises it; the
+  // disposer below is the stage group's — disposeTree walks the plane too).
+  floodPlane = stage.waterPlane;
+  waterLevelNow = 0; // dry until the first input starts this floor's clock
+  floodAnnounced = false; // the new floor speaks the flood once
   floorDisposers.push(() => {
     scene.remove(stage.group);
     disposeTree(stage.group);
@@ -2101,6 +2149,8 @@ function drawOverhead(now: number): void {
     water: waterRt.map((w) => ({ x: w.x, y: w.y, dim: rippleState(w.rippledAt, now) })),
     // T5/T2 — hollow gold player-glyphs: a copy looks like you on the map.
     decoys: decoys.filter((d) => !d.shattered),
+    // T5/T3 — the water gauge in the map's corner reads the live level.
+    waterLevel: waterLevelNow,
     now,
   });
 }
@@ -2154,6 +2204,16 @@ function frame(now: number): void {
   // tactical view are pauses — movement, verbs and catch-up all respect them.
   const simActive =
     active(phase) && faq.root.hidden === true && feedback.root.hidden === true && !isTactical(view);
+  // T5/T3 — the flood clock: the SAME derived clock the HUD timer reads
+  // (runElapsedMs — 0 before the first input, pinned at the fail/clear
+  // moment), so the water freezes exactly when the timer does. Everything
+  // downstream derives its share from these three values: the wading stride
+  // (dtMove), the glass's eye state (eyeOff), and the plane/sink visuals
+  // (waterLevelNow itself). Off the Flood Halls the level is 0 and every
+  // multiplier is the identity — tiers 1–4 byte-identical.
+  waterLevelNow = waterActiveFloor() ? waterLevel(runElapsedMs(phase, now), dwaarWaterFast()) : 0;
+  const dtMove = FIXED_STEP * speedFactor(waterLevelNow);
+  const eyeOff = eyeBlind(waterLevelNow);
   if (shouldReset) {
     phase = reArmed;
     resetFloor(now);
@@ -2189,7 +2249,7 @@ function frame(now: number): void {
         mode === 'mouse'
           ? mouseOnlyInput(input.mouseState())
           : keysToMoveInput(snap, mode, a11y().keyMap);
-      player = movePlayer(player, inputFrame, floor.grid, FIXED_STEP);
+      player = movePlayer(player, inputFrame, floor.grid, dtMove); // T5/T3 — wading stride
       markVisited(); // fog of war: the cell under your feet is explored
       const inputActive =
         inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
@@ -2213,7 +2273,7 @@ function frame(now: number): void {
       // feeds everything downstream: the echo sense check + chase cell, the
       // map radar, and the once-per-attempt caption. Fog the seeing pane and
       // the next step tells the truth again.
-      const apparent = computeApparent(player, allMirrors, mirrorRuntime, floor.grid, now);
+      const apparent = computeApparent(player, allMirrors, mirrorRuntime, floor.grid, now, eyeOff);
       const displaced = apparent.x !== player.x || apparent.y !== player.y;
       if (displaced && !distortAnnounced) {
         distortAnnounced = true;
@@ -2248,9 +2308,10 @@ function frame(now: number): void {
           floor.grid,
           objs.patrolAnchors,
           now,
-          FIXED_STEP,
+          dtMove, // T5/T3 — echoes wade too
           apparent,
           decoys, // T5/T2 — the lure: a nearer copy is "the player" to the glass
+          eyeOff, // T5/T3 — drowned glass is no eye (the true pair keeps its sight)
         );
         // Map radar (T4): a successful sense check is the only writer of
         // loseMemoryAt, so a changed value marks this tick's check — ping at
@@ -2260,7 +2321,11 @@ function frame(now: number): void {
         // the APPARENT spot instead: the deception itself is visible on the
         // map (fog the pane and the radar snaps back to the truth).
         if (next.loseMemoryAt !== e.loseMemoryAt) {
-          pings.push(displaced ? { x: apparent.x, y: apparent.y, at: now } : { x: next.x, y: next.y, at: now });
+          pings.push(
+            displaced
+              ? { x: apparent.x, y: apparent.y, at: now }
+              : { x: next.x, y: next.y, at: now },
+          );
           // M5/T3 — the caption rides the SAME detection point (never a
           // recompute): one id, one line per ttl window however often the
           // per-echo sense cadence re-fires it.
@@ -2280,7 +2345,7 @@ function frame(now: number): void {
       // The beat-walk (M4/T3): Taal strides the anchor loop at the pulsing
       // speed — same wall-clock now the lantern reads, so stride and glow
       // can never fall out of time.
-      if (taal !== null) taal = updateTaal(taal, objs.patrolAnchors, floor.grid, now, FIXED_STEP);
+      if (taal !== null) taal = updateTaal(taal, objs.patrolAnchors, floor.grid, now, dtMove); // T5/T3 — he wades too
       // The encirclement (T3/T2): the freshest prediction is offered every
       // step — interceptCell reads the player's roads, no senses involved —
       // and updateGher adopts it on the 1s tick (a feint's null lands at
@@ -2291,7 +2356,7 @@ function frame(now: number): void {
           interceptCell(player, floor.grid, sentinelObjectives()),
           floor.grid,
           now,
-          FIXED_STEP,
+          dtMove, // T5/T3 — the Encircler wades
         );
       }
       // The ambush (T4/T2): the freshest projection is offered every step —
@@ -2308,7 +2373,7 @@ function frame(now: number): void {
           ),
           floor.grid,
           now,
-          FIXED_STEP,
+          dtMove, // T5/T3 — the Ambusher wades
         );
       }
       // Sprint into a mirror and it cracks: the house angers, the glass tints.
@@ -2359,7 +2424,10 @@ function frame(now: number): void {
           failFloor('caught');
         // Aavart's touch (T4/T2): the Ambusher read your pace and got there
         // first — the standard caught fail. Lethal on every floor he walks.
-        if (aavart !== null && Math.hypot(aavart.x - player.x, aavart.y - player.y) < CONTACT_RADIUS)
+        if (
+          aavart !== null &&
+          Math.hypot(aavart.x - player.x, aavart.y - player.y) < CONTACT_RADIUS
+        )
           failFloor('caught');
         // T5/T2 — the copy is fragile, and it is worth shards: a touch within
         // CONTACT_RADIUS shatters it (+DECOY_SHARD banked pending, once per
@@ -2441,6 +2509,14 @@ function frame(now: number): void {
   // When the toggle is off the feed empties here, so nothing stale waits to
   // reappear if it comes back on mid-line.
   captionAnger();
+  // T5/T3 — the flood speaks once per FLOOR (not per attempt): the first
+  // frame the derived level reaches 0.3 m. A failed attempt recedes the
+  // water (the clock re-arms) but not the announcement — floodAnnounced
+  // clears only in buildFloor.
+  if (waterLevelNow >= 0.3 && !floodAnnounced) {
+    floodAnnounced = true;
+    pushCaption('flood', t(lang, 'caption.flood'));
+  }
   if (!a11y().captions && captions.length > 0) captions = [];
   renderCaptions(hud.captionBar, captions, now);
   // Audio feed (M3/T6): one threat→music intensity per frame — anger, pursuit
@@ -2455,6 +2531,7 @@ function frame(now: number): void {
   if (!aaina.root.hidden) refreshAaina(); // she reads the floor while you walk it
   syncFogVisuals(now);
   syncWaterVisuals(now); // T3/T3 — the pools' dim follows the ripple TTL
+  syncWaterLevelVisuals(); // T5/T3 — the flood rises, the glass sinks
   // Door machine: an opening door advances on frame time, then rests open for
   // the rest of the floor — no further hints, no further pushes.
   for (const [id, st] of doorStates) {
@@ -2804,6 +2881,12 @@ if (import.meta.env.DEV || testMode) {
     // T5/T2 — the LIVE copies (unshattered only): where each copy of you
     // stands. An empty array everywhere but the Flood Halls.
     decoys: () => decoys.filter((d) => !d.shattered).map((d) => ({ x: d.x, y: d.y })),
+    // T5/T3 — the live water depth in meters (0 off the Flood Halls). The
+    // e2e's flood leg reads it; the pinning comes from waterLevel.ts.
+    waterLevel: () => waterLevelNow,
+    // T5/T3 — the glass's eye state this frame (true while level > 0.9 m):
+    // the e2e can watch echo silence arrive with the flood.
+    mirrorEyeOff: () => eyeBlind(waterLevelNow),
     // T8 e2e hooks — scripted win/lose. `mirrors()` replaces the old hero
     // count (the step003 suite reads .total now). mirrorAt(kind) prefers the
     // first mirror of that kind not captured yet, so a capture loop walks the
@@ -2829,7 +2912,14 @@ if (import.meta.env.DEV || testMode) {
     // position, or the first seeing distort pane's displaced lie (≠ getPlayer
     // while carnival glass watches you; equal again once fogged).
     apparentPlayer: () =>
-      computeApparent(player, allMirrors, mirrorRuntime, floor.grid, performance.now()),
+      computeApparent(
+        player,
+        allMirrors,
+        mirrorRuntime,
+        floor.grid,
+        performance.now(),
+        eyeBlind(waterLevelNow),
+      ),
     beaconsLeft: () => {
       const bc = beaconsCaptured(allMirrors, mirrorRuntime);
       return bc.total - bc.captured;

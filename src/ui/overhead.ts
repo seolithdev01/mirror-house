@@ -9,7 +9,7 @@
 // keyed y * grid.width + x — the same indexing FloorGrid uses internally).
 // Unvisited cells sit near-black; visited cells get a floor tint and their
 // wall edges drawn. Waypoint editing lives in main.ts (clicks are tactical-only).
-import { CELL_SIZE, EXIT_LOCKED_EMISSIVE, PING_TTL_MS } from '../engine/constants';
+import { CELL_SIZE, EXIT_LOCKED_EMISSIVE, PING_TTL_MS, WATER_MAX_M } from '../engine/constants';
 import type { CellIndex, FloorGrid } from '../engine/grid';
 
 export interface OverheadDrawInput {
@@ -28,6 +28,8 @@ export interface OverheadDrawInput {
   /** T5/T2 — the live (unshattered) mirror-you copies: hollow gold
    *  player-glyphs, the solid arrow is the real you. */
   decoys: ReadonlyArray<{ x: number; y: number }>;
+  /** T5/T3 — the live water depth in meters (0 = dry; the gauge hides). */
+  waterLevel: number;
   now: number;
 }
 
@@ -55,6 +57,7 @@ const COLOR = {
   water: '#3fae9a', // T3 — the standing pools (water-teal; the tier-3 accent)
   distort: '#c2548a', // T4 — the carnival glass (the tier-4 rose)
   decoy: '#d9a441', // T5 — the copies: the player's own gold, drawn hollow
+  flood: '#4a8a7a', // T5/T3 — the rising water's gauge (teal-green, the flood's own)
 } as const;
 
 const MARGIN_PX = 28; // breathing room around the fitted grid
@@ -286,6 +289,34 @@ export function createOverhead(canvas: HTMLCanvasElement): {
     ctx.closePath();
     ctx.fill();
     ctx.restore();
+
+    // T5/T3 — the water gauge: a row of ▮ blocks in the map's bottom-left
+    // corner, one filled per WATER_MAX_M / GAUGE_SLOTS of depth (hidden on a
+    // dry floor — the Flood Halls' only new chrome). Filled blocks take the
+    // flood teal-green; the empty slots stay as dim outlines so the eye can
+    // read "how much more is coming" at a glance.
+    const GAUGE_SLOTS = 8;
+    if (input.waterLevel > 0) {
+      const filled = Math.round((input.waterLevel / WATER_MAX_M) * GAUGE_SLOTS);
+      const bw = 9;
+      const bh = 14;
+      const gap = 3;
+      const x0 = 12;
+      const y0 = h - 12 - bh;
+      for (let i = 0; i < GAUGE_SLOTS; i++) {
+        const bx = x0 + i * (bw + gap);
+        if (i < filled) {
+          ctx.fillStyle = COLOR.flood;
+          ctx.fillRect(bx, y0, bw, bh);
+        } else {
+          ctx.strokeStyle = COLOR.flood;
+          ctx.globalAlpha = 0.35;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx + 0.5, y0 + 0.5, bw - 1, bh - 1);
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
   }
 
   function clear(): void {

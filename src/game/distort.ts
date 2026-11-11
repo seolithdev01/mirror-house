@@ -34,6 +34,9 @@ export interface ApparentPosition {
  * fixed delta, cells converted to world meters. Deterministic: mirror list
  * order decides which pane wins when several see the player. Fog every
  * seeing pane (or break their sight) and the house tells the truth again.
+ * T5/T3: so does the flood — while the water stands above the panes' eyes
+ * (the caller's eyeOff flag) a drowned pane cannot see, and what cannot
+ * see cannot lie.
  */
 export function apparentPlayer(
   player: PlayerState,
@@ -41,7 +44,13 @@ export function apparentPlayer(
   runtime: ReadonlyArray<MirrorRuntime>,
   grid: FloorGrid,
   now: number,
+  /** T5/T3 — the flood's blindness (frost.mirrorEyeBlind of the live water
+   *  level): a drowned pane sees nothing, so it lies about nothing — the
+   *  displacement is inert while true, every glass reading the true spot.
+   *  Defaults to false — tiers 1–4 keep every lie they ever told. */
+  eyeOff = false,
 ): ApparentPosition {
+  if (eyeOff) return { x: player.x, y: player.y };
   for (const m of mirrors) {
     if (m.kind !== 'distort') continue;
     const r = runtime.find((rt) => rt.id === m.id);

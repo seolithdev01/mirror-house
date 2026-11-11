@@ -476,3 +476,72 @@ describe('sensesPlayer + updateEcho — the decoy lure (T5)', () => {
     expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt(), [], g, 1000)).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T5/T3 — the flood blinds the glass: while the water stands above
+// WATER_EYE_OFF_M, standing/beacon/portrait/distort mirrors stop being echo
+// eyes (sensesPlayer's mirrorEyeOff flag). TRUE mirrors stay eyes — the
+// step-through pair is the floor's honest glass, and the standing pools keep
+// their ripple-only blindness. Defaults keep tiers 1–4 byte-identical.
+// ---------------------------------------------------------------------------
+describe('sensesPlayer — the eye-blind flood (T5)', () => {
+  const mirrors = [mir(1, 0, 0)];
+  const rt = () => initMirrorRuntime(mirrors);
+
+  it('a shared mirror senses normally while the water is low (default false)', () => {
+    const g = openGrid();
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    expect(
+      sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt(), [], g, 1000, player, [], false),
+    ).toBe(true);
+  });
+
+  it('eye-blind standing glass sees nothing', () => {
+    const g = openGrid();
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    expect(
+      sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt(), [], g, 1000, player, [], true),
+    ).toBe(false);
+  });
+
+  it('a TRUE mirror stays an eye while the water blinds everything else', () => {
+    const g = openGrid();
+    const trueMirrors: MirrorRef[] = [{ ...mir(1, 0, 0), kind: 'true' }];
+    const trueRt = initMirrorRuntime(trueMirrors);
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    expect(
+      sensesPlayer(echoAt(-1.5, 0), player, trueMirrors, trueRt, [], g, 1000, player, [], true),
+    ).toBe(true);
+  });
+
+  it('a still pool keeps its eye — ripple is the only blindness water knows', () => {
+    const g = openGrid();
+    const water = [poolAt(0, 0)];
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    expect(sensesPlayer(echoAt(-1.5, 0), player, [], [], water, g, 1000, player, [], true)).toBe(
+      true,
+    );
+  });
+
+  it('updateEcho under eye-blind water never chases through standing glass', () => {
+    const g = openGrid();
+    const anchors = [{ x: -8, y: 0 }];
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    const e = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000 }),
+      player,
+      mirrors,
+      rt(),
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      player,
+      [],
+      true,
+    );
+    expect(e.mode).toBe('patrol');
+    expect(e.lastSensedCell).toBeNull();
+  });
+});

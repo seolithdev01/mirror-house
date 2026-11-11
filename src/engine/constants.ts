@@ -111,3 +111,15 @@ export const DECOY_SPAWN_EVERY_MS = 45000; // ms between spawn attempts (jittere
 export const DECOY_MAX_ALIVE = 2; // unshattered copies on a floor at once
 export const DECOY_SHARD = 5; // shards pending per shattered copy (banked at clear)
 export const DECOY_SPEED = 2.0; // m/s — the copy's stride toward the exit
+// T5/T3 — the rising water: the run floods from its first input. The level is
+// a pure derived function of the run clock (waterLevel.ts) — min(WATER_MAX_M,
+// elapsed/WATER_FULL_S · WATER_MAX_M), so the halls stand 1.2 m deep at
+// WATER_FULL_S. Past 0.6 m everyone wades at ×WATER_SLOW (the DECOYS are
+// exempt — copies don't drown); past WATER_EYE_OFF_M the standing glass is
+// eye-blind (echo.sensesPlayer skips it). Dwaar V (the sunken arena) floods
+// on DWAAR_V_WATER_S — the duel runs against a faster clock.
+export const WATER_FULL_S = 180; // s from run start to full depth (1.2 m)
+export const WATER_MAX_M = 1.2; // m — the deepest the halls flood
+export const WATER_SLOW = 0.85; // speed multiplier while level > 0.6 m
+export const WATER_EYE_OFF_M = 0.9; // m above which mirrors stop being eyes
+export const DWAAR_V_WATER_S = 120; // s to full depth in the sunken arena

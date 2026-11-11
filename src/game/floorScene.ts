@@ -11,6 +11,11 @@ export interface FloorSceneResult {
   wallInstanceCount: number;
   /** The exit marker mesh, exposed so main.ts can re-tint it for the beacon gate. */
   exitMarker: THREE.Mesh;
+  /** T5/T3 — the flood plane: one translucent teal-green sheet across the
+   *  whole floor, hidden while the water is at 0 (dry stage). main.ts raises
+   *  it to the live water level per frame (`position.y = level`) and tears it
+   *  down with the stage group's usual disposer. */
+  waterPlane: THREE.Mesh;
   /** Zero out the instanced wall box covering one cell edge (T7: a pushed
    *  silvered door hides the wall it replaces as its slab slides aside).
    *  Returns true when a matching instance was found and hidden. */
@@ -81,12 +86,32 @@ export function buildFloorScene(
   const en = floor.grid.cellCenter(floor.entrance.x, floor.entrance.y);
   const ex = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
+  // T5/T3 — the flood plane: the same span as the floor itself, lying flat
+  // just above it. Hidden at build (level 0 — dry stage); main.ts sets
+  // `position.y = level` and `visible` per frame from the derived water
+  // clock. Translucent teal-green (the Flood Halls' own water), depthWrite
+  // off — water over glass, never glass under water.
+  const waterPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(planeW, planeH),
+    new THREE.MeshBasicMaterial({
+      color: 0x2c4a44,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false,
+    }),
+  );
+  waterPlane.rotation.x = -Math.PI / 2;
+  waterPlane.position.y = 0;
+  waterPlane.visible = false;
+  waterPlane.renderOrder = 1; // after the floor, before the eye cares
+
   group.add(floorPlane, ceiling);
   const horizontalMesh = instancedWalls(horizontal, true, wallMat);
   const verticalMesh = instancedWalls(vertical, false, wallMat);
   group.add(horizontalMesh, verticalMesh);
   const exitMarker = marker(ex.cx, ex.cy, palette.exit);
   group.add(marker(en.cx, en.cy, palette.entrance), exitMarker);
+  group.add(waterPlane);
 
   // T7 push-doors: the wall instance for a cell edge is hidden in place (a
   // zero-scale matrix) once the door's sliding slab takes over the edge.
@@ -109,5 +134,5 @@ export function buildFloorScene(
     return true;
   };
 
-  return { group, wallInstanceCount: segs.length, exitMarker, hideWallEdge };
+  return { group, wallInstanceCount: segs.length, exitMarker, waterPlane, hideWallEdge };
 }

@@ -357,3 +357,28 @@ describe('frost and cracks — distort is standing glass', () => {
     expect(crackTarget(mirrors, rt, player, true)?.id).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T5/T3 — the flood also shuts the carnival glass's MOUTH: while the water is
+// eye-blind (level > WATER_EYE_OFF_M), a seeing distort pane displaces
+// nothing — a pane that cannot see cannot lie. The eyeOff flag defaults to
+// false, so tiers 1–4 keep every lie they ever told.
+// ---------------------------------------------------------------------------
+describe('apparentPlayer — the flood silences the glass (T5)', () => {
+  it('a seeing distort pane lies normally while the water is low (default)', () => {
+    const g = openGrid();
+    const mirrors = [dMir(1, 0, 0, 2, 0)];
+    const rt = initMirrorRuntime(mirrors);
+    expect(apparentPlayer(playerAt(4, 0), mirrors, rt, g, 1000)).toEqual({
+      x: 4 + 2 * CELL_SIZE,
+      y: 0,
+    });
+  });
+
+  it('eye-blind carnival glass tells the truth — displacement inert', () => {
+    const g = openGrid();
+    const mirrors = [dMir(1, 0, 0, 2, 0)];
+    const rt = initMirrorRuntime(mirrors);
+    expect(apparentPlayer(playerAt(4, 0), mirrors, rt, g, 1000, true)).toEqual({ x: 4, y: 0 });
+  });
+});

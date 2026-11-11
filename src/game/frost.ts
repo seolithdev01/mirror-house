@@ -14,6 +14,7 @@ import type { FloorGrid } from '../engine/grid';
 import { losClear } from '../engine/los';
 import type { MirrorKind, MirrorRef } from './floorObjects';
 import type { PlayerState } from './player';
+import { eyeBlind } from './waterLevel';
 
 export { FOG_COST };
 
@@ -126,6 +127,15 @@ export function mirrorVisual(m: MirrorRuntime, now: number): MirrorVisual {
 export function isFogged(m: MirrorRuntime, now: number): boolean {
   return mirrorVisual(m, now) !== 'clear';
 }
+
+/** T5/T3 — the flood's other blindness, re-exported from waterLevel.ts so
+ *  every water consumer reads ONE threshold: true while the halls stand
+ *  above WATER_EYE_OFF_M (0.9 m), at which point echo.sensesPlayer skips the
+ *  standing glass (standing/beacon/portrait/distort — `true` mirrors and the
+ *  pools keep their sight). FOG IS UNTOUCHED: the lantern still fogs whatever
+ *  dry tops remain above the waterline — a submerged pane can still be
+ *  frosted and a beacon still captured; the water only shuts the SEEING. */
+export const mirrorEyeBlind = eyeBlind;
 
 /** Spend FOG_COST / recharge BREATH_RECHARGE_PER_S, clamped to 0..1. */
 export function updateBreath(breath: number, dtS: number, spent: boolean): number {

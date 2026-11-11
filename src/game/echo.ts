@@ -99,10 +99,19 @@ export function sensesPlayer(
    *  for both the range check and the second LOS. Defaults to none — tiers
    *  1–4 byte-identical. */
   decoys: ReadonlyArray<DecoyState> = [],
+  /** T5/T3 — the flood's blindness (frost.mirrorEyeBlind of the live water
+   *  level): while true, standing/beacon/portrait/distort glass stops being
+   *  eyes — drowned panes see nothing. TRUE mirrors stay eyes (the floor's
+   *  honest pair) and the pools keep their ripple-only blindness. Defaults
+   *  to false — tiers 1–4 byte-identical. */
+  mirrorEyeOff = false,
 ): boolean {
   const target = lureTarget(echo, apparent, decoys);
   for (const m of mirrors) {
     if (!sensesThrough(m)) continue;
+    // T5/T3 — the waterline test: the drownable glass (everything but the
+    // true pair) is blind while the flood stands above its eyes.
+    if (mirrorEyeOff && m.kind !== 'true') continue;
     const r = runtimeFor(rt, m);
     if (!r || isFogged(r, now)) continue;
     const echoDist = Math.hypot(m.x - echo.x, m.z - echo.y);
@@ -150,13 +159,19 @@ export function updateEcho(
    *  echo is chased to its own cell (and keeps walking; the memory lapses
    *  and the echo gives up). Defaults to none — tiers 1–4 unchanged. */
   decoys: ReadonlyArray<DecoyState> = [],
+  /** T5/T3 — the flood's blindness (see sensesPlayer): drowned glass is no
+   *  eye at all, so it counts NEITHER as fogged NOR as a seeing eye in the
+   *  confusion census below. Defaults to false — tiers 1–4 byte-identical. */
+  mirrorEyeOff = false,
 ): EchoState {
   // Confused override: ≥2 frosted eyes within CONFUSE_FOGGED_R and no clear
   // eye within CONFUSE_UNFOGGED_R — the echo stalls and slowly spins.
+  // T5/T3 — a water-blind pane is not an eye in any direction: skipped whole.
   let foggedNear = 0;
   let unfoggedNear = 0;
   for (const m of mirrors) {
     if (!sensesThrough(m)) continue;
+    if (mirrorEyeOff && m.kind !== 'true') continue;
     const r = runtimeFor(rt, m);
     if (!r) continue;
     const d = Math.hypot(m.x - echo.x, m.z - echo.y);
@@ -187,7 +202,7 @@ export function updateEcho(
   const bait = lureTarget(echo, apparent, decoys);
   if (now >= nextSenseAt) {
     nextSenseAt = now + SENSE_INTERVAL_MS;
-    if (sensesPlayer(echo, player, mirrors, rt, water, grid, now, apparent, decoys)) {
+    if (sensesPlayer(echo, player, mirrors, rt, water, grid, now, apparent, decoys, mirrorEyeOff)) {
       lastSensedCell = grid.cellAt(bait.x, bait.y);
       loseMemoryAt = now + CHASE_MEMORY_MS;
     }

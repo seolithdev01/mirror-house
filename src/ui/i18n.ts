@@ -213,6 +213,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // per shatter ({n} = DECOY_SHARD)
     'caption.decoySpawn': 'The house sends a copy of you ahead.',
     'caption.decoyShatter': 'The copy shatters. +{n} shards.',
+    // T5/T3 — the rising water: once per floor, as the level crosses 0.3 m
+    'caption.flood': 'The halls are flooding…',
     // misc chrome
     'misc.close': '✕ Close ({key})',
     // M5/T6 — the accessible name for every ✕-only close button
@@ -410,6 +412,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // और टूटने पर एक ({n} = DECOY_SHARD)
     'caption.decoySpawn': 'घर आपकी एक प्रतिलिपि आगे भेजता है।',
     'caption.decoyShatter': 'प्रतिलिपि बिखर गई। +{n} शार्ड।',
+    // T5/T3 — उठता पानी: प्रति तल एक बार, जब पानी 0.3 मी पार करता है
+    'caption.flood': 'गलियाँ पानी से भरने लगी हैं…',
     // शेष क्रोम
     'misc.close': '✕ बंद करें ({key})',
     // M5/T6 — केवल ✕ वाले बंद बटनों का सुगम नाम
