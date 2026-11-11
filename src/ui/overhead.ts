@@ -25,6 +25,9 @@ export interface OverheadDrawInput {
   waypoints: ReadonlyArray<{ x: number; y: number }>;
   /** T3 — the standing pools: teal dots, dim while their ripple blinds them. */
   water: ReadonlyArray<{ x: number; y: number; dim: boolean }>;
+  /** T5/T2 — the live (unshattered) mirror-you copies: hollow gold
+   *  player-glyphs, the solid arrow is the real you. */
+  decoys: ReadonlyArray<{ x: number; y: number }>;
   now: number;
 }
 
@@ -51,6 +54,7 @@ const COLOR = {
   waypoint: '#f2e9d8', // ivory dots
   water: '#3fae9a', // T3 — the standing pools (water-teal; the tier-3 accent)
   distort: '#c2548a', // T4 — the carnival glass (the tier-4 rose)
+  decoy: '#d9a441', // T5 — the copies: the player's own gold, drawn hollow
 } as const;
 
 const MARGIN_PX = 28; // breathing room around the fitted grid
@@ -249,6 +253,21 @@ export function createOverhead(canvas: HTMLCanvasElement): {
       ctx.beginPath();
       ctx.arc(px(wp.x), py(wp.y), L.cell * 0.12, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // T5/T2 — the mirror-you copies: the PLAYER GLYPH drawn hollow (stroke,
+    // never fill) in the same gold. A copy looks like you on the map the way
+    // it looks like you on the floor — outline circle vs solid arrow is the
+    // one tell, so a glance never mistakes the copy for the real you.
+    for (const d of input.decoys) {
+      const dx = px(d.x);
+      const dy = py(d.y);
+      const r = L.cell * 0.38;
+      ctx.strokeStyle = COLOR.decoy;
+      ctx.lineWidth = Math.max(1.5, L.cell * 0.07);
+      ctx.beginPath();
+      ctx.arc(dx, dy, r, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     // The player — a gold arrow rotated by heading (heading 0 = north = up).

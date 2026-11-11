@@ -30,6 +30,53 @@ export function createAvatar(look: AvatarLook): THREE.Group {
   return g;
 }
 
+/** T5/T2 — the mirror-you decoy: the Surveyor's construction rebuilt EXACTLY
+ *  (same geometry, same proportions, same coat/glass colors from the live
+ *  look) on layer 0 — identical is the point: the copy stands in the world
+ *  AND inside every mirror pass, like Chhaya and the Sentinels, so a player
+ *  who meets one sees themself. A per-copy figure — dispose() frees the
+ *  geometry and the two materials, which belong to the copy alone. */
+export interface DecoyFigure {
+  group: THREE.Group;
+  dispose: () => void;
+}
+
+export function createDecoy(look: AvatarLook): DecoyFigure {
+  const g = new THREE.Group();
+  const coat = new THREE.MeshStandardMaterial({ color: look.coat, roughness: 0.8 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xd8b28f, roughness: 0.7 });
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 0.85, 4, 8), coat);
+  body.position.y = 0.85;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), skin);
+  head.position.y = 1.58;
+  const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.5, 2, 6), coat);
+  arm.position.set(0.34, 1.05, -0.1);
+  arm.rotation.z = -0.45;
+  const lanternBox = new THREE.Mesh(
+    new THREE.BoxGeometry(0.14, 0.2, 0.14),
+    new THREE.MeshStandardMaterial({
+      color: look.glass,
+      emissive: look.glass,
+      emissiveIntensity: 1.4,
+    }),
+  );
+  lanternBox.position.set(0.44, 0.82, -0.24);
+  g.add(body, head, arm, lanternBox);
+  g.traverse((o) => o.layers.set(0)); // a copy made flesh — never AVATAR_LAYER
+  return {
+    group: g,
+    dispose: () => {
+      g.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (m.geometry) m.geometry.dispose();
+      });
+      coat.dispose();
+      skin.dispose();
+      lanternBox.material.dispose();
+    },
+  };
+}
+
 /** Chhaya — the six-second shadow. The Surveyor's silhouette rebuilt in a
  *  near-black coat and dim rose lantern glass, on layer 0: she stands in the
  *  world AND inside every mirror pass (only the player's own avatar hides on

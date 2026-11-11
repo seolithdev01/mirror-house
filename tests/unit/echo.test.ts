@@ -380,3 +380,99 @@ describe('updateEcho', () => {
     expect(next.y).toBeCloseTo(0);
   });
 });
+
+// T5/T2 — the decoy lure: an Echo reads the NEARER of the player and the
+// nearest unshattered decoy as "the player position" (range + LOS + the
+// remembered chase cell). Default decoys=[] keeps tiers 1–4 byte-identical.
+describe('sensesPlayer + updateEcho — the decoy lure (T5)', () => {
+  /** A mirror only the WEST side of the corridor can reach: the wall between
+   *  row 1 and row 2 stays closed, so a sight from row 2's east half fails on
+   *  the player side when the player sits behind... — simplest honest lure
+   *  fixture: decoy NEAR the echo's mirror, player FAR beyond SENSE_RANGE. */
+  const mirrors = [mir(1, 0, 0)];
+  const rt = () => initMirrorRuntime(mirrors);
+
+  it('a nearer decoy is sensed through a mirror the player never shares', () => {
+    const g = openGrid();
+    const player: PlayerState = { x: 300, y: 0, heading: 0 }; // out of every range
+    const echo = echoAt(-1.5, 0);
+    const decoy = [{ id: 0, x: 1.5, y: 0, born: 0, shattered: false }];
+    // without the decoy: blind (the player is nowhere near the glass)
+    expect(sensesPlayer(echo, player, mirrors, rt(), [], g, 1000)).toBe(false);
+    // with the decoy nearer than the (far) player: the copy is "the player"
+    expect(sensesPlayer(echo, player, mirrors, rt(), [], g, 1000, player, decoy)).toBe(true);
+  });
+
+  it('a shattered decoy lures nothing', () => {
+    const g = openGrid();
+    const player: PlayerState = { x: 300, y: 0, heading: 0 };
+    const echo = echoAt(-1.5, 0);
+    const decoy = [{ id: 0, x: 1.5, y: 0, born: 0, shattered: true }];
+    expect(sensesPlayer(echo, player, mirrors, rt(), [], g, 1000, player, decoy)).toBe(false);
+  });
+
+  it('the bait is whichever copy stands nearer TO THE ECHO (not the player)', () => {
+    const g = openGrid();
+    const player: PlayerState = { x: 300, y: 0, heading: 0 }; // far: no sight of its own
+    const echo = echoAt(-1.5, 0);
+    // decoy 8m from the mirror, 6.5m from the echo — nearer than the
+    // player (301.5m): the echo reads the COPY, and the copy shares the glass
+    const nearDecoy = [{ id: 0, x: -8, y: 0, born: 0, shattered: false }];
+    expect(sensesPlayer(echo, player, mirrors, rt(), [], g, 1000, player, nearDecoy)).toBe(true);
+    // a copy 40m out is still the nearer bait — but it stands beyond
+    // SENSE_RANGE of the mirror, so the eye stays shut
+    const farDecoy = [{ id: 1, x: -40, y: 0, born: 0, shattered: false }];
+    expect(sensesPlayer(echo, player, mirrors, rt(), [], g, 1000, player, farDecoy)).toBe(false);
+  });
+
+  it('chase memory targets the DECOY cell when the copy was nearer', () => {
+    const g = openGrid();
+    const anchors = [{ x: -8, y: 0 }];
+    const player: PlayerState = { x: 300, y: 0, heading: 0 }; // far away
+    const decoy = [{ id: 0, x: 1.5, y: 0, born: 0, shattered: false }];
+    const e = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000 }),
+      player,
+      mirrors,
+      rt(),
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      player,
+      decoy,
+    );
+    expect(e.mode).toBe('chase');
+    expect(e.lastSensedCell).toEqual(g.cellAt(1.5, 0)); // the copy's cell
+    expect(e.loseMemoryAt).toBe(1000 + CHASE_MEMORY_MS);
+  });
+
+  it('chase memory keeps the PLAYER cell when the player is nearer (default hunt)', () => {
+    const g = openGrid();
+    const anchors = [{ x: -8, y: 0 }];
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 }; // nearer than any decoy
+    const farDecoy = [{ id: 0, x: 300, y: 0, born: 0, shattered: false }]; // never nearer
+    const e = updateEcho(
+      echoAt(-1.5, 0, { nextSenseAt: 1000 }),
+      player,
+      mirrors,
+      rt(),
+      [],
+      g,
+      anchors,
+      1000,
+      1 / 120,
+      player,
+      farDecoy,
+    );
+    expect(e.mode).toBe('chase');
+    expect(e.lastSensedCell).toEqual(g.cellAt(1.5, 0)); // the player's cell
+  });
+
+  it('no decoys at all: the T1–T4 semantics are byte-identical (default param)', () => {
+    const g = openGrid();
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    expect(sensesPlayer(echoAt(-1.5, 0), player, mirrors, rt(), [], g, 1000)).toBe(true);
+  });
+});

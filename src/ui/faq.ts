@@ -97,6 +97,10 @@ export const FAQ: readonly FaqEntry[] = [
     a: "That is Aavart the Ambusher, the fourth Sentinel, and he reads the one thing the others ignore: your pace. He projects where your stride is committed — up to 1.8 seconds of travel ahead at a full sprint — and runs there at the fastest Sentinel pace in the house, cutting the corner before you reach it. Stand still and his lead collapses onto your own next step; sprint and he meets you nearly three cells down the road. The counter is the trick Aaina sells: change your pace. Walk where you meant to sprint, stop dead mid-corridor, turn a corner at a crawl — his projection retargets only every 1.2 seconds, so a pace changed inside that window leaves him ambushing an empty road. And remember the ladder accumulates: Taal still keeps his beat and Gher still reads your heading down here, so cross Taal on the dim beat, feint Gher, and walk where Aavart expected you to run.",
   },
   {
+    q: 'The house sends a copy of me — what is that?',
+    a: 'That is a mirror-you decoy — it means Act II has begun and you are walking the Flood Halls (floors 41–50). Every 45 seconds or so the house plants a glass copy of you at a cell 8–12 cells away, and it walks toward the exit at its own steady pace, ignoring you completely. It cannot hurt you, frost does not touch it, and it does not drown. But the Echoes cannot tell a copy from the original: a copy nearer to an Echo than you are becomes "you" as far as its mirror-sight is concerned — it senses, pings and gives chase after YOUR COPY. That is the decoy\u2019s job: bait. Walk up to a copy and touch it, and it shatters — five shards banked toward the floor\u2019s clear, exactly like beacon shards (a failed floor forfeits them). Two copies may stand at once, the caption names each one the house sends, and on the overhead map the copy is the hollow gold circle while the solid gold arrow is the you that is real.',
+  },
+  {
     q: 'How do I fog mirrors — and why bother?',
     a: "Face the glass and press F: the Frost Lantern breathes on it, and the reflection fogs over for 25 seconds. Each breath spends about a third of your lantern's air, which refills in four seconds. Fogged mirrors are blind — the Echoes see you only through clear glass — and enough frosted eyes in one place will confuse an Echo into a spinning standstill. Fog is the only attack you get.",
   },
@@ -163,7 +167,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 36
+  // M4/T6 — the heading and the close button are chrome (localized); the 37
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

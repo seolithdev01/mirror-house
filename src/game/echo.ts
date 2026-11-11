@@ -20,6 +20,7 @@ import { losClear } from '../engine/los';
 import { buildFlowField, flowStep } from '../engine/flowField';
 import { isFogged, type MirrorRuntime } from './frost';
 import type { MirrorRef } from './floorObjects';
+import { lureTarget, type DecoyState } from './decoy';
 import { rippleState, type WaterRuntime } from './water';
 import type { PlayerState } from './player';
 
@@ -93,29 +94,36 @@ export function sensesPlayer(
    *  APPARENT position, so a displaced player is sensed (or hidden) where
    *  they appear. Defaults to the true position — tiers 1–3 unchanged. */
   apparent: Pick<PlayerState, 'x' | 'y'> = player,
+  /** T5/T2 — the decoy lure: when the nearest unshattered copy stands closer
+   *  to THIS echo than the player does, the copy is "the player position"
+   *  for both the range check and the second LOS. Defaults to none — tiers
+   *  1–4 byte-identical. */
+  decoys: ReadonlyArray<DecoyState> = [],
 ): boolean {
+  const target = lureTarget(echo, apparent, decoys);
   for (const m of mirrors) {
     if (!sensesThrough(m)) continue;
     const r = runtimeFor(rt, m);
     if (!r || isFogged(r, now)) continue;
     const echoDist = Math.hypot(m.x - echo.x, m.z - echo.y);
-    const playerDist = Math.hypot(m.x - apparent.x, m.z - apparent.y);
+    const playerDist = Math.hypot(m.x - target.x, m.z - target.y);
     if (echoDist > SENSE_RANGE || playerDist > SENSE_RANGE) continue;
     if (!losClear(grid, echo.x, echo.y, m.x, m.z)) continue;
-    if (!losClear(grid, apparent.x, apparent.y, m.x, m.z)) continue;
+    if (!losClear(grid, target.x, target.y, m.x, m.z)) continue;
     return true; // both stand in this mirror's reflection
   }
   // T3 — the water eyes: still pools see exactly like clear glass (both LOS,
   // SENSE_RANGE). No fog state exists for water — the ripple is the only
   // blindness, and it is the player's verb (see water.ts). T4: they read the
-  // apparent position like every other eye.
+  // apparent position like every other eye. T5: the lure target, same as the
+  // glass above.
   for (const w of water) {
     if (rippleState(w.rippledAt, now)) continue; // rippled shut
     const echoDist = Math.hypot(w.x - echo.x, w.y - echo.y);
-    const playerDist = Math.hypot(w.x - apparent.x, w.y - apparent.y);
+    const playerDist = Math.hypot(w.x - target.x, w.y - target.y);
     if (echoDist > SENSE_RANGE || playerDist > SENSE_RANGE) continue;
     if (!losClear(grid, echo.x, echo.y, w.x, w.y)) continue;
-    if (!losClear(grid, apparent.x, apparent.y, w.x, w.y)) continue;
+    if (!losClear(grid, target.x, target.y, w.x, w.y)) continue;
     return true; // both stand in the pool's reflection
   }
   return false;
@@ -136,6 +144,12 @@ export function updateEcho(
    *  APPEARS — the echoes hunt the house's lie, not the player. Defaults to
    *  the true position — tiers 1–3 unchanged. */
   apparent: Pick<PlayerState, 'x' | 'y'> = player,
+  /** T5/T2 — the decoy lure (see sensesPlayer): the sense check reads the
+   *  nearer of this position and the nearest unshattered copy, and the
+   *  remembered chase cell is WHERE THAT BAIT STANDS — a copy that lured the
+   *  echo is chased to its own cell (and keeps walking; the memory lapses
+   *  and the echo gives up). Defaults to none — tiers 1–4 unchanged. */
+  decoys: ReadonlyArray<DecoyState> = [],
 ): EchoState {
   // Confused override: ≥2 frosted eyes within CONFUSE_FOGGED_R and no clear
   // eye within CONFUSE_UNFOGGED_R — the echo stalls and slowly spins.
@@ -166,11 +180,15 @@ export function updateEcho(
   // check AND the remembered cell read the apparent position — the echo
   // chases where the player appears (the chase target below is
   // lastSensedCell, so the lie carries all the way to the pathing).
+  // T5/T2: the same for the lure — when a nearer copy is the bait, both the
+  // check and the remembered cell read the COPY (lureTarget), so the echo
+  // chases the decoy's cell.
   let { lastSensedCell, loseMemoryAt, nextSenseAt } = echo;
+  const bait = lureTarget(echo, apparent, decoys);
   if (now >= nextSenseAt) {
     nextSenseAt = now + SENSE_INTERVAL_MS;
-    if (sensesPlayer(echo, player, mirrors, rt, water, grid, now, apparent)) {
-      lastSensedCell = grid.cellAt(apparent.x, apparent.y);
+    if (sensesPlayer(echo, player, mirrors, rt, water, grid, now, apparent, decoys)) {
+      lastSensedCell = grid.cellAt(bait.x, bait.y);
       loseMemoryAt = now + CHASE_MEMORY_MS;
     }
   }

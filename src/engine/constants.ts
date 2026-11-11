@@ -100,3 +100,14 @@ export const DISTORT_MAX_CELLS = 2;
 // fog; the player's step is the only blindness they know.
 export const WATER_RIPPLE_MS = 10_000; // ms a rippled pool's eye stays shut
 export const WATER_RIPPLE_RADIUS = 1.4; // m — how close the player must come to ripple a pool
+
+// T5 — the mirror-you decoys (Act II's first form): the house sends glass
+// copies of the player ahead of them. A copy spawns every
+// DECOY_SPAWN_EVERY_MS (± jitter) at an open cell 8–12 BFS cells from the
+// player, walks BFS toward the EXIT, lures Echoes when nearer than the
+// player, never harms anyone, never drowns — and shatters for DECOY_SHARD
+// shards when the player touches it (once per copy, via the shattered flag).
+export const DECOY_SPAWN_EVERY_MS = 45000; // ms between spawn attempts (jittered 0.8–1.2×)
+export const DECOY_MAX_ALIVE = 2; // unshattered copies on a floor at once
+export const DECOY_SHARD = 5; // shards pending per shattered copy (banked at clear)
+export const DECOY_SPEED = 2.0; // m/s — the copy's stride toward the exit

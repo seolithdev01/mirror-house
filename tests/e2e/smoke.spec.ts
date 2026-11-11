@@ -89,6 +89,8 @@ interface DebugHook {
   gherPos(): { x: number; y: number } | null;
   // T4/T4 — the Ambusher's exact spot for e2e warps (null off tier 4)
   avartPos(): { x: number; y: number } | null;
+  // T5/T2 — the LIVE mirror-you copies (unshattered only; empty off 41–50)
+  decoys(): Array<{ x: number; y: number }>;
   // M6/T1 — the venue side-floor: which pack is live (null id = campaign
   // floor) and its floor's beacon total (the pack's own count).
   venue(): { active: boolean; id: string | null; beacons: number };
@@ -253,13 +255,13 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('step003: FAQ opens with 36 entries and H toggles', async ({ page }) => {
+test('step003: FAQ opens with 37 entries and H toggles', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=FAQ');
   await ready(page);
   await page.locator('#mh-faq').click();
-  // 36 since T4/T5 — the Carnival pair joined the carnival glass
-  await expect(page.locator('#mh-faq-box details')).toHaveCount(36);
+  // 37 since T5/T2 — the mirror-you decoys entry joined (Act II's first form)
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(37);
   await page.keyboard.press('KeyH'); // closes
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens

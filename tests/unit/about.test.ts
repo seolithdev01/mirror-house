@@ -50,8 +50,16 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 36 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair)', () => {
-    expect(FAQ).toHaveLength(36);
+  it('grows to 37 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy)', () => {
+    expect(FAQ).toHaveLength(37);
+  });
+
+  it('the T5 entry explains the mirror-you decoys — the lure and the shatter bounty', () => {
+    const e = FAQ.find((f) => /copy of me/i.test(f.q));
+    expect(e, 'an entry about the mirror-you decoys exists').toBeDefined();
+    expect(e!.a).toContain('Echo'); // the lure is the copy's job
+    expect(e!.a).toContain('shatters'); // the touch is the bounty
+    expect(e!.a).toContain('41–50'); // the Flood Halls are where copies walk
   });
 
   it('the report-bugs answer names the Feedback button in the top-right', () => {

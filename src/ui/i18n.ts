@@ -209,6 +209,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.waterRipple': 'The water ripples — its eye closes.',
     // T4/T3 — the carnival glass: once per attempt, on the first displacement
     'caption.distort': 'The glass shows you somewhere you are not.',
+    // T5/T2 — the mirror-you decoys: one line per spawn (per-copy id), one
+    // per shatter ({n} = DECOY_SHARD)
+    'caption.decoySpawn': 'The house sends a copy of you ahead.',
+    'caption.decoyShatter': 'The copy shatters. +{n} shards.',
     // misc chrome
     'misc.close': '✕ Close ({key})',
     // M5/T6 — the accessible name for every ✕-only close button
@@ -402,6 +406,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.waterRipple': 'पानी में लहर उठी — उसकी आँख बंद हो गई।',
     // T4/T3 — कार्निवल का काँच: हर कोशिश में एक बार, पहले विचलन पर
     'caption.distort': 'शीशा आपको उस जगह दिखा रहा है, जहाँ आप नहीं हैं।',
+    // T5/T2 — आईने जैसी प्रतिलिपियाँ: हर स्पॉन पर एक पंक्ति (प्रति-प्रतिलिपि id),
+    // और टूटने पर एक ({n} = DECOY_SHARD)
+    'caption.decoySpawn': 'घर आपकी एक प्रतिलिपि आगे भेजता है।',
+    'caption.decoyShatter': 'प्रतिलिपि बिखर गई। +{n} शार्ड।',
     // शेष क्रोम
     'misc.close': '✕ बंद करें ({key})',
     // M5/T6 — केवल ✕ वाले बंद बटनों का सुगम नाम

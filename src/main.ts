@@ -15,6 +15,8 @@ import {
   CHHAYA_PING_MS,
   CONTACT_RADIUS,
   DESCEND_MS,
+  DECOY_SHARD,
+  DECOY_SPAWN_EVERY_MS,
   DWAAR_FLOOR,
   EYE_HEIGHT,
   EXIT_LOCKED_EMISSIVE,
@@ -29,6 +31,7 @@ import {
   TIER_TWO_FLOORS,
   WALK_SPEED,
 } from './engine/constants';
+import { createRng, type Rng } from './engine/rng';
 import {
   actionFor,
   InputCollector,
@@ -43,10 +46,12 @@ import {
   createAavart,
   createAvatar,
   createChhaya,
+  createDecoy,
   createGher,
   createTaal,
   updateAvatar,
   type AavartFigure,
+  type DecoyFigure,
   type GherFigure,
   type TaalFigure,
 } from './game/avatar';
@@ -72,6 +77,12 @@ import {
   type HintKind,
 } from './game/aaina';
 import { bracketSamples, recordPath, sampleDelayed, type PathSample } from './game/chhaya';
+import {
+  shatterDecoys,
+  spawnDecoy,
+  updateDecoys,
+  type DecoyState,
+} from './game/decoy';
 import { initEchoes, updateEcho } from './game/echo';
 import { createEchoMesh, disposeEchoMesh, syncEchoMesh } from './game/echoView';
 import {
@@ -416,6 +427,28 @@ let gherFigure: GherFigure | null = null;
 // as the other two; resetFloor re-seeds him at the far anchor.
 let aavart: AvartState | null = null;
 let aavartFigure: AavartFigure | null = null;
+// T5/T2 — the mirror-you decoys (Act II's first form): the house sends glass
+// copies of the Surveyor ahead on the Flood Halls. State + per-copy figures
+// are 1:1 by spawn order; buildFloor owns both (the teardown rides
+// floorDisposers with the rest of the stage), resetFloor kills every copy
+// with the attempt, and the spawn clock arms only on campaign floors 41–50.
+// The rng is re-seeded per floor build (`{seed}:decoys`) — deterministic,
+// no Math.random anywhere in the house.
+let decoys: DecoyState[] = [];
+let decoyFigures: DecoyFigure[] = [];
+let decoyRng: Rng = createRng('decoys');
+let nextDecoySpawnAt = Infinity; // armed by buildFloor/resetFloor on 41–50 only
+let decoyIdNext = 0;
+/** The jittered spawn cadence: DECOY_SPAWN_EVERY_MS scaled 0.8–1.2× by the
+ *  floor rng — the house keeps no metronome. */
+function decoySpawnInterval(): number {
+  return DECOY_SPAWN_EVERY_MS * (0.8 + 0.4 * decoyRng.next());
+}
+/** The copies walk the campaign's Flood Halls only — a venue floor is the
+ *  sponsor's stage, and the house's deceptions stay home (M6 isolation). */
+function decoysActiveFloor(): boolean {
+  return venue === null && tierOf(campaign.floor) === 5;
+}
 // T3/T3 — the water-mirrors: runtime pools (rippledAt mutated in place, the
 // MirrorRuntime precedent) + their visual patches. Empty arrays on every
 // tier-1/2/venue floor; buildFloor owns both, the teardown rides
@@ -559,6 +592,18 @@ function resetFloor(now: number): void {
   // attempt, and the first pace is again the player's to set.
   aavart = aavartFigure === null ? null : initAavart(objs.patrolAnchors, player);
   if (aavartFigure !== null) aavartFigure.group.visible = aavart !== null;
+  // T5/T2 — the copies die with the attempt: the stage forgets every copy,
+  // the spawn clock re-arms on the Flood Halls (re-seeded per attempt — the
+  // reset can never replay the same spawn cell twice in a row).
+  for (const fig of decoyFigures) {
+    scene.remove(fig.group);
+    fig.dispose();
+  }
+  decoys = [];
+  decoyFigures = [];
+  decoyIdNext = 0;
+  decoyRng = createRng(`${seed}:decoys:${house.attempts}`);
+  nextDecoySpawnAt = decoysActiveFloor() ? now + decoySpawnInterval() : Infinity;
   // T3/T3 — the pools persist with the floor; only their ripples reset (all
   // still water again — the patches re-brighten on the next frame's sync).
   for (const w of waterRt) w.rippledAt = null;
@@ -1469,6 +1514,22 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     });
   }
 
+  // T5/T2 — the mirror-you decoys reset with the floor: any attempt's leftover
+  // figures die here (teardownFloor already ran the previous floor's disposer,
+  // so the arrays are empty — this re-arms the clock on the Flood Halls only,
+  // seeded from THIS floor's seed like every other rng stream).
+  decoyIdNext = 0;
+  decoyRng = createRng(`${seed}:decoys`);
+  nextDecoySpawnAt = decoysActiveFloor() ? performance.now() + decoySpawnInterval() : Infinity;
+  floorDisposers.push(() => {
+    for (const fig of decoyFigures) {
+      scene.remove(fig.group);
+      fig.dispose();
+    }
+    decoyFigures = [];
+    decoys = [];
+  });
+
   // T7 passages: a silvered ref always gets its door machine here; a rebuild
   // starts every door closed again (the old floor's secrets died with it).
   doorStates = new Map();
@@ -2038,6 +2099,8 @@ function drawOverhead(now: number): void {
     waypoints,
     // T3/T3 — pool dots: teal, dim while the ripple blinds the eye.
     water: waterRt.map((w) => ({ x: w.x, y: w.y, dim: rippleState(w.rippledAt, now) })),
+    // T5/T2 — hollow gold player-glyphs: a copy looks like you on the map.
+    decoys: decoys.filter((d) => !d.shattered),
     now,
   });
 }
@@ -2156,6 +2219,25 @@ function frame(now: number): void {
         distortAnnounced = true;
         pushCaption('distort', t(lang, 'caption.distort'));
       }
+      // T5/T2 — the mirror-you decoys: on the Flood Halls the spawn clock
+      // fires on its jittered cadence (the gate: campaign floor 41–50, sim
+      // active — this loop IS the sim gate — and alive < DECOY_MAX_ALIVE,
+      // checked inside spawnDecoy). Then every unshattered copy flow-walks
+      // toward the exit, so the echoes' sense check below reads fresh
+      // positions.
+      if (decoysActiveFloor() && now >= nextDecoySpawnAt) {
+        nextDecoySpawnAt = now + decoySpawnInterval();
+        const spawned = spawnDecoy(decoys, player, floor.grid, decoyRng, decoyIdNext++, now);
+        if (spawned !== null) {
+          decoys = [...decoys, spawned];
+          const fig = createDecoy(look); // an EXACT copy of your look — identical is the point
+          fig.group.position.set(spawned.x, 0, spawned.y);
+          scene.add(fig.group);
+          decoyFigures = [...decoyFigures, fig];
+          pushCaption(`decoy-spawn-${spawned.id}`, t(lang, 'caption.decoySpawn'));
+        }
+      }
+      if (decoys.length > 0) decoys = updateDecoys(decoys, floor.grid, floor.exit, FIXED_STEP);
       echoes = echoes.map((e) => {
         const next = updateEcho(
           e,
@@ -2168,6 +2250,7 @@ function frame(now: number): void {
           now,
           FIXED_STEP,
           apparent,
+          decoys, // T5/T2 — the lure: a nearer copy is "the player" to the glass
         );
         // Map radar (T4): a successful sense check is the only writer of
         // loseMemoryAt, so a changed value marks this tick's check — ping at
@@ -2278,6 +2361,19 @@ function frame(now: number): void {
         // first — the standard caught fail. Lethal on every floor he walks.
         if (aavart !== null && Math.hypot(aavart.x - player.x, aavart.y - player.y) < CONTACT_RADIUS)
           failFloor('caught');
+        // T5/T2 — the copy is fragile, and it is worth shards: a touch within
+        // CONTACT_RADIUS shatters it (+DECOY_SHARD banked pending, once per
+        // copy — the shattered flag is the gate; a failed floor forfeits the
+        // stake like any beacon's). The copies never harm back.
+        if (decoys.length > 0) {
+          const sh = shatterDecoys(decoys, player, CONTACT_RADIUS);
+          if (sh.shards > 0) {
+            decoys = sh.decoys;
+            house = { ...house, shards: house.shards + sh.shards };
+            updateShardsChip();
+            pushCaption('decoy-shatter', fill(t(lang, 'caption.decoyShatter'), { n: DECOY_SHARD }));
+          }
+        }
       }
       accumulator -= FIXED_STEP;
     }
@@ -2311,6 +2407,19 @@ function frame(now: number): void {
   if (aavart !== null && aavartFigure !== null) {
     aavartFigure.group.position.set(aavart.x, 0, aavart.y);
     aavartFigure.group.rotation.y = -aavart.heading; // same convention as the avatar
+  }
+  // T5/T2 — the copies follow their state (the figures are 1:1 with the
+  // states by spawn order). A shattered copy collapses to nothing: one
+  // shrink to zero scale — a single shrink, not a flash (reduced-flash safe).
+  for (let i = 0; i < decoys.length; i++) {
+    const d = decoys[i]!;
+    const fig = decoyFigures[i];
+    if (fig === undefined) continue; // cannot happen (1:1 by construction)
+    if (d.shattered) {
+      fig.group.scale.setScalar(0);
+      continue;
+    }
+    fig.group.position.set(d.x, 0, d.y);
   }
   updateChhaya(now);
   // Chhaya's map radar (T4): a ping every CHHAYA_PING_MS while her sample
@@ -2692,6 +2801,9 @@ if (import.meta.env.DEV || testMode) {
     gherPos: () => (gher === null ? null : { x: gher.x, y: gher.y }),
     // T4/T4 — the Ambusher's exact spot for e2e warps (null off tier 4).
     avartPos: () => (aavart === null ? null : { x: aavart.x, y: aavart.y }),
+    // T5/T2 — the LIVE copies (unshattered only): where each copy of you
+    // stands. An empty array everywhere but the Flood Halls.
+    decoys: () => decoys.filter((d) => !d.shattered).map((d) => ({ x: d.x, y: d.y })),
     // T8 e2e hooks — scripted win/lose. `mirrors()` replaces the old hero
     // count (the step003 suite reads .total now). mirrorAt(kind) prefers the
     // first mirror of that kind not captured yet, so a capture loop walks the
