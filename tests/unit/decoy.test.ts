@@ -171,6 +171,15 @@ describe('updateDecoys — the copy walks to the exit', () => {
     expect(next[0]!.y).toBe(0);
   });
 
+  it('an all-shattered floor early-outs — fresh array, the tombstones ride unchanged', () => {
+    const g = corridor();
+    const gone = decoyAt(0, -8, 0, { shattered: true });
+    const out = updateDecoys([gone], g, { x: 4, y: 2 }, 0.5);
+    expect(out).not.toBe([gone]); // a FRESH array — the taal/echo no-mutation contract holds
+    expect(out).toEqual([gone]); // equal tombstones: nothing walked, nothing changed
+    expect(out[0]).toBe(gone); // the same object rides, exactly as the map path would leave it
+  });
+
   it('walks every unshattered copy and keeps ids and order stable', () => {
     const g = hall();
     const a = decoyAt(3, -40, 0); // cell (0,10) — same row as the exit (20,10)

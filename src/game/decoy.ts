@@ -65,6 +65,12 @@ export function updateDecoys(
   exit: CellIndex,
   dtS: number,
 ): DecoyState[] {
+  // Final-review minor — all-shattered early-out: a floor of tombstones has
+  // nothing to walk (every walker below returns its input untouched), so skip
+  // the exit flow-field rebuild entirely and hand back a fresh array. (An
+  // empty floor early-outs too — [].every is true, and the walk of nothing is
+  // nothing.)
+  if (decoys.every((d) => d.shattered)) return [...decoys];
   const field = buildFlowField(grid, [exit]);
   return decoys.map((d) => {
     if (d.shattered) return d;

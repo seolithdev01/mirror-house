@@ -464,8 +464,9 @@ function spawnOneDecoy(now: number): { x: number; y: number } | null {
 }
 // T5/T3 — the rising water: active on the SAME floors the decoys walk (the
 // Flood Halls, campaign 41–50; a venue floor never floods). The level itself
-// is DERIVED — waterLevel(runElapsedMs(phase, now)) — so there is no state to
-// reset anywhere; resetFloor's phase re-arm to `ready` is the whole reset.
+// is DERIVED — waterLevel(runElapsedMs(phase, now)) — so the clock needs no
+// reset anywhere; the one cached read (waterLevelNow) is zeroed in resetFloor,
+// where the glass's un-shrink rides the same sync (lastWaterScale below).
 function waterActiveFloor(): boolean {
   return decoysActiveFloor();
 }
@@ -640,6 +641,12 @@ function resetFloor(now: number): void {
   // T3/T3 — the pools persist with the floor; only their ripples reset (all
   // still water again — the patches re-brighten on the next frame's sync).
   for (const w of waterRt) w.rippledAt = null;
+  // T5 final review — the flood recedes with the attempt. This frame already
+  // derived waterLevelNow from the FAILING phase (still high), so zero it now
+  // and re-sync at once: the restore pass lifts the glass back to full height
+  // over the dry floor on the reset frame itself, not on some later input.
+  waterLevelNow = 0;
+  syncWaterLevelVisuals();
   visited.clear(); // the fog closes in — the new attempt starts unexplored
   pings = []; // the old attempt's radar is spent
   markVisited();
@@ -898,13 +905,19 @@ function syncFogVisuals(now: number): void {
 //    not glass — they stay. The decoy figures are exempt (copies don't
 //    drown); on a dry floor the scale is 1 and the position is the built one,
 //    so the loop is a no-op everywhere the house never floods.
+let lastWaterScale = 1; // the sink is sticky (scale writes persist) — the sync must know whether the glass is CURRENTLY shrunk
 function syncWaterLevelVisuals(): void {
   if (floodPlane !== null) {
     floodPlane.visible = waterLevelNow > 0.005;
     floodPlane.position.y = waterLevelNow;
   }
   const s = mirrorWaterScale(waterLevelNow);
-  if (s === 1) return; // dry floor (or the flood has not begun): nothing sank
+  // Final review — the early-out only holds when the glass is ALREADY at its
+  // full height: a fail→reset at high water lands here with s === 1 while
+  // lastWaterScale < 1, and must still run the restore below (scale.y = 1,
+  // position.y = the built base) or the dried floor keeps the drowned
+  // attempt's stubs until the next input moves something.
+  if (s === 1 && lastWaterScale === 1) return; // dry floor (or the flood has not begun): nothing sank, nothing to raise
   for (let i = 0; i < visuals.length; i++) {
     if (allMirrors[i]!.kind === 'silvered') continue; // a door is a wall
     const v = visuals[i]!;
@@ -912,6 +925,7 @@ function syncWaterLevelVisuals(): void {
     mesh.scale.y = s;
     mesh.position.y = 0.15 + 1.2 * s; // keep the pane's base planted (built center 1.35 = 0.15 + 1.2)
   }
+  lastWaterScale = s;
 }
 // The walking lantern rides the player (position set per frame below); its
 // flame re-dresses with the stage palette at buildFloor (T2/T4) — the
@@ -1302,6 +1316,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // disposer below is the stage group's — disposeTree walks the plane too).
   floodPlane = stage.waterPlane;
   waterLevelNow = 0; // dry until the first input starts this floor's clock
+  lastWaterScale = 1; // the fresh stage is built full-height — the sink tracker re-arms with it
   floodAnnounced = false; // the new floor speaks the flood once
   floorDisposers.push(() => {
     scene.remove(stage.group);
@@ -2298,12 +2313,14 @@ function frame(now: number): void {
         pushCaption('distort', t(lang, 'caption.distort'));
       }
       // T5/T2 — the mirror-you decoys: on the Flood Halls the spawn clock
-      // fires on its jittered cadence (the gate: campaign floor 41–50, sim
-      // active — this loop IS the sim gate — and alive < DECOY_MAX_ALIVE,
-      // checked inside spawnDecoy). Then every unshattered copy flow-walks
+      // fires on its jittered cadence (the gate: campaign floor 41–50, the
+      // clock RUNNING — the sim loop also ticks during `ready`, and the
+      // timer's framing is copies-after-your-first-step, so an idle player
+      // draws nothing — plus alive < DECOY_MAX_ALIVE, checked inside
+      // spawnDecoy). Then every unshattered copy flow-walks
       // toward the exit, so the echoes' sense check below reads fresh
       // positions.
-      if (decoysActiveFloor() && now >= nextDecoySpawnAt) {
+      if (decoysActiveFloor() && phase.kind === 'running' && now >= nextDecoySpawnAt) {
         nextDecoySpawnAt = now + decoySpawnInterval();
         spawnOneDecoy(now);
       }
