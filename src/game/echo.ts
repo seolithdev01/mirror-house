@@ -44,6 +44,13 @@ export interface EchoState {
    *  eye logic never runs for them at all. Set at spawn from the floor's
    *  tier; defaults to 'glass' so every earlier tier spawns byte-identical. */
   sense: 'glass' | 'ears';
+  /** T8 — the thaw lure: the world cell center of a thawed pane this echo was
+   *  drawn to (lureAt, within THAW_LURE_RADIUS of the thaw event). While set
+   *  and patrolling, the echo walks there and LINGERS, watching the glass —
+   *  wardens pulled off the player's route. Chase overrides (and clears) the
+   *  lure; resetFloor re-inits the echoes, which clears it with the attempt.
+   *  Null everywhere the Atrium never thawed anything. */
+  patrolOverrideCell: { x: number; y: number } | null;
 }
 
 /** The runtime entry for a mirror ref (runtime arrays are id-keyed copies of
@@ -90,7 +97,47 @@ export function initEchoes(
     nextSenseAt: now,
     stuckAwarded: false,
     sense,
+    patrolOverrideCell: null, // a fresh attempt owes no glass its visit
   }));
+}
+
+/** T8 — the thaw lure: every echo within `radius` of the thawed pane adopts
+ *  the pane's cell as its patrol override (walk there, linger, watch). Pure:
+ *  returns new echo states, the inputs untouched. The radius reads the pane's
+ *  world spot; the override stores the CELL CENTER the echo can actually
+ *  stand on (pathing targets cells — the glass hangs on the wall of it).
+ *  Call sites: main.ts tryFrost's thaw branch. Chase overrides the lure
+ *  (updateEcho clears it when the hunt takes over); resetFloor clears it
+ *  with the attempt (initEchoes). */
+export function lureAt(
+  echoes: ReadonlyArray<EchoState>,
+  pane: Pick<MirrorRef, 'x' | 'z' | 'cellX' | 'cellY'>,
+  radius: number,
+  grid: FloorGrid,
+): EchoState[] {
+  const { cx, cy } = grid.cellCenter(pane.cellX, pane.cellY);
+  return echoes.map((e) => {
+    if (Math.hypot(pane.x - e.x, pane.z - e.y) > radius) return e;
+    return { ...e, patrolOverrideCell: { x: cx, y: cy } };
+  });
+}
+
+/** T8 — the lure's other half: COLD FOG closes the eye, and the wardens it
+ *  drew are released — every echo whose override points at THIS pane's cell
+ *  drops the glass (echoes drawn by other still-thawed panes keep their
+ *  post; one echo can only ever owe one glass — the latest thaw won).
+ *  Pure, like lureAt. Call site: main.ts tryFrost's cold-fog branch. */
+export function releaseLure(
+  echoes: ReadonlyArray<EchoState>,
+  pane: Pick<MirrorRef, 'cellX' | 'cellY'>,
+  grid: FloorGrid,
+): EchoState[] {
+  const { cx, cy } = grid.cellCenter(pane.cellX, pane.cellY);
+  return echoes.map((e) =>
+    e.patrolOverrideCell !== null && e.patrolOverrideCell.x === cx && e.patrolOverrideCell.y === cy
+      ? { ...e, patrolOverrideCell: null }
+      : e,
+  );
 }
 
 export function sensesPlayer(
@@ -249,10 +296,24 @@ export function updateEcho(
   // Mode select: fresh memory chases, otherwise patrol.
   const mode: EchoState['mode'] = loseMemoryAt !== null && now < loseMemoryAt ? 'chase' : 'patrol';
 
+  // T8 — the chase overrides (and clears) the thaw lure: a warden who takes
+  // up the hunt drops the glass. The clear rides every chase tick, so the
+  // override never survives into the patrol that follows the memory lapse.
+  const patrolOverrideCell = mode === 'chase' ? null : echo.patrolOverrideCell;
+
   // Targeting.
   let { anchorIdx } = echo;
   let target: CellIndex | null = null;
-  if (mode === 'patrol' && anchors.length > 0) {
+  if (mode === 'patrol' && patrolOverrideCell !== null) {
+    // T8 — lured: the thawed pane's cell comes before the anchors. Arrival
+    // (the patrol's 0.15 m threshold) LINGERS — the echo stands watching the
+    // glass, and the anchors hold their rotation until the lure is spent.
+    if (Math.hypot(patrolOverrideCell.x - echo.x, patrolOverrideCell.y - echo.y) <= 0.15) {
+      target = null; // stand still — lingering at the glass
+    } else {
+      target = grid.cellAt(patrolOverrideCell.x, patrolOverrideCell.y);
+    }
+  } else if (mode === 'patrol' && anchors.length > 0) {
     const anchor = anchors[anchorIdx]!;
     if (Math.hypot(anchor.x - echo.x, anchor.y - echo.y) <= 0.15) {
       anchorIdx = (anchorIdx + 1) % anchors.length; // arrival rotates the patrol
@@ -321,5 +382,6 @@ export function updateEcho(
     lastSensedCell,
     loseMemoryAt,
     nextSenseAt,
+    patrolOverrideCell, // the chase's clear lands here (…echo alone would keep it)
   };
 }

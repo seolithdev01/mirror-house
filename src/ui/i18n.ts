@@ -219,6 +219,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'hint.heatNear': 'The furnace breathes — your frost melts fast, and every crack you leave burns wider.',
     // T7/T2 — the Library's standing advice, same dual-language authoring
     'hint.whisperNear': 'They are blind here — but they listen. Walk. Never run the stacks.',
+    // T8/T2 — the Atrium's standing advice, same dual-language authoring
+    'hint.frozenNear':
+      'The Atrium freezes every pane. Your breath thaws them — and thawed glass draws the wardens. Choose what they watch.',
     // Aaina's tab labels (her content stays English)
     'tab.ask': 'Ask',
     'tab.hint': 'Hint',
@@ -249,6 +252,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.gherDecoy': 'The warden guards the copy.',
     // T7/T2 — the noise economy: once per floor, the first noise-caused chase
     'caption.noiseChase': 'A shelf-warden heard you.',
+    // T8/T2 — the thaw inversion: once per floor, the FIRST thaw (the pane
+    // waking as a live eye — the lure is discovery, no line of its own)
+    'caption.thaw': 'The ice gives way — the glass watches.',
     // T5/T3 — the rising water: once per floor, as the level crosses 0.3 m
     'caption.flood': 'The halls are flooding…',
     // misc chrome
@@ -452,6 +458,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'hint.heatNear': 'भट्ठी की साँस चलती है — तुम्हारा तुषार जल्दी पिघलता है, और तुम जो दरार छोड़ते हो वह चौड़ी जलती है।',
     // T7/T2 — पुस्तकालय की स्थायी सलाह, वही दोनों-भाषा रीति
     'hint.whisperNear': 'ये यहाँ अंधे हैं — पर सुनते हैं। चलिए। शेल्फ़ों के बीच कभी न दौड़ें।',
+    // T8/T2 — जमे हुए प्रांगण की स्थायी सलाह, वही दोनों-भाषा रीति
+    'hint.frozenNear':
+      'प्रांगण हर शीशे को जमा देता है। तुम्हारी साँस उन्हें पिघलाती है — और पिघला शीशा रखवालों को खींचता है। चुनिए, वे किसे देखें।',
     // आईना के टैब (उनकी बातें अँग्रेज़ी में रहेंगी)
     'tab.ask': 'पूछें',
     'tab.hint': 'संकेत',
@@ -480,6 +489,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.gherDecoy': 'रखवाला प्रतिलिपि की रखवाली करता है।',
     // T7/T2 — शोर अर्थव्यवस्था: हर मंज़िल में एक बार, पहला शोर-जनित पीछा
     'caption.noiseChase': 'शेल्फ़-रखवाले ने तुम्हें सुन लिया।',
+    // T8/T2 — पिघलाने का उलटा: हर मंज़िल में एक बार, पहली पिघली शीशे पर
+    'caption.thaw': 'बर्फ़ हटती है — शीशा देखता है।',
     // T5/T3 — उठता पानी: प्रति तल एक बार, जब पानी 0.3 मी पार करता है
     'caption.flood': 'गलियाँ पानी से भरने लगी हैं…',
     // शेष क्रोम

@@ -56,6 +56,7 @@ const KIND_LABEL: Record<HintKind, string> = {
   gherNear: 'the one who seals the roads',
   avartNear: 'the one who reads your pace',
   whisperNear: 'the wardens who listen', // T7/T2 — the Library's standing advice
+  frozenNear: 'the ice that watches', // T8/T2 — the Atrium's standing advice
   heatNear: 'the furnace under the floor', // T6/T2 — the Wings' standing advice
   chhaya: 'your shadow, seconds behind',
   anger: "the house's temper",

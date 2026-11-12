@@ -25,6 +25,7 @@ const ctx = (over: Partial<HintContext> = {}): HintContext => ({
   gherNear: false,
   avartNear: false,
   whisperNear: false,
+  frozenNear: false,
   heatNear: false,
   exitUnlocked: false,
   hintsUsed: 0,
@@ -32,7 +33,7 @@ const ctx = (over: Partial<HintContext> = {}): HintContext => ({
 });
 
 describe('aaina — nextHint priority chain', () => {
-  it('selects each of the twelve kinds in priority order (hand-built contexts)', () => {
+  it('selects each of the thirteen kinds in priority order (hand-built contexts)', () => {
     const cases: Array<{ name: string; c: HintContext; want: HintKind }> = [
       // 1. beacons: left to capture and the house is not collapsing — wins over everything
       {
@@ -106,6 +107,24 @@ describe('aaina — nextHint priority chain', () => {
         c: ctx({ whisperNear: true, avartNear: true }),
         want: 'avartNear',
       },
+      // 7.6 frozenNear (T8/T2): the Atrium's standing rule — thaw to lure,
+      //    fog to blind — slotted beside whisperNear (after it), before the
+      //    shadow; the Sentinels outrank it as ever
+      {
+        name: 'frozenNear beats chhaya, heat and anger',
+        c: ctx({ frozenNear: true, chhayaNear: true, heatNear: true, anger: 90 }),
+        want: 'frozenNear',
+      },
+      {
+        name: 'whisperNear beats frozenNear — the tier notes rank beside each other',
+        c: ctx({ whisperNear: true, frozenNear: true }),
+        want: 'whisperNear',
+      },
+      {
+        name: 'avartNear beats frozenNear — the Sentinels outrank the tier note',
+        c: ctx({ frozenNear: true, avartNear: true }),
+        want: 'avartNear',
+      },
       // 8. chhaya: the shadow is close — wins over the heat and the anger
       { name: 'chhaya beats anger', c: ctx({ chhayaNear: true, anger: 90 }), want: 'chhaya' },
       // 9. heatNear (T6/T2): a Furnace floor — the tier's standing advice
@@ -144,7 +163,7 @@ describe('aaina — nextHint priority chain', () => {
     expect(nextHint(ctx({ exitUnlocked: true, beaconsLeft: 1 })).kind).toBe('beacons'); // beacons outrank exit
   });
 
-  it('HINTS covers all twelve kinds with non-empty in-voice lines', () => {
+  it('HINTS covers all thirteen kinds with non-empty in-voice lines', () => {
     const kinds: HintKind[] = [
       'exit',
       'beacons',
@@ -155,6 +174,7 @@ describe('aaina — nextHint priority chain', () => {
       'gherNear',
       'avartNear',
       'whisperNear',
+      'frozenNear',
       'heatNear',
       'anger',
       'stuck',
@@ -168,6 +188,12 @@ describe('aaina — nextHint priority chain', () => {
   it("pins the Library's line — the whisper rule, exactly (T7/T2)", () => {
     expect(HINTS.whisperNear).toBe(
       'They are blind here — but they listen. Walk. Never run the stacks.',
+    );
+  });
+
+  it("pins the Atrium's line — the thaw-to-lure rule, exactly (T8/T2)", () => {
+    expect(HINTS.frozenNear).toBe(
+      'The Atrium freezes every pane. Your breath thaws them — and thawed glass draws the wardens. Choose what they watch.',
     );
   });
 

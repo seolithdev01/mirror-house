@@ -24,15 +24,43 @@ export interface MirrorRuntime {
   foggedUntil: number | null;
   captured: boolean;
   cracked: boolean;
+  /** T8 — the Frozen Atrium's spawn state: the fogable glass
+   *  (standing/portrait/distort — never beacons, never the true pair) arrives
+   *  ENCASED. A frozen pane is eye-blind like fogged and renders frost-white;
+   *  frost on ice THAWS it instead of fogging (applyFog routes by state).
+   *  Always false off tier 8 — tiers ≤ 7 spawn byte-identical. */
+  frozen: boolean;
+  /** T8 — thawed by the lantern's breath: the ice is gone for the attempt (no
+   *  timer — permanent until a reset re-freezes the floor), the pane is a live
+   *  eye again AND a warden lure (echo.ts lureAt). Frost on a thawed pane
+   *  cold-fogs it (COLD_FOG_MS) and clears this flag. */
+  thawed: boolean;
 }
 
-export function initMirrorRuntime(mirrors: MirrorRef[]): MirrorRuntime[] {
+export interface MirrorRuntimeOpts {
+  /** T8 — tier-8 spawn: freeze the fogable glass at init. Defaults to false
+   *  (every pre-T8 call site and test is byte-identical). */
+  frozenSpawn?: boolean;
+}
+
+/** The kinds the Atrium freezes: the fogable, lie-able glass. Beacons stay
+ *  live (the capture objective cannot start encased) and the true pair stays
+ *  honest (the step-through is never blind). */
+const FREEZABLE: ReadonlySet<MirrorKind> = new Set(['standing', 'portrait', 'distort']);
+
+export function initMirrorRuntime(
+  mirrors: MirrorRef[],
+  opts: MirrorRuntimeOpts = {},
+): MirrorRuntime[] {
+  const frozenSpawn = opts.frozenSpawn === true;
   return mirrors.map((m) => ({
     id: m.id,
     kind: m.kind,
     foggedUntil: null,
     captured: false,
     cracked: false,
+    frozen: frozenSpawn && FREEZABLE.has(m.kind),
+    thawed: false,
   }));
 }
 
@@ -95,38 +123,63 @@ export function fogTarget(
  *  T6/T2 — the caller owns the duration (main passes
  *  `fogDurationMs(campaign.floor)`: the base 25 s on the cool floors, 12.5 s
  *  in the Furnace); this module stays floor-agnostic and heat-blind. Beacons
- *  ignore it — a capture is forever whatever the air is doing. */
+ *  ignore it — a capture is forever whatever the air is doing.
+ *  T8 — the inversion routes by the pane's STATE: frost on a FROZEN pane
+ *  THAWS it (frozen=false, thawed=true, foggedUntil=null — the caller passed
+ *  a duration, but a thaw is permanent for the attempt and never reads it;
+ *  the lure emission lives with the caller, who owns the echoes). Frost on a
+ *  THAWED pane cold-fogs it — the caller passes COLD_FOG_MS — and clears the
+ *  thaw: the eye closes, the lure ends. Re-frosting plain fogged glass keeps
+ *  the old refresh semantics (tiers ≤ 7 byte-identical: nothing there is
+ *  ever frozen or thawed). */
 export function applyFog(rt: MirrorRuntime[], id: number, now: number, durationMs: number): void {
   const m = rt.find((r) => r.id === id);
   if (!m) return;
   if (m.kind === 'beacon') {
     m.captured = true;
     m.foggedUntil = null;
-  } else {
-    m.foggedUntil = now + durationMs;
+    return;
   }
+  if (m.frozen) {
+    // the breath is warmth on ice: the pane wakes for the rest of the attempt
+    m.frozen = false;
+    m.thawed = true;
+    m.foggedUntil = null;
+    return;
+  }
+  m.thawed = false; // fog over a thawed pane: the eye closes with the glass
+  m.foggedUntil = now + durationMs;
 }
 
 /**
  * A mirror's single sight/display state — the one place that decides whether
- * glass is see-through, frosted, or permanently captured. Precedence is
- * meaningful: a captured beacon never clears, an unexpired standing fog is
- * `fogged`, everything else is `clear`.
+ * glass is see-through, frosted, encased in ice, or permanently captured.
+ * Precedence is meaningful: a captured beacon never clears, a frozen pane
+ * outranks any stale fog timer (the Atrium's spawn state — live play never
+ * overlaps them, the pin keeps the one derivation honest), an unexpired
+ * standing fog is `fogged`, everything else is `clear`. A THAWED pane reads
+ * `clear` — that is the point of the thaw: the glass is honest glass again,
+ * a live eye (the `thawed` flag rides alongside for the lure; it is not a
+ * visual state).
  *
  * `cracked` is ORTHOGONAL damage, deliberately outside this union: a crack
  * tints the glass but changes neither what it shows nor what can see through
  * it. A floor reset clears everything — cracks, fogs, and captures alike
- * (`resetFloor` re-runs `initMirrorRuntime`).
+ * (`resetFloor` re-runs `initMirrorRuntime`; on tier 8 it re-freezes too).
  */
-export type MirrorVisual = 'clear' | 'fogged' | 'captured';
+export type MirrorVisual = 'clear' | 'fogged' | 'captured' | 'frozen';
 
 export function mirrorVisual(m: MirrorRuntime, now: number): MirrorVisual {
   if (m.captured) return 'captured';
+  if (m.frozen) return 'frozen';
   if (m.foggedUntil !== null && now <= m.foggedUntil) return 'fogged';
   return 'clear';
 }
 
-/** Sight test — one derivation, shared by echoes, passages and the renderer. */
+/** Sight test — one derivation, shared by echoes, passages and the renderer.
+ *  T8: frozen counts blind exactly like fogged (the Atrium starts eye-closed
+ *  — ice sees nothing), and a THAWED pane is SIGHTED (it reads clear: thawing
+ *  is how the house gets its eyes back — and how the lure draws the wardens). */
 export function isFogged(m: MirrorRuntime, now: number): boolean {
   return mirrorVisual(m, now) !== 'clear';
 }

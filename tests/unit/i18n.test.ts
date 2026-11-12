@@ -393,3 +393,22 @@ describe('i18n — the T4 tier-four + Act I chrome', () => {
     expect(fill(STRINGS.hi['overlay.tierStats']!, { floors: 40, shards: 120 })).toContain('40');
   });
 });
+
+// T8/T2 — the Frozen Atrium's chrome: the once-per-floor thaw caption and
+// Aaina's standing rule, authored in both languages (the Aaina panel itself
+// speaks English by design; the hi lines carry the authoring).
+describe('i18n — the T8 atrium chrome', () => {
+  it('en pins the thaw caption and the frozenNear hint verbatim', () => {
+    expect(STRINGS.en['caption.thaw']).toBe('The ice gives way — the glass watches.');
+    expect(STRINGS.en['hint.frozenNear']).toBe(
+      'The Atrium freezes every pane. Your breath thaws them — and thawed glass draws the wardens. Choose what they watch.',
+    );
+  });
+
+  it('hi carries its own authored lines (Devanagari, never copies of en)', () => {
+    for (const k of ['caption.thaw', 'hint.frozenNear']) {
+      expect(STRINGS.hi[k], k).toMatch(/[\u0900-\u097F]/);
+      expect(STRINGS.hi[k], k).not.toBe(STRINGS.en[k]);
+    }
+  });
+});

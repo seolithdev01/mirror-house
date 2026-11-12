@@ -17,7 +17,17 @@ export interface OverheadDrawInput {
   /** Visited cell indices: y * grid.width + x. */
   visited: ReadonlySet<number>;
   player: { x: number; y: number; heading: number };
-  mirrors: Array<{ x: number; z: number; kind: string; captured: boolean }>;
+  mirrors: Array<{
+    x: number;
+    z: number;
+    kind: string;
+    captured: boolean;
+    /** T8 — the Frozen Atrium's panes: frost-white dots while the ice
+     *  holds, ice-teal dots once thawed (a live eye — the wardens' lure).
+     *  Both false on every pre-T8 floor, where these dots never draw. */
+    frozen: boolean;
+    thawed: boolean;
+  }>;
   exit: { cx: number; cy: number; unlocked: boolean };
   entrance: { cx: number; cy: number };
   pings: Array<{ x: number; y: number; at: number }>;
@@ -58,6 +68,8 @@ const COLOR = {
   distort: '#c2548a', // T4 — the carnival glass (the tier-4 rose)
   decoy: '#d9a441', // T5 — the copies: the player's own gold, drawn hollow
   flood: '#4a8a7a', // T5/T3 — the rising water's gauge (teal-green, the flood's own)
+  frozen: '#dfeef6', // T8 — the atrium's ice: frost-white dots (the FROST_GLASS_COLOR)
+  thawed: '#9ad4e8', // T8 — a thawed pane: the ice-teal of a live eye (and a lure)
 } as const;
 
 const MARGIN_PX = 28; // breathing room around the fitted grid
@@ -227,6 +239,21 @@ export function createOverhead(canvas: HTMLCanvasElement): {
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
+    }
+
+    // T8 — the Frozen Atrium's panes: a frost-white dot while the ice holds
+    // (the pane is eye-blind), an ice-teal dot once thawed — the pane is a
+    // live eye again and the wardens' lure, the thing the tier's whole
+    // inversion turns on. Every pre-T8 floor leaves both flags false and
+    // draws nothing here.
+    for (const m of input.mirrors) {
+      if (!m.frozen && !m.thawed) continue;
+      const bx = px(m.x);
+      const by = py(m.z);
+      ctx.fillStyle = m.thawed ? COLOR.thawed : COLOR.frozen;
+      ctx.beginPath();
+      ctx.arc(bx, by, L.cell * 0.16, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // Chhaya — a pale hollow ring; the shadow's last known standing.

@@ -77,6 +77,7 @@ const echoAt = (x: number, y: number, over: Partial<EchoState> = {}): EchoState 
   nextSenseAt: 0,
   stuckAwarded: false,
   sense: 'glass',
+  patrolOverrideCell: null,
   ...over,
 });
 

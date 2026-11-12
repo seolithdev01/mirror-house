@@ -44,6 +44,11 @@ export interface CrackVisual {
 // color, still never disposed per mirror).
 const BEACON_TEAL = 0x2ec4b6;
 const foggedMaterial = new THREE.MeshStandardMaterial({ color: 0x39415f, roughness: 1 });
+// T8 — the Frozen Atrium's pane: frost-white, fully matte, fully opaque —
+// eye-blind exactly like the fogged matte, but its OWN shared material (ice
+// is white, fog is dark). Every glass family swaps to it while frozen.
+export const FROST_GLASS_COLOR = 0xdfeef6;
+const frozenMaterial = new THREE.MeshStandardMaterial({ color: FROST_GLASS_COLOR, roughness: 1 });
 const capturedMaterials = new Map<number, THREE.MeshStandardMaterial>();
 function capturedMaterialFor(accent: number): THREE.MeshStandardMaterial {
   let m = capturedMaterials.get(accent);
@@ -114,12 +119,15 @@ export function createMirrorMesh(
       mesh.material =
         next === 'captured'
           ? capturedMaterialFor(beaconAccent)
-          : next === 'fogged'
-            ? foggedMaterial
-            : base;
+          : next === 'frozen'
+            ? frozenMaterial // T8 — the Atrium's ice: frost-white, not the dark matte
+            : next === 'fogged'
+              ? foggedMaterial
+              : base;
     },
-    // Tint only the per-instance base material — the fogged/captured materials
-    // are shared, and a crack outlives frost anyway (it shows once fog lifts).
+    // Tint only the per-instance base material — the fogged/frozen/captured
+    // materials are shared, and a crack outlives frost anyway (it shows once
+    // fog lifts).
     setCracked(cracked: boolean): void {
       base.color.setHex(cracked ? CRACK_TINT : MIRROR_BASE_COLOR);
     },
@@ -169,8 +177,9 @@ export function createPortraitMirror(id: number): CheapMirror {
       if (next === state) return;
       state = next;
       // Portraits never capture (not beacons): any non-clear state is the
-      // matte fogged swap.
-      mesh.material = next === 'clear' ? base : foggedMaterial;
+      // matte fogged swap — or, on the Atrium's floors, the frost-white ice
+      // (T8: portraits are fogable glass, so they spawn frozen too).
+      mesh.material = next === 'clear' ? base : next === 'frozen' ? frozenMaterial : foggedMaterial;
     },
     setCracked(cracked: boolean): void {
       base.color.setHex(cracked ? CRACK_TINT : texture ? 0xffffff : PORTRAIT_GLASS);
@@ -217,8 +226,8 @@ export function createDistortMirror(): CheapMirror {
       if (next === state) return;
       state = next;
       // Distort mirrors never capture (not beacons): any non-clear state is
-      // the matte fogged swap.
-      mesh.material = next === 'clear' ? base : foggedMaterial;
+      // the matte fogged swap — or the T8 frost-white ice while frozen.
+      mesh.material = next === 'clear' ? base : next === 'frozen' ? frozenMaterial : foggedMaterial;
     },
     setCracked(cracked: boolean): void {
       base.color.setHex(cracked ? CRACK_TINT : DISTORT_ROSE);
@@ -273,10 +282,17 @@ export class HeroMirror implements FogVisual, CrackVisual {
     this.cam.layers.enable(AVATAR_LAYER); // the avatar is visible ONLY here and in other mirror passes
   }
 
-  /** Swap to the matte fog material while fogged; restore the RT material after. */
+  /** Swap to the matte fog material while fogged — or the frost-white ice
+   *  while frozen (T8: the Atrium's heroes spawn encased too; a frozen hero
+   *  also skips the RT pass, the same early-out the fog takes) — and restore
+   *  the RT material after. */
   setFog(state: MirrorFogState): void {
     this.fogged = state !== 'clear';
-    this.mesh.material = this.fogged ? foggedMaterial : this.rtMaterial;
+    this.mesh.material = this.fogged
+      ? state === 'frozen'
+        ? frozenMaterial
+        : foggedMaterial
+      : this.rtMaterial;
   }
 
   /** Tint the RT material — the reflection itself goes dark, cracks included. */

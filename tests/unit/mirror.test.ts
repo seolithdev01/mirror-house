@@ -2,7 +2,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { generateFloor, TIER_ONE } from '../../src/game/maze';
-import { createPortraitMirror, HeroMirror, mirrorSpots } from '../../src/game/mirror';
+import {
+  createDistortMirror,
+  createMirrorMesh,
+  createPortraitMirror,
+  FROST_GLASS_COLOR,
+  HeroMirror,
+  mirrorSpots,
+} from '../../src/game/mirror';
 
 describe('mirrorSpots', () => {
   it('places exactly two mirrors (entrance + exit cells), deterministic, 0.12m off a wall, facing the cell center', () => {
@@ -102,5 +109,62 @@ describe('createPortraitMirror (T2)', () => {
     expect(geoSpy).toHaveBeenCalledTimes(1);
     expect(matSpy).toHaveBeenCalledTimes(1);
     expect(matteSpy).not.toHaveBeenCalled();
+  });
+});
+
+// T8 — the frozen pane: the Atrium's spawn state renders frost-white (an
+// opaque pane material — eye-blind like the fogged matte, but its OWN shared
+// material: ice is white, fog is dark). Every glass family takes the swap:
+// cheap standing/beacon, portrait, distort, and the RT heroes (whose update
+// skips the reflection pass while frozen, exactly like fogged).
+describe('frozen render — the frost-white pane (T8)', () => {
+  it('createMirrorMesh swaps to a shared frost material on frozen, base on clear', () => {
+    const m = createMirrorMesh('standing');
+    const base = m.mesh.material;
+    m.setFog('fogged');
+    const matte = m.mesh.material;
+    m.setFog('frozen');
+    const frost = m.mesh.material;
+    expect(frost).not.toBe(base);
+    expect(frost).not.toBe(matte); // ice is not fog — its own material
+    expect((frost as THREE.MeshStandardMaterial).color.getHex()).toBe(FROST_GLASS_COLOR);
+    m.setFog('clear');
+    expect(m.mesh.material).toBe(base);
+  });
+
+  it('the portrait and the carnival glass freeze onto the same frost material', () => {
+    const p = createPortraitMirror(0);
+    const base = p.mesh.material;
+    p.setFog('frozen');
+    expect(p.mesh.material).not.toBe(base);
+    expect((p.mesh.material as THREE.MeshStandardMaterial).color.getHex()).toBe(FROST_GLASS_COLOR);
+    p.setFog('clear');
+    expect(p.mesh.material).toBe(base);
+    const d = createDistortMirror();
+    const dBase = d.mesh.material;
+    d.setFog('frozen');
+    expect(d.mesh.material).not.toBe(dBase);
+    expect((d.mesh.material as THREE.MeshStandardMaterial).color.getHex()).toBe(FROST_GLASS_COLOR);
+  });
+
+  it('HeroMirror freezes onto the frost material and skips the RT pass while frozen', () => {
+    const m = new HeroMirror({ x: 0, z: 0, rotY: 0 });
+    const rtMaterial = (m as unknown as { rtMaterial: THREE.Material }).rtMaterial;
+    m.setFog('frozen');
+    expect(m.mesh.material).not.toBe(rtMaterial);
+    expect((m.mesh.material as THREE.MeshStandardMaterial).color.getHex()).toBe(FROST_GLASS_COLOR);
+    expect((m as unknown as { fogged: boolean }).fogged).toBe(true); // the update() early-out
+    m.setFog('clear');
+    expect(m.mesh.material).toBe(rtMaterial);
+    expect((m as unknown as { fogged: boolean }).fogged).toBe(false);
+  });
+
+  it('the shared frost material is never disposed with the mirror', () => {
+    const m = createMirrorMesh('standing');
+    m.setFog('frozen');
+    const frost = m.mesh.material as THREE.Material;
+    const spy = vi.spyOn(frost, 'dispose');
+    m.dispose();
+    expect(spy).not.toHaveBeenCalled();
   });
 });

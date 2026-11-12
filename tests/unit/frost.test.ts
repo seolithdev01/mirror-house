@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
-import { FOG_DURATION_MS } from '../../src/engine/constants';
+import { COLD_FOG_MS, FOG_DURATION_MS, THAW_LURE_RADIUS } from '../../src/engine/constants';
 import { Dir, FloorGrid } from '../../src/engine/grid';
 import {
   applyFog,
@@ -123,5 +123,117 @@ describe('frost', () => {
       expect(isFogged(rt[0]!, now)).toBe(mirrorVisual(rt[0]!, now) !== 'clear');
     }
     expect(isFogged(rt[0]!, 2000)).toBe(true);
+  });
+});
+
+// T8 — the Frozen Atrium: the tier's signature inversion. Every fogable pane
+// (standing/portrait/distort — NEVER beacons, NEVER the true pair) spawns
+// FROZEN: frost-white, eye-blind like fogged. The frost verb inverts there —
+// frost on ice THAWS (the pane becomes a live eye + a warden lure, permanent
+// for the attempt), frost on a thawed pane COLD-FOGS (COLD_FOG_MS — never
+// meaningfully expires; the eye closes). Tiers ≤ 7 spawn unfrozen and read
+// exactly as always.
+describe('frost — T8 frozen atrium (the thaw inversion)', () => {
+  const m8 = (id: number, kind: MirrorRef['kind']): MirrorRef => m(id, kind, 0, 0);
+
+  it('constants: THAW_LURE_RADIUS = 10, COLD_FOG_MS = 600000', () => {
+    expect(THAW_LURE_RADIUS).toBe(10);
+    expect(COLD_FOG_MS).toBe(600000);
+  });
+
+  it('frozenSpawn freezes standing/portrait/distort — never beacons, never true, never silvered', () => {
+    const kinds: MirrorRef['kind'][] = [
+      'standing',
+      'portrait',
+      'distort',
+      'beacon',
+      'true',
+      'silvered',
+    ];
+    const rt = initMirrorRuntime(
+      kinds.map((k, i) => m8(i, k)),
+      { frozenSpawn: true },
+    );
+    expect(rt.map((r) => r.frozen)).toEqual([true, true, true, false, false, false]);
+    expect(rt.every((r) => r.thawed === false)).toBe(true);
+    expect(rt.every((r) => r.foggedUntil === null)).toBe(true); // frozen is its own state, not a fog timer
+  });
+
+  it('no opts → nothing frozen: tiers ≤ 7 spawn byte-identical (the pin)', () => {
+    const kinds: MirrorRef['kind'][] = ['standing', 'portrait', 'distort', 'beacon'];
+    const rt = initMirrorRuntime(kinds.map((k, i) => m8(i, k)));
+    expect(rt.every((r) => r.frozen === false)).toBe(true);
+    expect(rt.every((r) => r.thawed === false)).toBe(true);
+    // and frozenSpawn: false says the same thing as no opts at all
+    const rtOff = initMirrorRuntime(
+      kinds.map((k, i) => m8(i, k)),
+      { frozenSpawn: false },
+    );
+    expect(rtOff.every((r) => r.frozen === false)).toBe(true);
+  });
+
+  it('a frozen pane is eye-blind (isFogged true) and reads the frozen visual', () => {
+    const rt = initMirrorRuntime([m8(1, 'standing')], { frozenSpawn: true });
+    expect(mirrorVisual(rt[0]!, 5000)).toBe('frozen');
+    expect(isFogged(rt[0]!, 5000)).toBe(true); // the echo eyes start closed
+  });
+
+  it('applyFog on frozen THAWS: frozen=false, thawed=true, foggedUntil=null — a live eye for the attempt', () => {
+    const rt = initMirrorRuntime([m8(1, 'standing')], { frozenSpawn: true });
+    applyFog(rt, 1, 1000, COLD_FOG_MS); // duration is the caller's; the thaw branch ignores it
+    expect(rt[0]!.frozen).toBe(false);
+    expect(rt[0]!.thawed).toBe(true);
+    expect(rt[0]!.foggedUntil).toBeNull();
+    expect(mirrorVisual(rt[0]!, 999_999)).toBe('clear'); // permanent for the attempt — no timer
+    expect(isFogged(rt[0]!, 999_999)).toBe(false); // the eye is OPEN
+  });
+
+  it('applyFog on thawed COLD-FOGS: foggedUntil = now + COLD_FOG_MS, thawed cleared', () => {
+    const rt = initMirrorRuntime([m8(1, 'standing')], { frozenSpawn: true });
+    applyFog(rt, 1, 1000, COLD_FOG_MS); // thaw
+    expect(rt[0]!.thawed).toBe(true);
+    applyFog(rt, 1, 5000, COLD_FOG_MS); // frost again — the cold fog
+    expect(rt[0]!.thawed).toBe(false); // fogging a thawed pane clears the thaw
+    expect(rt[0]!.frozen).toBe(false); // and it stays thawed-off: fog, not ice
+    expect(rt[0]!.foggedUntil).toBe(5000 + COLD_FOG_MS);
+    expect(mirrorVisual(rt[0]!, 5000 + COLD_FOG_MS)).toBe('fogged');
+    expect(isFogged(rt[0]!, 5000 + COLD_FOG_MS)).toBe(true); // the eye closed
+    // 600 s later it is STILL shut — the cold holds for the whole attempt
+    expect(isFogged(rt[0]!, 5000 + COLD_FOG_MS)).toBe(true);
+    expect(isFogged(rt[0]!, 5000 + COLD_FOG_MS + 1)).toBe(false); // the boundary is honest
+  });
+
+  it('a thawed pane reads clear — mirrorVisual precedence: captured → frozen → fogged → clear', () => {
+    const rt = initMirrorRuntime([m8(1, 'standing'), m8(2, 'beacon')], { frozenSpawn: true });
+    applyFog(rt, 1, 1000, COLD_FOG_MS); // thaw → clear
+    expect(mirrorVisual(rt[0]!, 2000)).toBe('clear');
+    // precedence: frozen outranks a stale fog timer (constructed directly —
+    // live play never overlaps them, the pin is for the one derivation)
+    const frozenThenFog = { ...rt[0]!, frozen: true, foggedUntil: 1 };
+    expect(mirrorVisual(frozenThenFog, 2000)).toBe('frozen');
+    // captured outranks everything, frozen included
+    applyFog(rt, 2, 1000, COLD_FOG_MS); // the beacon captures — it was never frozen
+    expect(mirrorVisual(rt[1]!, 999_999)).toBe('captured');
+    expect(rt[1]!.captured).toBe(true);
+    expect(rt[1]!.frozen).toBe(false);
+  });
+
+  it('isFogged truth table: captured/frozen/fogged blind — thawed and clear sighted', () => {
+    const rt = initMirrorRuntime(
+      [m8(0, 'standing'), m8(1, 'standing'), m8(2, 'standing'), m8(3, 'standing')],
+      { frozenSpawn: true },
+    );
+    expect(isFogged(rt[0]!, 1000)).toBe(true); // frozen
+    applyFog(rt, 1, 1000, COLD_FOG_MS); // thawed
+    expect(isFogged(rt[1]!, 1000)).toBe(false);
+    applyFog(rt, 2, 1000, COLD_FOG_MS); // thaw then cold-fog
+    applyFog(rt, 2, 2000, COLD_FOG_MS);
+    expect(isFogged(rt[2]!, 3000)).toBe(true); // fogged
+    applyFog(rt, 3, 1000, COLD_FOG_MS); // thawed…
+    rt[3]!.frozen = false; // …then plain-timed fog: the tiers ≤ 7 path
+    rt[3]!.thawed = false;
+    rt[3]!.foggedUntil = 500;
+    expect(isFogged(rt[3]!, 1000)).toBe(false); // expired fog + not thawed/frozen → clear
+    expect(mirrorVisual(rt[3]!, 1000)).toBe('clear');
   });
 });

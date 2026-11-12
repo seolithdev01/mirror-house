@@ -31,6 +31,11 @@ export interface HintContext {
    *  listen instead. The tier's standing advice — slotted BEFORE the shadow
    *  (the stacks' rule outranks her proximity), after the Sentinels. */
   whisperNear: boolean;
+  /** T8/T2 — a FROZEN ATRIUM floor (tier 8): every pane spawns frozen and
+   *  the frost verb inverted (thaw to lure, fog to blind). The tier's
+   *  standing advice — slotted beside whisperNear (after it), before the
+   *  shadow; the Sentinels outrank it as ever. */
+  frozenNear: boolean;
   exitUnlocked: boolean;
   hintsUsed: number;
 }
@@ -45,6 +50,7 @@ export type HintKind =
   | 'gherNear'
   | 'avartNear'
   | 'whisperNear'
+  | 'frozenNear'
   | 'heatNear'
   | 'anger'
   | 'stuck';
@@ -76,6 +82,8 @@ export const HINTS: Record<HintKind, string> = {
     'The furnace breathes — your frost melts fast, and every crack you leave burns wider.',
   whisperNear:
     'They are blind here — but they listen. Walk. Never run the stacks.',
+  frozenNear:
+    'The Atrium freezes every pane. Your breath thaws them — and thawed glass draws the wardens. Choose what they watch.',
   chhaya:
     'She is close — your own footsteps, seconds late, and quicker the deeper you go. Never retrace your path; bend your trail instead. And if you must, step through a True Mirror (Space) to somewhere your past never walked.',
   anger:
@@ -100,6 +108,8 @@ export function nextHint(ctx: HintContext): Hint {
     kind = 'avartNear'; // T4: the Ambusher — the pace rule, beside the feint
   else if (ctx.whisperNear)
     kind = 'whisperNear'; // T7: the Library's standing rule — blind wardens, loud footsteps
+  else if (ctx.frozenNear)
+    kind = 'frozenNear'; // T8: the Atrium's standing rule — thaw to lure, fog to blind
   else if (ctx.chhayaNear) kind = 'chhaya';
   else if (ctx.heatNear)
     kind = 'heatNear'; // T6/T2: the Furnace's standing rule — below the shadow, above the temper

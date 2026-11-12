@@ -124,6 +124,14 @@ export const NOISE_ACTION_R = 2.5; // m — frost/push/step-through's single pin
 export const NOISE_WALK_EVERY_MS = 500; // ms between walk pings
 export const NOISE_TTL_MS = 1200; // ms a ping stays hearable
 export const NOISE_MAX_EVENTS = 24; // ring cap — drop-oldest beyond it
+// T8 — the Frozen Atrium's inversion: the frost verb THAWS the frozen panes
+// (frost.ts routes by state), and a thawed pane is a live eye PLUS a lure —
+// every echo within THAW_LURE_RADIUS of the thaw event adopts the pane's cell
+// as its patrol override and walks there to linger, watching. Frost on a
+// THAWED pane cold-fogs it for COLD_FOG_MS — ten minutes, never meaningfully
+// expiring within an attempt: the eye closes and the lure ends for good.
+export const THAW_LURE_RADIUS = 10; // m — how far a thaw's pull reaches
+export const COLD_FOG_MS = 600000; // ms a cold fog holds (the attempt's rest)
 // T4/T3 — the distorting mirrors: while UNfogged carnival glass sees the
 // player, every enemy's mirror-sight reads them displaced by the mirror's
 // fixed per-id delta — axis-aligned cells, capped here. Fog the glass and the

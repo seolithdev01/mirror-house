@@ -18,6 +18,7 @@ import {
   BEAT_TICK_MS,
   CELL_SIZE,
   CHHAYA_PING_MS,
+  COLD_FOG_MS,
   CONTACT_RADIUS,
   CRACK_ANGER,
   DESCEND_MS,
@@ -44,6 +45,7 @@ import {
   TIER_SIX_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
+  THAW_LURE_RADIUS,
   WALK_SPEED,
 } from './engine/constants';
 import { createRng, type Rng } from './engine/rng';
@@ -93,7 +95,7 @@ import {
 } from './game/aaina';
 import { bracketSamples, recordPath, sampleDelayed, type PathSample } from './game/chhaya';
 import { shatterDecoys, spawnDecoy, updateDecoys, type DecoyState } from './game/decoy';
-import { initEchoes, updateEcho } from './game/echo';
+import { initEchoes, lureAt, releaseLure, updateEcho } from './game/echo';
 import { emit, prune, type NoiseEvent } from './game/noise';
 import { createEchoMesh, disposeEchoMesh, syncEchoMesh } from './game/echoView';
 import {
@@ -458,6 +460,14 @@ let noiseChaseAnnounced = false; // the once-per-floor 'A shelf-warden heard you
 function echoSenseForFloor(): 'glass' | 'ears' {
   return venue === null && tierOf(campaign.floor) === 7 ? 'ears' : 'glass';
 }
+/** T8 — the Frozen Atrium's spawn state: the fogable glass (standing/
+ *  portrait/distort — never beacons, never the true pair) arrives FROZEN on
+ *  the campaign's tier-8 floors, and the frost verb inverts there (thaw to
+ *  lure, fog to blind). One definition for the two initMirrorRuntime call
+ *  sites (build, reset); a venue side-floor always behaves tier-one. */
+function frozenSpawnFloor(): boolean {
+  return venue === null && tierOf(campaign.floor) === 8;
+}
 // M4/T3 — Taal's cameo (floor 5); T2 — the Sentinel from floor 11 up (the
 // ladder accumulates: he keeps the beat through the Gardens beside Gher).
 // State is null everywhere else; the figure
@@ -564,6 +574,12 @@ let floodAnnounced = false;
 // by buildFloor only — a failed attempt re-runs the seal but not the
 // announcement, the floodAnnounced precedent).
 let gherCopyAnnounced = false;
+// T8/T2 — the Atrium's once-per-FLOOR line: the first thaw speaks "the ice
+// gives way — the glass watches" (cleared by buildFloor only — a failed
+// attempt re-freezes the panes but not the announcement, the
+// gherCopyAnnounced/floodAnnounced precedent; later thaws stay silent —
+// discovery happened once, the ice keeps talking through its absence).
+let thawAnnounced = false;
 // Beacon gate: the stair door burns dim red until every beacon is frosted,
 // then returns to its built gold. Tint the material of the CURRENT floor's
 // stage (buildFloor refreshes both bindings).
@@ -670,7 +686,9 @@ function failFloor(reason: FailReason): void {
 }
 
 function resetFloor(now: number): void {
-  mirrorRuntime = initMirrorRuntime(allMirrors);
+  // T8 — the atrium re-freezes with the attempt: a thaw is permanent FOR the
+  // attempt (frost.ts), and the reset is the attempt's end.
+  mirrorRuntime = initMirrorRuntime(allMirrors, { frozenSpawn: frozenSpawnFloor() });
   for (const v of visuals) {
     v.state = 'clear';
     v.bind.setFog('clear');
@@ -842,6 +860,11 @@ function aainaContext(): HintContext {
     // outranks even Chhaya's proximity. A venue floor never hints it (the
     // same campaign gate heatNear carries).
     whisperNear: venue === null && tierOf(campaign.floor) === 7,
+    // T8/T2 — the Atrium's standing rule (tier 8): the inversion — thaw to
+    // lure, fog to blind. Slotted beside whisperNear (after it), before the
+    // shadow; the Sentinels outrank it as ever. The same campaign gate the
+    // other tier notes carry.
+    frozenNear: venue === null && tierOf(campaign.floor) === 8,
     // T6/T2 — the Furnace's standing rule: a hot floor (51–60) earns the
     // heat hint — frost melts fast, cracks burn wider. It outranks her
     // temper threshold but never the Sentinels or the shadow. T6 final
@@ -934,15 +957,46 @@ function tryFrost(now: number): void {
   if (!rt) return;
   if (rt.captured) return; // re-frosting a captured beacon buys nothing — keep the breath
   const wasCaptured = rt.captured;
-  // T6/T2 — the caller owns the duration: the heat halves it in the Furnace
-  // (12.5 s), the cool floors keep the base 25 s (frost.ts stays heat-blind).
-  // T6 final review — the heat is the campaign's: a venue floor keeps 25 s.
-  applyFog(
-    mirrorRuntime,
-    target.id,
-    now,
-    heatActiveFloor() ? fogDurationMs(campaign.floor) : FOG_DURATION_MS,
-  );
+  // T8 — the Atrium's inversion: the F verb routes by the pane's STATE.
+  // Frozen → THAW (permanent for the attempt + the lure); thawed → COLD FOG
+  // (COLD_FOG_MS — the eye closes, the lure ends); cold-fogged → no-op (the
+  // fog holds; no breath, no refresh); plain glass → the old fog (the t8
+  // beacon capture lands here — beacons never freeze). Tiers ≤ 7 take the
+  // old path whole: nothing there is ever frozen or thawed, so the pin
+  // holds byte-for-byte.
+  if (frozenSpawnFloor()) {
+    if (rt.frozen) {
+      // THAW — the breath is warmth on ice: the pane wakes for the rest of
+      // the attempt, and every warden within THAW_LURE_RADIUS walks to the
+      // glass (the applyFog duration is ignored by the thaw branch).
+      applyFog(mirrorRuntime, target.id, now, COLD_FOG_MS);
+      echoes = lureAt(echoes, target, THAW_LURE_RADIUS, floor.grid);
+      if (!thawAnnounced) {
+        thawAnnounced = true;
+        pushCaption('thaw', t(lang, 'caption.thaw'));
+      }
+    } else if (rt.thawed) {
+      // COLD FOG — the fogged-over pane is blind again for the attempt's
+      // rest, and the wardens it lured are released (other thawed panes
+      // keep theirs).
+      applyFog(mirrorRuntime, target.id, now, COLD_FOG_MS);
+      echoes = releaseLure(echoes, target, floor.grid);
+    } else if (mirrorVisual(rt, now) === 'fogged') {
+      return; // the cold fog holds — no breath spent, no timer to refresh
+    } else {
+      applyFog(mirrorRuntime, target.id, now, FOG_DURATION_MS); // plain glass / the beacon capture
+    }
+  } else {
+    // T6/T2 — the caller owns the duration: the heat halves it in the Furnace
+    // (12.5 s), the cool floors keep the base 25 s (frost.ts stays heat-blind).
+    // T6 final review — the heat is the campaign's: a venue floor keeps 25 s.
+    applyFog(
+      mirrorRuntime,
+      target.id,
+      now,
+      heatActiveFloor() ? fogDurationMs(campaign.floor) : FOG_DURATION_MS,
+    );
+  }
   breath = updateBreath(breath, 0, true);
   // T7/T2 — the verbs are NOISE: a frost's crunch pings NOISE_ACTION_R once
   // at the action (the ring is inert where every echo is glass).
@@ -1513,6 +1567,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   lastWaterScale = 1; // the fresh stage is built full-height — the sink tracker re-arms with it
   floodAnnounced = false; // the new floor speaks the flood once
   gherCopyAnnounced = false; // T6/T3 — and the warden's copy ward once
+  thawAnnounced = false; // T8/T2 — and the atrium's first-thaw line once per FLOOR
   // T7/T2 — the new floor's ring starts silent and its once-per-floor
   // noise-chase line re-arms with the rest of the caption eyes.
   noiseEvents = [];
@@ -1598,7 +1653,11 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       });
   }
   allMirrors = [...objs.mirrors, ...heroRefs];
-  mirrorRuntime = initMirrorRuntime(allMirrors);
+  // T8 — the Frozen Atrium spawns encased: every fogable pane (the standing
+  // glass, the heroes included — they are standing mirrors) arrives frozen;
+  // beacons and the true pair stay live glass. Off tier 8 this is the same
+  // init as always (frozen false everywhere).
+  mirrorRuntime = initMirrorRuntime(allMirrors, { frozenSpawn: frozenSpawnFloor() });
 
   // Bind every mirror to its visual (convention pinned at MIRROR_MATCH_EPS).
   const nextTrue: HeroMirror[] = [];
@@ -2400,6 +2459,10 @@ function drawOverhead(now: number): void {
       z: m.z,
       kind: m.kind,
       captured: mirrorRuntime[i]?.captured ?? false,
+      // T8/T2 — the atrium's panes on the map: frost-white dots while the
+      // ice holds, ice-teal dots once thawed (a live eye — the wardens' lure).
+      frozen: mirrorRuntime[i]?.frozen ?? false,
+      thawed: mirrorRuntime[i]?.thawed ?? false,
     })),
     exit: {
       cx: exitCenter.cx,

@@ -9,12 +9,20 @@ import {
   NOISE_SPRINT_R,
   NOISE_WALK_R,
   SENSE_INTERVAL_MS,
+  THAW_LURE_RADIUS,
   WATER_RIPPLE_MS,
 } from '../../src/engine/constants';
 import { applyFog, initMirrorRuntime } from '../../src/game/frost';
 import type { MirrorRef } from '../../src/game/floorObjects';
 import type { PlayerState } from '../../src/game/player';
-import { initEchoes, sensesPlayer, updateEcho, type EchoState } from '../../src/game/echo';
+import {
+  initEchoes,
+  lureAt,
+  releaseLure,
+  sensesPlayer,
+  updateEcho,
+  type EchoState,
+} from '../../src/game/echo';
 import { initWaterRuntime, type WaterRuntime } from '../../src/game/water';
 import type { NoiseEvent } from '../../src/game/noise';
 
@@ -53,6 +61,7 @@ const echoAt = (x: number, y: number, over: Partial<EchoState> = {}): EchoState 
   nextSenseAt: 0,
   stuckAwarded: false,
   sense: 'glass',
+  patrolOverrideCell: null,
   ...over,
 });
 
@@ -693,9 +702,24 @@ describe('initEchoes + updateEcho — the ears (T7)', () => {
       nextSenseAt: 10_000, // no fresh check — memory alone decides
     });
     expect(
-      updateEcho(chasing, player, [], [], [], g, anchors, 2999, 1 / 120, player, [], false, []).mode,
+      updateEcho(chasing, player, [], [], [], g, anchors, 2999, 1 / 120, player, [], false, [])
+        .mode,
     ).toBe('chase');
-    const lost = updateEcho(chasing, player, [], [], [], g, anchors, 3000, 1 / 120, player, [], false, []);
+    const lost = updateEcho(
+      chasing,
+      player,
+      [],
+      [],
+      [],
+      g,
+      anchors,
+      3000,
+      1 / 120,
+      player,
+      [],
+      false,
+      [],
+    );
     expect(lost.mode).toBe('patrol');
     expect(lost.target).toEqual(g.cellAt(anchors[0]!.x, anchors[0]!.y)); // back on the anchor
   });
@@ -801,5 +825,131 @@ describe('initEchoes + updateEcho — the ears (T7)', () => {
       sprintRing(-1.5, 0, 1000),
     );
     expect(fogged.mode).toBe('patrol');
+  });
+});
+
+// T8 — the thaw lure: a THAWED atrium pane is a live eye AND a lure. The thaw
+// event calls lureAt: every echo within THAW_LURE_RADIUS of the glass adopts
+// `patrolOverrideCell` (the pane's cell) and walks there to linger, watching
+// — pulling wardens off the player's route. Chase overrides (and clears) the
+// lure; a fresh echo state spawns without one (resetFloor re-inits).
+describe('initEchoes + lureAt + updateEcho — the thaw lure (T8)', () => {
+  /** The lure fixture pane: standing glass at the middle cell's wall — the
+   *  lure radius reads the pane's world spot, the walk target its cell. */
+  const pane: MirrorRef = { ...mir(1, 0, 0), cellX: 2, cellY: 2 };
+
+  it('initEchoes spawns without an override — a fresh attempt carries no lure', () => {
+    const g = openGrid();
+    const es = initEchoes([{ x: -8, y: 0 }], g, [], 0);
+    expect(es.every((e) => e.patrolOverrideCell === null)).toBe(true);
+  });
+
+  it('lureAt lures echoes within THAW_LURE_RADIUS of the pane onto the pane cell', () => {
+    const g = openGrid();
+    const near = echoAt(-6, 0, { id: 0 }); // 6 m from the glass
+    const edge = echoAt(-10, 0, { id: 1 }); // exactly 10 m — the boundary is in
+    const far = echoAt(-10.5, 0, { id: 2 }); // 10.5 m — out
+    const lured = lureAt([near, edge, far], pane, THAW_LURE_RADIUS, g);
+    const { cx, cy } = g.cellCenter(pane.cellX, pane.cellY);
+    expect(lured[0]!.patrolOverrideCell).toEqual({ x: cx, y: cy });
+    expect(lured[1]!.patrolOverrideCell).toEqual({ x: cx, y: cy });
+    expect(lured[2]!.patrolOverrideCell).toBeNull();
+  });
+
+  it('lureAt is pure — the input echoes are untouched', () => {
+    const g = openGrid();
+    const near = echoAt(-6, 0);
+    const before = { ...near };
+    lureAt([near], pane, THAW_LURE_RADIUS, g);
+    expect(near).toEqual(before);
+  });
+
+  it('a lured patrol walks to the pane cell, not the anchors', () => {
+    const g = openGrid();
+    const anchors = [{ x: -8, y: 0 }]; // behind the echo — the old patrol target
+    const lured = lureAt(
+      [echoAt(-8, 0, { nextSenseAt: 1_000_000 })],
+      pane,
+      THAW_LURE_RADIUS,
+      g,
+    )[0]!;
+    // first step heads EAST toward the pane cell center (0,0), not west to the anchor
+    const e = updateEcho(lured, { x: 300, y: 0, heading: 0 }, [], [], [], g, anchors, 0, 1 / 120);
+    expect(e.x).toBeGreaterThan(-8);
+    expect(e.heading).toBeCloseTo(Math.PI / 2); // east
+  });
+
+  it('arrival at the pane cell lingers: the echo stands, the anchors never rotate', () => {
+    const g = openGrid();
+    const anchors = [
+      { x: -8, y: 0 },
+      { x: 8, y: 0 },
+    ];
+    const { cx, cy } = g.cellCenter(pane.cellX, pane.cellY);
+    const lured = lureAt(
+      [echoAt(cx, cy, { nextSenseAt: 1_000_000, anchorIdx: 0 })],
+      pane,
+      THAW_LURE_RADIUS,
+      g,
+    )[0]!;
+    const e = updateEcho(lured, { x: 300, y: 0, heading: 0 }, [], [], [], g, anchors, 0, 1 / 120);
+    expect(e.x).toBeCloseTo(cx); // no movement — standing, watching the glass
+    expect(e.y).toBeCloseTo(cy);
+    expect(e.anchorIdx).toBe(0); // no anchor rotation either
+  });
+
+  it('chase overrides AND clears the lure: the hunt drops the glass', () => {
+    const g = openGrid();
+    const mirrors = [mir(1, 0, 0)];
+    const rt = initMirrorRuntime(mirrors);
+    const player: PlayerState = { x: 1.5, y: 0, heading: 0 };
+    const lured = lureAt([echoAt(-1.5, 0, { nextSenseAt: 1000 })], pane, THAW_LURE_RADIUS, g)[0]!;
+    expect(lured.patrolOverrideCell).not.toBeNull();
+    // the sense check lands this tick — the echo takes up the hunt
+    const e = updateEcho(lured, player, mirrors, rt, [], g, [{ x: -8, y: 0 }], 1000, 1 / 120);
+    expect(e.mode).toBe('chase');
+    expect(e.patrolOverrideCell).toBeNull();
+    // and once the memory lapses (the player long gone) it patrols the
+    // ANCHORS again — the lure is spent
+    const after = updateEcho(
+      e,
+      { x: 300, y: 0, heading: 0 },
+      mirrors,
+      rt,
+      [],
+      g,
+      [{ x: -8, y: 0 }],
+      1000 + CHASE_MEMORY_MS + 1,
+      1 / 120,
+    );
+    expect(after.mode).toBe('patrol');
+    expect(after.x).toBeLessThan(e.x); // west, back toward the far anchor
+  });
+
+  it('releaseLure frees only the echoes drawn to THAT pane — another glass still holds them', () => {
+    const g = openGrid();
+    const paneWest: MirrorRef = { ...mir(2, 0, 0), cellX: 1, cellY: 2 }; // the cell west of the pane
+    const owed = lureAt([echoAt(-6, 0)], pane, THAW_LURE_RADIUS, g)[0]!; // owes the pane's cell
+    const kept = releaseLure([owed], paneWest, g)[0]!;
+    expect(kept.patrolOverrideCell).not.toBeNull(); // paneWest was never their glass
+    const freed = releaseLure([kept], pane, g)[0]!;
+    expect(freed.patrolOverrideCell).toBeNull(); // the fogged pane releases its wardens
+    // and releaseLure is pure, like lureAt
+    const input = [kept];
+    releaseLure(input, pane, g);
+    expect(kept.patrolOverrideCell).not.toBeNull();
+  });
+
+  it('confusion keeps the override — a dazed warden still owes the glass its visit', () => {
+    const g = openGrid();
+    const lured = lureAt([echoAt(0, 0, { nextSenseAt: 1_000_000 })], pane, THAW_LURE_RADIUS, g)[0]!;
+    // two fogged mirrors within CONFUSE_FOGGED_R, no clear eye: the spin
+    const mirrors = [mir(1, 0, 0), mir(2, 0, -1)];
+    const rt = initMirrorRuntime(mirrors);
+    applyFog(rt, 1, 0, FOG_DURATION_MS);
+    applyFog(rt, 2, 0, FOG_DURATION_MS);
+    const e = updateEcho(lured, { x: 300, y: 0, heading: 0 }, mirrors, rt, [], g, [], 0, 1 / 120);
+    expect(e.mode).toBe('confused');
+    expect(e.patrolOverrideCell).not.toBeNull();
   });
 });
