@@ -7,6 +7,42 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [hardening-1] — 2026-11-12 — security, performance, and the sponsor door
+
+No gameplay change — the house's walls, its speed, and how it pays its way.
+
+- **Security** — the CSP drops `'unsafe-inline'`: inline `<style>` blocks are
+  allowed by sha256 hashes the build stamps into `_headers`
+  (`vite.config.ts` → `mhPostBuild`; a `style=""` attribute now fails the
+  build), Trusted Types are required for script sinks (one policy, `mh`,
+  which mints exactly `/sw.js`), plus `object-src 'none'`, `worker-src`,
+  `manifest-src`, `upgrade-insecure-requests`. New headers: HSTS (1 year),
+  `Cross-Origin-Opener-Policy`, a wider deny-list `Permissions-Policy`,
+  `Cross-Origin-Resource-Policy` on `/assets/*` and `/sw.js`. `SECURITY.md`
+  and `/.well-known/security.txt` name the private reporting path. CI:
+  every action pinned to a commit SHA, `persist-credentials: false`, job
+  timeouts, an `npm audit` gate on shipped dependencies, and the deploy job
+  ships the artifact `check` built instead of installing and building again
+  beside the Cloudflare token. Debug probe screenshots (`.tmp/`) left the
+  public repo.
+- **Performance** — three.js moves to its own content-hashed chunk (536 kB of
+  the 730 kB, unchanged between game releases, so a returning player
+  re-downloads only the ~194 kB of game code that changed) and is
+  module-preloaded in parallel. The service worker precaches the hashed
+  assets at install — fully offline after the FIRST visit, not the second —
+  and names its cache by build hash, so each deploy sweeps the previous
+  release's bundle instead of keeping it forever. `/index.html` left the
+  precache (Pages 308s it; one failed entry fails the whole install).
+- **Monetization** — the venue-floor sponsorship gets a front door: a static
+  pitch page at `/host-a-floor` (what a venue gets, what it costs, what it
+  never does) with a prefilled enquiry mailto, linked from the About panel
+  (`☕ Host a floor`), from the venue banner on the demo floor ("Your venue
+  here?"), and from the repo's Sponsor button (`.github/FUNDING.yml`). An
+  optional donation link renders in About when the build sets
+  `VITE_SUPPORT_URL` — gated to https links on known donation platforms
+  (`src/game/support.ts`). Still no ads, no tracking, no network calls.
+- About's copy caught up with the house: all 100 floors, not "the first tier".
+
 ## [t10] — 2026-11-12 — the Foundations (Tier 10, floors 91–100) — THE FINALE: the 100-floor house is complete
 
 The campaign runs to one hundred — the finale tier, where the house runs out of mirrors on purpose and the Glazier himself walks his Foundations. The 100-floor spec from the first brief is delivered, floor by floor.

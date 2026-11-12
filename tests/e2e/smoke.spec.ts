@@ -27,9 +27,7 @@ interface DebugHook {
   // T8/T3 — one pane's single sight/display state by id
   // (frost.mirrorVisual: 'clear' | 'fogged' | 'captured' | 'frozen'; null
   // past the board) — the thaw leg's witness.
-  mirrorState(
-    id: number,
-  ): 'clear' | 'fogged' | 'captured' | 'frozen' | null;
+  mirrorState(id: number): 'clear' | 'fogged' | 'captured' | 'frozen' | null;
   // T8/T3 — the grid LOS read-out (the same DDA the echo senses use)
   los(x1: number, y1: number, x2: number, y2: number): boolean;
   // T4/T3 — where the house says the player stands (the distort lie's read-out)
@@ -352,6 +350,12 @@ test('beta: About opens via ⓘ beside 🌐, shows version + links, stacks over 
     'https://github.com/seolithdev01/mirror-house/blob/main/PROVENANCE.md',
     'https://github.com/seolithdev01/mirror-house/blob/main/LICENSE',
   ]);
+
+  // the support row: Host a floor always; no donation link in an unconfigured build
+  const support = page.locator('#mh-about-support a');
+  await expect(support).toHaveCount(1);
+  await expect(support).toHaveAttribute('href', /^https:\/\/[^/]+\/host-a-floor$/);
+  await expect(support).toHaveAttribute('rel', 'noopener noreferrer');
 
   // Escape closes (the trap); the ⚙ entry opens it AGAIN — stacked on ⚙
   await page.keyboard.press('Escape');
@@ -1284,6 +1288,11 @@ test('m6: venue demo floor loads and returns', async ({ page }) => {
   // the banner names the pack; the hook carries the pack's shape
   await expect(page.locator('#mh-venue')).toBeVisible();
   await expect(page.locator('#mh-venue')).toContainText('Glasshouse Café');
+  // the sponsor door rides the banner a venue owner is already reading
+  await expect(page.locator('#mh-venue-host')).toHaveAttribute(
+    'href',
+    /^https:\/\/[^/]+\/host-a-floor$/,
+  );
   const v0 = await page.evaluate(() => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     return { venue: h.venue(), campaign: h.campaign(), seed: h.seed };
@@ -2011,17 +2020,22 @@ test('t5: water rises and decoy walks', async ({ page }) => {
   await page.keyboard.up('KeyW');
   await page.waitForFunction(
     () =>
-      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.waterLevel() >
-      0,
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.waterLevel() > 0,
     null,
     { timeout: 20000 },
   );
-  const l1 = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.waterLevel(),
+  const l1 = await page.evaluate(() =>
+    (
+      window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+    ).__MIRROR_HOUSE_DEBUG__.waterLevel(),
   );
   await page.waitForTimeout(2000);
-  const l2 = await page.evaluate(
-    () => (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.waterLevel(),
+  const l2 = await page.evaluate(() =>
+    (
+      window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+    ).__MIRROR_HOUSE_DEBUG__.waterLevel(),
   );
   expect(l1, 'the flood rises the moment the run begins').toBeGreaterThan(0);
   expect(l2, 'the flood keeps climbing').toBeGreaterThan(l1);
@@ -2095,7 +2109,10 @@ test('t6: floor 51 loads the furnace', async ({ page }) => {
   });
   expect(snap.tier).toBe(6);
   expect(snap.floor).toBe(51);
-  expect(snap.taal, 'the rotation rests — Taal sits out 51–59 (his beat was the Flood pairing)').toBeNull();
+  expect(
+    snap.taal,
+    'the rotation rests — Taal sits out 51–59 (his beat was the Flood pairing)',
+  ).toBeNull();
   expect(snap.gher, 'the Furnace is Gher/Aavart\u2019s home — the Encircler walks').not.toBeNull();
   expect(snap.avart, 'the Ambusher walks the crucible too').not.toBeNull();
   expect(snap.heat.on, 'the furnace breathes on 51').toBe(true);
@@ -2171,17 +2188,14 @@ test('t6: heat cracks burn wider + gher guards the copy', async ({ page }) => {
   // pair (cellCenter: (i − (W−1)/2)·CELL), then the decoy's cell reads out
   // exactly as grid.cellAt maps it.
   const CELL = CELL_SIZE;
-  const grid = await page.evaluate(
-    (cell: number) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-      const m = h.mirrorAt('standing')!;
-      return {
-        w: Math.round(2 * (m.cellX - m.cx / cell) + 1),
-        h: Math.round(2 * (m.cellY - m.cy / cell) + 1),
-      };
-    },
-    CELL,
-  );
+  const grid = await page.evaluate((cell: number) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    const m = h.mirrorAt('standing')!;
+    return {
+      w: Math.round(2 * (m.cellX - m.cx / cell) + 1),
+      h: Math.round(2 * (m.cellY - m.cy / cell) + 1),
+    };
+  }, CELL);
   // N/E/S/W step vectors, Dir order (grid.ts DIR_VECTOR)
   const dirs = [
     { d: 0, dx: 0, dy: -1 },
@@ -2242,7 +2256,10 @@ test('t6: heat cracks burn wider + gher guards the copy', async ({ page }) => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     return { seal: h.gherSeal(), copy: h.decoys()[0] ?? null };
   });
-  expect(sealed.seal, 'the Encircler\u2019s adopted seal sits on the copy\u2019s cell').not.toBeNull();
+  expect(
+    sealed.seal,
+    'the Encircler\u2019s adopted seal sits on the copy\u2019s cell',
+  ).not.toBeNull();
   expect(sealed.copy, 'the copy is still alive under the ward').not.toBeNull();
   expect(errors).toEqual([]);
 });
@@ -2342,96 +2359,88 @@ test('t7: taal returns at 66 + echoes hear noise', async ({ page }) => {
   // pass (he patrols while we compute; no round-trip lag). Geometry mirrors
   // the t6 ward leg: cell indices ↔ meters via the derived W/H, CELL = 4 m.
   const CELL = CELL_SIZE;
-  const target = await page.evaluate(
-    (cell: number) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
-      const taal = h.taalPos();
-      // the warden farthest from the beat (his pings never reach past 7 m)
-      // that is ALSO patrolling right now — an echo already chasing a stale
-      // Taal ping cannot witness our sprint leg cleanly
-      let best = -1;
-      let bestD = -1;
-      for (let i = 0; i < h.enemyCount(); i++) {
-        if (h.echoMode(i) !== 'patrol') continue;
-        const p = h.enemyPos(i);
-        if (p === null) continue;
-        const d = taal === null ? Infinity : Math.hypot(p.x - taal.x, p.y - taal.y);
-        if (d > bestD) {
-          bestD = d;
-          best = i;
-        }
+  const target = await page.evaluate((cell: number) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    const taal = h.taalPos();
+    // the warden farthest from the beat (his pings never reach past 7 m)
+    // that is ALSO patrolling right now — an echo already chasing a stale
+    // Taal ping cannot witness our sprint leg cleanly
+    let best = -1;
+    let bestD = -1;
+    for (let i = 0; i < h.enemyCount(); i++) {
+      if (h.echoMode(i) !== 'patrol') continue;
+      const p = h.enemyPos(i);
+      if (p === null) continue;
+      const d = taal === null ? Infinity : Math.hypot(p.x - taal.x, p.y - taal.y);
+      if (d > bestD) {
+        bestD = d;
+        best = i;
       }
-      if (best < 0 || bestD < 9) return null; // no warden clear of the beat
-      const e = h.enemyPos(best)!;
-      // derive the grid's width/height from a standing mirror's cell↔meters pair
-      const m = h.mirrorAt('standing');
-      if (m === null) return null;
-      const w = Math.round(2 * (m.cellX - m.cx / cell) + 1);
-      const gh = Math.round(2 * (m.cellY - m.cy / cell) + 1);
-      const ecx = Math.floor(e.x / cell + w / 2);
-      const ecy = Math.floor(e.y / cell + gh / 2);
-      // N/E/S/W step vectors, Dir order (grid.ts DIR_VECTOR)
-      const dirs = [
-        { d: 0, dx: 0, dy: -1 },
-        { d: 1, dx: 1, dy: 0 },
-        { d: 2, dx: 0, dy: 1 },
-        { d: 3, dx: -1, dy: 0 },
-      ];
-      // a stand cell 1 diagonal step off the warden (√2·4 ≈ 5.7 m — inside
-      // the 7 m ring, far enough that his arrival cell ≠ our cell), with an
-      // open road pointing AWAY from him: sprint down it and the trail's
-      // nearest ping stays at our back while we gain 3.6 m of head start.
-      let pick: {
-        i: number;
-        px: number;
-        py: number;
-        heading: number;
-        patrol: string | null;
-      } | null = null;
-      let bestDot = 0.4; // roughly-away or better
-      for (const o of [
-        { dx: 1, dy: 1 },
-        { dx: 1, dy: -1 },
-        { dx: -1, dy: 1 },
-        { dx: -1, dy: -1 },
-      ]) {
-        const sx = ecx + o.dx;
-        const sy = ecy + o.dy;
-        if (sx < 0 || sy < 0 || sx >= w || sy >= gh) continue;
-        // away unit vector (from the stand cell, pointing off the warden)
-        const al = Math.hypot(o.dx, o.dy);
-        let road: { v: { d: number; dx: number; dy: number }; dot: number } | null = null;
-        for (const v of dirs) {
-          if (!h.canWalk(sx, sy, v.d)) continue;
-          const dot = (v.dx * o.dx + v.dy * o.dy) / al;
-          if (road === null || dot > road.dot) road = { v, dot };
-        }
-        if (road === null || road.dot <= bestDot) continue;
-        bestDot = road.dot;
-        const cx = (sx + 0.5 - w / 2) * cell;
-        const cy = (sy + 0.5 - gh / 2) * cell;
-        pick = {
-          i: best,
-          px: cx,
-          py: cy,
-          heading: Math.atan2(road.v.dx, -road.v.dy), // heading 0 = north (−z)
-          patrol: h.echoMode(best),
-        };
+    }
+    if (best < 0 || bestD < 9) return null; // no warden clear of the beat
+    const e = h.enemyPos(best)!;
+    // derive the grid's width/height from a standing mirror's cell↔meters pair
+    const m = h.mirrorAt('standing');
+    if (m === null) return null;
+    const w = Math.round(2 * (m.cellX - m.cx / cell) + 1);
+    const gh = Math.round(2 * (m.cellY - m.cy / cell) + 1);
+    const ecx = Math.floor(e.x / cell + w / 2);
+    const ecy = Math.floor(e.y / cell + gh / 2);
+    // N/E/S/W step vectors, Dir order (grid.ts DIR_VECTOR)
+    const dirs = [
+      { d: 0, dx: 0, dy: -1 },
+      { d: 1, dx: 1, dy: 0 },
+      { d: 2, dx: 0, dy: 1 },
+      { d: 3, dx: -1, dy: 0 },
+    ];
+    // a stand cell 1 diagonal step off the warden (√2·4 ≈ 5.7 m — inside
+    // the 7 m ring, far enough that his arrival cell ≠ our cell), with an
+    // open road pointing AWAY from him: sprint down it and the trail's
+    // nearest ping stays at our back while we gain 3.6 m of head start.
+    let pick: {
+      i: number;
+      px: number;
+      py: number;
+      heading: number;
+      patrol: string | null;
+    } | null = null;
+    let bestDot = 0.4; // roughly-away or better
+    for (const o of [
+      { dx: 1, dy: 1 },
+      { dx: 1, dy: -1 },
+      { dx: -1, dy: 1 },
+      { dx: -1, dy: -1 },
+    ]) {
+      const sx = ecx + o.dx;
+      const sy = ecy + o.dy;
+      if (sx < 0 || sy < 0 || sx >= w || sy >= gh) continue;
+      // away unit vector (from the stand cell, pointing off the warden)
+      const al = Math.hypot(o.dx, o.dy);
+      let road: { v: { d: number; dx: number; dy: number }; dot: number } | null = null;
+      for (const v of dirs) {
+        if (!h.canWalk(sx, sy, v.d)) continue;
+        const dot = (v.dx * o.dx + v.dy * o.dy) / al;
+        if (road === null || dot > road.dot) road = { v, dot };
       }
-      return pick;
-    },
-    CELL,
-  );
+      if (road === null || road.dot <= bestDot) continue;
+      bestDot = road.dot;
+      const cx = (sx + 0.5 - w / 2) * cell;
+      const cy = (sy + 0.5 - gh / 2) * cell;
+      pick = {
+        i: best,
+        px: cx,
+        py: cy,
+        heading: Math.atan2(road.v.dx, -road.v.dy), // heading 0 = north (−z)
+        patrol: h.echoMode(best),
+      };
+    }
+    return pick;
+  }, CELL);
   expect(target, 'a warden with an away-road off the beat exists').not.toBeNull();
-  expect(
-    target!.patrol,
-    'the warden patrols before the noise (pre-check)',
-  ).toBe('patrol');
+  expect(target!.patrol, 'the warden patrols before the noise (pre-check)').toBe('patrol');
   await page.evaluate(
     ({ px, py, heading }: { px: number; py: number; heading: number }) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
       h.warp(px, py, heading);
     },
     { px: target!.px, py: target!.py, heading: target!.heading },
@@ -2451,8 +2460,9 @@ test('t7: taal returns at 66 + echoes hear noise', async ({ page }) => {
       async () =>
         page.evaluate(
           (i: number) =>
-            (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-              .__MIRROR_HOUSE_DEBUG__.echoMode(i),
+            (
+              window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+            ).__MIRROR_HOUSE_DEBUG__.echoMode(i),
           target!.i,
         ),
       { timeout: 2_000 },
@@ -2464,8 +2474,7 @@ test('t7: taal returns at 66 + echoes hear noise', async ({ page }) => {
   await page.keyboard.down('KeyW');
   await page.waitForFunction(
     (i: number) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
       return h.noise() > 0 && h.echoMode(i) === 'chase';
     },
     target!.i,
@@ -2478,8 +2487,7 @@ test('t7: taal returns at 66 + echoes hear noise', async ({ page }) => {
   // its patrol
   await page.waitForFunction(
     (i: number) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
       return h.echoMode(i) === 'patrol';
     },
     target!.i,
@@ -2571,8 +2579,7 @@ test('t8: floor 71 loads the atrium frozen', async ({ page }) => {
   await page.waitForFunction(
     (cellAndStash: { cell: number; stash: string }) => {
       const w = window as unknown as Record<string, unknown>;
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
       const cell = cellAndStash.cell;
       const rt = h.mirrorRuntime();
       const frozenById = new Map(rt.map((r) => [r.id, r]));
@@ -2658,7 +2665,20 @@ test('t8: floor 71 loads the atrium frozen', async ({ page }) => {
           if (h.los(e.x, e.y, P.x, P.z)) continue; // wall between: the thawed pane is not this warden's eye
           if (cowatch(sx, sz)) continue; // no live pane co-watches the frost stand
           if (best === null || dEP < best.dEP) {
-            best = { id: P.id, i, sx, sz, heading, s3x, s3z, pcx: c.x, pcy: c.y, rx: r.x, ry: r.y, dEP };
+            best = {
+              id: P.id,
+              i,
+              sx,
+              sz,
+              heading,
+              s3x,
+              s3z,
+              pcx: c.x,
+              pcy: c.y,
+              rx: r.x,
+              ry: r.y,
+              dEP,
+            };
           }
         }
       }
@@ -2675,14 +2695,10 @@ test('t8: floor 71 loads the atrium frozen', async ({ page }) => {
   expect(pick, 'a warden patrols within the lure radius of a blind pane').not.toBeNull();
 
   // the thaw: warp to the glass, wait for the target and the breath, press F
-  await page.evaluate(
-    (p: { sx: number; sz: number; heading: number }) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
-      h.warp(p.sx, p.sz, p.heading);
-    },
-    pick!,
-  );
+  await page.evaluate((p: { sx: number; sz: number; heading: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(p.sx, p.sz, p.heading);
+  }, pick!);
   await page.waitForFunction(
     (id: number) =>
       (
@@ -2709,8 +2725,7 @@ test('t8: floor 71 loads the atrium frozen', async ({ page }) => {
   // before any sense tick can read a player 1 m from a freshly-woken eye
   await page.waitForFunction(
     (p: { id: number; rx: number; ry: number }) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
       const ok = h.mirrorState(p.id) === 'clear' && h.mirrors().thawed >= 1;
       if (ok) h.warp(p.rx, p.ry);
       return ok;
@@ -2730,8 +2745,7 @@ test('t8: floor 71 loads the atrium frozen', async ({ page }) => {
   // it plunges; 30 s covers the long way round at a warden's 2.2 m/s
   await page.waitForFunction(
     (p: { i: number; pcx: number; pcy: number }) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
       const e = h.enemyPos(p.i);
       return e !== null && Math.hypot(e.x - p.pcx, e.y - p.pcy) <= 0.5;
     },
@@ -2743,14 +2757,10 @@ test('t8: floor 71 loads the atrium frozen', async ({ page }) => {
   // warden parks on the cell center, 0.85 m off it would meet the touch
   // radius): the cold fog closes the eye ('fogged' — blind again) and the
   // thaw is spent
-  await page.evaluate(
-    (p: { s3x: number; s3z: number; heading: number }) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
-      h.warp(p.s3x, p.s3z, p.heading);
-    },
-    pick!,
-  );
+  await page.evaluate((p: { s3x: number; s3z: number; heading: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(p.s3x, p.s3z, p.heading);
+  }, pick!);
   await page.waitForFunction(
     (id: number) =>
       (
@@ -2778,14 +2788,10 @@ test('t8: floor 71 loads the atrium frozen', async ({ page }) => {
   );
   // step back to R before the read — the released warden's last memory of the
   // stand spot must not touch the closing assertions
-  await page.evaluate(
-    (p: { rx: number; ry: number }) => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
-        .__MIRROR_HOUSE_DEBUG__;
-      h.warp(p.rx, p.ry);
-    },
-    pick!,
-  );
+  await page.evaluate((p: { rx: number; ry: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(p.rx, p.ry);
+  }, pick!);
   const afterFog = await page.evaluate(() => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     return h.mirrors();
@@ -2907,8 +2913,9 @@ test('t9: floor 81 opens act three', async ({ page }) => {
   await page.keyboard.up('KeyW');
   await page.waitForFunction(
     () =>
-      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.chhayaPos() !==
-      null,
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.chhayaPos() !== null,
     null,
     { timeout: 6000 },
   );
@@ -3007,7 +3014,8 @@ test('t10: floor 91 enters the foundations', async ({ page }) => {
   expect(snap.mirrors.portraits, 'the portraits stay tier-2-only').toBe(0);
   expect(snap.mirrors.water, 'no pools in the Foundations').toBe(0);
   expect(snap.mirrors.distort, 'no carnival glass in the Foundations').toBe(0);
-  for (const k of snap.kinds) expect(k, 'the only MirrorRef kind on 91 is the beacon').toBe('beacon');
+  for (const k of snap.kinds)
+    expect(k, 'the only MirrorRef kind on 91 is the beacon').toBe('beacon');
   expect(snap.audio.scale, 'the three-note scale — the sparsest').toEqual([0, 5, 7]);
   expect(snap.audio.voice, 'the Ground is quiet — the sine returns').toBe('sine');
   expect(snap.heat.on, 'the furnace burned out at 90').toBe(false);

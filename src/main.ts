@@ -229,6 +229,7 @@ import {
 import { movePlayer, spawnPlayer, type MoveInput, type PlayerState } from './game/player';
 import { autoPreset, PROFILES, type PerfChoice, type PerfPreset } from './game/quality';
 import { isValidSeed, normalizeSeed, randomSeed } from './game/seedCode';
+import { HOST_FLOOR_URL } from './game/support';
 import { parseTestMode } from './game/testMode';
 import { canvasTexture, makeWaterCanvas } from './game/textures';
 import { initWaterRuntime, rippleState, rippleTrigger, type WaterRuntime } from './game/water';
@@ -2071,6 +2072,8 @@ function showVenueBanner(pack: VenuePack): void {
     note: t(lang, 'venue.bannerNote'),
     returnLabel: t(lang, 'venue.return'),
     onReturn: returnToCampaign,
+    hostLabel: t(lang, 'venue.hostCta'),
+    hostHref: HOST_FLOOR_URL,
   });
 }
 
@@ -3352,7 +3355,27 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
       // the SW is an enhancement — a failed registration must never block play
-      void navigator.serviceWorker.register('/sw.js').catch(() => {});
+      // Trusted Types (the CSP's `require-trusted-types-for 'script'`): the
+      // register URL is a script-URL sink, so it goes through the page's one
+      // policy — which mints exactly '/sw.js' and refuses anything else.
+      const tt = (
+        window as unknown as {
+          trustedTypes?: {
+            createPolicy(
+              name: string,
+              rules: { createScriptURL(url: string): string },
+            ): { createScriptURL(url: string): string };
+          };
+        }
+      ).trustedTypes;
+      const policy = tt?.createPolicy('mh', {
+        createScriptURL: (url) => {
+          if (url !== '/sw.js') throw new TypeError('blocked script URL');
+          return url;
+        },
+      });
+      const swUrl = policy ? policy.createScriptURL('/sw.js') : '/sw.js';
+      void navigator.serviceWorker.register(swUrl).catch(() => {});
     }),
   );
 }

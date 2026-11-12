@@ -69,6 +69,11 @@ export interface Hud {
     note: string;
     returnLabel: string;
     onReturn(): void;
+    /** The sponsor door on the banner itself: "your venue here?" → the
+     *  host-a-floor page. The one place a venue owner playing the demo is
+     *  already looking. */
+    hostLabel: string;
+    hostHref: string;
   }): void;
   hideVenue(): void;
   /** M6/T1 — the venue floor's clear line: no best-time/shards sentence (a
@@ -301,7 +306,11 @@ export function createHud(init: HudInit): Hud {
   /** The live onReturn — swapped by every showVenue (one listener, one button). */
   let venueOnReturn: (() => void) | null = null;
   venueReturn.addEventListener('click', () => venueOnReturn?.());
-  venueBanner.append(venueTitle, venueTagline, venueNoteEl, venueReturn);
+  const venueHost = document.createElement('a');
+  venueHost.id = 'mh-venue-host';
+  venueHost.target = '_blank';
+  venueHost.rel = 'noopener noreferrer';
+  venueBanner.append(venueTitle, venueTagline, venueNoteEl, venueReturn, venueHost);
   // M5/T3 — the caption bar: fixed bottom-center (out of the top-right
   // column's flow), role=status so the lines announce themselves. Its text
   // is renderCaptions' output; main owns the feed.
@@ -589,7 +598,9 @@ export function createHud(init: HudInit): Hud {
     hideCleared: () => {
       cleared.hidden = true;
     },
-    showVenue: ({ title, tagline, note, returnLabel, onReturn }) => {
+    showVenue: ({ title, tagline, note, returnLabel, onReturn, hostLabel, hostHref }) => {
+      venueHost.textContent = hostLabel;
+      venueHost.href = hostHref;
       venueTitle.textContent = title;
       venueTagline.textContent = tagline;
       venueNoteEl.textContent = note;

@@ -86,6 +86,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'venue.banner': '☕ {name} floor (daily seed)',
     'venue.bannerNote':
       'Sponsored floor — no shards or bests; your campaign floor restarts when you return.',
+    'venue.hostCta': 'Your venue here? Host a floor →',
     'overlay.venueCleared': 'Floor cleared — return via ⚙',
     'toast.venueRejected': 'Venue floor unavailable',
     // M6/T4 — Aaina's venue refusal (T1 adjudication): the sale is refused,
@@ -98,15 +99,17 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'about.title': 'About Mirror House',
     'about.version': 'Version {v} · open beta',
     'about.what':
-      'A descent through a century-old palace of mirrors through a century-old palace of mirrors. Fog the glass, outwit what hunts you, and walk down — every floor a 2–5 minute puzzle that remembers you.',
+      'A hundred-floor descent through a century-old palace of mirrors. Fog the glass, outwit what hunts you, and walk down — every floor a 2–5 minute puzzle that remembers you.',
     'about.beta':
-      'You are playing the open beta: the first tier — floors 1 to 10, Chhaya and Taal, the Dwaar — stands complete; deeper floors, the remaining Sentinels and new venue packs are on the roadmap.',
+      'You are playing the open beta: all 100 floors stand complete — ten tiers, three acts, and the door at the Ground. Balance passes and new venue floors are on the roadmap.',
     'about.credits':
       'An original, open-source work: every wall, word and reflection was made for this house (Apache-2.0 code, CC-BY 4.0 art and words), and the raga-inspired music is generated live in your browser — no samples.',
     'about.source': 'Source',
     'about.privacy': 'Privacy',
     'about.provenance': 'Provenance',
     'about.license': 'License',
+    'about.host': '☕ Host a floor',
+    'about.support': '♥ Support the house',
     'about.tagline': 'Made of 100% original glass.',
     // step007/T2 — the 📮 feedback composer (bug / suggestion / kind word).
     // Bilingual chrome from day one, like About: the beta's front door for
@@ -387,6 +390,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'venue.banner': '☕ {name} मंज़िल (दैनिक सीड)',
     'venue.bannerNote':
       'प्रायोजित मंज़िल — कोई शार्ड या सर्वश्रेष्ठ नहीं; लौटने पर आपकी अभियान मंज़िल फिर शुरू होती है।',
+    'venue.hostCta': 'आपकी जगह यहाँ? अपनी मंज़िल बनवाएँ →',
     'overlay.venueCleared': 'मंज़िल पार — ⚙ से लौटें',
     'toast.venueRejected': 'वेन्यू मंज़िल उपलब्ध नहीं है',
     // M6/T4 — आईना की वेन्यू मनाही (T1 निर्णय): बिक्री अस्वीकृत, टोस्ट वापसी का रास्ता बताता है।
@@ -398,13 +402,15 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'about.what':
       'सौ मंज़िलों की फ़रारी, एक सौ साल पुराने दर्पण-महल से। काँच जमाइए, शिकारी को चतुराई से पछाड़िए और नीचे उतरिए — हर मंज़िल दो से पाँच मिनट की एक पहेली है जो आपको याद रखती है।',
     'about.beta':
-      'आप खुला बीटा खेल रहे हैं: पहला चरण — मंज़िल 1 से 10, छाया और ताल, द्वार — पूरा खड़ा है; गहरी मंज़िलें, बाकी संतरी और नई वेन्यू मंज़िलें रोडमैप पर हैं।',
+      'आप खुला बीटा खेल रहे हैं: सभी 100 मंज़िलें पूरी खड़ी हैं — दस चरण, तीन अंक, और भूतल का द्वार। संतुलन के सुधार और नई वेन्यू मंज़िलें रोडमैप पर हैं।',
     'about.credits':
       'एक मौलिक, खुला-स्रोत रचना: हर दीवार, हर शब्द, हर परछाईँ इसी घर के लिए बनी (कोड Apache-2.0, कला और शब्द CC-BY 4.0), और राग-प्रेरित संगीत आपके ब्राउज़र में ही जीवंत रचा जाता है — कोई सैंपल नहीं।',
     'about.source': 'स्रोत',
     'about.privacy': 'गोपनीयता',
     'about.provenance': 'उद्गम',
     'about.license': 'लाइसेंस',
+    'about.host': '☕ अपनी मंज़िल बनवाएँ',
+    'about.support': '♥ घर का साथ दें',
     'about.tagline': 'शत-प्रतिशत मौलिक काँच से बना।',
     // step007/T2 — 📮 प्रतिक्रिया संगीकर्ता: दिन-एक से द्विभाषी
     'btn.feedback': 'प्रतिक्रिया',
@@ -504,8 +510,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // जगह लेती है — अंक III का समापन, पूरे अभियान के आँकड़े (सत्य-शार्ड X की
     // पंक्ति बीच में जुड़ी), और वह अंतिम पंक्ति जो पूरे उतराई ने कमाई।
     'overlay.groundTitle': 'अंक III पूर्ण — ज़मीन का दरवाज़ा खुलता है',
-    'overlay.groundStats':
-      '{floors} मंज़िलें पार · ✦ सत्य-शार्ड X प्राप्त · {shards} शार्ड जमा',
+    'overlay.groundStats': '{floors} मंज़िलें पार · ✦ सत्य-शार्ड X प्राप्त · {shards} शार्ड जमा',
     'overlay.groundNote': 'एक सौ मंज़िलें। एक दरवाज़ा। तुम बाहर निकल गए।',
     // T5/T1 — अंक II का उद्घाटन-बैनर: सत्र के पहले मंज़िल-41 निर्माण पर 3 सेकंड
     'overlay.actBanner': 'अंक II — धोखा',

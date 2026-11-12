@@ -58,3 +58,6 @@ android/**/*.keystore
 # `git check-ignore docs/invites/TEMPLATE.example.md` (not ignored).
 docs/invites/*
 !docs/invites/TEMPLATE.example.md
+
+# probe screenshots / scratch from debugging sessions
+.tmp/

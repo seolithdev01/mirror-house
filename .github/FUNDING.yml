@@ -1,0 +1,5 @@
+# The repo's Sponsor button. Today it points at the venue-floor sponsorship
+# page; add `github: <login>` / `ko_fi: <handle>` here once a donation
+# account exists (and set VITE_SUPPORT_URL in the build to surface the same
+# link in the game's About panel).
+custom: ['https://mirror-house-8fg.pages.dev/host-a-floor']

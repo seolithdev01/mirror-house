@@ -6,3 +6,9 @@
 // `string | undefined` because the declaration is ambient in environments the
 // define never reaches (vitest node), where src/appVersion.ts falls back.
 declare const __APP_VERSION__: string | undefined;
+
+// The optional donation link (game/support.ts) — set at build time, gated by
+// safeSupportUrl before it can ever render.
+interface ImportMetaEnv {
+  readonly VITE_SUPPORT_URL?: string;
+}

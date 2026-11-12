@@ -13,6 +13,7 @@
 
 import { APP_VERSION } from '../appVersion';
 import { trapDialog } from './dialog';
+import { HOST_FLOOR_URL, safeSupportUrl } from '../game/support';
 import { fill, t, type Lang } from './i18n';
 
 /** The four launch links — label keys (i18n) over absolute URLs. The repo is
@@ -31,6 +32,18 @@ export const ABOUT_LINKS: readonly { key: string; href: string }[] = [
   },
   { key: 'about.license', href: 'https://github.com/seolithdev01/mirror-house/blob/main/LICENSE' },
 ];
+
+/** The support row under the launch links — how the house pays its way
+ *  (game/support.ts). "Host a floor" always renders; the donation link only
+ *  when the build was configured with a `VITE_SUPPORT_URL` that passes the
+ *  donation-platform gate. Kept apart from ABOUT_LINKS: those four are the
+ *  project's papers, these are an invitation. */
+export function aboutSupportLinks(supportUrl: unknown): { key: string; href: string }[] {
+  const links = [{ key: 'about.host', href: HOST_FLOOR_URL }];
+  const donate = safeSupportUrl(supportUrl);
+  if (donate !== null) links.push({ key: 'about.support', href: donate });
+  return links;
+}
 
 export interface AboutOverlay {
   root: HTMLElement;
@@ -66,6 +79,17 @@ export function buildAboutOverlay(): AboutOverlay {
     anchors.push({ el: a, key });
     links.appendChild(a);
   }
+  const support = document.createElement('nav');
+  support.id = 'mh-about-support';
+  // import.meta.env is vite's; vitest's node world has it too (undefined key)
+  for (const { key, href } of aboutSupportLinks(import.meta.env?.VITE_SUPPORT_URL)) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    anchors.push({ el: a, key });
+    support.appendChild(a);
+  }
   const tagline = document.createElement('p');
   tagline.id = 'mh-about-tagline';
   const close = document.createElement('button');
@@ -73,7 +97,7 @@ export function buildAboutOverlay(): AboutOverlay {
   close.addEventListener('click', () => {
     root.hidden = true;
   });
-  box.append(h, version, what, beta, credits, links, tagline, close);
+  box.append(h, version, what, beta, credits, links, support, tagline, close);
   root.appendChild(box);
   root.addEventListener('click', (e) => {
     if (e.target === root) root.hidden = true;

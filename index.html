@@ -221,6 +221,15 @@
         border-color: #d9a441;
         color: #d9a441;
       }
+      /* "Your venue here?" — the sponsor door, on the one banner a venue
+         owner trying the demo is already reading. */
+      #mh-venue a {
+        pointer-events: auto;
+        display: block;
+        margin-top: 6px;
+        color: #d9a441;
+        font-size: calc(12px * var(--mh-text-scale, 1));
+      }
       /* M4/T6 — chips are single-line in every language; long labels move the
          row wider instead of wrapping mid-chip. */
       .mh-chip {
@@ -747,6 +756,18 @@
       }
       #mh-about-links a {
         color: #2ec4b6;
+      }
+      /* The support row: the house's two income doors (host a floor, and a
+         donation link when the build carries one) — gold, a step apart from
+         the teal papers above it. */
+      #mh-about-support {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 4px 0;
+      }
+      #mh-about-support a {
+        color: #d9a441;
       }
       #mh-about-tagline {
         color: #9fb4c8;

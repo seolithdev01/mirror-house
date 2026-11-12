@@ -239,6 +239,26 @@ The HUD speaks two languages: the **🌐 button** cycles English ↔ हिं�
 
 > Screenshots of the tier-one art direction — palette, procedural textures, hero mirrors, the surveyor's reflection — will be added here after the art pass is reviewed.
 
+## Support the house
+
+Mirror House is free and stays free — no ads, no tracking, nothing a player
+ever pays. It pays its way two quiet ways:
+
+- **Host a floor.** A café, studio, bookshop or other local venture can host
+  a themed side-floor — name on the banner, a tagline, two brand colours, a
+  fresh maze every day. Pilots are free during the beta; after launch it is
+  a flat sponsor fee. The pitch and the enquiry link are at
+  [`/host-a-floor`](https://mirror-house-8fg.pages.dev/host-a-floor); the
+  ☕ Glasshouse Café demo (⚙ → Floors) is exactly the shape of it.
+- **Donations** (when an account exists). Set `VITE_SUPPORT_URL` at build
+  time to a GitHub Sponsors / Ko-fi / Open Collective / Liberapay / Patreon /
+  Buy Me a Coffee link and a `♥ Support the house` link appears in the About
+  panel; anything else is refused by `safeSupportUrl`
+  ([src/game/support.ts](src/game/support.ts)). Add the same handle to
+  [.github/FUNDING.yml](.github/FUNDING.yml).
+
+Security reports: see [SECURITY.md](SECURITY.md).
+
 ## License
 
 - Code: Apache-2.0 (see [LICENSE](LICENSE))
