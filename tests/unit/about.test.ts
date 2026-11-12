@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 48 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair)', () => {
-    expect(FAQ).toHaveLength(48);
+  it('grows to 50 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair, the T10 foundations + ground-door pair)', () => {
+    expect(FAQ).toHaveLength(50);
   });
 
   it('the T5 entry explains the mirror-you decoys — the lure and the shatter bounty', () => {

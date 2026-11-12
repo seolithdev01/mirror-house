@@ -7,6 +7,86 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t10] — 2026-11-12 — the Foundations (Tier 10, floors 91–100) — THE FINALE: the 100-floor house is complete
+
+The campaign runs to one hundred — the finale tier, where the house runs out of mirrors on purpose and the Glazier himself walks his Foundations. The 100-floor spec from the first brief is delivered, floor by floor.
+
+- **Floors 91–100** — the Foundations: a tier-10 ramp with **zero mirrors of
+  any kind** (no standing glass, no portraits, no pools, no distort panes, no
+  true pair, no heroes — `floorObjects` gates the whole glass roster off, and
+  the mirror-you decoy stream stops at 90: a copy is glass, and there is none
+  down here — pinned per floor), six Echoes on every floor (the one crowd the
+  Foundations keep), four beacons (floor 100's are the pedestals), braids at
+  `0.10 + 0.002·(f−91)` — the tightest tread in the game — with the Ground
+  itself looser at 0.08, Chhaya 2.9 s behind tightening to 2.5 s by floor 99
+  (2.2 s on the Ground), the `L91 · T10` floor chip, near-black stone dressing
+  (void `0x050508`, pale-stone — the Glazier's own coat hue — in the teal
+  slot, ash in the rose slot; the LAST tier-one stand-in retires and every
+  tier of the house dresses as itself), and the three-note scale `[0,5,7]` on
+  the sine hushed through `TIER_TEN_INTENSITY_CEILING` 0.4 — the sparsest
+  music in the game. The save validator widened to 100 in the same commit as
+  the ramp (**the binding held a NINTH and LAST time**; 101 is the first
+  rejection, round-trips pinned at 95 and 100).
+- **The rotation closes (spec §4.6 row 10)** — the hunt ends: all four
+  Sentinels rest the ENTIRE Foundations (Taal's and Gher's open `>= 80` tails
+  capped at `≤ 90`, Aavart's open `f > 70` tail closed the same way; Chhaya
+  has no gate and keeps none) — the loneliest tier: you, the Echoes, and the
+  house holding its breath. Truth table extended with rows 91/95/99/100 (all
+  pin `F,F,F`, the hunt ended) and the identity oracle widened to a full 1–90
+  sweep against t9's shipped table. The campaign's terminus moved one last
+  time: 90 → 91 is a real descent (the T9-era no-op retired, the
+  terminus-retirement pattern's sixth turn), **Dwaar IX joined the interstitial
+  cascade** like every elder Dwaar, and `descend()` now rests at floor 100 —
+  the machine's final state.
+- **The Glazier** (`src/game/glazier.ts`) — the house's master, the last
+  entity, floor 100 only (`GLAZIER_FLOOR`): a teleport-walker who needs no
+  senses, no mirrors, no noise — every `GLAZIER_TELEPORT_S` (12 s) he
+  relocates to the open cell FARTHEST from the player (`glazierTarget`, the
+  bfs-farthest read the exit picker has always used), and between teleports
+  flow-walks straight at the player at `GLAZIER_SPEED` (2.0 m/s) on the same
+  flow field every walker rides. Never lured, never blinded, never slowed —
+  there is no glass left to fog and he IS the fog. Contact is the standard
+  caught; the once-per-attempt `He is here.` line marks his approach (≤ 3 m),
+  the first teleport speaks `The Glazier walks his Foundations.` He wears the
+  pale-stone coat and the full-white lantern — the only pure-white thing in
+  the house — and the additive `glazierPos()` faucet is his witness.
+- **The Ground Door** — floor 100 is `GROUND_LAYOUT` (95 open cells, plain by
+  design — no ring, no rooms, no wall band; 180°-asymmetric on purpose, the
+  master owes the house no ceremony; the exit (11,11) uniquely farthest at 20
+  steps), NOT a Dwaar: `isFinale(floor)` is the one new predicate, clearing
+  the Ground claims **✦ Truth-Shard X** (the campaign's last shard), and the
+  tier screen is REPLACED by the finale — `ACT III COMPLETE — THE GROUND
+  DOOR OPENS`, the full-campaign stats (one hundred floors and banked shards,
+  Truth-Shard X folded into the middle clause), `One hundred floors. One
+  door. You walked out.` (en/hi) beneath them, Play again / Stay riding the
+  same buttons. No descend arms below — the finale screen is the end of the
+  house.
+- **Close-out** — §4.6 row 10 delivered, §2.3 marked **`THE 100-FLOOR SPEC IS
+  COMPLETE`** (all ten tiers delivered 2026-11-08 → 12; Act III closed at the
+  Ground Door) and §13.1's scope note refreshed to t10 (the full 1→100 spine,
+  terminal at 100). §4.4's delivered note gains the hunt's end (the
+  Foundations rest the wheel; Chhaya walks all ten tiers). README gains the
+  Tier 10 + THE FINALE section (its Tier 9 section re-marks the cascade; the
+  frost, Daily and FAQ sections gain the mirrorless close); the FAQ grows to
+  50 (the Foundations — the hunt ends; the Ground Door — what happens after:
+  "You walked out. The house keeps its copies. Act IV, someday, is
+  theirs."), with the stale marks the delivery retires (the beta roadmap's
+  Foundations line, the what-hunts-me tail, the Dwaar-IX-end-of-the-house
+  claim). STATE_MACHINES' Campaign section refreshed for 100 floors — the
+  machine's FINAL state (`descend()` a no-op at 100, `isFinale` claiming
+  Truth-Shard X, the `GROUND_LAYOUT` Ground beside the nine Dwaar halls, the
+  tier-10 ramp row, the `L94 · T10` / `L100 · THE GROUND` chips), the
+  rotation table's close column, the finale interstitial and the Glazier
+  content-entity note (the decoy precedent one tier deeper; no new
+  machines). **The t6 minors rider**: the last heat read that bypassed the
+  shared production gate — the Gher decoy-ward feed's bare `heatOn` — now
+  routes through `heatActiveFloor()` (`venue === null` included), and the
+  heat look-alike row documents the one-definition contract: every heat read
+  (dressing, fog duration, crack anger, Aaina's `heatNear`, the ward feed,
+  the DEV `heat()` read-out) shares the gated derivation, so a venue
+  side-floor reads tier-one heat everywhere, exactly as it plays. 965 unit +
+  48/48 e2e green; build ok — bundle checked on the artifact.
+
 ## [t9] — 2026-11-12 — the Warden's Warrens (Tier 9, floors 81–90) — ACT III opens
 
 The campaign runs to ninety — the apex tier, where all four Sentinels hunt together on every floor, every mastered mechanic returns as thin texture, and the Ground Door's banner opens Act III.
