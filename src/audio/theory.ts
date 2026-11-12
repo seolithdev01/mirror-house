@@ -45,6 +45,13 @@ export const TIER_EIGHT_SCALE: readonly number[] = [0, 2, 5, 7, 10];
  *  row 9). */
 export const TIER_NINE_SCALE: readonly number[] = [0, 1, 3, 7, 8];
 
+/** Tier-ten mood: the Foundations' three-note scale — root, fourth, fifth —
+ *  the SPARSEST music in the game. Where every elder tier carried five notes
+ *  (tier one seven), the Foundations hold three open intervals spread wide:
+ *  the house holds its breath down here, and the flute breathes three stones
+ *  into the dark (spec §6.1 row 10). */
+export const TIER_TEN_SCALE: readonly number[] = [0, 5, 7];
+
 /** T7/T3 — the whisper ceiling: tier 7's melody intensity never rises past
  *  0.55. Main applies it in the per-frame audio feed as a MULTIPLIER on the
  *  raw threat blend (the disclosed method): the blend never exceeds 1, so
@@ -52,6 +59,15 @@ export const TIER_NINE_SCALE: readonly number[] = [0, 1, 3, 7, 8];
  *  so the melody stays sparse, a whisper in the stacks, whatever the echoes
  *  are doing. */
 export const TIER_SEVEN_INTENSITY_CEILING = 0.55;
+
+/** T10/T3 — the ground ceiling: tier 10's melody intensity never rises past
+ *  0.4 — the quietest ceiling in the game (the whisper's 0.55 hushed one
+ *  step further). Main applies it in the per-frame audio feed with the same
+ *  ×ceiling MULTIPLY pattern (the disclosed method, the blend never exceeds
+ *  1, so ×0.4 caps the drive at 0.4 — and hushes the calm 0.2 floor to 0.08),
+ *  so the three stone notes stay a murmur under the Foundations, whatever
+ *  the echoes are doing. */
+export const TIER_TEN_INTENSITY_CEILING = 0.4;
 
 /** Standard equal-temperament MIDI-note-number → Hz. */
 export function midiToHz(semi: number): number {

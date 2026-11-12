@@ -200,6 +200,32 @@ export const TIER_NINE_PALETTE: TierPalette = {
   exit: 0xd9a441,
 };
 
+/** The Foundations (floors 91–100, T10): pale stone on stone-black — the
+ *  house's foundations by lantern-light. Near-black stone void over a
+ *  coal-dark floor, PALE STONE in the teal slot (the Glazier's own coat —
+ *  the only light glass-hue the tier knows, and no glass walks there to
+ *  wear it: the slots dress the stage markers and the floor lattice alone),
+ *  ASH in the rose-diamond slot, cold ivory-white lantern light. The slot
+ *  NAMES hold one last time: the teal slot wears the master's pale-stone,
+ *  the rose-diamond slot wears the ash accent, so every palette-driven
+ *  pattern re-dresses itself with zero structural change (the T2
+ *  precedent) — and the tier-one stand-in T10/T1 reopened retires with
+ *  this commit, the same pattern one LAST tier down. */
+export const TIER_TEN_PALETTE: TierPalette = {
+  void: 0x050508,
+  floorBase: 0x101216,
+  floorLines: 0x181c22,
+  teal: 0x8a94a0, // pale-stone — the Glazier's coat glass
+  ivory: 0xe8ecf0,
+  gold: 0xd9a441,
+  rose: 0x6a7280, // ash — the lattice diamonds in ash
+  wallTop: 0x3e4650,
+  wallBottom: 0x1c2228,
+  lantern: 0xf0f4ff,
+  entrance: 0x8a94a0,
+  exit: 0xd9a441,
+};
+
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
  *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
  *  retired. T4/T4: tier 4 wears the Carnival palette — the documented
@@ -217,10 +243,10 @@ export const TIER_NINE_PALETTE: TierPalette = {
  *  tier-one stand-in (T8/T1's fallthrough) is retired here, the same
  *  retire-the-stand-in pattern one tier down.
  *  T9/T3: tier 9 wears the Warden's Warrens' iron-on-near-void — the tier-one
- *  stand-in (T9/T1's fallthrough) retires there. T10/T1: tier 10 REOPENS the
- *  stand-in — the Foundations and the Ground keep the tier-one dressing until
- *  T3 delivers the stone palette, the same retire-the-stand-in pattern one
- *  last tier down. */
+ *  stand-in (T9/T1's fallthrough) retires there. T10/T3: tier 10 wears the
+ *  Foundations' pale-stone-on-stone-black — the stand-in T10/T1 reopened
+ *  retires here, and every tier of the hundred-floor house dresses as
+ *  itself. */
 export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
@@ -230,9 +256,7 @@ export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10): Ti
   if (tier === 7) return TIER_SEVEN_PALETTE; // T7/T3 — the stand-in retires
   if (tier === 8) return TIER_EIGHT_PALETTE; // T8/T3 — the stand-in retires
   if (tier === 9) return TIER_NINE_PALETTE; // T9/T3 — the stand-in retires
-  // T10/T1 — the Foundations and the Ground keep the tier-one stand-in (the
-  // documented fallthrough, the same pattern every tier wore once); T3
-  // delivers the stone palette and retires it one last time.
+  if (tier === 10) return TIER_TEN_PALETTE; // T10/T3 — the reopened stand-in retires
   return TIER_ONE_PALETTE;
 }
 

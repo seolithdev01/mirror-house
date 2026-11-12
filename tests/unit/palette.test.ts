@@ -9,6 +9,7 @@ import {
   TIER_NINE_PALETTE,
   TIER_ONE_PALETTE,
   TIER_SEVEN_PALETTE,
+  TIER_TEN_PALETTE,
   TIER_SIX_PALETTE,
   TIER_THREE_PALETTE,
   TIER_TWO_PALETTE,
@@ -79,9 +80,10 @@ describe('palette', () => {
     // T9/T3 — the Warden's Warrens dress tier 9 (the last tier-one stand-in
     // retired — every tier's dressing was a tier-one stand-in once)
     expect(paletteForTier(9)).toBe(TIER_NINE_PALETTE);
-    // T10/T1 — the Ground keeps the tier-one stand-in until T3 delivers the
-    // stone palette (the same retire-the-stand-in pattern one last tier down)
-    expect(paletteForTier(10)).toBe(TIER_ONE_PALETTE);
+    // T10/T3 — the Foundations and the Ground dress in the stone palette (the
+    // reopened tier-one stand-in retires — every tier wears its own dressing
+    // now, the pattern kept one last tier down)
+    expect(paletteForTier(10)).toBe(TIER_TEN_PALETTE);
   });
 
   // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):
@@ -346,5 +348,44 @@ describe('palette', () => {
     // the two-tone checker flips to the gunmetal floor pair
     expect(floorAccent(1, 1, TIER_NINE_PALETTE)).toBe(0x262c30);
     expect(floorAccent(2, 1, TIER_NINE_PALETTE)).toBe(0x1a1e22);
+  });
+
+  // T10/T3 — the Foundations' stone palette (floors 91–100, spec §4.6 row 10):
+  // pale stone on stone-black — the house's foundations by lantern-light.
+  // Near-black stone void over a coal-dark floor, PALE STONE in the teal slot
+  // (the Glazier's own coat color — the only light glass the tier knows),
+  // ASH in the rose-diamond slot, cold ivory-white lantern light. The slot
+  // NAMES hold one last time (the T2 precedent): every palette-driven pattern
+  // re-dresses itself with zero structural change — and the tier-one stand-in
+  // T10/T1 reopened retires with this commit, the same pattern one LAST tier
+  // down. No glass walks these floors: the slots dress the stage markers and
+  // the floor lattice alone.
+  it("tier-ten values are exact (the Foundations: pale-stone/ash on stone-black)", () => {
+    expect(TIER_TEN_PALETTE).toEqual({
+      void: 0x050508,
+      floorBase: 0x101216,
+      floorLines: 0x181c22,
+      teal: 0x8a94a0, // the pale-stone slot — the Glazier's coat glass
+      ivory: 0xe8ecf0,
+      gold: 0xd9a441,
+      rose: 0x6a7280, // the ash slot — the lattice diamonds in ash
+      wallTop: 0x3e4650,
+      wallBottom: 0x1c2228,
+      lantern: 0xf0f4ff,
+      entrance: 0x8a94a0,
+      exit: 0xd9a441,
+    });
+  });
+
+  it('floorAccent with the tier-ten palette: same pattern, stone colors', () => {
+    // the rose-diamond slot becomes the ash accent; the gold lattice holds
+    expect(floorAccent(3, 3, TIER_TEN_PALETTE)).toBe(0x6a7280);
+    expect(floorAccent(9, 3, TIER_TEN_PALETTE)).toBe(0x6a7280);
+    expect(floorAccent(6, 2, TIER_TEN_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(2, 12, TIER_TEN_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(0, 0, TIER_TEN_PALETTE)).toBe(0xd9a441);
+    // the two-tone checker flips to the coal-dark floor pair
+    expect(floorAccent(1, 1, TIER_TEN_PALETTE)).toBe(0x181c22);
+    expect(floorAccent(2, 1, TIER_TEN_PALETTE)).toBe(0x101216);
   });
 });

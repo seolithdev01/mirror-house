@@ -110,8 +110,9 @@ interface DebugHook {
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
   // T2/T4 — the tier the stage is dressed in (venue side-floors read 1;
-  // T7/T3 — the Whisper Library reads 7; T8/T1 — the Frozen Atrium reads 8)
-  tier(): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  // T7/T3 — the Whisper Library reads 7; T8/T1 — the Frozen Atrium reads 8;
+  // T10/T3 — the Foundations and the Ground read 10)
+  tier(): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
   // T7/T3 — the live noise ring's size (pings hearable right now; the
   // economy's fuel gauge — rises under a sprint, decays on silence)
   noise(): number;
@@ -130,6 +131,9 @@ interface DebugHook {
   heat(): { on: boolean; fogMs: number; crackAnger: number };
   // T4/T4 — the Ambusher's exact spot for e2e warps (null off tier 4)
   avartPos(): { x: number; y: number } | null;
+  // T10/T2 — the Glazier's exact spot for e2e warps (null off the Ground —
+  // floor 100 only): the finale legs warp onto him and watch the rhythm.
+  glazierPos(): { x: number; y: number } | null;
   // T5/T2 — the LIVE mirror-you copies (unshattered only; empty off 41–50)
   decoys(): Array<{ x: number; y: number }>;
   // T5/T4 dev faucet — force one copy spawn now (the same spawnOneDecoy path
@@ -2954,5 +2958,172 @@ test('t9: the warren catches', async ({ page }) => {
     { timeout: 2000 },
   );
   await expect(page.locator('#mh-fail')).toHaveText('Caught by the glass');
+  expect(errors).toEqual([]);
+});
+
+// T10/T3 — the loneliest tier pinned. Floor 91 enters the Foundations: the
+// pure tier (the promise floors 91–100 keep) — NO glass of any kind. The
+// census rides T1's disclosure: beacons ARE MirrorRefs, so mirrors().total
+// reads 4 (the four pedestals' beacons) and the pin is per-kind zeros —
+// no standing, no true, no door, no portraits, no water, no distort, the
+// heroes bare (glassless). The four Sentinels rest (taal/gher/avart NULL —
+// the rotation closed) and the Glazier is NULL (he is floor 100 only).
+// The three-note scale on the sine: the sparsest pair in the game. No heat
+// (the apex's furnace burned out at 90), chip `L91 · T10`.
+test('t10: floor 91 enters the foundations', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T10A&floor=91');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      taal: h.taalPos(),
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+      glazier: h.glazierPos(),
+      echoes: h.enemyCount(),
+      mirrors: h.mirrors(),
+      kinds: h.mirrorRefs().map((m) => m.kind),
+      audio: h.audioState(),
+      heat: h.heat(),
+    };
+  });
+  expect(snap.tier).toBe(10);
+  expect(snap.floor).toBe(91);
+  expect(snap.taal, 'the Foundations are walked alone').toBeNull();
+  expect(snap.gher, 'the Foundations are walked alone').toBeNull();
+  expect(snap.avart, 'the Foundations are walked alone').toBeNull();
+  expect(snap.glazier, 'the master is floor 100 only').toBeNull();
+  expect(snap.echoes, 'the Foundations keep their one crowd').toBe(6);
+  // the promise: total 4 = the four beacon pedestals (beacons are
+  // MirrorRefs — T1's disclosure), every GLASS kind a zero, no hero glass
+  expect(snap.mirrors.total, 'the four beacons are the only MirrorRefs').toBe(4);
+  expect(snap.mirrors.captured).toBe(0);
+  expect(snap.mirrors.fogged).toBe(0);
+  expect(snap.mirrors.frozen, 'no ice in the Foundations').toBe(0);
+  expect(snap.mirrors.thawed).toBe(0);
+  expect(snap.mirrors.portraits, 'the portraits stay tier-2-only').toBe(0);
+  expect(snap.mirrors.water, 'no pools in the Foundations').toBe(0);
+  expect(snap.mirrors.distort, 'no carnival glass in the Foundations').toBe(0);
+  for (const k of snap.kinds) expect(k, 'the only MirrorRef kind on 91 is the beacon').toBe('beacon');
+  expect(snap.audio.scale, 'the three-note scale — the sparsest').toEqual([0, 5, 7]);
+  expect(snap.audio.voice, 'the Ground is quiet — the sine returns').toBe('sine');
+  expect(snap.heat.on, 'the furnace burned out at 90').toBe(false);
+  await expect(page.locator('#mh-floor')).toHaveText('L91 · T10');
+  expect(errors).toEqual([]);
+});
+
+// T10/T3 — the hunt and the ending. Floor 100, the Glazier's Ground: the
+// master walks alone (all four Sentinels still resting — the Ground is HIS),
+// the four beacons are the last pedestals, and clearing the floor raises
+// THE GROUND DOOR — the tier screen REPLACED by the finale. Legs: the
+// master's spot is live → warp onto him (contact is the standard caught);
+// after the restart, arm the run, capture the four pedestals (warp+frost,
+// the same legs every capture e2e rides), warp to the Door → the finale
+// screen text visible with Play again / Stay riding it — and the campaign
+// TERMINAL: floor stays 100, tier stays 10, the shard claimed, descend a
+// no-op forever.
+test('t10: the glazier hunts and the door opens', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T10END&floor=100');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      taal: h.taalPos(),
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+      glazier: h.glazierPos(),
+      echoes: h.enemyCount(),
+      beacons: h.house().beacons,
+      kinds: h.mirrorRefs().map((m) => m.kind),
+    };
+  });
+  expect(snap.tier).toBe(10);
+  expect(snap.floor).toBe(100);
+  expect(snap.glazier, 'the master walks his Ground').not.toBeNull();
+  expect(snap.taal, 'the Ground is HIS — the Sentinels rest on').toBeNull();
+  expect(snap.gher, 'the Ground is HIS — the Sentinels rest on').toBeNull();
+  expect(snap.avart, 'the Ground is HIS — the Sentinels rest on').toBeNull();
+  expect(snap.echoes, 'the Ground keeps the Foundations crowd').toBe(6);
+  expect(snap.beacons, 'the four pedestals are the last objectives').toEqual({
+    captured: 0,
+    total: 4,
+  });
+  for (const k of snap.kinds) expect(k, 'still no glass — beacons only').toBe('beacon');
+  await expect(page.locator('#mh-floor')).toHaveText('L100 · THE GROUND');
+  // THE HUNT: warp onto the master — contact is the standard caught fail
+  await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    const p = h.glazierPos();
+    if (p !== null) h.warp(p.x, p.y);
+  });
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.house()
+        .failed,
+    null,
+    { timeout: 2000 },
+  );
+  await expect(page.locator('#mh-fail')).toHaveText('Caught by the glass');
+  // FAIL_FREEZE_MS is 1200ms; +margin → resetFloor has re-armed the Ground
+  await page.waitForTimeout(1600);
+  const rearmed = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { attempts: h.attempts(), failed: h.house().failed };
+  });
+  expect(rearmed.attempts).toBe(1);
+  expect(rearmed.failed).toBe(false);
+  // the clear check needs a started run — take one step first (the game's
+  // first-input contract, the m2 win leg's move)
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(200);
+  await page.keyboard.up('KeyW');
+  // THE FOUR PEDESTALS: capture all four beacons (warp+frost, floor 100's
+  // beacons live glass — frost works here, nothing freezes it)
+  while (
+    (await page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.beaconsLeft();
+    })) > 0
+  ) {
+    await captureNextBeacon(page);
+  }
+  expect(
+    await page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.house().exitUnlocked;
+    }),
+    'the four pedestals open the Door',
+  ).toBe(true);
+  // THE DOOR: warp to the exit — the Ground Door opens
+  const exit = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.exitPos();
+  });
+  await page.evaluate((e: { x: number; z: number }) => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    h.warp(e.x, e.z);
+  }, exit);
+  // the finale screen REPLACES the tier screen
+  await expect(page.locator('#mh-tier-overlay')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#mh-tier-title')).toHaveText(
+    'ACT III COMPLETE — THE GROUND DOOR OPENS',
+  );
+  await expect(page.locator('#mh-tier-again'), 'Play again rides the finale').toBeVisible();
+  await expect(page.locator('#mh-tier-stay'), 'Stay rides the finale').toBeVisible();
+  // the campaign TERMINAL: floor 100 forever, the shard claimed
+  const final = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return { campaign: h.campaign(), tier: h.tier(), beacons: h.house().beacons };
+  });
+  expect(final.campaign.floor, 'the machine’s final state — no floor 101').toBe(100);
+  expect(final.campaign.tierComplete, 'Truth-Shard X claimed').toBe(true);
+  expect(final.tier).toBe(10);
+  expect(final.beacons.captured).toBe(4);
   expect(errors).toEqual([]);
 });

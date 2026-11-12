@@ -12,6 +12,8 @@ import {
   TIER_SEVEN_INTENSITY_CEILING,
   TIER_SEVEN_SCALE,
   TIER_SIX_SCALE,
+  TIER_TEN_INTENSITY_CEILING,
+  TIER_TEN_SCALE,
   TIER_THREE_SCALE,
   TIER_TWO_SCALE,
 } from './audio/theory';
@@ -1560,9 +1562,14 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // stand-ins retire — the Atrium dresses in ice on deep void-blue and hums
   // the austere suspended pentatonic through the COLD STRINGS (the
   // sawtooth's thin reed-bright edge: strings played over ice). T9/T3: the
-  // LAST stand-in retires — the Warrens dress in iron on near-void and grind
-  // the iron pentatonic through the same saw (the apex hums on the warden's
-  // own voice, the reed-bright edge gone iron).
+  // Warrens dress in iron on near-void and grind the iron pentatonic through
+  // the same saw (the apex hums on the warden's own voice, the reed-bright
+  // edge gone iron). T10/T3: the stand-in T10/T1 REOPENED retires at last —
+  // the Foundations and the Ground dress in pale stone on stone-black and
+  // breathe the three-note scale through the sine (the Ground is quiet —
+  // the sparsest dressing, the quietest voice, the deepest floor), and the
+  // frame feed hushes the intensity through TIER_TEN_INTENSITY_CEILING the
+  // same disclosed multiply the Library whispers through.
   // Venue side-floors stay tier-one dressed — scale AND voice: a return
   // from a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
@@ -1577,7 +1584,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       7: TIER_SEVEN_SCALE, // T7/T3 — the whispered pentatonic (the stand-in retires)
       8: TIER_EIGHT_SCALE, // T8/T3 — the suspended pentatonic (the stand-in retires)
       9: TIER_NINE_SCALE, // T9/T3 — the iron pentatonic (the stand-in retires)
-      10: TIER_ONE_SCALE, // T10/T1 — the tier-one stand-in until T3's three-note scale
+      10: TIER_TEN_SCALE, // T10/T3 — the three-note scale (the reopened stand-in retires)
     } as const;
     const voiceByTier = {
       1: 'triangle',
@@ -1589,7 +1596,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       7: 'sine', // T7/T3 — the whisper: the flute returns for the Library
       8: 'sawtooth', // T8/T3 — the cold strings: the saw sings over the ice
       9: 'sawtooth', // T9/T3 — the warren keeps the saw: the iron rung grinds through it
-      10: 'triangle', // T10/T1 — the tier-one stand-in until T3's sine (the Ground is quiet)
+      10: 'sine', // T10/T3 — the Ground is quiet: the flute's last, faintest return
     } as const;
     audio.setScale(scaleByTier[tier]);
     audio.setVoice(voiceByTier[tier]);
@@ -3063,17 +3070,24 @@ function frame(now: number): void {
   // disclosed method is the ×ceiling MULTIPLY, not a hard clamp: the blend
   // never exceeds 1, so the multiply caps the drive at 0.55 (a chase tops
   // out ≈0.52) AND hushes the calm 0.2 floor to 0.11, keeping the melody
-  // sparse — a whisper in the stacks. Every other tier feeds the blend raw.
+  // sparse — a whisper in the stacks. T10/T3 — the ground ceiling rides the
+  // same disclosed multiply at TIER_TEN_INTENSITY_CEILING (0.4): the
+  // Foundations cap the drive at 0.4 and hush the calm floor to 0.08 — the
+  // quietest tier, three stone notes under everything. Every other tier
+  // feeds the blend raw.
   const rawIntensity = intensityFrom({
     anger: house.anger,
     chasing: echoes.filter((e) => e.mode === 'chase').length,
     failing: phase.kind === 'failing',
     cleared: phase.kind === 'cleared',
   });
+  const liveTier = venue === null ? tierOf(campaign.floor) : 1;
   audioIntensity =
-    venue === null && tierOf(campaign.floor) === 7
+    liveTier === 7
       ? rawIntensity * TIER_SEVEN_INTENSITY_CEILING
-      : rawIntensity;
+      : liveTier === 10
+        ? rawIntensity * TIER_TEN_INTENSITY_CEILING
+        : rawIntensity;
   audio.setIntensity(audioIntensity);
   if (!aaina.root.hidden) refreshAaina(); // she reads the floor while you walk it
   syncFogVisuals(now);
@@ -3108,9 +3122,9 @@ function frame(now: number): void {
     // joins as well; T8/T1: VII joins too; T9/T1: VIII joins as well;
     // T10/T1: IX joins as well — EVERY Dwaar cascades now; the T9 tier
     // screen retired downward and the stairs at 90 open the Foundations);
-    // floor 100 — the Glazier's Ground, THE FINALE — raises the TIER X
-    // completion screen (Truth-Shard X on the standard screen; T3 folds it
-    // into the Ground Door finale). The campaign is TERMINAL there:
+    // floor 100 — the Glazier's Ground, THE FINALE — raises the GROUND DOOR
+    // finale (T10/T3: the tier screen replaced; the Truth-Shard X line
+    // folded into the finale's stats). The campaign is TERMINAL there:
     // descend() is a no-op at 100, the machine's final state.
     phase = clearRun(phase, now);
     if (venue !== null) {
@@ -3143,15 +3157,18 @@ function frame(now: number): void {
       updateShardsChip(); // chip flips from `banked (+pending)` to plain banked
       if (isFinale(campaign.floor)) {
         // Floor 100 — the Glazier's Ground: Truth-Shard X claims the house's
-        // LAST tier. The full tier screen (Play again / Stay) holds — the
-        // standard screen with the Truth-Shard X title until T3 folds it
-        // into the Ground Door finale. No descendAt arms below, and
-        // campaign.descend is a no-op at 100 — the machine's final state.
+        // LAST tier, and the GROUND DOOR OPENS. T10/T3 — the standard tier
+        // screen is REPLACED by the finale: `ACT III COMPLETE — THE GROUND
+        // DOOR OPENS` with the full-campaign stats (the Truth-Shard X line
+        // folded in as its middle clause) and the closing line the whole
+        // descent earned — Play again / Stay ride the same buttons. No
+        // descendAt arms below, and campaign.descend is a no-op at 100 —
+        // the machine's final state.
         campaign = completeTier(campaign);
         save = mergeCampaign(save, campaign); // the tier close is a save event
         persist(true);
         hud.showTierComplete({ tier: 10, floors: TIER_TEN_FLOORS, shards: save.shards });
-        pushCaption('tier', t(lang, 'overlay.tierTitle10')); // the screen's own line
+        pushCaption('tier', t(lang, 'overlay.groundTitle')); // the screen's own line
       } else {
         if (isDwaar(campaign.floor)) {
           // Dwaar I (10), II (20), III (30), IV (40), V (50), VI (60), VII

@@ -224,6 +224,16 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // the standard screen holds; descend() is a no-op at 100, the machine's
     // final state).
     'overlay.tierTitle10': '✦ Truth-Shard X claimed — Tier X complete',
+    // T10/T3 — the GROUND DOOR finale: the floor-100 clear REPLACES the tier
+    // screen with the campaign's ending card — the Act III close, the
+    // full-campaign stats (the Truth-Shard X line folded in as its middle
+    // clause, the plan's ratified replacement), and the closing line the
+    // whole descent earned. Play again / Stay reuse the tier screen's
+    // buttons; the retired tier-title key above stays (retired-keys-stay).
+    'overlay.groundTitle': 'ACT III COMPLETE — THE GROUND DOOR OPENS',
+    'overlay.groundStats':
+      '{floors} floors cleared · ✦ Truth-Shard X claimed · {shards} shards banked',
+    'overlay.groundNote': 'One hundred floors. One door. You walked out.',
     // T5/T1 — the Act II opening banner: the first floor-41 build of a
     // session raises it for 3s, once per session.
     'overlay.actBanner': 'ACT II — THE DECEPTION',
@@ -490,6 +500,13 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // (T3 इस परदे को ज़मीन के दरवाज़े के समापन में जोड़ देगा; तब तक
     // मानक परदा — स्तर 100 पर descend() कोई-नहीं, मशीन की अंतिम अवस्था)।
     'overlay.tierTitle10': '✦ सत्य-शार्ड X प्राप्त — चरण X पूर्ण',
+    // T10/T3 — ज़मीन के दरवाज़े का समापन-परदा: मंज़िल-100 की जीत चरण-परदे की
+    // जगह लेती है — अंक III का समापन, पूरे अभियान के आँकड़े (सत्य-शार्ड X की
+    // पंक्ति बीच में जुड़ी), और वह अंतिम पंक्ति जो पूरे उतराई ने कमाई।
+    'overlay.groundTitle': 'अंक III पूर्ण — ज़मीन का दरवाज़ा खुलता है',
+    'overlay.groundStats':
+      '{floors} मंज़िलें पार · ✦ सत्य-शार्ड X प्राप्त · {shards} शार्ड जमा',
+    'overlay.groundNote': 'एक सौ मंज़िलें। एक दरवाज़ा। तुम बाहर निकल गए।',
     // T5/T1 — अंक II का उद्घाटन-बैनर: सत्र के पहले मंज़िल-41 निर्माण पर 3 सेकंड
     'overlay.actBanner': 'अंक II — धोखा',
     'overlay.actBannerNote': 'घर ने आपकी नक़ल करना शुरू कर दी है।',

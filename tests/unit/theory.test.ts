@@ -16,6 +16,8 @@ import {
   TIER_SEVEN_INTENSITY_CEILING,
   TIER_SEVEN_SCALE,
   TIER_SIX_SCALE,
+  TIER_TEN_INTENSITY_CEILING,
+  TIER_TEN_SCALE,
   TIER_THREE_SCALE,
   TIER_TWO_SCALE,
 } from '../../src/audio/theory';
@@ -86,6 +88,24 @@ describe('scales', () => {
   // the Atrium's stand-in).
   it('tier nine is the iron pentatonic set', () => {
     expect(TIER_NINE_SCALE).toEqual([0, 1, 3, 7, 8]);
+  });
+
+  // T10/T3 — the Foundations' three-note scale (spec §6.1 row 10): root,
+  // fourth, fifth — the SPARSEST music in the game, three open intervals
+  // spread wider than any tier's five. The Foundations hold their breath;
+  // the flute breathes three stones into the dark (the Ground is quiet).
+  it('tier ten is the three-note scale — the sparsest in the game', () => {
+    expect(TIER_TEN_SCALE).toEqual([0, 5, 7]);
+    expect(TIER_TEN_SCALE.length, 'no tier carries fewer notes').toBeGreaterThanOrEqual(3);
+  });
+
+  // T10/T3 — the ground ceiling: tier 10's melody intensity never rises past
+  // 0.4, the quietest ceiling in the game (the t7 whisper's 0.55 one step
+  // further down). Main applies it as the same ×ceiling MULTIPLY on the raw
+  // threat blend (the calm 0.2 floor hushes to 0.08), disclosed there; this
+  // pins the constant itself.
+  it('the ground ceiling is exact (0.4)', () => {
+    expect(TIER_TEN_INTENSITY_CEILING).toBe(0.4);
   });
 });
 
@@ -233,6 +253,21 @@ describe('nextMelodySemi', () => {
       expect(semi).toBeGreaterThanOrEqual(OCT);
       expect(semi).toBeLessThanOrEqual(OCT + 12);
       expect(iron.has(semi % 12)).toBe(true);
+    }
+  });
+
+  // T10/T3 — the ground walker walks the three-note set only: every emitted
+  // note is a tier-ten member inside the window (pcs of [0,5,7]) — and the
+  // walk stays a member even under the hushed ceiling drive.
+  it('after a tier-ten swap the walk only emits the three stone notes in the window', () => {
+    const rng = createRng('GROUND-WALK');
+    let semi = OCT;
+    const stone = new Set(TIER_TEN_SCALE.map((s) => (OCT + s) % 12));
+    for (let i = 0; i < 200; i++) {
+      semi = nextMelodySemi(rng, TIER_TEN_SCALE, semi, TIER_TEN_INTENSITY_CEILING, OCT);
+      expect(semi).toBeGreaterThanOrEqual(OCT);
+      expect(semi).toBeLessThanOrEqual(OCT + 12);
+      expect(stone.has(semi % 12)).toBe(true);
     }
   });
 

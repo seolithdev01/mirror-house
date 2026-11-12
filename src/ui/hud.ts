@@ -87,8 +87,8 @@ export interface Hud {
    *  too (`which: 6`). T8/T1: Dwaar VII cascades as well (`which: 7`).
    *  T9/T1: Dwaar VIII joins too (`which: 8`). T10/T1: Dwaar IX joins as
    *  well (`which: 9`) — every Dwaar now cascades; the full screen belongs
-   *  to the FINALE floor 100 (`showTierComplete({ tier: 10 })`, until T3
-   *  folds it into the Ground Door finale). */
+   *  to the FINALE floor 100 (`showTierComplete({ tier: 10 })` — T10/T3:
+   *  that call now raises the GROUND DOOR finale, the tier screen replaced). */
   showShardInterstitial(which?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9): void;
   /** M4/T2 — the Truth-Shard tier-complete screen (Play again / Stay).
    *  T2/T1 — `tier` picks the screen's title: 1 = Dwaar I, 2 = Dwaar II.
@@ -103,10 +103,13 @@ export interface Hud {
    *  T9/T1 — VIII cascades too; the stairs past 80 open the Warrens).
    *  T9/T1 — 9 = Dwaar IX, the TIER IX close (retired from the flow in
    *  T10/T1 — IX cascades too; the stairs past 90 open the Foundations).
-   *  T10/T1 — 10 = the Glazier's Ground (floor 100, THE FINALE): the
-   *  campaign's terminal close — Truth-Shard X on the standard screen until
-   *  T3 folds it into the Ground Door finale (descend() is a no-op at 100:
-   *  the machine's final state). */
+   *  T10/T3 — 10 = the GROUND DOOR finale: the floor-100 clear REPLACES the
+   *  standard tier screen with the campaign's ending card — `ACT III
+   *  COMPLETE — THE GROUND DOOR OPENS`, the full-campaign stats (the
+   *  Truth-Shard X line folded in as its middle clause), the closing line
+   *  the whole descent earned, and the same Play again / Stay buttons in
+   *  the stone-dressed card (descend() is a no-op at 100: the machine's
+   *  final state). */
   showTierComplete(stats: {
     tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     floors: number;
@@ -433,12 +436,12 @@ export function createHud(init: HudInit): Hud {
    *  named the Dwaar VII tier close (retired from the flow in T8/T1 — VII
    *  cascades). T8/T1: tier 8 named the Dwaar VIII tier close (retired from
    *  the flow in T9/T1 — VIII cascades). T9/T1: tier 9 named the Dwaar IX
-   *  tier close (retired from the flow in T10/T1 — IX cascades). T10/T1:
-   *  tier 10 names the Ground's Truth-Shard X screen — the one full screen
-   *  the house keeps (T3 folds it into the Ground Door finale). */
+   *  tier close (retired from the flow in T10/T1 — IX cascades). T10/T3:
+   *  tier 10 names the GROUND DOOR finale — the tier screen replaced (the
+   *  Truth-Shard X title key retires; retired-keys-stay). */
   const tierTitleKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10): string =>
     tier === 10
-      ? 'overlay.tierTitle10'
+      ? 'overlay.groundTitle'
       : tier === 9
         ? 'overlay.tierTitle9'
         : tier === 8
@@ -457,10 +460,17 @@ export function createHud(init: HudInit): Hud {
                       ? 'overlay.tierTitle2'
                       : 'overlay.tierTitle';
 
+  /** The tier screen's stats key — the floors/shards line. T10/T3: tier 10
+   *  composes the GROUND DOOR's full-campaign line instead (the Truth-Shard
+   *  X clause folded in), same {floors}/{shards} tokens. */
+  const tierStatsKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10): string =>
+    tier === 10 ? 'overlay.groundStats' : 'overlay.tierStats';
+
   /** The tier screen's note key — the free-walk line for the tier screens
-   *  (Dwaar VII's included), the Act II teaser for the retired act close. */
+   *  (Dwaar VII's included), the Act II teaser for the retired act close,
+   *  and T10/T3: the GROUND DOOR's closing line for tier 10. */
   const tierNoteKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10): string =>
-    tier === 4 ? 'overlay.actNote' : 'overlay.tierNote';
+    tier === 10 ? 'overlay.groundNote' : tier === 4 ? 'overlay.actNote' : 'overlay.tierNote';
 
   /** The shard interstitial's line key — one place for the `which` → key
    *  map (T6/T1: Dwaar V's `5` joins; T7/T1: Dwaar VI's `6` joins; T8/T1:
@@ -626,13 +636,16 @@ export function createHud(init: HudInit): Hud {
     showTierComplete: (stats) => {
       lastTierStats = stats;
       tierTitle.textContent = t(lang, tierTitleKey(stats.tier));
-      tierStats.textContent = fill(t(lang, 'overlay.tierStats'), stats);
+      tierStats.textContent = fill(t(lang, tierStatsKey(stats.tier)), stats);
       // T4/T1 — the act close swaps the note line for the Act II tease (the
       // free-walk note belongs to the tier screens); setLang re-pins it.
       tierNote.textContent = t(lang, tierNoteKey(stats.tier));
       // T4/T1 — the act close dresses the same card in the carnival's rose
       // (index.html's `#mh-tier-box.act`); the tier screens keep the gold.
+      // T10/T3 — the GROUND DOOR finale dresses it in stone instead
+      // (index.html's `#mh-tier-box.ground`): the ending, not a tier close.
       tierBox.classList.toggle('act', stats.tier === 4);
+      tierBox.classList.toggle('ground', stats.tier === 10);
       tier.hidden = false;
     },
     hideTier: () => {
@@ -666,7 +679,7 @@ export function createHud(init: HudInit): Hud {
       renderChips();
       if (lastTierStats !== null && !tier.hidden) {
         tierTitle.textContent = t(lang, tierTitleKey(lastTierStats.tier));
-        tierStats.textContent = fill(t(lang, 'overlay.tierStats'), lastTierStats);
+        tierStats.textContent = fill(t(lang, tierStatsKey(lastTierStats.tier)), lastTierStats);
         tierNote.textContent = t(lang, tierNoteKey(lastTierStats.tier)); // T4/T1 — the act tease flips too
       }
       if (!shard.hidden) shard.textContent = t(lang, shardKey); // T2/T5, T3/T1, T4/T1 — the live line
