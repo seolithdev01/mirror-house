@@ -120,6 +120,9 @@ export const ACT_III_FLOOR = 81;
 // The validator widens to TIER_TEN_FLOORS = 100 in the SAME commit (the
 // ×9 binding held eight times; this is the last widening).
 export const TIER_TEN_FLOORS = 100;
+// T10/T2 — the master's floor: the Glazier spawns on the Ground (100) and
+// NOWHERE else — the Foundations (91–99) are walked alone, the Ground is his.
+export const GLAZIER_FLOOR = 100;
 // T7 — the beat-walker's RETURN: Taal's rest (his first, 51–59 in T6)
 // extends through 65 and he walks the Library's last five floors (66–70) —
 // his beat ticks are noise he ignores but you cannot miss.

@@ -253,6 +253,57 @@ export function createAavart(): AavartFigure {
   };
 }
 
+/** The Glazier — the house's master (T10/T2). The Surveyor's silhouette
+ *  rebuilt TALL (1.25× — the tallest figure in the house) in a pale stone
+ *  coat (0xc8ccd4) with FULL-WHITE lantern glass (0xffffff at emissive 2.0 —
+ *  the brightest light anyone carries), on layer 0: he stands in the world
+ *  AND inside every mirror pass, like every figure before him. Floor 100
+ *  only — the Ground is his — and he is the only PURE-WHITE thing in the
+ *  game: where Taal burns gold and Gher stills green, the master glows the
+ *  color of the frost lantern you thought was yours. No beat behavior — his
+ *  glass holds one constant noon (the walk between teleports is his only
+ *  rhythm). A per-floor figure — dispose() frees the geometry and his three
+ *  materials, which belong to him alone. */
+export interface GlazierFigure {
+  group: THREE.Group;
+  dispose: () => void;
+}
+
+export function createGlazier(): GlazierFigure {
+  const g = new THREE.Group();
+  const coat = new THREE.MeshStandardMaterial({ color: 0xc8ccd4, roughness: 0.8 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xd8b28f, roughness: 0.7 });
+  const glass = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0xffffff,
+    emissiveIntensity: 2.0, // the full-white noon — the only pure-white in the game
+  });
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 0.85, 4, 8), coat);
+  body.position.y = 0.85;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), skin);
+  head.position.y = 1.58;
+  const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.5, 2, 6), coat);
+  arm.position.set(0.34, 1.05, -0.1);
+  arm.rotation.z = -0.45;
+  const lanternBox = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.2, 0.14), glass);
+  lanternBox.position.set(0.44, 0.82, -0.24);
+  g.add(body, head, arm, lanternBox);
+  g.scale.setScalar(1.25); // the TALL silhouette — the master overtops every warden
+  g.traverse((o) => o.layers.set(0)); // the master is diegetic — never AVATAR_LAYER
+  return {
+    group: g,
+    dispose: () => {
+      g.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (m.geometry) m.geometry.dispose();
+      });
+      coat.dispose();
+      skin.dispose();
+      glass.dispose();
+    },
+  };
+}
+
 export function updateAvatar(
   avatar: THREE.Group,
   x: number,

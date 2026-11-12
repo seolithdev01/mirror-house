@@ -32,6 +32,7 @@ import {
   FIXED_STEP,
   FOG_COST,
   FOG_DURATION_MS,
+  GLAZIER_FLOOR,
   NOISE_ACTION_R,
   NOISE_SPRINT_R,
   NOISE_WALK_EVERY_MS,
@@ -71,10 +72,12 @@ import {
   createChhaya,
   createDecoy,
   createGher,
+  createGlazier,
   createTaal,
   updateAvatar,
   type AavartFigure,
   type DecoyFigure,
+  type GlazierFigure,
   type GherFigure,
   type TaalFigure,
 } from './game/avatar';
@@ -175,6 +178,13 @@ import {
   type GherState,
 } from './game/gher';
 import { ambushCell, initAavart, updateAavart, type AvartState } from './game/avart';
+import {
+  glazierCatches,
+  glazierNear,
+  initGlazier,
+  updateGlazier,
+  type GlazierState,
+} from './game/glazier';
 import { floorFromGrid, generateFloor, TIER_ONE, type Floor } from './game/maze';
 import { paletteForTier, TIER_ONE_PALETTE } from './game/palette';
 import { awardShards, dailySeed, META_KEY, recordRun, spendShards, todayStamp } from './game/meta';
@@ -499,6 +509,18 @@ let gherFigure: GherFigure | null = null;
 // as the other two; resetFloor re-seeds him at the far anchor.
 let aavart: AvartState | null = null;
 let aavartFigure: AavartFigure | null = null;
+// T10/T2 — the GLAZIER, the house's master: floor 100 only (GLAZIER_FLOOR),
+// and never beside the Sentinels (they rest 91–100 — the Ground is his solo
+// hunt). Same per-floor ownership as the wardens: buildFloor owns state +
+// figure, the teardown rides floorDisposers, resetFloor re-seeds him at the
+// far perch. The two caption eyes follow the house's two clocks: the
+// teleport line is once-per-FLOOR (cleared by buildFloor only — the
+// floodAnnounced precedent), the approach line once-per-ATTEMPT (cleared by
+// resetFloor + buildFloor — the chhayaAnnounced precedent).
+let glazier: GlazierState | null = null;
+let glazierFigure: GlazierFigure | null = null;
+let glazierTeleportAnnounced = false; // 'The Glazier walks his Foundations.' — once per floor
+let glazierNearAnnounced = false; // 'He is here.' — once per attempt
 // T5/T2 — the mirror-you decoys (Act II's first form): the house sends glass
 // copies of the Surveyor ahead on the Act II floors (41–60 — T6/T1 widens
 // the stream through the Furnace Wings). State + per-copy figures are 1:1
@@ -739,6 +761,13 @@ function resetFloor(now: number): void {
   // attempt, and the first pace is again the player's to set.
   aavart = aavartFigure === null ? null : initAavart(objs.patrolAnchors, player);
   if (aavartFigure !== null) aavartFigure.group.visible = aavart !== null;
+  // T10/T2 — the master re-seeds at the far perch: the Ground resets with the
+  // attempt, the teleport clock re-arms with the re-seed (a fresh 12 s from
+  // now), and the approach line speaks again in the new attempt. The
+  // teleport line does NOT — discovery happened once this floor.
+  glazier = glazierFigure === null ? null : initGlazier(floor.grid, player, now);
+  if (glazierFigure !== null) glazierFigure.group.visible = glazier !== null;
+  glazierNearAnnounced = false;
   // T5/T2 — the copies die with the attempt: the stage forgets every copy,
   // the spawn clock re-arms on the Flood Halls (re-seeded per attempt — the
   // reset can never replay the same spawn cell twice in a row).
@@ -1609,6 +1638,8 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   floodAnnounced = false; // the new floor speaks the flood once
   gherCopyAnnounced = false; // T6/T3 — and the warden's copy ward once
   thawAnnounced = false; // T8/T2 — and the atrium's first-thaw line once per FLOOR
+  glazierTeleportAnnounced = false; // T10/T2 — and the master's first-teleport line once per FLOOR
+  glazierNearAnnounced = false; // T10/T2 — the approach line re-arms with the floor too
   // T7/T2 — the new floor's ring starts silent and its once-per-floor
   // noise-chase line re-arms with the rest of the caption eyes.
   noiseEvents = [];
@@ -1916,6 +1947,27 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       fig.dispose();
       aavartFigure = null;
       aavart = null;
+    });
+  }
+
+  // T10/T2 — the GLAZIER, the last entity: he spawns on the GROUND and
+  // nowhere else (pack === null && floor === GLAZIER_FLOOR — the
+  // Foundations 91–99 are walked alone, the finale floor is his). The
+  // bfs-farthest perch from the player's spawn (the initGlazier read — the
+  // maze's own farthest-cell picker), the teleport clock armed at his
+  // build. No senses, no lures, no slows — nothing on the Foundations can
+  // touch him, and he needs none of it (see glazier.ts). Never beside the
+  // Sentinels: they rest 91–100 by the rotation — the Ground is his solo.
+  if (pack === null && c.floor === GLAZIER_FLOOR) {
+    const fig = createGlazier();
+    scene.add(fig.group);
+    glazierFigure = fig;
+    glazier = initGlazier(floor.grid, spawnPlayer(floor), performance.now());
+    floorDisposers.push(() => {
+      scene.remove(fig.group);
+      fig.dispose();
+      glazierFigure = null;
+      glazier = null;
     });
   }
 
@@ -2817,6 +2869,29 @@ function frame(now: number): void {
           dtMove, // T5/T3 — the Ambusher wades
         );
       }
+      // T10/T2 — the master's step: on the GLAZIER_TELEPORT_S clock he
+      // relocates to the bfs-farthest perch from the player's CURRENT cell
+      // and re-arms; between teleports he flow-walks straight at you at
+      // GLAZIER_SPEED (see glazier.ts — no senses, no lures, no slows: he
+      // IS the fog). The teleport EDGE is the reset clock itself (a walk
+      // step never moves nextTeleportAt), so the once-per-floor line speaks
+      // on his FIRST relocation of the floor and never again — the rhythm
+      // named once, then it is just the Ground's weather.
+      if (glazier !== null) {
+        const clockBefore = glazier.nextTeleportAt;
+        glazier = updateGlazier(glazier, floor.grid, player, now, dtMove);
+        if (glazier.nextTeleportAt !== clockBefore && !glazierTeleportAnnounced) {
+          glazierTeleportAnnounced = true;
+          pushCaption('glazier-teleport', t(lang, 'caption.glazierWalks'));
+        }
+        // The approach: once per ATTEMPT, the discovery line — he is within
+        // 3 m and the Ground has no fog to hide in (the latch re-arms in
+        // resetFloor; a teleported-away master goes quiet until he closes again).
+        if (!glazierNearAnnounced && glazierNear(glazier, player)) {
+          glazierNearAnnounced = true;
+          pushCaption('glazier-near', t(lang, 'caption.glazierHere'));
+        }
+      }
       // Sprint into a mirror and it cracks: the house angers, the glass tints.
       const sprintMoving =
         inputFrame.sprint && (inputFrame.forward !== 0 || inputFrame.strafe !== 0);
@@ -2881,6 +2956,10 @@ function frame(now: number): void {
           Math.hypot(aavart.x - player.x, aavart.y - player.y) < CONTACT_RADIUS
         )
           failFloor('caught');
+        // The master's touch (T10/T2): the Glazier reached you — the
+        // standard caught fail. No anger, no cooldown: he is the house, and
+        // the house does not negotiate (glazierCatches — the pure gate).
+        if (glazier !== null && glazierCatches(glazier, player)) failFloor('caught');
         // T5/T2 — the copy is fragile, and it is worth shards: a touch within
         // CONTACT_RADIUS shatters it (+DECOY_SHARD banked pending, once per
         // copy — the shattered flag is the gate; a failed floor forfeits the
@@ -2927,6 +3006,12 @@ function frame(now: number): void {
   if (aavart !== null && aavartFigure !== null) {
     aavartFigure.group.position.set(aavart.x, 0, aavart.y);
     aavartFigure.group.rotation.y = -aavart.heading; // same convention as the avatar
+  }
+  // T10/T2 — the master follows his state: the tall white figure glides
+  // between perches. No setBeat — his lantern holds the constant noon.
+  if (glazier !== null && glazierFigure !== null) {
+    glazierFigure.group.position.set(glazier.x, 0, glazier.y);
+    glazierFigure.group.rotation.y = -glazier.heading; // same convention as the avatar
   }
   // T5/T2 — the copies follow their state (the figures are 1:1 with the
   // states by spawn order). A shattered copy collapses to nothing: one
@@ -3378,6 +3463,9 @@ if (import.meta.env.DEV || testMode) {
     gherSeal: () => (gher === null || gher.interceptAt === null ? null : { ...gher.interceptAt }),
     // T4/T4 — the Ambusher's exact spot for e2e warps (null off tier 4).
     avartPos: () => (aavart === null ? null : { x: aavart.x, y: aavart.y }),
+    // T10/T2 — the master's exact spot (null off the Ground — floor 100
+    // only): the e2e finale legs warp onto him and watch the rhythm.
+    glazierPos: () => (glazier === null ? null : { x: glazier.x, y: glazier.y }),
     // T5/T2 — the LIVE copies (unshattered only): where each copy of you
     // stands. An empty array everywhere but the Flood Halls.
     decoys: () => decoys.filter((d) => !d.shattered).map((d) => ({ x: d.x, y: d.y })),

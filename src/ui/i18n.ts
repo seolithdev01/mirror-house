@@ -283,6 +283,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.thaw': 'The ice gives way — the glass watches.',
     // T5/T3 — the rising water: once per floor, as the level crosses 0.3 m
     'caption.flood': 'The halls are flooding…',
+    // T10/T2 — the master speaks twice: once per FLOOR, his first teleport
+    // (the rhythm named); once per ATTEMPT, the 3 m approach (the discovery)
+    'caption.glazierWalks': 'The Glazier walks his Foundations.',
+    'caption.glazierHere': 'He is here.',
     // misc chrome
     'misc.close': '✕ Close ({key})',
     // M5/T6 — the accessible name for every ✕-only close button
@@ -540,6 +544,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'caption.thaw': 'बर्फ़ हटती है — शीशा देखता है।',
     // T5/T3 — उठता पानी: प्रति तल एक बार, जब पानी 0.3 मी पार करता है
     'caption.flood': 'गलियाँ पानी से भरने लगी हैं…',
+    // T10/T2 — स्वामी दो बार बोलता है: प्रति तल एक बार, उसकी पहली दूरी-छलांग;
+    // प्रति प्रयास एक बार, 3 मी की निकटता (खोज की पंक्ति)
+    'caption.glazierWalks': 'ग्लेज़ियर अपनी नींवों पर चलता है।',
+    'caption.glazierHere': 'वह यहाँ है।',
     // शेष क्रोम
     'misc.close': '✕ बंद करें ({key})',
     // M5/T6 — केवल ✕ वाले बंद बटनों का सुगम नाम
