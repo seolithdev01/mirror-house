@@ -90,7 +90,7 @@ The campaign runs to eighty — Act II's last tier, where every mirror arrives i
   what the house watches); STATE_MACHINES' Campaign section refreshed for
   80 floors, the rotation table's tier-8 column, the MirrorVisual frozen
   row + the frost-as-modifier note (§2), the lure override (§4) and the
-  tier-8 content note. 838 unit + 44 e2e green.
+  tier-8 content note. 839 unit + 44 e2e green.
 
 ## [t7] — 2026-11-11 — the Whisper Library (Tier 7, floors 61–70) — ACT II listens
 

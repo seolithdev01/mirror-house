@@ -15,7 +15,7 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 838 unit tests + 44 Playwright tests, and the machine modules' own
+  suite is 839 unit tests + 44 Playwright tests, and the machine modules' own
   suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
@@ -756,7 +756,7 @@ their Dwaar — `L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III �
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **838/838** unit ·
+`npm run typecheck` clean · `npm run lint` clean · **839/839** unit ·
 **44/44** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
 wiring, descend to floor 2, save round-trip resume, Hindi chrome via
 `?lang=hi`; 5 for m5: rebind forward through the settings overlay, Space
