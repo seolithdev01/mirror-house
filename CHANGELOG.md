@@ -7,6 +7,91 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t8] — 2026-11-11 — the Frozen Atrium (Tier 8, floors 71–80) — ACT II freezes
+
+The campaign runs to eighty — Act II's last tier, where every mirror arrives iced, the frost lantern thaws instead of fogs, and waking glass draws the wardens.
+
+- **Floors 71–80** — the Frozen Atrium: a tier-8 ramp (four beacons, braids
+  to 0.412 by floor 79, Chhaya 3.2 s behind tightening to 2.7 s, 2.5 s in
+  Dwaar VIII) carrying **four Echoes on every procedural floor, Dwaar VIII
+  alone carrying five — the all-four crucible is the tier's apex, and its
+  teeth are the frozen panes and the thaw-to-lure economy, not the echo
+  count** — the `L74 · T8` floor chip, and **Dwaar VIII** at floor 80: the
+  frozen atrium (97 open cells), a grand central ring (a chebyshev-radius-3
+  wall ring around a fully-open 5×5 court with EXACTLY 4 compass-midpoint
+  gaps) plus four radial gallery walls on the ring-corner→hall-corner
+  diagonals and nothing else wall, 180°-symmetric (the exit mirrors the
+  entrance) and one connected component — the crucible needs the ring to
+  walk and the galleries to seal. The save validator widened to 80 in the
+  same commit as the ramp (**the binding held a seventh time**; 81 is the
+  first rejection, round-trips pinned at 75 and 80).
+- **The inversion (spec §4.6 row 8)** — `MirrorRuntime` gains `frozen` +
+  `thawed` (`src/game/frost.ts`); `initMirrorRuntime` takes
+  `{ frozenSpawn?: boolean }` and freezes the fogable glass
+  (standing/portrait/distort — never beacons, never the true pair) at spawn
+  (`frozenSpawnFloor()` = campaign tier 8; no opts keeps every pre-T8 call
+  site byte-identical, and the freeze rides OPTS, not floorObjects — the rng
+  streams stay pinned). `applyFog` **routes by the pane's state**: frost on
+  a FROZEN pane THAWS it (`frozen=false, thawed=true, foggedUntil=null` —
+  permanent for the attempt; the caller's duration is ignored); frost on a
+  THAWED pane cold-fogs it (`foggedUntil = now + COLD_FOG_MS` 600000 — cold
+  holds ten minutes; on tier 8 a cold-fogged pane refuses further frost —
+  the ≤ 7 refresh semantics untouched); the `MirrorVisual` union grows
+  `'frozen'` (precedence captured → frozen → fogged → clear), and a THAWED
+  pane reads `'clear'` — it is a live eye again, `thawed` riding the runtime
+  beside the union for the lure, never a visual state. `isFogged` keeps its
+  one definition: frozen counts blind, thawed counts sighted. A reset
+  re-freezes (the thaw is permanent FOR THE ATTEMPT); the once-per-FLOOR
+  caption "The ice gives way — the glass watches." (en+hi) marks the first
+  thaw, and Aaina sells the rule (`frozenNear`, slotted after `whisperNear`):
+  "The Atrium freezes every pane. Your breath thaws them — and thawed glass
+  draws the wardens. Choose what they watch."
+- **The lure** — `src/game/echo.ts` (pure): a thaw emits
+  `lureAt(echoes, paneCell, THAW_LURE_RADIUS 10, grid)`; echoes in radius
+  adopt `patrolOverrideCell` and patrol TO the glass (the override's cell
+  comes before the anchors; arrival ≤ 0.15 m → LINGER — target null, the
+  wardens stand watching). Chase overrides AND clears the lure (seeing you
+  through the pane you just thawed drops the glass); confusion keeps it;
+  `releaseLure` frees only that pane's audience; `initEchoes` spawns null
+  and `resetFloor` clears it with the attempt. Emergent tier texture, no
+  extra code: the all-blind atrium feeds the fogged census, so the wardens
+  open confused and every thaw both opens an eye and pulls its audience.
+- **The rotation's fourth turn (spec §4.4)** — the sleeper wakes:
+  **Aavart returns** (`aavartPresent` = `(31–40) ∥ (50–60) ∥ f > 70` — his
+  t7 rest was an explicit `≤ 60` bound, extended so 61–70 stay rest and
+  71–80 walk) and **Chhaya + Aavart own the ramp**; **Taal and Gher rest
+  71–79** (taal `(11–50) ∥ 66–70 ∥ 80`, gher `(21–40) ∥ (50–60) ∥ 70 ∥ 80`
+  — the Dwaar VII duet disbands into the ice) and **Dwaar VIII at 80 calls
+  all four down — the third all-four hall**. Truth table extended with rows
+  71/75/79/80 (79 pins `F,F,T`, the Ambusher alone with her shadow; 80 pins
+  `T,T,T`); a full 1–70 sweep re-proves every older row against t7's
+  shipped table as an identity oracle.
+- **Ice dressing** — the ice-on-deep-void-blue palette (void `0x08101a`,
+  ice glass `0x9ad4e8`, frost-blue rose, pale slate walls — the stand-in
+  retired per the per-tier pattern) and the austere suspended pentatonic
+  `[0,2,5,7,10]` on the **sawtooth** (`setVoice` union grows `'sawtooth'` —
+  the cold strings). The overhead map draws frozen panes frost-white and
+  thawed panes ice-teal (cold-fogged draw nothing). Interstitial cascade
+  grows once more: **Dwaar VII joins the 1.8 s claim banner** and the full
+  screen moves down to **Dwaar VIII's tier close** (`✦ Truth-Shard VIII
+  claimed — Tier VIII complete`, eighty floors and banked shards counted,
+  ↻ Play again / Stay) — the campaign's terminal screen, the house's end
+  until Act III exists. New tester hook fields: `mirrors().frozen`/`.thawed`
+  counts, `mirrorState(id)` (the MirrorVisual read-out) and
+  `los(x1, y1, x2, y2)` — additive, dev/tester-only.
+- **Close-out** — §4.6 row 8 delivered, §2.3's Act II row marked deepened
+  (the tier turns the tool around — the house starts eye-blind and the
+  Surveyor's breath opens eyes; mistaken-for-a-copy stays deferred to Act
+  III) and the §4.4 delivered note extended with the wheel's fourth turn in
+  the spec; §13.1's scope note refreshed to t8 (Act III is what remains).
+  README gains the Tier 8 + ACT II FREEZES section (and its Tier 7 section
+  re-marks the duet's cascade and the promise kept); the FAQ grows to 46
+  (the Atrium — every pane arrives iced; the thaw-to-lure inversion — choose
+  what the house watches); STATE_MACHINES' Campaign section refreshed for
+  80 floors, the rotation table's tier-8 column, the MirrorVisual frozen
+  row + the frost-as-modifier note (§2), the lure override (§4) and the
+  tier-8 content note. 838 unit + 44 e2e green.
+
 ## [t7] — 2026-11-11 — the Whisper Library (Tier 7, floors 61–70) — ACT II listens
 
 The campaign runs to seventy — the listening tier, where the Echoes go blind and grow ears, the noise economy becomes the whole fight, and the beat returns mid-tier.

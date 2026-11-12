@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 44 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair)', () => {
-    expect(FAQ).toHaveLength(44);
+  it('grows to 46 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair)', () => {
+    expect(FAQ).toHaveLength(46);
   });
 
   it('the T5 entry explains the mirror-you decoys — the lure and the shatter bounty', () => {
@@ -59,7 +59,7 @@ describe('faq — the beta launch pair', () => {
     expect(e, 'an entry about the mirror-you decoys exists').toBeDefined();
     expect(e!.a).toContain('Echo'); // the lure is the copy's job
     expect(e!.a).toContain('shatters'); // the touch is the bounty
-    expect(e!.a).toContain('41–70'); // copies walk the Flood Halls, Wings AND Library (t7)
+    expect(e!.a).toContain('41–80'); // copies walk the Flood Halls, Wings, Library AND Atrium (t8)
     expect(e!.a).toContain('guards the copy'); // the warden wards them now (t6)
   });
 
@@ -184,5 +184,20 @@ describe('faq — the beta launch pair', () => {
     expect(noise!.a).toContain('4 meters'); // the walk ring
     expect(noise!.a).toContain('2.5 meters'); // the verbs' single ping
     expect(noise!.a.toLowerCase()).toContain('noise-immune'); // glass echoes hear nothing
+  });
+
+  it('the Atrium pair teaches the tier and the thaw-to-lure inversion (T8/T4)', () => {
+    const atrium = FAQ.find((f) => /below the whisper library/i.test(f.q));
+    expect(atrium, 'the Frozen Atrium tier entry exists').toBeDefined();
+    expect(atrium!.a).toContain('L71 · T8'); // the chip readers see
+    expect(atrium!.a).toContain('FROZEN'); // the tier's spawn state
+    expect(atrium!.a).toContain('Truth-Shard VIII'); // Dwaar VIII's claim
+    expect(atrium!.a).toContain('ALL FOUR'); // the all-four crucible at 80
+    const thaw = FAQ.find((f) => /arrives iced/i.test(f.q));
+    expect(thaw, 'the thaw-to-lure entry exists').toBeDefined();
+    expect(thaw!.a).toContain('THAWS'); // frost on ice wakes the glass
+    expect(thaw!.a).toContain('ten meters'); // the lure radius
+    expect(thaw!.a).toContain('cold-fogs'); // frost again blinds it
+    expect(thaw!.a).toContain('Choose what they watch'); // Aaina's rule
   });
 });

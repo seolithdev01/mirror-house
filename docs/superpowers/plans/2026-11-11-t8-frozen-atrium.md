@@ -24,7 +24,7 @@
 
 **Files:** `src/game/campaign.ts` (TIER_EIGHT_FLOORS, tierOf→8, isDwaar +80, ramp 71–80, `DWAAR_VIII_LAYOUT` 13×13 atrium — grand central ring (6×6 ring walls with 4 gaps) + 4 radial galleries to the corners, 180°-symmetric+connected, ~100 open), `src/game/save.ts` (→ 80 same commit + tests: 75/80 round-trip, 81 rejected), constants, main/hud (chips `L74 · T8` / `DWAAR VIII ✦`; `✦ Truth-Shard VIII claimed — Tier VIII complete` full screen; Dwaar VII cascades to interstitial), presence fns (rotation: taal `(11–50) || ≥60`? — current taal gate is `(11–50) || ≥66`; extend for tier 8: all-four at Dwaar VIII → `taalPresent (11–50) || f === 80`; gher `(21–40) || 50 || 80`; aavart `(31–40) || 50 || f >= 71` — Aavart returns; pins: 71→C+A (T,F,F,T), 79→same, 80→all T), tests (ramp 71–80; layout predicates; tierOf 8; validator; rotation rows 71/79/80 + 1–70 identical; descend-no-op-at-80).
 
-- [ ] Tests → RED → implement → GREEN; gates + 42/42. Commit `feat(t8): campaign to floor 80 — frozen atrium, aavart returns, validator widened`.
+- [x] Tests → RED → implement → GREEN; gates + 42/42. Commit `feat(t8): campaign to floor 80 — frozen atrium, aavart returns, validator widened`.
 
 ---
 
@@ -32,7 +32,7 @@
 
 **Files:** Modify `src/game/frost.ts` (`MirrorRuntime` + `frozen`/`thawed` flags; `mirrorVisual`: frozen → 'fogged', thawed → 'clear'; `applyFog(rt, id, now, thawMode?: boolean)`: frozen+thaw → {frozen=false, thawed=true, lure event}; thawed+fog → {foggedUntil = now + COLD_FOG_MS}; frozen + normal fog → no-op (can't fog ice)), `src/game/floorObjects.ts` (tier-8 spawn flag `frozenSpawn: boolean` on params — frost.ts init reads tier via a param `initMirrorRuntime(mirrors, opts?: { frozenSpawn?: boolean })` setting frozen=true on standing/portrait/distort — NOT beacons, NOT true), `src/game/echo.ts` (lure: `lureAt(cell, radius)` — echoes within THAW_LURE_RADIUS of a thaw event get `patrolOverrideCell = cell` until chase/resets; patrol arrival at override lingers), `src/game/mirror.ts` (frozen render: frost-white pane material; thawed: clear-glass base), `src/main.ts` (F verb routes: frozen → thaw; thawed → fog with COLD_FOG_MS; captured/fogged standing → refog normal), captions (`The ice gives way — the glass watches.` once per floor; lure caption none — discovery), Aaina hint `frozenNear` (floor ≥71): "The Atrium freezes every pane. Your breath thaws them — and thawed glass draws the wardens. Choose what they watch." (en/hi, orderings updated), tests (frozen spawn state; thaw transitions + lure emission; fog-after-thaw permanent; capture unaffected; visual states; tier gates: frozenSpawn only tier 8).
 
-- [ ] Tests → RED → implement → GREEN; gates + 42/42. Commit `feat(t8): frozen atrium — thaw to lure, fog to blind`.
+- [x] Tests → RED → implement → GREEN; gates + 42/42. Commit `feat(t8): frozen atrium — thaw to lure, fog to blind`.
 
 ---
 
@@ -40,7 +40,7 @@
 
 **Files:** `src/game/palette.ts` (TIER_EIGHT_PALETTE: void 0x08101a, floorBase 0x14243a, floorLines 0x1e3450, teal→ice 0x9ad4e8, ivory 0xeef4fa, gold 0xd9a441, rose→frost-blue 0x6a9ac2, wallTop 0x7c96ac, wallBottom 0x31465c, lantern 0xd8f0ff, entrance 0x9ad4e8, exit 0xd9a441), `src/audio/theory.ts` (TIER_EIGHT_SCALE [0,2,5,7,10]), `src/audio/engine.ts` (`setVoice` map gains 'sawtooth' — cold strings; voiceByTier: {3: sine, 7: sine, 8: sawtooth}), main wiring, hook (`tier()`→8), e2e 42→44: (a) `t8: floor 71 loads the atrium frozen` — `?seed=T8RUN&floor=71` → tier 8, chip `L71 · T8`, mirrors snapshot frozen count ≥ 4 (hook `mirrors()` gains `frozen: number`), frost on a frozen pane → thawed (mirrorVisual via hook `mirrorState(id)` additive or extend `mirrors()` entries), lure: an echo within radius walks to the pane (assert echoMode/position drifts toward pane); (b) `t8: aavart ambush returns` — warp onto avartPos → house().failed; frost the same pane → fogged (blind again).
 
-- [ ] Tests → implement → e2e 44/44 → gates; live :4199 check (floor 71 ice look + thaw lure witnessed; floors 61/41/1 unchanged). Commit `feat(t8): ice palette, cold strings, tier-eight e2e`.
+- [x] Tests → implement → e2e 44/44 → gates; live :4199 check (floor 71 ice look + thaw lure witnessed; floors 61/41/1 unchanged). Commit `feat(t8): ice palette, cold strings, tier-eight e2e`.
 
 ---
 
@@ -48,7 +48,7 @@
 
 **Files:** Spec §4.6 row 8 delivered + §4.4 rotation note (Aavart returns 71; Taal/Gher rest to Dwaar VIII); STATE_MACHINES (Campaign@80, mirror state machine extension: frozen/thawed row — mirrorVisual union grows, register), README (Tier 8), CHANGELOG `[t8]`, FAQ +2 (the Atrium; thaw-to-lure), plan ticks; **t7 minors rider:** hearing-e2e drift hardening (re-verify patrol inside the wait loop), noiseChaseAnnounced reset per-attempt (one line in resetFloor); full gates + 44/44; bundle check.
 
-- [ ] Docs + rider → gates → commit `docs(t8): delivery marks, how to read the ice` + `fix(t8): t7 minors — patrol-verify in hearing e2e, warden-caption per attempt`.
+- [x] Docs + rider → gates → commit `docs(t8): delivery marks, how to read the ice` + `fix(t8): t7 minors — patrol-verify in hearing e2e, warden-caption per attempt`.
 
 ## Plan Self-Review
 

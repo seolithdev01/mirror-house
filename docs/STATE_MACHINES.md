@@ -15,7 +15,7 @@ a single value with named transitions.
   Chhaya cannot linger beside a finished run, a door cannot be pushed twice, and
   a clear cannot be overwritten by a same-frame fail.
 - **DX** — each machine is testable without three.js, the DOM or a clock. The
-  suite is 777 unit tests + 42 Playwright tests, and the machine modules' own
+  suite is 838 unit tests + 44 Playwright tests, and the machine modules' own
   suites pin every transition table in this file.
 - **AX** — an agent can read this file and know every legal transition, its
   owner, and what is derived rather than stored, instead of grepping for flags.
@@ -27,7 +27,7 @@ a single value with named transitions.
 | #   | Machine            | States                                                                   | Owner                                                           | Kind                                                                                                                                        |
 | --- | ------------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | **GamePhase**      | `ready` · `running` · `failing` · `cleared`                              | `src/game/floorRun.ts`                                          | Explicit (step 4)                                                                                                                           |
-| 2   | **MirrorVisual**   | `clear` · `fogged` · `captured`                                          | `src/game/frost.ts`                                             | Explicit (step 5)                                                                                                                           |
+| 2   | **MirrorVisual**   | `clear` · `fogged` · `captured` · `frozen`                               | `src/game/frost.ts`                                             | Explicit (step 5; the union grew `frozen` in t8/T2 — the Atrium's ice)                                                                      |
 | 3   | **DoorPhase**      | `closed` · `opening` · `open`                                            | `src/game/passages.ts`                                          | Explicit (step 5)                                                                                                                           |
 | 4   | **Echo mode**      | `patrol` · `chase` · `confused`                                          | `src/game/echo.ts`                                              | Pure machine, now documented                                                                                                                |
 | 5   | **Pending shards** | `pending` → `banked` \| `forfeited`                                      | `src/game/houseState.ts` + `meta.ts`                            | Lifecycle, documented                                                                                                                       |
@@ -36,7 +36,7 @@ a single value with named transitions.
 | 8   | **ViewMode**       | `focus` · `quad` · `overhead` · `tactical`                               | `src/game/viewMode.ts`                                          | Pure machine (M3/T3); `tactical` is the pause view                                                                                          |
 | 9   | **Aaina overlay**  | `closed` · `open{tab}`                                                   | `src/ui/aaina.ts`                                               | Diegetic panel — does **not** pause                                                                                                         |
 | 10  | **AudioEngine**    | `idle` · `running`                                                       | `src/audio/engine.ts`                                           | Starts on first gesture; `muted` is a flag, not a state                                                                                     |
-| 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete`                              | `src/game/campaign.ts`                                          | Pure data + transitions (M4/T1, grown to 70 floors in t7/T1 — terminal there for now, Act II's first three tiers); the single `tierComplete` re-arms as each Dwaar is left |
+| 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete`                              | `src/game/campaign.ts`                                          | Pure data + transitions (M4/T1, grown to 80 floors in t8/T1 — terminal there for now, all four of Act II's tiers); the single `tierComplete` re-arms as each Dwaar is left |
 
 ---
 
@@ -67,20 +67,38 @@ construction.
 
 ## 2. MirrorVisual — `src/game/frost.ts`
 
-Not a stored field: a **derivation** over `(captured, foggedUntil, now)`.
+Not a stored field: a **derivation** over `(captured, frozen, foggedUntil, now)`.
 
 | Condition (in order)                         | Result                                                                                                                                        |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `captured`                                   | `captured` — never lifts on its own; a floor reset (fail-retry) un-captures beacons and re-seals the exit (`resetFloor` re-inits the runtime) |
+| `frozen`                                     | `frozen` — t8/T2: the Atrium's spawn ice; outranks any stale fog timer (live play never overlaps them — the pin keeps the one derivation honest) |
 | `foggedUntil !== null && now <= foggedUntil` | `fogged`                                                                                                                                      |
-| otherwise                                    | `clear`                                                                                                                                       |
+| otherwise                                    | `clear` — **a THAWED pane reads `clear`** (the `thawed` flag rides the runtime beside the union, never in it: thawing is the glass becoming honest glass again — a live eye and a warden lure, §4) |
 
-`applyFog` is the only writer: a beacon sets `captured`; a standing mirror sets
-`foggedUntil = now + duration` — the duration is **caller-owned** (t6/T2: `main.ts`
-passes `fogDurationMs(campaign.floor)`, the base 25 s everywhere and half of it
+`applyFog` is the only writer, and since t8/T2 it **routes by the pane's
+state**: a beacon sets `captured`; a **frozen** pane THAWS (`frozen = false`,
+`thawed = true`, `foggedUntil = null` — a thaw is permanent for the attempt and
+never reads the duration); a **thawed** pane cold-fogs (`thawed = false`,
+`foggedUntil = now + duration` — the caller passes `COLD_FOG_MS` 600000, cold
+holds); any other fogable pane takes the timed fog as always. The duration
+remains **caller-owned** (t6/T2: `main.ts` passes `fogDurationMs(campaign.floor)`,
+the base 25 s everywhere and half of it
 in the Furnace Wings, so the machine itself stays floor- and heat-blind).
 `isFogged` is defined as
-`mirrorVisual(...) !== 'clear'`, so sight and display cannot disagree.
+`mirrorVisual(...) !== 'clear'`, so sight and display cannot disagree — frozen
+counts blind exactly like fogged (ice sees nothing), thawed counts sighted.
+
+**Frost is a modifier, not a machine (t8/T2 — the t6 heat precedent, one tier
+deeper).** The spawn state is caller-owned too: `initMirrorRuntime(mirrors,
+opts?: { frozenSpawn?: boolean })` freezes the fogable glass
+(standing/portrait/distort — never beacons, never the true pair) only when
+`main.ts` passes `frozenSpawnFloor()` = `venue === null && tierOf(floor) === 8`;
+no opts and every tiers-≤-7 call site and test is byte-identical. Nothing is
+stored about the tier anywhere in the module — the ice is two flags the floor
+plants at init and `resetFloor` plants again (a reset re-freezes the atrium:
+thaw is permanent FOR THE ATTEMPT), and every effect routes through the
+derivation above.
 
 **Orthogonal:** `cracked` is damage, not sight. It tints the glass, does not
 change what the glass shows or what can see through it, and survives a fog
@@ -94,7 +112,9 @@ derivation above is the whole story of their sight. The lie itself — the
 player's **apparent position**, displaced by a pane's fixed per-id delta while
 that pane sees them — is never stored: it is derived once per fixed step
 (`distort.ts apparentPlayer`) and consumed by the echo sense/chase and the map
-pings, a look-alike (below), not a machine.
+pings, a look-alike (below), not a machine. The Atrium freezes them exactly
+the same way (`'distort'` is in the FREEZABLE set) — ice lies as readily as
+clear glass, and thawing a carnival pane wakes the lie with the eye.
 
 ---
 
@@ -144,6 +164,18 @@ below): `loudestAt(noise, echo)` non-null → `chase` that cell with the SAME
 `CHASE_MEMORY_MS`, quiet → `patrol`. A **glass** echo never reads the ring —
 noise-immune, pinned by a unit test that lands a ping exactly on a tier-1
 echo and watches it stay patrolling. Venue side-floors always behave tier-one.
+
+**The lure (t8/T2) — a patrol-target override, not a fourth mode:** a thaw
+emits `lureAt(echoes, paneCell, THAW_LURE_RADIUS 10, grid)` and any echo in
+radius adopts `patrolOverrideCell` (the pane's cell); `updateEcho`'s patrol
+targets the override BEFORE the anchors, arrival lingers (target null — the
+echo stands at the glass, the anchors never rotate), and chase overrides AND
+clears the override (the clear rides the mode, so it never survives into the
+returned patrol); confusion keeps it, `initEchoes` spawns it null and
+`resetFloor` clears it with the attempt. `releaseLure` frees only the echoes
+drawn to THAT pane — another thawed pane keeps its audience. The override is
+sub-state exactly like `target`/`field` above: patrol with an audience is
+still patrol.
 
 ---
 
@@ -269,8 +301,8 @@ ceiling that keeps the tier sparse, §11's tier-7 content note.)
 
 ## 11. Campaign — `src/game/campaign.ts`
 
-Pure data, not a phase machine (M4/T1, grown to seven tiers — through Act II's
-first three — in t7/T1): the spine
+Pure data, not a phase machine (M4/T1, grown to eight tiers — all of Act II —
+in t8/T1): the spine
 is `{ seedBase, floor, tierComplete }` and every transition returns a fresh
 object — callers (`main.ts`) rebind their `campaign` binding; nothing mutates
 in place.
@@ -278,14 +310,14 @@ in place.
 | From                             | Event                                  | To                                                                               |
 | -------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------- |
 | —                                | `newCampaign(seedBase)`                | `{ seedBase, floor: 1, tierComplete: false }`                                    |
-| `c.floor < 70`                   | `descend(c)` — the Stair Door was paid | `{ ...c, floor: floor + 1 }`; leaving a Dwaar also re-arms `tierComplete: false` |
-| `c.floor >= 70`                  | `descend(c)`                           | **unchanged, by reference** — the campaign is TERMINAL at 70 (Act III's door)    |
-| `isDwaar(c.floor)` (10/20/30/40/50/60/70) | `completeTier(c)` — Truth-Shard claim | `{ ...c, tierComplete: true }`                                                 |
+| `c.floor < 80`                   | `descend(c)` — the Stair Door was paid | `{ ...c, floor: floor + 1 }`; leaving a Dwaar also re-arms `tierComplete: false` |
+| `c.floor >= 80`                  | `descend(c)`                           | **unchanged, by reference** — the campaign is TERMINAL at 80 (Act III's door)    |
+| `isDwaar(c.floor)` (10/20/30/40/50/60/70/80) | `completeTier(c)` — Truth-Shard claim | `{ ...c, tierComplete: true }`                                                 |
 | any other floor                  | `completeTier(c)`                      | unchanged, **by reference** — the shard is claimed in a hall only                |
 
-**The tiers.** Floors 1–9, 11–19, 21–29, 31–39, 41–49, 51–59 and 61–69 are procedural —
+**The tiers.** Floors 1–9, 11–19, 21–29, 31–39, 41–49, 51–59, 61–69 and 71–79 are procedural —
 `generateFloor` seeded by `floorSeed(c) = seedBase:floor`, braided and
-stocked by `floorParams`; the seven threshold floors are fixed hand-authored
+stocked by `floorParams`; the eight threshold floors are fixed hand-authored
 13×13 halls: floor 10 the `DWAAR_LAYOUT` Dwaar I, floor 20 the broader
 `DWAAR_II_LAYOUT` (96 open cells — the Sentinel's beat needs the room), floor
 30 the `DWAAR_III_LAYOUT` garden hall — the most open of the first three (107
@@ -317,17 +349,27 @@ shelf ends, one per shelf, each an open nook sandwiched between the shelf's
 end and a stub wall, 180°-mirrored in pairs ((3,3)↔(9,9) and (9,5)↔(3,7)) —
 invariant under 180° rotation (the exit mirrors the entrance) and one
 connected component, because the duet needs the room to walk its beats and
-the blind Echoes need stacks to listen past (`dwaarGrid()` derives any hall's
+the blind Echoes need stacks to listen past — and floor 80 the
+`DWAAR_VIII_LAYOUT` **frozen atrium** (97 open cells, t8/T1): a grand
+central ring — a chebyshev-radius-3 wall ring (24 cells) around a fully
+open 5×5 court with EXACTLY 4 compass-midpoint gaps — plus four radial
+gallery walls at (2,2)/(10,2)/(2,10)/(10,10) (180° pairs) on the
+ring-corner→hall-corner diagonals and NOTHING ELSE wall (pinned:
+`otherWalls === 4`), invariant under 180° rotation (the exit mirrors the
+entrance) and one connected component, because the all-four crucible needs
+the ring to walk and the galleries to seal, and the frozen panes need glass
+worth watching (`dwaarGrid()` derives any hall's
 open cells, `maze.floorFromGrid` builds the grid).
 `tierOf(floor)` maps 1–10 → 1, 11–20 → 2, 21–30 → 3, 31–40 → 4, 41–50 → 5,
-51–60 → 6 and
-61–70 → 7 —
+51–60 → 6, 61–70 → 7 and
+71–80 → 8 —
 the stage palette, music scale **and voice**, the echo sense axis (§4 —
-tier 7's `'ears'`), portrait spawns (tier 2 only),
+tier 7's `'ears'`), the mirror spawn state (§2 — tier 8's `frozenSpawn`),
+portrait spawns (tier 2 only),
 water spawns (tier 3 only), distort spawns (tier 4 only) and the Sentinels'
-gates all read it — and `isDwaar(floor)` widens to 10, 20, 30, 40, 50, 60
-and 70.
-`floorParams` pins all seven ramps: tier 1 echoes `min(5, 2 + floor − 1)`
+gates all read it — and `isDwaar(floor)` widens to 10, 20, 30, 40, 50, 60,
+70 and 80.
+`floorParams` pins all eight ramps: tier 1 echoes `min(5, 2 + floor − 1)`
 (Dwaar fixed 4), beacons 2,2,3,3,3,4,4,4,4,4, braid `0.12 + 0.01·(floor −
 1)`, Chhaya `max(4500, 7000 − 300·(floor − 1))` (Dwaar 4000); tier 2 echoes
 5,5,5,6,6,6,6,6,6,6 (Dwaar II fixed 5), beacons 4 throughout, braid
@@ -354,43 +396,49 @@ braid `0.32 + 0.004·(floor − 51)`, Chhaya `max(2900, 3500 − 60·(floor −
 the Taal+Gher duet is the tier's apex, its teeth are the hearing Echoes and
 the noise economy, not the echo count — beacons 4 throughout, braid
 `0.36 + 0.004·(floor − 61)`, Chhaya `max(2700, 3300 − 60·(floor − 61))`
-(Dwaar VII 2600 — the stacks hush, Chhaya does not wait).
+(Dwaar VII 2600 — the stacks hush, Chhaya does not wait); tier 8
+(t8/T1) echoes **4 on every procedural floor, Dwaar VIII ALONE carrying 5** —
+the all-four crucible is the tier's apex, its teeth are the frozen panes and
+the thaw-to-lure economy, not the echo count — beacons 4 throughout, braid
+`0.38 + 0.004·(floor − 71)`, Chhaya `max(2600, 3200 − 60·(floor − 71))`
+(Dwaar VIII 2500 — the atrium freezes, Chhaya does not wait).
 
 **Invariants.** `tierComplete` flips true only inside `completeTier` and only
 on a Dwaar floor — the single flag always reads "the CURRENT tier's threshold
 has been claimed", because `descend` re-arms it false the moment the player
 LEAVES a Dwaar: the house continues past Dwaar I into the Hall of Ancestors,
 past Dwaar II into the Gardens, past Dwaar III into the Carnival, past
-Dwaar IV into the Flood Halls, past Dwaar V into the Furnace Wings and past
-Dwaar VI into the Whisper Library, and
+Dwaar IV into the Flood Halls, past Dwaar V into the Furnace Wings, past
+Dwaar VI into the Whisper Library and past Dwaar VII into the Frozen Atrium, and
 each new tier's floors pay their
-first-clear bonus again on the re-armed flag. The Dwaar VII tier screen's
+first-clear bonus again on the re-armed flag. The Dwaar VIII tier screen's
 ↻ Play again starts a `newCampaign` on a fresh random base instead of
-reopening the house. `floor` lives in 1..`TIER_SEVEN_FLOORS` (the save
-validator widened in the same t7/T1 commit — 71 is the first rejection;
-round-trips pinned at 65 and 70),
+reopening the house. `floor` lives in 1..`TIER_EIGHT_FLOORS` (the save
+validator widened in the same t8/T1 commit — 81 is the first rejection;
+round-trips pinned at 75 and 80),
 `floorParams` clamps its input regardless, and **the campaign is TERMINAL at
-70**: `descend()` there returns its input unchanged, no `descendAt` arms
-below Dwaar VII, and the tier-complete screen is the end of the house until
-tier 8 exists. (The T6-era terminus at 60 retired exactly as T5's did in t6:
-60 → 61 is a real descent that re-arms the flag for tier seven.)
+80**: `descend()` there returns its input unchanged, no `descendAt` arms
+below Dwaar VIII, and the tier-complete screen is the end of the house until
+Act III exists. (The T7-era terminus at 70 retired exactly as T6's did in t7:
+70 → 71 is a real descent that re-arms the flag for tier eight.)
 
 **The Sentinels accumulate — then rotate (spec §4.4, t3/T4 + t4/T2 + t5/T1 +
-t6/T1 + t7/T1).**
+t6/T1 + t7/T1 + t8/T1).**
 The lethal Sentinels read `campaign.floor` in `main.ts` — spawn-side data,
 not campaign state — through three presence functions (`taalPresent`,
 `gherPresent`, `aavartPresent`; t5/T1 replaced the bare `>=` gates so the
 rotation is one readable table, floors 1–40 pinned byte-identical by
 truth-table tests, t6/T1 extending the table with rows 51/55/59/60, t7/T1
 with 61/65/66/69/70 — and re-pinning row 60 `F,T,T`, Taal's rest extending
-through the old crucible):
+through the old crucible — and t8/T1 with 71/75/79/80, a full 1–70 sweep
+re-proving every older row against t7's shipped table as an identity oracle):
 
-| Sentinel | Accumulation (tiers 1–4) | Tier 5 (floors 41–50)                        | Tier 6 (floors 51–60)                                        | Tier 7 (floors 61–70)                                                                 |
-| -------- | ------------------------ | -------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Chhaya   | every floor from 1       | unchanged — she replays every path            | unchanged — she never rests at all                           | unchanged — she never rests at all                                                     |
-| Taal     | every floor from 11      | **never rests** — `f >= 11`, Act II included | **rests 51–59** — his FIRST rest (t6); t7 extends it through 60 | **rests 51–65, returns 66** — `(11–50) ∥ f ≥ 66` (`TAAL_RETURN_FLOOR`); the beat in the silence |
-| Gher     | every floor from 21      | **rests 41–49** — `21–40 ∥ 50` (Dwaar V)     | **walks the whole Wings** — `21–40 ∥ f >= 50`                | **rests 61–69** — keeps the Furnace (`21–40 ∥ 50–60`); joins ONLY at the Dwaar VII duet |
-| Aavart   | every floor from 31      | **rests 41–49** — `31–40 ∥ 50` (Dwaar V)     | **walks the whole Wings** — `31–40 ∥ f >= 50`                | **rests all tier 7** — `(31–40) ∥ (50–60)`; returns in tier 8                          |
+| Sentinel | Accumulation (tiers 1–4) | Tier 5 (floors 41–50)                        | Tier 6 (floors 51–60)                                        | Tier 7 (floors 61–70)                                                                 | Tier 8 (floors 71–80)                                                                                             |
+| -------- | ------------------------ | -------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Chhaya   | every floor from 1       | unchanged — she replays every path            | unchanged — she never rests at all                           | unchanged — she never rests at all                                                     | unchanged — she never rests at all                                                                                 |
+| Taal     | every floor from 11      | **never rests** — `f >= 11`, Act II included | **rests 51–59** — his FIRST rest (t6); t7 extends it through 60 | **rests 51–65, returns 66** — `(11–50) ∥ f ≥ 66` (`TAAL_RETURN_FLOOR`); the beat in the silence | **rests 71–79, returns ONLY for the hall** — `(11–50) ∥ 66–70 ∥ f = 80`; the duet disbands into the ice, the crucible recalls him |
+| Gher     | every floor from 21      | **rests 41–49** — `21–40 ∥ 50` (Dwaar V)     | **walks the whole Wings** — `21–40 ∥ f >= 50`                | **rests 61–69** — keeps the Furnace (`21–40 ∥ 50–60`); joins ONLY at the Dwaar VII duet | **rests 71–79, joins ONLY at the hall** — `(21–40) ∥ 50–60 ∥ 70 ∥ 80`; the seal comes down to the frozen atrium     |
+| Aavart   | every floor from 31      | **rests 41–49** — `31–40 ∥ 50` (Dwaar V)     | **walks the whole Wings** — `31–40 ∥ f >= 50`                | **rests all tier 7** — `(31–40) ∥ (50–60)`; returns in tier 8                          | **RETURNS — he walks the whole Atrium** — `(31–40) ∥ 50–60 ∥ f > 70`; the Ambusher's rest ends exactly as promised |
 
 Taal: cameo on floor 5 (anger-only), Sentinel (`taalOutcome` → `'caught'`)
 on **every floor from 11 down** — the gate was widened from "the tier-2
@@ -406,7 +454,13 @@ Gher+Aavart hall, its call-down deferred), and **floor 66 — mid-tier —
 brings the beat back**: he walks 66–70, and in a house where the wardens
 listen his every accent tick is a `NOISE_SPRINT_R` ping at his position —
 noise he ignores and the ears echoes cannot refuse to chase, the bait you
-cannot miss. Gher
+cannot miss. T8/T1 narrowed the gate again —
+`taalPresent = (f >= TAAL_SENTINEL_FLOOR && f <= TIER_FIVE_FLOORS) ||
+(f >= TAAL_RETURN_FLOOR && f <= TIER_SEVEN_FLOORS) || f === TIER_EIGHT_FLOORS`:
+the beat rests 71–79 (the Atrium is no place for bait — every pane there
+starts blind, so his ringing accents would pull wardens off the ice the
+rotation wants on it) and **only the Dwaar VIII crucible calls him down**.
+Gher
 (`src/game/gher.ts`, t3/T2) joined at 21
 (`GHER_SENTINEL_FLOOR`) — his tier-3-only gate was widened in t4/T2 to every
 floor from 21 down, the accumulation ratification found while wiring Aavart:
@@ -438,6 +492,13 @@ quietest floors in the house; at 66 `taalPresent` brings the beat back
 (66–70), at 70 `gherPresent` joins him for exactly one hall: **Dwaar VII is
 the Taal+Gher duet in the stacks** — the third Sentinels' hall, NOT an
 all-four apex; row 9's Warrens stay tier 9's, and Aavart rests until then.
+On 71–79 the wheel's fourth turn (t8/T1): **the Frozen Atrium hunts with
+Chhaya + Aavart alone** — the Ambusher back from his whole-tier rest, his
+pace-read the one sense the ice cannot blind — and at 80 `taalPresent` and
+`gherPresent` call BOTH down to join the walking pair: **Dwaar VIII is the
+third all-four-Sentinel hall** — row 9's apex previewed again, this time in
+a frozen atrium where every pane starts blind and only the Surveyor's own
+breath opens eyes.
 All spawn at the patrol anchor FARTHEST from the player (t3/T4's
 fairness fix — never an anchor-on-spawn catch).
 
@@ -565,6 +626,61 @@ systems beside the rotation above:
   an ears echo cannot be CONFUSED: the ≥2-fogged-eyes census is glass-only
   (§4), so the fog's stall-and-spin power rests until tier 7 ends.
 
+**Tier-8 content, not new machines (the Frozen Atrium, t8/T1–T3).** The
+Atrium dresses by tier — the ice-on-deep-void-blue palette (void `0x08101a`,
+ice glass `0x9ad4e8`, frost-blue rose, pale slate walls, the gold exit the
+one warm note), the austere suspended pentatonic `[0,2,5,7,10]` on the
+sawtooth (the cold strings — the reed-bright edge of the M3 synth finally
+sung) — and carries the tier's signature system beside the rotation above:
+
+- **The frozen spawn + the thaw** — §2's extension, the whole mechanic: the
+  fogable glass (standing, portraits, the carnival panes, the two hero
+  mirrors) arrives `frozen`; the beacons and the true pair stay live (the
+  capture objective cannot start encased, the step-through is never blind).
+  `frozenSpawnFloor()` gates it to campaign tier 8; a reset re-freezes (the
+  thaw is permanent FOR THE ATTEMPT). F on ice thaws (+ the lure, §4); F on
+  a thawed pane cold-fogs it (`COLD_FOG_MS` 600000 — cold holds, and the
+  ≤-7 refresh semantics do not apply on tier 8: a cold-fogged pane refuses
+  further frost); F on ice-cold-fogged… is the same no-op. The once-per-FLOOR
+  caption "The ice gives way — the glass watches." (en/hi) marks the first
+  thaw (`thawAnnounced`, cleared by `buildFloor` only — the
+  `gherCopyAnnounced` precedent: resets re-freeze but never re-speak). Aaina
+  gained the `frozenNear` hint ("The Atrium freezes every pane. Your breath
+  thaws them — and thawed glass draws the wardens. Choose what they
+  watch."), slotted after `whisperNear`, before the shadow. The frozen adds
+  NO floorObjects draws (the freeze rides `initMirrorRuntime` opts, the rng
+  streams stay pinned); the overhead map draws frozen panes frost-white and
+  thawed panes ice-teal. Tester hooks: `mirrors().frozen`/`.thawed` counts
+  and `mirrorState(id)` (the MirrorVisual read-out), additive.
+- **The wardens start confused** — emergent, pinned live: the all-blind
+  atrium feeds the ≥2-fogged-eyes census (§2 — frozen counts blind), so the
+  tier opens with the Echoes stalling and spinning until panes are thawed;
+  every thaw opens an eye AND pulls its audience, and cold-fogging
+  re-blinds (re-confuses) for the attempt's rest. No extra code — the
+  machines above honest about the ice is the whole trick.
+
+**Tier interstitials (t2/T5, t3/T1, t4/T1, t5/T1, t6/T1, t7/T1, t8/T1).** Every Dwaar clear claims
+its Truth-Shard and banks it at once; what the player SEES splits by tier.
+Dwaar I–VII raise a 1.8 s auto-dismiss banner (`✦ Truth-Shard
+I/II/III/IV/V/VI/VII
+claimed — the house deepens…`) and the descent continues exactly as on any
+ramp floor — the banner's hide clock is HUD-owned, so the 0.8 s descend hold
+and the floor rebuild beneath it never cut the celebration short (t3/T1
+moved Dwaar II here from the full screen; t4/T1 cascaded Dwaar III; t5/T1
+cascaded Dwaar IV; t6/T1 cascaded Dwaar V; t7/T1 cascaded Dwaar VI; t8/T1
+cascaded Dwaar VII — the
+full screen belongs to the
+TIER close now). Dwaar VIII
+raises the full tier screen (`✦ Truth-Shard VIII claimed — Tier VIII complete`,
+floors and banked shards counted, Play again / Stay) — the campaign's
+terminal close, the all-four crucible's reward. ACT II itself announces with
+the **opening banner**, not a screen: the FIRST floor-41 build of a session
+raises `ACT II — THE DECEPTION` + `The house has begun copying you.` (en/hi)
+for 3 s — once per session (the flag lives for the page's lifetime, never
+the save; rebuilds of 41 stay quiet, venue floors never see it). The split
+is presentation only — the campaign machinery above is byte-identical at all
+eight thresholds.
+
 **Tier interstitials (t2/T5, t3/T1, t4/T1, t5/T1, t6/T1, t7/T1).** Every Dwaar clear claims
 its Truth-Shard and banks it at once; what the player SEES splits by tier.
 Dwaar I–VI raise a 1.8 s auto-dismiss banner (`✦ Truth-Shard
@@ -591,11 +707,11 @@ best-time bucket), `tierOf`, `isDwaar`, the presence functions, the
 `floorParams` ramp, and the HUD floor chip (`L02` on the tier-1 ramp,
 `L14 · T2` in the Hall, `L24 · T3` in the Gardens, `L34 · T4` in the
 Carnival, `L44 · T5` in the Flood Halls, `L54 · T6` in the Furnace Wings,
-`L64 · T7` in the Whisper Library,
+`L64 · T7` in the Whisper Library, `L74 · T8` in the Frozen Atrium,
 and the threshold floors naming
 their Dwaar — `L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`,
 `L40 · DWAAR IV ✦`, `L50 · DWAAR V ✦`, `L60 · DWAAR VI ✦`,
-`L70 · DWAAR VII ✦`, localized
+`L70 · DWAAR VII ✦`, `L80 · DWAAR VIII ✦`, localized
 `स्तर`/`द्वार` in Hindi).
 
 ---
@@ -640,8 +756,8 @@ their Dwaar — `L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III �
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **777/777** unit ·
-**42/42** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
+`npm run typecheck` clean · `npm run lint` clean · **838/838** unit ·
+**44/44** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
 wiring, descend to floor 2, save round-trip resume, Hindi chrome via
 `?lang=hi`; 5 for m5: rebind forward through the settings overlay, Space
 toggles the focused ⚙ checkbox, `?perf=low` low path, export/import
@@ -665,7 +781,12 @@ library (tier 7, the quiet rotation — taal/gher/avart all NULL — the
 rising under a held sprint), Taal's beat returns at 66 (`taalPos()` live
 again, gher/avart still null) and a sprinting player flips a patrolling
 ears echo to `chase` inside a sense tick — stand still and it patrols
-again).
+again; 2 for t8: floor 71 loads the atrium frozen (tier 8, chip `L71 · T8`,
+the rotation — taal/gher NULL, avart live — ≥ 4 panes arrive `frozen`, the
+`[0,2,5,7,10]` scale on the sawtooth), frost THAWS the ice (the pane reads
+`'clear'`, the census ticks, a warden walks to the thawed pane and lingers)
+and a second frost cold-fogs it blind again, and floor 72 pins the Ambusher's
+return (warp onto Aavart → caught, the reset banks the attempt).
 
 ---
 
