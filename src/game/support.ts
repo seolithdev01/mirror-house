@@ -18,10 +18,9 @@
 
 import { SUPPORT_EMAIL } from './feedback';
 
-/** The origin the absolute in-game links resolve against. The pages.dev
- *  origin is the one that is always live; flip to the custom domain once its
- *  DNS record points at the Pages project. */
-export const SITE_ORIGIN = 'https://mirror-house-8fg.pages.dev';
+/** The origin the absolute in-game links resolve against: the custom domain
+ *  (the mirror-house-8fg.pages.dev alias keeps serving the same build). */
+export const SITE_ORIGIN = 'https://mirror-house.seolith.com';
 
 /** The sponsor pitch page (public/host-a-floor.html, served extensionless). */
 export const HOST_FLOOR_URL = `${SITE_ORIGIN}/host-a-floor`;

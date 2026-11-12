@@ -248,7 +248,7 @@ ever pays. It pays its way two quiet ways:
   a themed side-floor — name on the banner, a tagline, two brand colours, a
   fresh maze every day. Pilots are free during the beta; after launch it is
   a flat sponsor fee. The pitch and the enquiry link are at
-  [`/host-a-floor`](https://mirror-house-8fg.pages.dev/host-a-floor); the
+  [`/host-a-floor`](https://mirror-house.seolith.com/host-a-floor); the
   ☕ Glasshouse Café demo (⚙ → Floors) is exactly the shape of it.
 - **Donations** (when an account exists). Set `VITE_SUPPORT_URL` at build
   time to a GitHub Sponsors / Ko-fi / Open Collective / Liberapay / Patreon /

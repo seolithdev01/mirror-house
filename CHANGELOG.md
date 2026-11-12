@@ -7,6 +7,14 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [domain-live] — 2026-11-12 — mirror-house.seolith.com serves the house
+
+The custom domain's DNS record (`CNAME mirror-house →
+mirror-house-8fg.pages.dev`, proxied) is in place and the domain is active.
+`SITE_ORIGIN`, the `og:url` / `og:image` tags, the host-a-floor page's
+`og:image`, `FUNDING.yml` and the README link now use it; the pages.dev
+alias keeps serving the same build.
+
 ## [hardening-1] — 2026-11-12 — security, performance, and the sponsor door
 
 No gameplay change — the house's walls, its speed, and how it pays its way.
