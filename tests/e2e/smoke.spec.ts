@@ -2432,6 +2432,28 @@ test('t7: taal returns at 66 + echoes hear noise', async ({ page }) => {
     },
     { px: target!.px, py: target!.py, heading: target!.heading },
   );
+  // T8/T4 rider — drift hardening: the pick verified 'patrol' at pick time,
+  // but the wardens keep patrolling while the harness round-trips (the warp,
+  // the key events), and a pick that has already drifted into a chase (a
+  // stale Taal beat it wandered into) cannot witness our sprint cleanly —
+  // without this re-check such a chase-prone pick sails through the sprint
+  // wait below (our ring is up and it is already chasing SOMETHING) and the
+  // failure surfaces as a confusing 9 s timeout in the return-to-patrol wait.
+  // Re-verify HERE, in this short wait loop before the keys go down, so a
+  // chase-prone pick fails fast with its reason. A flip between this read
+  // and the first sense tick can only be our own ring — the leg stays honest.
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          (i: number) =>
+            (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+              .__MIRROR_HOUSE_DEBUG__.echoMode(i),
+          target!.i,
+        ),
+      { timeout: 2_000 },
+    )
+    .toBe('patrol');
   // the roar: sprint down the away-road — the ring fills, the warden's ears
   // catch it on its next sense tick, the mode flips
   await page.keyboard.down('ShiftLeft');

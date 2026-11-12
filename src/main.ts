@@ -454,7 +454,7 @@ let echoMeshes: THREE.Group[] = [];
 let noiseEvents: NoiseEvent[] = [];
 let nextWalkNoiseAt = 0; // the walk's 500ms cadence clock
 let lastTaalNoiseTick = -1; // the accent tick the beat last rang on (edge detector)
-let noiseChaseAnnounced = false; // the once-per-floor 'A shelf-warden heard you.' eye
+let noiseChaseAnnounced = false; // the once-per-ATTEMPT 'A shelf-warden heard you.' eye (the t8/T4 rider re-arms it in resetFloor beside its siblings)
 /** The floor's echo sense: the Library (tier 7) goes blind — 'ears' — and
  *  every other floor (venue side-floors included: they behave tier-one)
  *  keeps the glass sight tiers 1–6 have always had. One definition for the
@@ -702,6 +702,7 @@ function resetFloor(now: number): void {
   noiseEvents = [];
   nextWalkNoiseAt = 0;
   lastTaalNoiseTick = -1;
+  noiseChaseAnnounced = false; // T8/T4 rider — the warden-caption eye re-arms per attempt too: a retry's first-heard line speaks again (buildFloor still owns the per-floor arm)
   path = []; // Chhaya loses the trail; she hides on the next update
   chhaya.visible = false;
   chhayaAnnounced = false; // the new attempt's first sighting speaks again
