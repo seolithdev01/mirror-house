@@ -1,8 +1,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
-import { bfsDistances, generateFloor, TIER_ONE } from '../../src/game/maze';
+import {
+  bfsDistances,
+  floorFromGrid,
+  generateFloor,
+  TIER_ONE,
+  type Floor,
+} from '../../src/game/maze';
 import { mirrorSpots } from '../../src/game/mirror';
-import { generateFloorObjects, mirrorSpotFor, M2_PARAMS } from '../../src/game/floorObjects';
+import {
+  generateFloorObjects,
+  mirrorSpotFor,
+  M2_PARAMS,
+  textureParamsForTier,
+} from '../../src/game/floorObjects';
+import { dwaarGrid, floorParams, floorSeed, isDwaar, tierOf } from '../../src/game/campaign';
 
 const floor = generateFloor({ ...TIER_ONE, seed: 'OBJECTS' });
 
@@ -125,5 +137,107 @@ describe('portraits — tier-2 ancestor mirrors (T2)', () => {
     const o = generateFloorObjects(floor);
     expect(o.mirrors.filter((m) => m.kind === 'portrait')).toHaveLength(0);
     expect(generateFloorObjects(floor, { ...M2_PARAMS, portraits: 0 })).toEqual(o);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T9/T2 — the tier→texture ask. The pure mapping the floor builder spreads:
+// which rng-gated kinds draw on which tier's floors. T9 widens it for the
+// first time since T4 — the Warrens pool 2–3 water (the Gardens' roll thinned
+// to int(2)) and hang 1–2 carnival panes (one coin on the floor of 1) — while
+// tiers 1–8 read exactly as shipped.
+// ---------------------------------------------------------------------------
+describe('textureParamsForTier — the tier→texture ask (T9/T2)', () => {
+  it('tiers 1–8 read exactly as the shipped builder gates did', () => {
+    const shipped = (tier: number): { portraits: number; water: number; distort: number } => ({
+      portraits: tier === 2 ? 2 : 0,
+      water: tier === 3 ? 2 : 0,
+      distort: tier === 4 ? 2 : 0,
+    });
+    for (let tier = 1; tier <= 8; tier++) {
+      const p = textureParamsForTier(tier);
+      expect(p, `tier ${tier}`).toEqual({ ...shipped(tier), waterRoll: 3 });
+    }
+  });
+
+  it('T9 — the Warrens pool 2–3 water (waterRoll 2, not the Gardens\u2019 3) and hang 1–2 panes', () => {
+    expect(textureParamsForTier(9)).toEqual({ portraits: 0, water: 2, waterRoll: 2, distort: 1 });
+  });
+
+  it('the ask drives the counts on real floors — tier-9 floors pool 2–3 and hang 1–2, tier-3 pools 2–4', () => {
+    // one warren floor and one Gardens floor, real campaign seeds
+    const warren = campaignFloor(81);
+    const t9 = generateFloorObjects(warren, { ...M2_PARAMS, ...textureParamsForTier(9) });
+    expect(t9.water.length).toBeGreaterThanOrEqual(2);
+    expect(t9.water.length).toBeLessThanOrEqual(3);
+    expect(t9.mirrors.filter((m) => m.kind === 'distort').length).toBeGreaterThanOrEqual(1);
+    expect(t9.mirrors.filter((m) => m.kind === 'distort').length).toBeLessThanOrEqual(2);
+    const gardens = campaignFloor(21); // any campaign floor seed — 21 is tier 3
+    const t3 = generateFloorObjects(gardens, { ...M2_PARAMS, ...textureParamsForTier(3) });
+    expect(t3.water.length).toBeGreaterThanOrEqual(2);
+    expect(t3.water.length).toBeLessThanOrEqual(4); // the Gardens' wider int(3) roll
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T9/T2 — the apex texture stack leaves floors 1–80 byte-identical. The
+// Warrens' draws are NEW-FLOOR-ONLY (81–90): for every shipped floor the
+// builder's old inline gates and the textureParamsForTier map must produce
+// the exact same FloorObjects — same mirrors in the same order, same pools,
+// same spawns. The identity oracle below replicates the shipped gates
+// verbatim (pre-T9: water only on tier 3 with the int(3) roll, distort only
+// on tier 4).
+// ---------------------------------------------------------------------------
+/** One real campaign floor (procedural on the tier's braid, Dwaar halls from
+ *  their layouts), seeded per-floor like the builder does. */
+const campaignFloor = (f: number): Floor => {
+  const seed = floorSeed({ seedBase: 'PIN80', floor: f, tierComplete: false });
+  const fp = floorParams(f);
+  return isDwaar(f)
+    ? floorFromGrid(dwaarGrid(f), seed)
+    : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
+};
+
+describe('the apex texture stack — floors 1–80 stay byte-identical (T9/T2)', () => {
+  it('every floor 1–80 generates byte-identical objects under the tier-nine texture map', () => {
+    for (let f = 1; f <= 80; f++) {
+      const tier = tierOf(f);
+      const fp = floorParams(f);
+      const floor = campaignFloor(f); // any campaign floor — the seeds here are pins, not play
+      const common = { ...M2_PARAMS, beacons: fp.beacons, echoes: fp.echoes };
+      // the shipped pre-T9 builder mapping, verbatim (waterRoll 3 via M2_PARAMS)
+      const shipped = generateFloorObjects(floor, {
+        ...common,
+        portraits: tier === 2 ? 2 : 0,
+        water: tier === 3 ? 2 : 0,
+        distort: tier === 4 ? 2 : 0,
+      });
+      const now = generateFloorObjects(floor, { ...common, ...textureParamsForTier(tier) });
+      expect(now, `floor ${f} objects`).toEqual(shipped);
+    }
+  });
+
+  it('pools draw only on the Gardens (21–30), panes only on the Carnival (31–40), portraits only on the Hall (11–20)', () => {
+    for (let f = 1; f <= 80; f++) {
+      const tier = tierOf(f);
+      const o = generateFloorObjects(campaignFloor(f), {
+        ...M2_PARAMS,
+        beacons: floorParams(f).beacons,
+        echoes: floorParams(f).echoes,
+        ...textureParamsForTier(tier),
+      });
+      const water = o.water.length;
+      const panes = o.mirrors.filter((m) => m.kind === 'distort').length;
+      const faces = o.mirrors.filter((m) => m.kind === 'portrait').length;
+      if (tier === 3) {
+        expect(water >= 2 && water <= 4, `floor ${f} pools ${water}`).toBe(true);
+      } else expect(water, `floor ${f} pools`).toBe(0);
+      if (tier === 4) {
+        expect(panes >= 2 && panes <= 3, `floor ${f} panes ${panes}`).toBe(true);
+      } else expect(panes, `floor ${f} panes`).toBe(0);
+      if (tier === 2) {
+        expect(faces >= 2 && faces <= 3, `floor ${f} portraits ${faces}`).toBe(true);
+      } else expect(faces, `floor ${f} portraits`).toBe(0);
+    }
   });
 });

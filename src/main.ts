@@ -106,6 +106,7 @@ import {
   generateFloorObjects,
   M2_PARAMS,
   mirrorSpotFor,
+  textureParamsForTier,
   type MirrorRef,
 } from './game/floorObjects';
 import {
@@ -1613,21 +1614,16 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
           ...M2_PARAMS,
           beacons: fp.beacons,
           echoes: fp.echoes,
-          // T2 — the Hall of Ancestors hangs 2–3 ancestor portraits per floor
-          // (the rng's coin on top of the 2 decides the third); tier-1 keeps
-          // 0. T3/T1: tier-3 keeps 0 TOO — the gate is `=== 2`, so the
-          // Gardens hang water, not ancestors, and the tier-1/3 rng streams
-          // stay clean (pinned by the t3 e2e leg: portraits === 0 on 21/30).
-          portraits: tierOf(c.floor) === 2 ? 2 : 0,
-          // T3/T3 — the Gardens' standing water: 2–4 pools on every tier-3
-          // floor (the param is the floor of the range, the rng's int(3) the
-          // rest); tier-1/2 and venues keep 0 — their rng streams untouched.
-          water: tierOf(c.floor) === 3 ? 2 : 0,
-          // T4/T3 — the Carnival's distorting mirrors: 2–3 panes on every
-          // tier-4 floor (the param is the floor of the range, one rng coin
-          // the third; the draws run LAST-LAST so tiers 1–3 stay pinned);
-          // venues keep 0 — no carnival glass on a sponsored floor.
-          distort: tierOf(c.floor) === 4 ? 2 : 0,
+          // T2/T4 — the tier's texture ask, one pure mapping for all of it
+          // (floorObjects.textureParamsForTier): the Hall hangs 2–3 ancestor
+          // portraits (tier 2), the Gardens pool 2–4 water (tier 3), the
+          // Carnival mounts 2–3 distorting panes (tier 4) — and T9/T2 brings
+          // the apex texture stack home: the Warrens pool 2–3 water (the
+          // Gardens' roll thinned to int(2)) and hang 1–2 panes (the ask of
+          // 1). The tier-9 draws are NEW-FLOOR-ONLY (81–90) — every floors
+          // 1–80 rng stream stays byte-identical (the unit sweep pins it).
+          // Venues keep 0 — no texture on a sponsored floor.
+          ...textureParamsForTier(tier),
         })
       : generateFloorObjects(floor, { ...M2_PARAMS, ...vp!.objectOverrides });
   const qp = PROFILES[preset];

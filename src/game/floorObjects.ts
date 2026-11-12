@@ -66,11 +66,17 @@ export interface M2Params {
    *  default, all tier-1 floors) draws nothing — the rng stream stays
    *  byte-identical to the M2 order. */
   portraits: number;
-  /** T3 — the FLOOR of the pool count: the rng rolls one int(3) on top of
+  /** T3 — the FLOOR of the pool count: the rng rolls `waterRoll` on top of
    *  it, so a tier-3 ask of 2 places 2–4 standing pools. Zero (the default,
    *  tiers 1–2 and venues) draws nothing — the rng stream stays
    *  byte-identical to the M2/T2 order. */
   water: number;
+  /** T9 — the size of the pool-count roll on top of `water`: the Gardens
+   *  roll int(3) (a tier-3 ask of 2 places 2–4 pools), the Warrens roll
+   *  int(2) (2–3 — the warren's water is thinner than the Gardens'). The
+   *  default 3 (M2_PARAMS) keeps every pre-T9 caller — and therefore every
+   *  floors 1–80 rng stream — byte-identical. */
+  waterRoll: number;
   /** T4 — the FLOOR of the carnival-glass count: the rng flips one coin on
    *  top of it, so a tier-4 ask of 2 places 2–3 distorting mirrors. Zero
    *  (the default, tiers 1–3 and venues) draws nothing — the stream stays
@@ -85,8 +91,32 @@ export const M2_PARAMS: M2Params = {
   anchors: 6,
   portraits: 0,
   water: 0,
+  waterRoll: 3,
   distort: 0,
 };
+
+/** The tier's TEXTURE ask (T9/T2 — the rng-gated kinds, pure derivation: tier
+ *  in, counts out). This is the mapping the floor builder spreads over
+ *  M2_PARAMS: the Hall of Ancestors hangs 2–3 ancestor portraits (tier 2),
+ *  the Reflecting Gardens pool 2–4 standing pools (tier 3, the int(3) roll),
+ *  the Carnival of Faces mounts 2–3 distorting panes (tier 4) — and, since
+ *  T9, the Warden's Warrens pool the Gardens' water THINNED (2–3, the
+ *  waterRoll-2 roll) and hang the Carnival's glass THINNED (1–2 panes, the
+ *  ask of 1). Every other tier — and every venue side-floor — draws nothing,
+ *  so the floors 1–80 rng streams stay byte-identical (the tier-9 draws are
+ *  new-floor-only; the floors 1–80 sweep in floorobjects.test.ts pins it). */
+export function textureParamsForTier(tier: number): {
+  portraits: number;
+  water: number;
+  waterRoll: number;
+  distort: number;
+} {
+  if (tier === 2) return { portraits: 2, water: 0, waterRoll: 3, distort: 0 };
+  if (tier === 3) return { portraits: 0, water: 2, waterRoll: 3, distort: 0 };
+  if (tier === 4) return { portraits: 0, water: 0, waterRoll: 3, distort: 2 };
+  if (tier === 9) return { portraits: 0, water: 2, waterRoll: 2, distort: 1 };
+  return { portraits: 0, water: 0, waterRoll: 3, distort: 0 };
+}
 
 export interface MirrorSpot {
   x: number;
@@ -294,16 +324,18 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
   }
   const patrolAnchors = rng.shuffle(anchorPool).slice(0, params.anchors);
 
-  // Rule 8 (T3): the Gardens' standing water. Pools are CELL features picked
+  // Rule 8 (T3, T9/T2): the standing water. Pools are CELL features picked
   // from open cells (bfs-reachable) at Chebyshev distance >= 2 from BOTH the
   // entrance and the exit — never the cells themselves, never beside them.
   // They may share a cell with a wall-mounted mirror (floor vs wall), so
   // unlike the rules above they do not touch `used`. Draws happen ONLY when
-  // params.water > 0 (tier 3) and LAST in the stream: tiers 1–2 keep the
-  // exact M2/T2 rng order — their experience is byte-identical.
+  // params.water > 0 (tier 3, and — since T9 — tier 9: the Warrens pool the
+  // Gardens' water again, thinner: 2–3, not 2–4) and LAST in the stream:
+  // tiers 1–2 keep the exact M2/T2 rng order — their experience is
+  // byte-identical (the floors 1–80 sweep pins it).
   let water: Array<{ x: number; y: number }> = [];
   if (params.water > 0) {
-    const count = params.water + rng.int(3); // 2 → 2–4 pools
+    const count = params.water + rng.int(params.waterRoll); // Gardens 2→2–4, Warrens 2→2–3
     const poolCells: Array<{ x: number; y: number }> = [];
     for (let y = 0; y < grid.height; y++) {
       for (let x = 0; x < grid.width; x++) {
@@ -318,16 +350,17 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
     water = rng.shuffle(poolCells).slice(0, count);
   }
 
-  // Rule 9 (T4/T3): the Carnival's distorting mirrors. Wall-mounted like the
-  // standing glass (fogable exactly like it — frost.ts reads the kind), the
-  // count the rng's call (the param is the floor of the range, one coin adds
-  // the third), then a shuffle of whatever cells the portraits/standing glass
-  // left. Each pane's fixed lie is NOT an rng draw — it derives from the
-  // mirror's id (distortDelta, per-id deterministic). Draws happen ONLY when
-  // params.distort > 0 (tier 4) and LAST-LAST in the stream: tiers 1–3 keep
-  // the exact M2/T2/T3 rng order — their experience is byte-identical.
+  // Rule 9 (T4/T3, T9/T2): the Carnival's distorting mirrors. Wall-mounted
+  // like the standing glass (fogable exactly like it — frost.ts reads the
+  // kind), the count the rng's call (the param is the floor of the range, one
+  // coin adds one), then a shuffle of whatever cells the portraits/standing
+  // glass left. Each pane's fixed lie is NOT an rng draw — it derives from
+  // the mirror's id (distortDelta, per-id deterministic). Draws happen ONLY
+  // when params.distort > 0 (tier 4; and — since T9 — tier 9's thin glass:
+  // the ask of 1 flips 1–2 panes) and LAST-LAST in the stream: tiers 1–3
+  // keep the exact M2/T2/T3 rng order — their experience is byte-identical.
   if (params.distort > 0) {
-    const count = params.distort + rng.int(2); // 2 → 2–3 panes
+    const count = params.distort + rng.int(2); // Carnival 2→2–3, Warrens 1→1–2
     for (const c of rng.shuffle(remaining()).slice(0, count)) place(c, 'distort');
   }
 

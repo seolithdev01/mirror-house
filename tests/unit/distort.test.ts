@@ -7,14 +7,16 @@ import {
   FOG_DURATION_MS,
   SENSE_RANGE,
 } from '../../src/engine/constants';
-import { generateFloor, TIER_ONE } from '../../src/game/maze';
+import { generateFloor, TIER_ONE, floorFromGrid, type Floor } from '../../src/game/maze';
 import {
   distortDelta,
   generateFloorObjects,
   mirrorSpotFor,
   M2_PARAMS,
+  textureParamsForTier,
   type MirrorRef,
 } from '../../src/game/floorObjects';
+import { dwaarGrid, floorParams, floorSeed, isDwaar } from '../../src/game/campaign';
 import { applyFog, fogTarget, initMirrorRuntime } from '../../src/game/frost';
 import { crackTarget } from '../../src/game/houseState';
 import { apparentPlayer } from '../../src/game/distort';
@@ -169,6 +171,90 @@ describe('distort placement — tier-4 mirrors, tier-1/2/3 streams untouched', (
     // AFTER water, never before
     const t3 = generateFloorObjects(floorA, { ...M2_PARAMS, water: 2 });
     expect(generateFloorObjects(floorA, { ...M2_PARAMS, water: 2, distort: 0 })).toEqual(t3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T9/T2 — the Warrens' thin glass. The Carnival's branch draws again, on new
+// floors: 1–2 panes per tier-9 floor (the distort ask of 1, one int(2) coin
+// on top), drawn LAST-LAST exactly as tier 4 draws them — after the pools
+// (tier 9's water) and every mirror kind, so the tier-3/4 streams and the
+// pre-existing glass stay byte-identical (the floors 1–80 sweep pins both).
+// ---------------------------------------------------------------------------
+const warrenFloor = (f: number): Floor => {
+  const seed = floorSeed({ seedBase: 'WARDEN', floor: f, tierComplete: false });
+  return isDwaar(f)
+    ? floorFromGrid(dwaarGrid(f), seed)
+    : generateFloor({ ...TIER_ONE, seed, braid: floorParams(f).braid });
+};
+
+describe('distort placement — the Warrens\u2019 thin glass (T9/T2)', () => {
+  const t9 = textureParamsForTier(9);
+  const warrenObjects = (f: number): ReturnType<typeof generateFloorObjects> =>
+    generateFloorObjects(warrenFloor(f), { ...M2_PARAMS, ...t9 });
+
+  it('hangs 1–2 panes on every Warrens floor 81–90, procedural and Dwaar IX alike', () => {
+    for (let f = 81; f <= 90; f++) {
+      const panes = warrenObjects(f).mirrors.filter((m) => m.kind === 'distort');
+      expect(panes.length >= 1, `floor ${f}: ${panes.length} panes`).toBe(true);
+      expect(panes.length <= 2, `floor ${f}: ${panes.length} panes`).toBe(true);
+    }
+  });
+
+  it('is deterministic across rebuilds of the same warren floor', () => {
+    const a = warrenObjects(88);
+    const b = warrenObjects(88);
+    expect(a).toEqual(b);
+  });
+
+  it('mounts every warren pane on a wall, never pairs, opens nothing, lies axis-aligned per id', () => {
+    for (const f of [81, 85, 90]) {
+      const floor = warrenFloor(f);
+      const panes = warrenObjects(f).mirrors.filter((m) => m.kind === 'distort');
+      expect(panes.length).toBeGreaterThan(0);
+      for (const m of panes) {
+        const spot = mirrorSpotFor(floor.grid, m.cellX, m.cellY);
+        expect(spot, `floor ${f} pane ${m.id} mounts on a wall`).not.toBeNull();
+        expect(m.x).toBeCloseTo(spot!.x, 9);
+        expect(m.z).toBeCloseTo(spot!.z, 9);
+        expect(m.rotY).toBeCloseTo(spot!.rotY, 9);
+        expect(m.pairId).toBeNull();
+        expect(m.wallDir).toBeNull(); // not a T7 door
+        const { distortDx: dx, distortDy: dy } = m;
+        expect((dx === 0) !== (dy === 0), `floor ${f} pane ${m.id} axis-aligned`).toBe(true);
+        expect(Math.abs(dx!) + Math.abs(dy!)).toBeGreaterThanOrEqual(1);
+        expect(dx).toBe(distortDelta(m.id).dx);
+        expect(dy).toBe(distortDelta(m.id).dy);
+      }
+    }
+  });
+
+  it('no two warren mirrors share a cell when the panes walk the floor', () => {
+    for (let f = 81; f <= 90; f++) {
+      const cells = warrenObjects(f).mirrors.map((m) => `${m.cellX},${m.cellY}`);
+      expect(new Set(cells).size, `floor ${f}`).toBe(cells.length);
+    }
+  });
+
+  it('the warren panes draw LAST-LAST — the pools and every earlier kind stay byte-identical', () => {
+    // water-only (the tier-9 pools, no panes) vs water+panes: the pools land
+    // in the same cells and the pre-existing glass is id-for-id identical
+    const floor = warrenFloor(83);
+    const waterOnly = generateFloorObjects(floor, {
+      ...M2_PARAMS,
+      water: t9.water,
+      waterRoll: t9.waterRoll,
+    });
+    const dressed = warrenObjects(83);
+    expect(dressed.water).toEqual(waterOnly.water);
+    expect(dressed.mirrors.filter((m) => m.kind !== 'distort')).toEqual(waterOnly.mirrors);
+    expect(dressed.echoSpawns).toEqual(waterOnly.echoSpawns);
+    expect(dressed.patrolAnchors).toEqual(waterOnly.patrolAnchors);
+    // and a bare warren floor (no texture ask at all) draws nothing
+    expect(generateFloorObjects(floor, { ...M2_PARAMS }).water).toEqual([]);
+    expect(
+      generateFloorObjects(floor, { ...M2_PARAMS }).mirrors.filter((m) => m.kind === 'distort'),
+    ).toEqual([]);
   });
 });
 

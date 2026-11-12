@@ -279,14 +279,21 @@ describe('tierOf', () => {
   });
 
   it('T9 — the tier-exclusive dressing gates stay put on the Warrens too', () => {
-    // the Warrens hang no ancestor portraits and mount no carnival glass —
-    // the apex's teeth are the all-four rotation and the returning texture
-    // (heat, T9/T1; pools + distort, T9/T2), and the floorObjects rng streams
-    // for floors 1–80 stay pinned (the tier-9 draws are new-floor-only)
+    // the Warrens hang no ancestor portraits — and their texture is the T9/T2
+    // ask (pool 2–3 water, mount 1–2 panes through the tier-NINE arm of the
+    // builder's gates, never the tier-3/4 equality arms the older tiers
+    // read): tierOf(81–90) is 9, so every tier ≤ 8 gate stays false here and
+    // the floorObjects rng streams for floors 1–80 stay pinned (the tier-9
+    // draws are new-floor-only; the floors 1–80 sweep in floorobjects.test.ts
+    // pins them byte-for-byte)
     for (let f = TIER_EIGHT_FLOORS + 1; f <= TIER_NINE_FLOORS; f++) {
       expect(tierOf(f) === 2, `floor ${f} portraits gate`).toBe(false);
-      expect(tierOf(f) === 3, `floor ${f} water gate`).toBe(false);
-      expect(tierOf(f) === 4, `floor ${f} distort gate`).toBe(false);
+      expect(tierOf(f) === 3, `floor ${f} water gate (t3 arm)`).toBe(false);
+      expect(tierOf(f) === 4, `floor ${f} distort gate (t4 arm)`).toBe(false);
+      // T9/T2 — the widened builder gates: water draws on the t3 ∨ t9 arm,
+      // distort on the t4 ∨ t9 arm, portraits still t2-only
+      expect(tierOf(f) === 3 || tierOf(f) === 9, `floor ${f} water gate (t9 arm)`).toBe(true);
+      expect(tierOf(f) === 4 || tierOf(f) === 9, `floor ${f} distort gate (t9 arm)`).toBe(true);
     }
   });
 });
@@ -1790,6 +1797,21 @@ describe('sentinel presence (the rotation)', () => {
       expect(taalPresent(f), `floor ${f} taal`).toBe(taal);
       expect(gherPresent(f), `floor ${f} gher`).toBe(gher);
       expect(aavartPresent(f), `floor ${f} aavart`).toBe(aavart);
+    }
+  });
+
+  it('T2 — the spawn wiring confirms the apex: taal/gher/aavart walk EVERY floor 81–90, decoys armed (tier ≥ 5)', () => {
+    // buildFloor's spawn gates read these fns directly (taal/gher/aavart =
+    // initTaal/initGher/initAavart when present, null otherwise), and the
+    // decoy clock arms wherever tierOf ≥ 5 — so presence-all-90 + tier 9 IS
+    // the wiring: all four hunt (Chhaya has no gate) and the mirror-you
+    // copies spawn beside them, Dwaar IX included. The texture stack rides
+    // the same floors (T9/T2).
+    for (let f = TIER_EIGHT_FLOORS + 1; f <= TIER_NINE_FLOORS; f++) {
+      expect(taalPresent(f), `floor ${f} taal walks`).toBe(true);
+      expect(gherPresent(f), `floor ${f} gher walks`).toBe(true);
+      expect(aavartPresent(f), `floor ${f} aavart walks`).toBe(true);
+      expect(tierOf(f) >= 5, `floor ${f} decoys armed`).toBe(true);
     }
   });
 });
