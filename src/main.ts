@@ -2834,11 +2834,19 @@ function frame(now: number): void {
       // seal onto it. Aavart below keeps the bare roads: the Ambusher reads
       // the player, the Warden reads the house. T6 final review — the ward
       // is the Furnace's own, documented from the Wings down: one condition
-      // gates the feed to heatOn(campaign.floor), so only 51–60 have guarded
-      // copies and Dwaar V reverts to its t5 walk (unguarded, the +5 free).
+      // gates the feed, so only the hot floors (51–60, and the Warrens'
+      // 81–90 re-light since t9) have guarded copies and Dwaar V reverts to
+      // its t5 walk (unguarded, the +5 free). T10 rider (t6 minors): the
+      // feed reads the SAME `venue === null` gate every other heat read
+      // shares (heatActiveFloor — the dressing, the fog duration, the crack
+      // anger, Aaina's heatNear, the DEV heat() read-out), so a venue
+      // side-floor sponsored from a hot campaign floor behaves tier-one
+      // here exactly as everywhere else (its decoys were already empty —
+      // decoysActiveFloor carries the same gate — so this is consistency,
+      // not behavior).
       // The same snapshot feeds the caption's eye, so a seal that merely
       // coincides with a copy on a base road never speaks the ward on 50.
-      const guarded = heatOn(campaign.floor) ? decoys : [];
+      const guarded = heatActiveFloor() ? decoys : [];
       if (gher !== null) {
         gher = updateGher(
           gher,
