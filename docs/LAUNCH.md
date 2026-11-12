@@ -5,7 +5,7 @@ ventures, and the launch-day checklist. Nothing here is sent anywhere by the
 game itself — [PRIVACY.md](../PRIVACY.md) is the promise, this file is the
 megaphone.
 
-- Play link (edit once if the deployment moves): **<https://mirror-house-8fg.pages.dev>**
+- Play link (edit once if the deployment moves): **<https://mirror-house.seolith.com>**
 - Repo / issues: **<https://github.com/seolithdev01/mirror-house>**
 - Store listing copy: [STORE-LISTING.md](STORE-LISTING.md) · build runbook:
   [BUILD-STORES.md](BUILD-STORES.md) · what shipped: [CHANGELOG.md](../CHANGELOG.md)
@@ -38,7 +38,7 @@ and puts your own shadow closer behind you.
   text at 100/125/150%; first-person, four-pane, and 2D-map views — the map is
   a full way to play, not a minimap. The HUD speaks English and हिंदी.
 
-Play it here: <https://mirror-house-8fg.pages.dev> — floors are sharable by seed
+Play it here: <https://mirror-house.seolith.com> — floors are sharable by seed
 code, and there's a Daily everyone on Earth gets the same floor of.
 
 **Feedback ask (append):**
@@ -61,7 +61,7 @@ code, and there's a Daily everyone on Earth gets the same floor of.
 - **कुछ भी न भरें, कुछ भी न उतरे।** ब्राउज़र में चलता है (PWA — पूरी तरह ऑफ़लाइन भी), संगीत आपके ब्राउज़र में ही बनता है, और आपका सेव आपके ही उपकरण पर रहता है।
 - **सबके लिए बना है।** केवल-कुंजियाँ, केवल-माउस (एक हाथ), या दोनों; सभी 15 कुंजियाँ बदलें; ध्वनि-संकेतों के कैप्शन; अक्षर आकार 100/125/150%; HUD हिंदी में भी बोलता है।
 
-**लिंक:** <https://mirror-house-8fg.pages.dev>
+**लिंक:** <https://mirror-house.seolith.com>
 
 **प्रतिक्रिया का अनुरोध:**
 
@@ -88,7 +88,7 @@ code, and there's a Daily everyone on Earth gets the same floor of.
   entire floors from — in English and Hindi.
 
 Try floor one (2–5 minutes, that's the whole loop):
-<https://mirror-house-8fg.pages.dev>
+<https://mirror-house.seolith.com>
 
 **Feedback ask:**
 
@@ -108,7 +108,7 @@ Try floor one (2–5 minutes, that's the whole loop):
 - कोई खाता नहीं, कोई विज्ञापन नहीं, कोई ट्रैकिंग नहीं — पूरा खेल ~176 KB, एक बार लोड हो तो ऑफ़लाइन भी चलता है, और संगीत आपके ब्राउज़र में ही बनता है।
 - सच में सुगम — एक हाथ से माउस-मोड, सभी कुंजियाँ बदलना, कैप्शन, चमक कम करना, बड़े अक्षर, और पूरी मंज़िल वहाँ से खेलने लायक 2D नक्शा — हिंदी में भी।
 
-**लिंक:** <https://mirror-house-8fg.pages.dev>
+**लिंक:** <https://mirror-house.seolith.com>
 **प्रतिक्रिया:** यह बीटा है — पहली मंज़िल पर अटकें तो बताइए कहाँ: <https://github.com/seolithdev01/mirror-house/issues>
 
 ## 3. Venue-pilot pitch (local ventures)
@@ -118,7 +118,7 @@ fill the bracketed holes, keep it short.
 
 **Subject:** Your café, as a playable floor — free during the beta
 
-> Hi [name] — I make [Mirror House](https://mirror-house-8fg.pages.dev), a free
+> Hi [name] — I make [Mirror House](https://mirror-house.seolith.com), a free
 > browser maze game. Local businesses can host a floor inside it, and I'm
 > looking for [city] pilots while the beta runs.
 >
@@ -168,7 +168,7 @@ One pass, in order; every line names the artifact that proves it.
 
 - [ ] **Web is live** — `npm run build` clean on `main`; Cloudflare Pages
       deployment of `0.2.0-beta.1` confirmed at
-      <https://mirror-house-8fg.pages.dev> (CI deploys on push to `main`; the
+      <https://mirror-house.seolith.com> (CI deploys on push to `main`; the
       action log is the witness). Open the deployed build once and clear
       floor 1 by hand.
 - [ ] **Version says beta** — `package.json` is `0.2.0-beta.1` and the
