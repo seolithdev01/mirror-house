@@ -145,6 +145,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.tier7': 'T7', // T7/T1 — the Whisper-Library suffix: L64 · T7
     'chip.tier8': 'T8', // T8/T1 — the Frozen-Atrium suffix: L74 · T8
     'chip.tier9': 'T9', // T9/T1 — the Warden's-Warrens suffix: L84 · T9
+    'chip.tier10': 'T10', // T10/T1 — the Foundations suffix: L94 · T10
+    'chip.ground': 'THE GROUND', // T10/T1 — the FINALE floor names itself: L100 · THE GROUND (never a Dwaar)
     // overlays and banners
     'overlay.failCaught': 'Caught by the glass',
     'overlay.failCollapse': 'The mirrors collapsed',
@@ -193,6 +195,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // TIER close's now — Dwaar IX's): the shard banks mid-descent past the
     // Atrium, down the Ground Door into the Warden's Warrens.
     'overlay.shardInterstitial8': '✦ Truth-Shard VIII claimed — the house deepens…',
+    // T10/T1 — Dwaar IX joins the cascade too: the claim banks mid-descent
+    // past the Warrens, down the stairs into the Glazier's Foundations — the
+    // full screen moved DOWN to floor 100 (the Ground's Truth-Shard X).
+    'overlay.shardInterstitial9': '✦ Truth-Shard IX claimed — the house deepens…',
     // T5/T1 — the Dwaar V tier screen (floor 50, the row-9 apex duel): the
     // one full screen Act II keeps, the campaign's terminal close.
     // T6/T1 — the screen retires downward: Dwaar V cascades (above) and the
@@ -213,6 +219,11 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'overlay.tierTitle7': '✦ Truth-Shard VII claimed — Tier VII complete',
     'overlay.tierTitle8': '✦ Truth-Shard VIII claimed — Tier VIII complete',
     'overlay.tierTitle9': '✦ Truth-Shard IX claimed — Tier IX complete',
+    // T10/T1 — the Ground's tier screen: Truth-Shard X, the campaign's LAST
+    // shard (T3 folds this screen into the Ground Door finale — until then
+    // the standard screen holds; descend() is a no-op at 100, the machine's
+    // final state).
+    'overlay.tierTitle10': '✦ Truth-Shard X claimed — Tier X complete',
     // T5/T1 — the Act II opening banner: the first floor-41 build of a
     // session raises it for 3s, once per session.
     'overlay.actBanner': 'ACT II — THE DECEPTION',
@@ -230,7 +241,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'hint.tacticalResume': 'Tactical pause — Esc resumes',
     // T6/T2 — the Furnace's standing advice, authored in both languages (the
     // Aaina panel itself speaks English content by design — src/ui/aaina.ts)
-    'hint.heatNear': 'The furnace breathes — your frost melts fast, and every crack you leave burns wider.',
+    'hint.heatNear':
+      'The furnace breathes — your frost melts fast, and every crack you leave burns wider.',
     // T7/T2 — the Library's standing advice, same dual-language authoring
     'hint.whisperNear': 'They are blind here — but they listen. Walk. Never run the stacks.',
     // T8/T2 — the Atrium's standing advice, same dual-language authoring
@@ -413,6 +425,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.tier7': 'चरण 7', // T7/T1 — विस्मय-पुस्तकालय का प्रत्यय: स्तर 64 · चरण 7
     'chip.tier8': 'चरण 8', // T8/T1 — हिम-आँगन का प्रत्यय: स्तर 74 · चरण 8
     'chip.tier9': 'चरण 9', // T9/T1 — वार्डन की बिलों का प्रत्यय: स्तर 84 · चरण 9
+    'chip.tier10': 'चरण 10', // T10/T1 — नींवों का प्रत्यय: स्तर 94 · चरण 10
+    'chip.ground': 'ज़मीन', // T10/T1 — अंतिम मंज़िल अपना नाम बोलती है: स्तर 100 · ज़मीन (कोई द्वार नहीं)
     // परदे और पट्टियाँ — घर की आवाज़ में, पर संक्षेप में
     'overlay.failCaught': 'काँच ने आपको पकड़ लिया',
     'overlay.failCollapse': 'दर्पण ढह गए',
@@ -450,6 +464,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // T9/T1 — द्वार VIII भी अंतराल में: पूर्ण परदा द्वार IX का — अति-द्वंद्व
     // वार्डन की बिलों में, हिम-आँगन से नीचे, ज़मीन के दरवाज़े के पार।
     'overlay.shardInterstitial8': '✦ सत्य-शार्ड VIII प्राप्त — घर और गहरा होता है…',
+    // T10/T1 — द्वार IX भी अंतराल में: शार्ड वार्डन की बिलों के पार, सीढ़ियों
+    // से नीचे, ग्लेज़ियर की नींवों में जमा होता है — पूर्ण परदा मंज़िल 100 पर।
+    'overlay.shardInterstitial9': '✦ सत्य-शार्ड IX प्राप्त — घर और गहरा होता है…',
     // T5/T1 — द्वार V का चरण-परदा (मंज़िल 50, नौवीं पंक्ति का शिखर-द्वंद्व)
     // T6/T1 — परदा नीचे उतर गया: द्वार V अंतराल में, पूर्ण परदा द्वार VI का —
     // चार-रक्षक की भट्ठी का समापन, अभियान का अंतिम परदा।
@@ -465,6 +482,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // द्वार IX का — वार्डन की बिलों में चारों रक्षकों का अति-द्वंद्व,
     // अभियान का अंतिम परदा (स्तर 90 पर descend() कोई-नहीं, जब तक चरण 10)।
     'overlay.tierTitle9': '✦ सत्य-शार्ड IX प्राप्त — चरण IX पूर्ण',
+    // T10/T1 — ज़मीन का चरण-परदा: सत्य-शार्ड X, अभियान का अंतिम शार्ड
+    // (T3 इस परदे को ज़मीन के दरवाज़े के समापन में जोड़ देगा; तब तक
+    // मानक परदा — स्तर 100 पर descend() कोई-नहीं, मशीन की अंतिम अवस्था)।
+    'overlay.tierTitle10': '✦ सत्य-शार्ड X प्राप्त — चरण X पूर्ण',
     // T5/T1 — अंक II का उद्घाटन-बैनर: सत्र के पहले मंज़िल-41 निर्माण पर 3 सेकंड
     'overlay.actBanner': 'अंक II — धोखा',
     'overlay.actBannerNote': 'घर ने आपकी नक़ल करना शुरू कर दी है।',
@@ -480,7 +501,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'hint.tacticalResume': 'रणनीति विराम — Esc जारी रखें',
     // T6/T2 — भट्ठी की स्थायी सलाह, दोनों भाषाओं में रचित (आईना की बातें
     // अँग्रेज़ी में रहेंगी — src/ui/aaina.ts देखें)
-    'hint.heatNear': 'भट्ठी की साँस चलती है — तुम्हारा तुषार जल्दी पिघलता है, और तुम जो दरार छोड़ते हो वह चौड़ी जलती है।',
+    'hint.heatNear':
+      'भट्ठी की साँस चलती है — तुम्हारा तुषार जल्दी पिघलता है, और तुम जो दरार छोड़ते हो वह चौड़ी जलती है।',
     // T7/T2 — पुस्तकालय की स्थायी सलाह, वही दोनों-भाषा रीति
     'hint.whisperNear': 'ये यहाँ अंधे हैं — पर सुनते हैं। चलिए। शेल्फ़ों के बीच कभी न दौड़ें।',
     // T8/T2 — जमे हुए प्रांगण की स्थायी सलाह, वही दोनों-भाषा रीति
@@ -565,6 +587,8 @@ export const CHIP_KEYS: readonly string[] = [
   'chip.tier7',
   'chip.tier8',
   'chip.tier9',
+  'chip.tier10',
+  'chip.ground',
   'tab.ask',
   'tab.hint',
   'tab.lore',

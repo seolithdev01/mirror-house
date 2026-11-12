@@ -12,6 +12,7 @@ import {
   TIER_ONE_FLOORS,
   TIER_SEVEN_FLOORS,
   TIER_SIX_FLOORS,
+  TIER_TEN_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
 } from '../engine/constants';
@@ -52,47 +53,59 @@ export function floorSeed(c: Campaign): string {
  *  here — but LEAVING a Dwaar floor re-arms the tier flag for the tier
  *  below (Act I continues past Dwaar I), so the single `tierComplete` flag
  *  always reads "the CURRENT tier's threshold has been claimed".
- *  T9: the campaign is TERMINAL at floor 90 (Dwaar IX closes the house's
- *  fifth act of floors) — descend there is a NO-OP that returns the same
- *  object, so the tier screen is the end of the house until tier 10 exists.
- *  (The T8-era terminus at 80 is retired: 80 → 81 is a real descent now —
- *  Act III opens, the Warden's Warrens begin, and Dwaar VIII's claim joins
- *  the interstitial cascade like II/III/IV/V/VI/VII.) */
+ *  T10: the campaign is TERMINAL at floor 100 — THE FINALE. The T9-era
+ *  terminus at 90 is retired (90 → 91 is a real descent: the Foundations
+ *  open and Dwaar IX's claim joins the interstitial cascade like
+ *  II/III/IV/V/VI/VII/VIII), and the Ground itself is the machine's FINAL
+ *  state: descend at 100 is a NO-OP that returns the same object — there is
+ *  no floor 101, and there never will be. */
 export function descend(c: Campaign): Campaign {
-  if (c.floor >= TIER_NINE_FLOORS) return c; // the house ends at 90 — tier 10 is the next act
+  if (c.floor >= TIER_TEN_FLOORS) return c; // the house ends at 100 — the Ground is the ending
   const next: Campaign = { ...c, floor: c.floor + 1 };
   return isDwaar(c.floor) ? { ...next, tierComplete: false } : next;
 }
 
 /** Truth-Shard claim: only takes effect standing on a Dwaar floor —
  *  Dwaar I (10), Dwaar II (20), Dwaar III (30), Dwaar IV (40), Dwaar V
- *  (50), Dwaar VI (60), Dwaar VII (70), Dwaar VIII (80) or Dwaar IX (90).
- *  The flag stays single: each tier's completion sets it again after the
- *  descent from the tier above re-armed it. */
+ *  (50), Dwaar VI (60), Dwaar VII (70), Dwaar VIII (80) or Dwaar IX (90) —
+ *  or on the FINALE floor itself (100): the Ground is not a Dwaar, but
+ *  clearing it claims Truth-Shard X, the campaign's last shard. The flag
+ *  stays single: each tier's completion sets it again after the descent
+ *  from the tier above re-armed it. */
 export function completeTier(c: Campaign): Campaign {
-  return isDwaar(c.floor) ? { ...c, tierComplete: true } : c;
+  return isDwaar(c.floor) || isFinale(c.floor) ? { ...c, tierComplete: true } : c;
 }
 
 /** Which tier a floor belongs to: 1–10 → 1, 11–20 → 2, 21–30 → 3,
- *  31–40 → 4, 41–50 → 5, 51–60 → 6, 61–70 → 7, 71–80 → 8, 81–90 → 9. */
-export function tierOf(floor: number): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 {
-  return floor > TIER_EIGHT_FLOORS
-    ? 9
-    : floor > TIER_SEVEN_FLOORS
-      ? 8
-      : floor > TIER_SIX_FLOORS
-        ? 7
-        : floor > TIER_FIVE_FLOORS
-          ? 6
-          : floor > TIER_FOUR_FLOORS
-            ? 5
-            : floor > TIER_THREE_FLOORS
-              ? 4
-              : floor > TIER_TWO_FLOORS
-                ? 3
-                : floor > TIER_ONE_FLOORS
-                  ? 2
-                  : 1;
+ *  31–40 → 4, 41–50 → 5, 51–60 → 6, 61–70 → 7, 71–80 → 8, 81–90 → 9,
+ *  91–100 → 10. */
+export function tierOf(floor: number): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 {
+  return floor > TIER_NINE_FLOORS
+    ? 10
+    : floor > TIER_EIGHT_FLOORS
+      ? 9
+      : floor > TIER_SEVEN_FLOORS
+        ? 8
+        : floor > TIER_SIX_FLOORS
+          ? 7
+          : floor > TIER_FIVE_FLOORS
+            ? 6
+            : floor > TIER_FOUR_FLOORS
+              ? 5
+              : floor > TIER_THREE_FLOORS
+                ? 4
+                : floor > TIER_TWO_FLOORS
+                  ? 3
+                  : floor > TIER_ONE_FLOORS
+                    ? 2
+                    : 1;
+}
+
+/** T10 — THE FINALE floor: the Glazier's Ground, floor 100. The ending is
+ *  NOT a Dwaar — no threshold hall, no Dwaar chip, no `DWAAR X` label: the
+ *  Ground carries the Glazier (T2) and the Door (T3's finale screen). */
+export function isFinale(floor: number): boolean {
+  return floor === TIER_TEN_FLOORS;
 }
 
 /** The Dwaar threshold halls occupy the last floor of each tier. */
@@ -110,7 +123,7 @@ export function isDwaar(floor: number): boolean {
   );
 }
 
-// ---- the sentinel rotation (T5, extended T6/T7/T8/T9, spec §4.6) ------------
+// ---- the sentinel rotation (T5, extended T6/T7/T8/T9/T10, spec §4.6) --------
 // The ladder STOPS GROWING: tiers 2–4 each added a Sentinel and the bare
 // `>=` gates expressed that. Act II rotates instead — floors 41–49 hunt with
 // Taal alone (Gher and Aavart rest — the ratified change), Dwaar V (50) was
@@ -120,27 +133,29 @@ export function isDwaar(floor: number): boolean {
 // through 65, he RETURNED at TAAL_RETURN_FLOOR (66); GHER rested 61–69 and
 // joined ONLY at the Dwaar VII duet (70); AAVART rested all of tier 7), T8's
 // Frozen Atrium turned it again (TAAL AND GHER REST 71–79, called down ONLY
-// for the Dwaar VIII duel; AAVART walked the whole Atrium beside Chhaya) —
-// and T9's Warden's Warrens are the APEX: every rest ENDS at 81. The Dwaar
-// VIII duel-call equality (=== 80) widens to open-ended ≥80 in Taal's and
-// Gher's gates — from the duel floor on, neither rests again — and Aavart's
-// `> 70` already walked the apex untouched. Floors 81–90 are ALL-FOUR floors
-// (spec §4.6 row 9), Dwaar IX included; Chhaya has no gate, she walks every
-// floor as always. Floors 1–80 read EXACTLY as the shipped t8 rotation did —
-// the rotation only ever changes behavior where the plan ratifies it.
+// for the Dwaar VIII duel; AAVART walked the whole Atrium beside Chhaya),
+// T9's Warden's Warrens were the APEX (every rest ENDED at 81 — floors
+// 81–90 ALL-FOUR, Dwaar IX included) — and T10's Foundations CLOSE THE
+// ROTATION: the four Sentinels rest 91–100 ENTIRELY. The loneliest tier —
+// the Foundations are walked alone (you, the Echoes, the house holding its
+// breath), and floor 100 the GLAZIER walks alone (T2's entity; he is not a
+// Sentinel and has no gate here). Chhaya has no gate, she walks every floor
+// as always. Floors 1–90 read EXACTLY as the shipped t9 rotation did — the
+// rotation only ever changes behavior where the plan ratifies it.
 
 /** The beat-walker: his cameo floor (5) is a separate gate — from the
  *  Sentinel floor (11) through the Flood's close (50) he walked EVERY floor;
  *  the Furnace gave him his first rest (51–59), the Library EXTENDED it
  *  through 65 before TAAL_RETURN_FLOOR (66) brought him back for the duet's
- *  approach (66–70), the Atrium rested him again (71–79) — and from the
- *  Dwaar VIII duel call (80) onward he NEVER rests again: the apex keeps
- *  his beat walking every Warrens floor, Dwaar IX included. */
+ *  approach (66–70), the Atrium rested him again (71–79), from the Dwaar
+ *  VIII duel call (80) onward he never rested again — the apex kept his
+ *  beat walking every Warrens floor — and T10 ends the streak: the
+ *  Foundations and the Ground keep no beat. He rests 91–100. */
 export function taalPresent(floor: number): boolean {
   return (
     (floor >= TAAL_SENTINEL_FLOOR && floor <= TIER_FIVE_FLOORS) ||
     (floor >= TAAL_RETURN_FLOOR && floor <= TIER_SEVEN_FLOORS) ||
-    floor >= TIER_EIGHT_FLOORS
+    (floor >= TIER_EIGHT_FLOORS && floor <= TIER_NINE_FLOORS)
   );
 }
 
@@ -149,30 +164,32 @@ export function taalPresent(floor: number): boolean {
  *  rested on the Flood Halls (41–49, the ratified T5 rotation) until the
  *  Dwaar V duel called him down (50); the Furnace is HIS home tier (50–60,
  *  untouched by T7/T8), the Library gave him the whole tier off EXCEPT the
- *  Dwaar VII duet (70), the Atrium rested him again (71–79) — and from the
- *  Dwaar VIII duel call (80) onward he NEVER rests again: the circle closes
- *  on every Warrens floor, Dwaar IX included. */
+ *  Dwaar VII duet (70), the Atrium rested him again (71–79), and from the
+ *  Dwaar VIII duel call (80) onward he never rested again — the circle
+ *  closed on every Warrens floor. T10 opens the circle: nobody patrols the
+ *  Foundations. He rests 91–100. */
 export function gherPresent(floor: number): boolean {
   return (
     (floor >= GHER_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) ||
     (floor >= TIER_FIVE_FLOORS && floor <= TIER_SIX_FLOORS) ||
     floor === TIER_SEVEN_FLOORS ||
-    floor >= TIER_EIGHT_FLOORS
+    (floor >= TIER_EIGHT_FLOORS && floor <= TIER_NINE_FLOORS)
   );
 }
 
 /** The Ambusher: the Carnival (31–40), the T5 rest (41–49), the Dwaar V
  *  duel (50) — and like the Encircler he returned for the whole Furnace
  *  (50–60). The Library rested him entirely (61–70): tier 7 belonged to the
- *  hearing Echoes and the duet. T8 brings him BACK — his gate walks the
+ *  hearing Echoes and the duet. T8 brought him BACK — his gate walked the
  *  whole Atrium (71–80) and, open-ended past it, the whole Warrens: the
- *  frozen floors were his ambush, the warren is his apex, and the all-four
- *  duel closes the campaign's fifth act of floors. */
+ *  frozen floors were his ambush, the warren his apex. T10 ends the
+ *  open-ended gate: the hunt is over — nobody ambushes the Foundations.
+ *  He rests 91–100. */
 export function aavartPresent(floor: number): boolean {
   return (
     (floor >= AVART_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) ||
     (floor >= TIER_FIVE_FLOORS && floor <= TIER_SIX_FLOORS) ||
-    floor > TIER_SEVEN_FLOORS
+    (floor > TIER_SEVEN_FLOORS && floor <= TIER_NINE_FLOORS)
   );
 }
 
@@ -251,10 +268,33 @@ export function bestKey(c: Campaign): string {
  *  beacons = 4 on every floor;
  *  braid = 0.40 + 0.004*(floor-81);
  *  chhayaDelayMs = max(2400, 3000 - 60*(floor-81)) (Dwaar IX 2300 — the
- *  Warden's own halls, Chhaya does not wait). */
+ *  Warden's own halls, Chhaya does not wait).
+ *
+ *  T10 — floors 91..TIER_TEN_FLOORS (the Foundations + the Glazier's
+ *  Ground — THE FINALE):
+ *  echoes = 6 on EVERY floor — the Foundations' one crowd (no Sentinels
+ *  walk 91–100; the Echoes and you, that is all — and the Ground keeps the
+ *  same 6, the Glazier being its difficulty);
+ *  beacons = 4 on every floor (floor 100's are the pedestals);
+ *  braid = 0.10 + 0.002*(floor-91) — the TIGHTEST tread in the game (the
+ *  Foundations are plain and hard); the Ground itself braids LOOSER at
+ *  0.08 — the Glazier is the difficulty, the room is open;
+ *  chhayaDelayMs = max(2300, 2900 - 50*(floor-91)) (the Ground 2200 — at
+ *  the end, Chhaya does not wait at all). */
 export function floorParams(floor: number): FloorRamp {
-  const f = Math.min(Math.max(floor, 1), TIER_NINE_FLOORS);
+  const f = Math.min(Math.max(floor, 1), TIER_TEN_FLOORS);
   const dwaar = isDwaar(f);
+  if (isFinale(f)) {
+    return { echoes: 6, beacons: 4, braid: 0.08, chhayaDelayMs: 2200 };
+  }
+  if (f > TIER_NINE_FLOORS) {
+    return {
+      echoes: 6,
+      beacons: 4,
+      braid: 0.1 + 0.002 * (f - TIER_NINE_FLOORS - 1),
+      chhayaDelayMs: Math.max(2300, 2900 - 50 * (f - TIER_NINE_FLOORS - 1)),
+    };
+  }
   if (f > TIER_EIGHT_FLOORS) {
     return {
       echoes: dwaar ? 6 : 5,
@@ -567,6 +607,35 @@ export const DWAAR_IX_LAYOUT: readonly string[] = [
   '#############',
 ];
 
+/** Hand-authored the Glazier's Ground — the FINALE floor, floor 100. 13×13
+ *  like the elder halls, but PLAIN: the Glazier built the foundations
+ *  plainly — no ring, no rooms, no wall band, no gimmick. He IS the
+ *  difficulty (T2's teleport-walker), so the room is a plain maze: 95 open
+ *  cells broken by scattered wall studs and short runs (no interior run
+ *  longer than three cells), two dead-end caches, not one 3×3 chamber.
+ *  180°-SYMMETRY IS NOT A GROUND PREDICATE — the elder halls mirrored the
+ *  exit onto the entrance, but the Glazier owes the house no ceremony: this
+ *  layout is asymmetric by design (pinned as achieved, per the plan's
+ *  adjust-and-disclose clause). All 95 open cells form one connected
+ *  component; the entrance is (1,1) row-major and the exit (11,11) is the
+ *  UNIQUELY farthest open cell at 20 steps — the Door stands at the mirror
+ *  corner, one last traverse away. */
+export const GROUND_LAYOUT: readonly string[] = [
+  '#############',
+  '#...........#',
+  '#.##...#....#',
+  '#..#.#..#.#.#',
+  '#..#....#...#',
+  '#.....#..#.##',
+  '#.#.#....#..#',
+  '#......#...##',
+  '#..#.#.#..#.#',
+  '#..#....#...#',
+  '#.#...#...#.#',
+  '#...........#',
+  '#############',
+];
+
 /** The hand-authored layout of a Dwaar floor: Dwaar I at 10, Dwaar II at 20,
  *  Dwaar III at 30, Dwaar IV at 40, Dwaar V at 50, Dwaar VI at 60, Dwaar
  *  VII at 70, Dwaar VIII at 80, Dwaar IX at 90. */
@@ -599,4 +668,20 @@ export function dwaarGrid(floor: number = DWAAR_FLOOR): {
     for (let x = 0; x < row.length; x++) if (row[x] === '.') open.push({ x, y });
   });
   return { width: layout[0]!.length, height: layout.length, open };
+}
+
+/** T10 — the Ground's open-cell derivation, row-major (the same convention
+ *  as dwaarGrid): GROUND_LAYOUT is the FINALE floor's grid, fed to
+ *  maze.floorFromGrid by the builder on floor 100 — the Ground is NOT a
+ *  Dwaar, so it keeps its own derivation beside the nine elders'. */
+export function groundGrid(): {
+  width: number;
+  height: number;
+  open: ReadonlyArray<{ x: number; y: number }>;
+} {
+  const open: { x: number; y: number }[] = [];
+  GROUND_LAYOUT.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) if (row[x] === '.') open.push({ x, y });
+  });
+  return { width: GROUND_LAYOUT[0]!.length, height: GROUND_LAYOUT.length, open };
 }

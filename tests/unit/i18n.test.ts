@@ -455,3 +455,47 @@ describe('i18n — the T8 atrium chrome', () => {
     }
   });
 });
+
+// T10/T1 — the finale's chrome, authored in both languages: the tier-ten
+// chip suffix (L94 · T10), the Ground's own chip label (L100 · THE GROUND —
+// floor 100 is NOT a Dwaar, so it names the place, never `DWAAR X`), Dwaar
+// IX's interstitial line (IX joins the cascade; the full screen moves to
+// floor 100) and the Ground's tier-screen title (✦ Truth-Shard X — T3 folds
+// this screen into the Ground Door finale; until then it holds).
+describe('i18n — the T10 finale chrome', () => {
+  it('the tier-ten chip suffix exists in both languages', () => {
+    expect(STRINGS.en['chip.tier10']).toBe('T10');
+    expect(STRINGS.hi['chip.tier10']!).toMatch(/[\u0900-\u097F]/);
+  });
+
+  it('chip.tier10 is enumerated as a chip (single-line hi discipline applies)', () => {
+    expect(CHIP_KEYS).toContain('chip.tier10');
+  });
+
+  it('the Ground names ITSELF on the chip — never a Dwaar label', () => {
+    expect(STRINGS.en['chip.ground']).toBe('THE GROUND');
+    expect(STRINGS.hi['chip.ground']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['chip.ground']).not.toBe(STRINGS.en['chip.ground']);
+    expect(CHIP_KEYS).toContain('chip.ground');
+    // and neither Ground chip string contains the Dwaar word — the ending is
+    // not a threshold hall
+    expect(STRINGS.en['chip.ground']).not.toMatch(/DWAAR/);
+    expect(STRINGS.hi['chip.ground']).not.toMatch(/द्वार/);
+  });
+
+  it('Dwaar IX joins the interstitial cascade with its own shard line', () => {
+    expect(STRINGS.en['overlay.shardInterstitial9']).toBe(
+      '✦ Truth-Shard IX claimed — the house deepens…',
+    );
+    expect(STRINGS.hi['overlay.shardInterstitial9']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['overlay.shardInterstitial9']).not.toBe(
+      STRINGS.en['overlay.shardInterstitial9'],
+    );
+  });
+
+  it('the Ground\u2019s tier screen names Truth-Shard X (the stand-in until the T3 finale folds it)', () => {
+    expect(STRINGS.en['overlay.tierTitle10']).toBe('✦ Truth-Shard X claimed — Tier X complete');
+    expect(STRINGS.hi['overlay.tierTitle10']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['overlay.tierTitle10']).not.toBe(STRINGS.en['overlay.tierTitle10']);
+  });
+});

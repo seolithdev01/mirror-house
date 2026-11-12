@@ -82,6 +82,15 @@ export interface M2Params {
    *  (the default, tiers 1–3 and venues) draws nothing — the stream stays
    *  byte-identical to the M2/T2/T3 order (distort draws LAST-LAST). */
   distort: number;
+  /** T10 — the Foundations' purity gate: TRUE places NO glass of any kind —
+   *  no true pair, no silvered door, no standing glass (and
+   *  textureParamsForTier(10) already asks zero portraits/water/distort) —
+   *  beacons, echo spawns and patrol anchors ONLY. The floor builder passes
+   *  it wherever tierOf(floor) >= 10: floors 91–100 have zero mirrors (the
+   *  Glazier's Ground included — he IS the difficulty). Optional: every
+   *  pre-T10 caller omits it, the gate's skipped draws are tier-10-only,
+   *  and every floors 1–90 rng stream stays byte-identical. */
+  pure?: boolean;
 }
 
 export const M2_PARAMS: M2Params = {
@@ -167,7 +176,9 @@ const manhattan = (a: Candidate, b: Candidate): number => Math.abs(a.x - b.x) + 
  * params.portraits > 0] → echo shuffle → anchor shuffle → [water: count
  * coin + shuffle, only when params.water > 0] → [distort: count coin +
  * shuffle, only when params.distort > 0 — LAST-LAST, so the carnival draws
- * append to the stream and never perturb the tier-1/2/3 order]).
+ * append to the stream and never perturb the tier-1/2/3 order]). T10: on a
+ * PURE floor the true-pair/silvered/standing rules (and the standing
+ * shuffle draw) are skipped entirely — beacons first, then echoes/anchors.
  *
  * Edge cases (degenerate tiny grids): every pool below may hold fewer cells
  * than the parameter asks for — we then simply place what exists and never
@@ -248,8 +259,9 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
   // Rule 3: true pair — among remaining candidates, the pair with maximal
   // Manhattan cell distance (O(n^2) is fine at <= ~200 cells). Ids i and i+1
   // reference each other via pairId. First pair found wins ties (deterministic
-  // because candidate order is fixed).
-  {
+  // because candidate order is fixed). T10: SKIPPED entirely on a pure floor
+  // (the Foundations carry no glass — the skipped draw is tier-10-only).
+  if (!params.pure) {
     const pool = remaining();
     let bi = -1;
     let bj = -1;
@@ -276,8 +288,9 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
   // to an in-bounds neighbor (an interior edge; the maze is fully connected,
   // so opening it would join two entrance-reachable cells). If none qualifies
   // (degenerate grid where every candidate mounts on the outer boundary),
-  // gracefully fall back to the first remaining candidate.
-  {
+  // gracefully fall back to the first remaining candidate. T10: SKIPPED on a
+  // pure floor (no door where there is no glass).
+  if (!params.pure) {
     const pool = remaining();
     const c = pool.find((p) => grid.neighborIndex(p.x, p.y, p.spot.dir) !== null) ?? pool[0];
     if (c) place(c, 'silvered');
@@ -285,7 +298,11 @@ export function generateFloorObjects(floor: Floor, params: M2Params = M2_PARAMS)
 
   // Rule 5: standing — rng-shuffled leftovers, first `standing`. No cell
   // sharing is guaranteed by construction: every pick removes its cell.
-  for (const c of rng.shuffle(remaining()).slice(0, params.standing)) place(c, 'standing');
+  // T10: SKIPPED on a pure floor (the shuffle draw too — the Foundations'
+  // echo spawns read the unperturbed stream; no pin exists on tier-10 draws,
+  // and every pre-T10 caller keeps its exact order).
+  if (!params.pure)
+    for (const c of rng.shuffle(remaining()).slice(0, params.standing)) place(c, 'standing');
 
   // Rule 5.5 (T2): ancestor portraits — the tier-2 halls' dim glass. The
   // count is the rng's call (the param is the floor of the range, one coin

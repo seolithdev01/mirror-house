@@ -47,6 +47,7 @@ import {
   TIER_NINE_FLOORS,
   TIER_SEVEN_FLOORS,
   TIER_SIX_FLOORS,
+  TIER_TEN_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
   THAW_LURE_RADIUS,
@@ -85,7 +86,9 @@ import {
   floorParams,
   floorSeed,
   gherPresent,
+  groundGrid,
   isDwaar,
+  isFinale,
   newCampaign,
   taalPresent,
   tierOf,
@@ -279,8 +282,10 @@ function bootFloorFromUrl(): number {
   // return + the Dwaar VII duet are jumpable). T8/T1 — and 71–80: the
   // Frozen Atrium (the Ambusher's return + the Dwaar VIII duel are
   // jumpable). T9/T1 — and 81–90: the Warden's Warrens (the Act III
-  // banner + the Dwaar IX apex duel are jumpable).
-  return Number.isInteger(n) && n >= 1 && n <= TIER_NINE_FLOORS ? n : 1;
+  // banner + the Dwaar IX apex duel are jumpable). T10/T1 — and 91–100:
+  // the Foundations (the loneliest tier is jumpable) and the Ground itself
+  // (the Glazier + the Door — T3's finale legs jump the same way).
+  return Number.isInteger(n) && n >= 1 && n <= TIER_TEN_FLOORS ? n : 1;
 }
 /** Migration reads the legacy localStorage meta v1 ONCE; unreadable → null
  *  (a fresh default, never a dead boot). The localStorage copy is left in
@@ -516,9 +521,12 @@ function decoySpawnInterval(): number {
  *  ratification widens the stream through the Furnace Wings; the rng stays
  *  per-floor `{seed}:decoys`, and heat adds no floorObjects draws) — a venue
  *  floor is the sponsor's stage, and the house's deceptions stay home
- *  (M6 isolation). */
+ *  (M6 isolation). T10/T1 — the stream STOPS at the Foundations: floors
+ *  91–100 have zero mirrors of any kind and a copy of you is glass (the
+ *  Global Constraint pins it per floor), so tier 10 is excluded. */
 function decoysActiveFloor(): boolean {
-  return venue === null && tierOf(campaign.floor) >= 5;
+  const tier = tierOf(campaign.floor);
+  return venue === null && tier >= 5 && tier < 10;
 }
 /** One copy spawn — the single path the sim's jittered clock and the DEV
  *  faucet (`forceDecoy`) both take: spawnDecoy's gates (alive < MAX_ALIVE,
@@ -1412,14 +1420,17 @@ function teardownFloor(): void {
  *  tier four the `· T4` suffix (`L34 · T4`), tier five the `· T5` suffix
  *  (`L44 · T5`), tier six the `· T6` suffix (`L54 · T6`), tier seven the
  *  `· T7` suffix (`L64 · T7`), tier eight the `· T8` suffix (`L74 · T8`),
- *  tier nine the `· T9` suffix (`L84 · T9`); the threshold floors name their
- *  Dwaar (`L10 · DWAAR I ✦`, `L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`,
- *  `L40 · DWAAR IV ✦`, `L50 · DWAAR V ✦`, `L60 · DWAAR VI ✦`,
- *  `L70 · DWAAR VII ✦`, `L80 · DWAAR VIII ✦`, `L90 · DWAAR IX ✦`).
+ *  tier nine the `· T9` suffix (`L84 · T9`), tier ten the `· T10` suffix
+ *  (`L94 · T10`); the threshold floors name their Dwaar (`L10 · DWAAR I ✦`,
+ *  `L20 · DWAAR II ✦`, `L30 · DWAAR III ✦`, `L40 · DWAAR IV ✦`,
+ *  `L50 · DWAAR V ✦`, `L60 · DWAAR VI ✦`, `L70 · DWAAR VII ✦`,
+ *  `L80 · DWAAR VIII ✦`, `L90 · DWAAR IX ✦`) — and floor 100, THE FINALE,
+ *  is NOT a Dwaar: it names the place (`L100 · THE GROUND`).
  *  M4/T6: the `L`/`स्तर` prefix, the `DWAAR`/`द्वार` name and the tier
  *  suffix localize. */
 function floorChipLabel(c: Campaign): string {
   const tag = `${t(lang, 'chip.floor')}${String(c.floor).padStart(2, '0')}`;
+  if (isFinale(c.floor)) return `${tag} · ${t(lang, 'chip.ground')}`; // the ending — never a Dwaar label
   if (isDwaar(c.floor)) {
     const numeral =
       c.floor === DWAAR_FLOOR
@@ -1442,23 +1453,25 @@ function floorChipLabel(c: Campaign): string {
     return `${tag} · ${t(lang, 'chip.dwaar')} ${numeral} ✦`;
   }
   const tier = tierOf(c.floor);
-  return tier === 9
-    ? `${tag} · ${t(lang, 'chip.tier9')}`
-    : tier === 8
-      ? `${tag} · ${t(lang, 'chip.tier8')}`
-      : tier === 7
-        ? `${tag} · ${t(lang, 'chip.tier7')}`
-        : tier === 6
-          ? `${tag} · ${t(lang, 'chip.tier6')}`
-          : tier === 5
-            ? `${tag} · ${t(lang, 'chip.tier5')}`
-            : tier === 4
-              ? `${tag} · ${t(lang, 'chip.tier4')}`
-              : tier === 3
-                ? `${tag} · ${t(lang, 'chip.tier3')}`
-                : tier === 2
-                  ? `${tag} · ${t(lang, 'chip.tier')}`
-                  : tag;
+  return tier === 10
+    ? `${tag} · ${t(lang, 'chip.tier10')}`
+    : tier === 9
+      ? `${tag} · ${t(lang, 'chip.tier9')}`
+      : tier === 8
+        ? `${tag} · ${t(lang, 'chip.tier8')}`
+        : tier === 7
+          ? `${tag} · ${t(lang, 'chip.tier7')}`
+          : tier === 6
+            ? `${tag} · ${t(lang, 'chip.tier6')}`
+            : tier === 5
+              ? `${tag} · ${t(lang, 'chip.tier5')}`
+              : tier === 4
+                ? `${tag} · ${t(lang, 'chip.tier4')}`
+                : tier === 3
+                  ? `${tag} · ${t(lang, 'chip.tier3')}`
+                  : tier === 2
+                    ? `${tag} · ${t(lang, 'chip.tier')}`
+                    : tag;
 }
 
 /** Build the campaign's current floor. Floors 1–9 come from the procedural
@@ -1487,9 +1500,11 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   floor =
     pack !== null
       ? generateFloor({ ...TIER_ONE, seed, ...vp!.mazeOverrides }) // always procedural, pack-shaped
-      : isDwaar(c.floor)
-        ? floorFromGrid(dwaarGrid(c.floor), seed) // Dwaar I (10) … VIII (80), IX (90)
-        : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
+      : isFinale(c.floor)
+        ? floorFromGrid(groundGrid(), seed) // floor 100 — the Glazier's Ground, hand-authored plain
+        : isDwaar(c.floor)
+          ? floorFromGrid(dwaarGrid(c.floor), seed) // Dwaar I (10) … VIII (80), IX (90)
+          : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
   exitCenter = floor.grid.cellCenter(floor.exit.x, floor.exit.y);
 
   // The tier dresses the stage (T2/T3): campaign floors 11–20 wear the Hall
@@ -1532,7 +1547,8 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       6: TIER_SIX_SCALE, // T6/T4 — the urgent pentatonic (the stand-in retires)
       7: TIER_SEVEN_SCALE, // T7/T3 — the whispered pentatonic (the stand-in retires)
       8: TIER_EIGHT_SCALE, // T8/T3 — the suspended pentatonic (the stand-in retires)
-      9: TIER_NINE_SCALE, // T9/T3 — the iron pentatonic (the LAST stand-in retires)
+      9: TIER_NINE_SCALE, // T9/T3 — the iron pentatonic (the stand-in retires)
+      10: TIER_ONE_SCALE, // T10/T1 — the tier-one stand-in until T3's three-note scale
     } as const;
     const voiceByTier = {
       1: 'triangle',
@@ -1544,6 +1560,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       7: 'sine', // T7/T3 — the whisper: the flute returns for the Library
       8: 'sawtooth', // T8/T3 — the cold strings: the saw sings over the ice
       9: 'sawtooth', // T9/T3 — the warren keeps the saw: the iron rung grinds through it
+      10: 'triangle', // T10/T1 — the tier-one stand-in until T3's sine (the Ground is quiet)
     } as const;
     audio.setScale(scaleByTier[tier]);
     audio.setVoice(voiceByTier[tier]);
@@ -1628,12 +1645,21 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
           // 1–80 rng stream stays byte-identical (the unit sweep pins it).
           // Venues keep 0 — no texture on a sponsored floor.
           ...textureParamsForTier(tier),
+          // T10/T1 — the Foundations' purity: tier >= 10 places NO glass of
+          // any kind (no true pair, no silvered door, no standing — and the
+          // heroes below skip with it): beacons + echoes only, the promise
+          // floors 91–100 keep.
+          ...(tier >= 10 ? { pure: true } : {}),
         })
       : generateFloorObjects(floor, { ...M2_PARAMS, ...vp!.objectOverrides });
   const qp = PROFILES[preset];
   const heroes: HeroMirror[] = [];
   const heroStandIns: CheapMirror[] = [];
-  for (const s of mirrorSpots(floor)) {
+  // T10/T1 — the heroes ARE standing mirrors, and floors 91–100 have none:
+  // on a pure floor the two entrance/exit spots stay bare (the Glazier built
+  // the foundations plainly — no glass of any kind).
+  const glassless = pack === null && tier >= 10;
+  for (const s of glassless ? [] : mirrorSpots(floor)) {
     if (qp.heroRt) {
       const m = new HeroMirror(s, { size: qp.heroRtSize });
       heroes.push(m);
@@ -1656,21 +1682,22 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
     }
   });
   const heroRefs: MirrorRef[] = [];
-  for (const cell of [floor.entrance, floor.exit]) {
-    const spot = mirrorSpotFor(floor.grid, cell.x, cell.y);
-    if (spot)
-      heroRefs.push({
-        id: objs.mirrors.length + heroRefs.length,
-        kind: 'standing',
-        x: spot.x,
-        z: spot.z,
-        rotY: spot.rotY,
-        cellX: cell.x,
-        cellY: cell.y,
-        pairId: null,
-        wallDir: spot.dir,
-      });
-  }
+  if (!glassless)
+    for (const cell of [floor.entrance, floor.exit]) {
+      const spot = mirrorSpotFor(floor.grid, cell.x, cell.y);
+      if (spot)
+        heroRefs.push({
+          id: objs.mirrors.length + heroRefs.length,
+          kind: 'standing',
+          x: spot.x,
+          z: spot.z,
+          rotY: spot.rotY,
+          cellX: cell.x,
+          cellY: cell.y,
+          pairId: null,
+          wallDir: spot.dir,
+        });
+    }
   allMirrors = [...objs.mirrors, ...heroRefs];
   // T8 — the Frozen Atrium spawns encased: every fogable pane (the standing
   // glass, the heroes included — they are standing mirrors) arrives frozen;
@@ -2989,15 +3016,17 @@ function frame(now: number): void {
     // descends into the Hall of Ancestors, Dwaar II (20) into the Reflecting
     // Gardens, Dwaar III (30) into the Carnival of Faces, Dwaar IV (40) into
     // the Flood Halls, Dwaar V (50) into the Furnace Wings, Dwaar VI (60)
-    // into the Whisper Library, Dwaar VII (70) into the Frozen Atrium and
-    // Dwaar VIII (80) past the Ground Door — the interstitial cascade,
-    // tier-appropriately worded (T5/T1 ratified: IV joins II and III; T6/T1
-    // ratified: V joins too; T7/T1 ratified: VI joins as well; T8/T1
-    // ratified: VII joins too; T9/T1 ratified: VIII joins as well — the T8
-    // tier screen retired downward and the stairs at 80 open the Warrens);
-    // Dwaar IX (90) raises the TIER IX completion screen (the all-four
-    // apex duel's close) — the campaign is terminal there; descend() is a
-    // no-op, so the screen is the end of the house until tier 10 exists.
+    // into the Whisper Library, Dwaar VII (70) into the Frozen Atrium,
+    // Dwaar VIII (80) into the Warden's Warrens and Dwaar IX (90) into the
+    // Foundations — the interstitial cascade, tier-appropriately worded
+    // (T5/T1 ratified: IV joins II and III; T6/T1: V joins too; T7/T1: VI
+    // joins as well; T8/T1: VII joins too; T9/T1: VIII joins as well;
+    // T10/T1: IX joins as well — EVERY Dwaar cascades now; the T9 tier
+    // screen retired downward and the stairs at 90 open the Foundations);
+    // floor 100 — the Glazier's Ground, THE FINALE — raises the TIER X
+    // completion screen (Truth-Shard X on the standard screen; T3 folds it
+    // into the Ground Door finale). The campaign is TERMINAL there:
+    // descend() is a no-op at 100, the machine's final state.
     phase = clearRun(phase, now);
     if (venue !== null) {
       // M6/T1 — the SIDE-FLOOR clear: the sim halts and NOTHING banks — no
@@ -3027,24 +3056,25 @@ function frame(now: number): void {
       house = { ...house, shards: 0 };
       persist(true); // a cleared floor banks NOW — no debounce window
       updateShardsChip(); // chip flips from `banked (+pending)` to plain banked
-      if (isDwaar(campaign.floor) && tierOf(campaign.floor) === 9) {
-        // Dwaar IX (90): Truth-Shard IX claims the TIER — the full tier
-        // screen (Play again / Stay), the all-four apex duel's close in the
-        // Warden's Warrens. No descendAt arms below, and campaign.descend is
-        // a no-op at 90 — the house ends here until tier 10 exists.
+      if (isFinale(campaign.floor)) {
+        // Floor 100 — the Glazier's Ground: Truth-Shard X claims the house's
+        // LAST tier. The full tier screen (Play again / Stay) holds — the
+        // standard screen with the Truth-Shard X title until T3 folds it
+        // into the Ground Door finale. No descendAt arms below, and
+        // campaign.descend is a no-op at 100 — the machine's final state.
         campaign = completeTier(campaign);
         save = mergeCampaign(save, campaign); // the tier close is a save event
         persist(true);
-        hud.showTierComplete({ tier: 9, floors: TIER_NINE_FLOORS, shards: save.shards });
-        pushCaption('tier', t(lang, 'overlay.tierTitle9')); // the screen's own line
+        hud.showTierComplete({ tier: 10, floors: TIER_TEN_FLOORS, shards: save.shards });
+        pushCaption('tier', t(lang, 'overlay.tierTitle10')); // the screen's own line
       } else {
         if (isDwaar(campaign.floor)) {
           // Dwaar I (10), II (20), III (30), IV (40), V (50), VI (60), VII
-          // (70) and now VIII (80): the Truth-Shard is claimed and banked —
-          // but the descent continues DOWN. The stair door holds 0.8s like
-          // any ramp floor, then opens into the next tier's halls; the
-          // descent re-arms the tier flag so the new tier's floors pay their
-          // first-clear bonus (campaign.descend).
+          // (70), VIII (80) and now IX (90): the Truth-Shard is claimed and
+          // banked — but the descent continues DOWN. The stair door holds
+          // 0.8s like any ramp floor, then opens into the next tier's halls;
+          // the descent re-arms the tier flag so the new tier's floors pay
+          // their first-clear bonus (campaign.descend).
           campaign = completeTier(campaign);
           save = mergeCampaign(save, campaign); // the shard claim is a save event
           persist(true);
@@ -3054,13 +3084,13 @@ function frame(now: number): void {
           // T3/T1: Dwaar II joins Dwaar I. T4/T1: Dwaar III cascades. T5/T1:
           // Dwaar IV joins too (the full screen is the TIER close's now) and
           // each banner names its own shard. T6/T1: Dwaar V joins the cascade.
-          // T7/T1: Dwaar VI joins as well (the full screen is Dwaar VII's —
-          // the stairs at 60 open into the Library). T8/T1: Dwaar VII joins
-          // too (the full screen is Dwaar VIII's — the stairs at 70 open
-          // into the Atrium). T9/T1: Dwaar VIII joins as well (the full
-          // screen is Dwaar IX's — the campaign's terminal close; the
-          // stairs at 80 open the Ground Door).
-          const shardWhich: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 =
+          // T7/T1: Dwaar VI joins as well (the stairs at 60 open into the
+          // Library). T8/T1: Dwaar VII joins too (the stairs at 70 open into
+          // the Atrium). T9/T1: Dwaar VIII joins as well (the stairs at 80
+          // open the Ground Door). T10/T1: Dwaar IX joins as well — EVERY
+          // Dwaar cascades now; the stairs at 90 open the Foundations, and
+          // the full screen is floor 100's (the Ground's Truth-Shard X).
+          const shardWhich: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 =
             campaign.floor === DWAAR_FLOOR
               ? 1
               : campaign.floor === TIER_TWO_FLOORS
@@ -3075,7 +3105,9 @@ function frame(now: number): void {
                         ? 7
                         : campaign.floor === TIER_EIGHT_FLOORS
                           ? 8
-                          : 5;
+                          : campaign.floor === TIER_NINE_FLOORS
+                            ? 9
+                            : 5;
           hud.showShardInterstitial(shardWhich);
           pushCaption(
             'tier',
@@ -3095,7 +3127,9 @@ function frame(now: number): void {
                           ? 'overlay.shardInterstitial7'
                           : shardWhich === 8
                             ? 'overlay.shardInterstitial8'
-                            : 'overlay.shardInterstitial5',
+                            : shardWhich === 9
+                              ? 'overlay.shardInterstitial9'
+                              : 'overlay.shardInterstitial5',
             ),
           ); // the interstitial's own line
         }
@@ -3505,7 +3539,6 @@ if (import.meta.env.DEV || testMode) {
     // T8/T3 — the grid LOS read-out (the same DDA the echo senses use), so a
     // picking e2e can tell wall-blocked sight lines from open ones without
     // duplicating the engine. Read-only.
-    los: (x1: number, y1: number, x2: number, y2: number) =>
-      losClear(floor.grid, x1, y1, x2, y2),
+    los: (x1: number, y1: number, x2: number, y2: number) => losClear(floor.grid, x1, y1, x2, y2),
   };
 }

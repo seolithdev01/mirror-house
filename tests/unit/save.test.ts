@@ -121,9 +121,12 @@ describe('save: validateSave', () => {
   it('rejects malformed progress', () => {
     expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 0 })))).toBeNull();
     // T7 widened the legal floor range to TIER_SEVEN_FLOORS (70); T8 widened
-    // it again to TIER_EIGHT_FLOORS (80); T9 to TIER_NINE_FLOORS (90): 51–90
-    // are valid campaign floors; 91 is the first rejection.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 91 })))).toBeNull();
+    // it again to TIER_EIGHT_FLOORS (80); T9 to TIER_NINE_FLOORS (90); T10 to
+    // TIER_TEN_FLOORS (100): 51–100 are valid campaign floors; 101 is the
+    // first rejection.
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 101 }))),
+    ).toBeNull();
     expect(
       validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 2.5 }))),
     ).toBeNull();
@@ -591,7 +594,9 @@ describe('tier-3 progress range + save round-trip (t3)', () => {
     // T4/T1 — 31 is a LEGAL tier-four floor now; the first rejection moved
     // to 41 (see the tier-four describe below). This pin keeps proving the
     // boundary exists at all: junk past the campaign never validates.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 101 }))),
+    ).toBeNull();
   });
 
   it('a floor-25 and a floor-30 save survive serialize → validate (the tier-3 reload wipe)', () => {
@@ -626,7 +631,9 @@ describe('tier-4 progress range + save round-trip (t4)', () => {
     // T5/T1 — 41 is a LEGAL tier-five floor now; the first rejection moved
     // to 51 (see the tier-five describe below). This pin keeps proving the
     // boundary exists at all: junk past the campaign never validates.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 101 }))),
+    ).toBeNull();
   });
 
   it('a floor-35 and a floor-40 save survive serialize → validate (the tier-4 reload wipe)', () => {
@@ -661,7 +668,9 @@ describe('tier-5 progress range + save round-trip (t5)', () => {
     // T6/T1 — 51 is a LEGAL tier-six floor now; the first rejection moved
     // to 61 (see the tier-six describe below). This pin keeps proving the
     // boundary exists at all: junk past the campaign never validates.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 101 }))),
+    ).toBeNull();
   });
 
   it('a floor-45 and a floor-50 save survive serialize → validate (the tier-5 reload wipe)', () => {
@@ -696,7 +705,9 @@ describe('tier-6 progress range + save round-trip (t6)', () => {
     // T7/T1 — 61 is a LEGAL tier-seven floor now; the first rejection moved
     // to 71 (see the tier-seven describe below). This pin keeps proving the
     // boundary exists at all: junk past the campaign never validates.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 101 }))),
+    ).toBeNull();
   });
 
   it('a floor-55 and a floor-60 save survive serialize → validate (the tier-6 reload wipe)', () => {
@@ -727,12 +738,13 @@ describe('tier-7 progress range + save round-trip (t7)', () => {
     }
   });
 
-  it('rejects 91 — the first floor past TIER_NINE_FLOORS (81 went LEGAL in T9)', () => {
-    // T9/T1 — 81 is a LEGAL tier-nine floor now; the first rejection moved
-    // to 91 (see the tier-nine describe below). This pin keeps proving the
+  it('rejects 101 — the first floor past TIER_TEN_FLOORS (91 went LEGAL in T10)', () => {
+    // T10/T1 — 91 is a LEGAL tier-ten floor now; the first rejection moved
+    // to 101 (see the tier-ten describe below). This pin keeps proving the
     // boundary exists at all: junk past the campaign never validates.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 91 })))).toBeNull();
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 101 }))),
+    ).toBeNull();
   });
 
   it('a floor-65 and a floor-70 save survive serialize → validate (the tier-7 reload wipe)', () => {
@@ -763,11 +775,12 @@ describe('tier-8 progress range + save round-trip (t8)', () => {
     }
   });
 
-  it('rejects 91 — the first floor past TIER_NINE_FLOORS (the campaign is terminal at 90)', () => {
-    // T9/T1 — 81 went LEGAL with the Warrens (see the tier-nine describe
+  it('rejects 101 — the first floor past TIER_TEN_FLOORS (91 went LEGAL in T10)', () => {
+    // T10/T1 — 91 went LEGAL with the Foundations (see the tier-ten describe
     // below); the boundary itself never moved, only its floor number.
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 91 })))).toBeNull();
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 101 }))),
+    ).toBeNull();
   });
 
   it('a floor-75 and a floor-80 save survive serialize → validate (the tier-8 reload wipe)', () => {
@@ -798,9 +811,12 @@ describe('tier-9 progress range + save round-trip (t9)', () => {
     }
   });
 
-  it('rejects 91 — the first floor past TIER_NINE_FLOORS (the campaign is terminal at 90)', () => {
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 91 })))).toBeNull();
-    expect(validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 99 })))).toBeNull();
+  it('rejects 101 — the first floor past TIER_TEN_FLOORS (the campaign walks past 90 in T10)', () => {
+    // T10/T1 — 90 is no longer terminal: the Foundations (91–99) and the
+    // Glazier's Ground (100) went legal; the first rejection moved to 101.
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 101 }))),
+    ).toBeNull();
   });
 
   it('a floor-85 and a floor-90 save survive serialize → validate (the tier-9 reload wipe)', () => {
@@ -816,5 +832,43 @@ describe('tier-9 progress range + save round-trip (t9)', () => {
     );
     expect(last).not.toBeNull();
     expect(last?.progress).toEqual({ seedBase: 'T9KEEP', floor: 90, tierComplete: true });
+  });
+});
+
+// T10/T1 — THE BINDING (the T2 lesson, NINTH and LAST time): the validator
+// widens to TIER_TEN_FLOORS = 100 in the SAME commit the campaign ramps to
+// 100, or every tier-10 save wipes on reload. 101 is the first rejection —
+// the boundary's final floor number.
+describe('tier-10 progress range + save round-trip (t10)', () => {
+  it('accepts tier-ten floors 91, 95 and 100 as valid progress', () => {
+    for (const floor of [91, 95, 100]) {
+      const restored = validateSave(mutated((r) => (r.progress = { ...good.progress, floor })));
+      expect(restored, `floor ${floor}`).not.toBeNull();
+      expect(restored?.progress.floor).toBe(floor);
+    }
+  });
+
+  it('rejects 101 — the first floor past TIER_TEN_FLOORS (the campaign is terminal at 100)', () => {
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 101 }))),
+    ).toBeNull();
+    expect(
+      validateSave(mutated((r) => (r.progress = { ...good.progress, floor: 1000 }))),
+    ).toBeNull();
+  });
+
+  it('a floor-95 and a floor-100 save survive serialize → validate (the tier-10 reload wipe)', () => {
+    const s = defaultSave();
+    s.progress = { seedBase: 'THEGRND', floor: 95, tierComplete: false };
+    const mid = validateSave(JSON.parse(serializeSave(s)));
+    expect(mid).not.toBeNull();
+    expect(mid?.progress.floor).toBe(95);
+    const last = validateSave(
+      JSON.parse(
+        serializeSave({ ...s, progress: { ...s.progress, floor: 100, tierComplete: true } }),
+      ),
+    );
+    expect(last).not.toBeNull();
+    expect(last?.progress).toEqual({ seedBase: 'THEGRND', floor: 100, tierComplete: true });
   });
 });

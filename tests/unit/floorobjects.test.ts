@@ -14,7 +14,15 @@ import {
   M2_PARAMS,
   textureParamsForTier,
 } from '../../src/game/floorObjects';
-import { dwaarGrid, floorParams, floorSeed, isDwaar, tierOf } from '../../src/game/campaign';
+import {
+  dwaarGrid,
+  floorParams,
+  floorSeed,
+  groundGrid,
+  isDwaar,
+  isFinale,
+  tierOf,
+} from '../../src/game/campaign';
 
 const floor = generateFloor({ ...TIER_ONE, seed: 'OBJECTS' });
 
@@ -239,5 +247,99 @@ describe('the apex texture stack — floors 1–80 stay byte-identical (T9/T2)',
         expect(faces >= 2 && faces <= 3, `floor ${f} portraits ${faces}`).toBe(true);
       } else expect(faces, `floor ${f} portraits`).toBe(0);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T10/T1 — the Foundations are GLASSLESS. Floor 91+ places NO mirrors of any
+// kind — no standing, no true pair, no silvered door, no portraits, no
+// pools, no distort — beacons (the pedestals) + echo spawns + patrol anchors
+// only. The gate is the `pure` param on M2Params (the floor builder reads
+// `tierOf(floor) >= 10` and passes it): optional, so every pre-T10 caller —
+// and therefore every floors 1–90 rng stream — stays byte-identical.
+// textureParamsForTier(10) asks zero texture anyway (tier 10 falls through
+// the mapping's default arm) — the pure gate covers the UNCONDITIONAL rules
+// (true pair, silvered, standing) no texture ask can reach.
+// ---------------------------------------------------------------------------
+/** One real tier-ten campaign floor: 91–99 procedural on the Foundations'
+ *  braid, 100 the Ground (hand-authored layout). Seeded per-floor like the
+ *  builder does. */
+const t10Floor = (f: number): Floor => {
+  const seed = floorSeed({ seedBase: 'T10PIN', floor: f, tierComplete: false });
+  const fp = floorParams(f);
+  return isFinale(f)
+    ? floorFromGrid(groundGrid(), seed)
+    : generateFloor({ ...TIER_ONE, seed, braid: fp.braid });
+};
+
+describe('the tier-ten glassless gate — beacons + echoes only (T10/T1)', () => {
+  it('textureParamsForTier(10) asks zero of every rng-gated kind', () => {
+    expect(textureParamsForTier(10)).toEqual({ portraits: 0, water: 0, waterRoll: 3, distort: 0 });
+    // and every Foundations/Ground floor reads tier 10, so the ask is zero per-floor
+    for (let f = 91; f <= 100; f++) expect(tierOf(f)).toBe(10);
+  });
+
+  it('pure: true places ONLY beacons — no glass of any kind, on every floor 91–100', () => {
+    for (let f = 91; f <= 100; f++) {
+      const fp = floorParams(f);
+      const o = generateFloorObjects(t10Floor(f), {
+        ...M2_PARAMS,
+        beacons: fp.beacons,
+        echoes: fp.echoes,
+        ...textureParamsForTier(tierOf(f)),
+        pure: true,
+      });
+      const kinds = new Set(o.mirrors.map((m) => m.kind));
+      expect(kinds, `floor ${f} mirror kinds`).toEqual(new Set(['beacon']));
+      expect(o.mirrors.length, `floor ${f} beacons`).toBe(4);
+      expect(o.echoSpawns.length, `floor ${f} echoes`).toBe(6);
+      expect(o.water, `floor ${f} pools`).toEqual([]);
+    }
+  });
+
+  it('the pure gate keeps beacons deterministic and spread (the pedestals still work)', () => {
+    const ground = t10Floor(100);
+    const a = generateFloorObjects(ground, {
+      ...M2_PARAMS,
+      beacons: floorParams(100).beacons,
+      echoes: floorParams(100).echoes,
+      pure: true,
+    });
+    const b = generateFloorObjects(ground, {
+      ...M2_PARAMS,
+      beacons: floorParams(100).beacons,
+      echoes: floorParams(100).echoes,
+      pure: true,
+    });
+    expect(a).toEqual(b);
+    const beacons = a.mirrors.filter((m) => m.kind === 'beacon');
+    expect(beacons).toHaveLength(4);
+    for (let i = 0; i < beacons.length; i++)
+      for (let j = i + 1; j < beacons.length; j++) {
+        const cheb = Math.max(
+          Math.abs(beacons[i]!.cellX - beacons[j]!.cellX),
+          Math.abs(beacons[i]!.cellY - beacons[j]!.cellY),
+        );
+        expect(cheb, `beacons ${i}/${j} spread`).toBeGreaterThanOrEqual(4);
+      }
+  });
+
+  it('omitting pure keeps the M2 behavior exact — every pre-T10 caller is byte-identical', () => {
+    // same tier-ten floor WITHOUT the gate: the full M2 board comes back
+    // (the gate is opt-in per floor, not a global flip)
+    const f91 = t10Floor(91);
+    const plain = generateFloorObjects(f91, {
+      ...M2_PARAMS,
+      beacons: floorParams(91).beacons,
+      echoes: floorParams(91).echoes,
+    });
+    expect(plain.mirrors.filter((m) => m.kind === 'standing').length).toBe(M2_PARAMS.standing);
+    expect(plain.mirrors.filter((m) => m.kind === 'true')).toHaveLength(2);
+    expect(plain.mirrors.filter((m) => m.kind === 'silvered')).toHaveLength(1);
+    // and a tier-one floor with the gate explicitly FALSE reads the same as
+    // omitted — no caller can be surprised
+    expect(generateFloorObjects(floor, { ...M2_PARAMS, pure: false })).toEqual(
+      generateFloorObjects(floor),
+    );
   });
 });

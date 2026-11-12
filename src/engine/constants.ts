@@ -107,12 +107,19 @@ export const TIER_SEVEN_FLOORS = 70;
 export const TIER_EIGHT_FLOORS = 80;
 // T9 — the Warden's Warrens (Act III opens): floors 81–89 procedural ramp,
 // 90 = Dwaar IX (the all-four apex duel in the warren — Truth-Shard IX
-// closes the tier on the full tier screen; the campaign is terminal there
-// until tier 10 exists: descend() is a no-op at 90). ACT_III_FLOOR is the
-// Ground Door banner's floor — the first Warrens build of a session raises
-// `ACT III — THE GROUND DOOR` once.
+// closes the tier; T10/T1 retired the T9-era terminal: IX's claim cascades
+// to the 1.8s interstitial and descend() walks on to the Foundations).
+// ACT_III_FLOOR is the Ground Door banner's floor — the first Warrens build
+// of a session raises `ACT III — THE GROUND DOOR` once.
 export const TIER_NINE_FLOORS = 90;
 export const ACT_III_FLOOR = 81;
+// T10 — THE FINALE: the Glazier's tier. Floors 91–99 are the FOUNDATIONS —
+// the ramp's last procedural floors, stripped of every mirror and Sentinel —
+// and 100 is the GROUND: the Glazier's own floor (hand-authored layout, no
+// Dwaar — the ending has the Glazier and the Door, not a threshold hall).
+// The validator widens to TIER_TEN_FLOORS = 100 in the SAME commit (the
+// ×9 binding held eight times; this is the last widening).
+export const TIER_TEN_FLOORS = 100;
 // T7 — the beat-walker's RETURN: Taal's rest (his first, 51–59 in T6)
 // extends through 65 and he walks the Library's last five floors (66–70) —
 // his beat ticks are noise he ignores but you cannot miss.

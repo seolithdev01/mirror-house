@@ -79,6 +79,9 @@ describe('palette', () => {
     // T9/T3 — the Warden's Warrens dress tier 9 (the last tier-one stand-in
     // retired — every tier's dressing was a tier-one stand-in once)
     expect(paletteForTier(9)).toBe(TIER_NINE_PALETTE);
+    // T10/T1 — the Ground keeps the tier-one stand-in until T3 delivers the
+    // stone palette (the same retire-the-stand-in pattern one last tier down)
+    expect(paletteForTier(10)).toBe(TIER_ONE_PALETTE);
   });
 
   // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):
@@ -316,7 +319,7 @@ describe('palette', () => {
   // last time (the T2 precedent): every palette-driven pattern re-dresses
   // itself with zero structural change — and the LAST tier-one stand-in
   // retires with this commit.
-  it('tier-nine values are exact (Warden\'s Warrens: iron/warden-steel/iron-red)', () => {
+  it("tier-nine values are exact (Warden's Warrens: iron/warden-steel/iron-red)", () => {
     expect(TIER_NINE_PALETTE).toEqual({
       void: 0x0a0c0e,
       floorBase: 0x1a1e22,

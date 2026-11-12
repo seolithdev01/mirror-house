@@ -216,10 +216,12 @@ export const TIER_NINE_PALETTE: TierPalette = {
  *  T8/T3: tier 8 wears the Frozen Atrium's ice-on-void-blue — the documented
  *  tier-one stand-in (T8/T1's fallthrough) is retired here, the same
  *  retire-the-stand-in pattern one tier down.
- *  T9/T3: tier 9 wears the Warden's Warrens' iron-on-near-void — the LAST
- *  documented tier-one stand-in (T9/T1's fallthrough) is retired here. Every
- *  tier now dresses as itself. */
-export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9): TierPalette {
+ *  T9/T3: tier 9 wears the Warden's Warrens' iron-on-near-void — the tier-one
+ *  stand-in (T9/T1's fallthrough) retires there. T10/T1: tier 10 REOPENS the
+ *  stand-in — the Foundations and the Ground keep the tier-one dressing until
+ *  T3 delivers the stone palette, the same retire-the-stand-in pattern one
+ *  last tier down. */
+export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
   if (tier === 4) return TIER_FOUR_PALETTE;
@@ -227,7 +229,10 @@ export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9): TierPal
   if (tier === 6) return TIER_SIX_PALETTE;
   if (tier === 7) return TIER_SEVEN_PALETTE; // T7/T3 — the stand-in retires
   if (tier === 8) return TIER_EIGHT_PALETTE; // T8/T3 — the stand-in retires
-  if (tier === 9) return TIER_NINE_PALETTE; // T9/T3 — the LAST stand-in retires
+  if (tier === 9) return TIER_NINE_PALETTE; // T9/T3 — the stand-in retires
+  // T10/T1 — the Foundations and the Ground keep the tier-one stand-in (the
+  // documented fallthrough, the same pattern every tier wore once); T3
+  // delivers the stone palette and retires it one last time.
   return TIER_ONE_PALETTE;
 }
 

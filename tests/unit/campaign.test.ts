@@ -19,8 +19,11 @@ import {
   dwaarGrid,
   floorParams,
   floorSeed,
+  GROUND_LAYOUT,
   gherPresent,
+  groundGrid,
   isDwaar,
+  isFinale,
   newCampaign,
   taalPresent,
   tierOf,
@@ -38,6 +41,7 @@ import {
   TIER_FOUR_FLOORS,
   TIER_SEVEN_FLOORS,
   TIER_SIX_FLOORS,
+  TIER_TEN_FLOORS,
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
 } from '../../src/engine/constants';
@@ -519,15 +523,16 @@ describe('descend', () => {
     expect(d).toEqual({ seedBase: 'DDDD', floor: 81, tierComplete: false });
   });
 
-  it('T9 — descend at floor 90 is a NO-OP returning the same object (terminal until tier 10)', () => {
-    // Dwaar IX closes the campaign's fifth act of floors: there is no floor
-    // 91, so the stair door at 90 opens onto the tier screen and the descend
-    // itself must refuse — the SAME object back, not a copy.
+  it('T10 — the T9 no-op at 90 is RETIRED: 90 → 91 is a real descent now', () => {
+    // the terminal floor moved to 100 (Act III's close EXISTS now — the
+    // Glazier's Ground does); purity preserved exactly as at every earlier
+    // terminus retirement (40 in T5, 50 in T6, 60 in T7, 70 in T8, 80 in T9)
     const at90 = { seedBase: 'ZZZZ', floor: TIER_NINE_FLOORS, tierComplete: true };
-    expect(descend(at90)).toBe(at90);
-    expect(descend(at90)).toEqual({ seedBase: 'ZZZZ', floor: 90, tierComplete: true });
-    // the flag survives the no-op untouched (no re-arm past the tier close)
-    expect(at90.tierComplete).toBe(true);
+    const d = descend(at90);
+    expect(d.floor).toBe(91);
+    expect(d).not.toBe(at90);
+    expect(at90.floor).toBe(90); // original untouched
+    expect(d.tierComplete).toBe(false); // leaving Dwaar IX re-arms the flag
   });
 });
 
@@ -801,12 +806,13 @@ describe('floorParams tier-two ramp (floors 11–20 pinned)', () => {
       expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(4000);
   });
 
-  it('clamps floors past the campaign to the terminal floor (T9: Dwaar IX)', () => {
+  it('clamps floors past the campaign to the terminal floor (T10: the Ground)', () => {
     // T3 pinned this to the Dwaar III values; T4 moved it to Dwaar IV's row;
     // T5 to Dwaar V's; T6 to Dwaar VI's; T7 to Dwaar VII's; T8 to Dwaar
-    // VIII's; T9 widens the campaign to 90 — the clamp lands on Dwaar IX's row.
-    expect(floorParams(99)).toEqual(floorParams(TIER_NINE_FLOORS));
-    expect(floorParams(99)).not.toEqual(floorParams(TIER_EIGHT_FLOORS));
+    // VIII's; T9 to Dwaar IX's; T10 widens the campaign to 100 — the clamp
+    // lands on floor 100's row (the Ground itself, 0.08 braid / 2200 ms).
+    expect(floorParams(999)).toEqual(floorParams(TIER_TEN_FLOORS));
+    expect(floorParams(999)).not.toEqual(floorParams(TIER_NINE_FLOORS));
   });
 
   it('leaves every tier-one pin untouched (the tier-one experience is frozen)', () => {
@@ -1658,14 +1664,12 @@ describe('sentinel presence (the rotation)', () => {
     // the Furnace stays his home tier (50–60, untouched by T7); the quiet
     // stacks give him the whole tier off except the duet — the ratified
     // Encircler cameo, Taal + Gher in the library
-    for (const floor of [61, 64, 65, 66, 69]) expect(gherPresent(floor), `floor ${floor}`).toBe(
-      false,
-    );
+    for (const floor of [61, 64, 65, 66, 69])
+      expect(gherPresent(floor), `floor ${floor}`).toBe(false);
     expect(gherPresent(70)).toBe(true);
     // and every floor ≤ 60 reads exactly as the T6 rotation did
-    for (const floor of [50, 51, 55, 59, 60]) expect(gherPresent(floor), `floor ${floor}`).toBe(
-      true,
-    );
+    for (const floor of [50, 51, 55, 59, 60])
+      expect(gherPresent(floor), `floor ${floor}`).toBe(true);
     for (const floor of [41, 45, 49]) expect(gherPresent(floor), `floor ${floor}`).toBe(false);
   });
 
@@ -1673,9 +1677,8 @@ describe('sentinel presence (the rotation)', () => {
     for (const floor of [61, 64, 65, 66, 69, 70])
       expect(aavartPresent(floor), `floor ${floor}`).toBe(false);
     // and every floor ≤ 60 reads exactly as the T6 rotation did
-    for (const floor of [50, 51, 55, 59, 60]) expect(aavartPresent(floor), `floor ${floor}`).toBe(
-      true,
-    );
+    for (const floor of [50, 51, 55, 59, 60])
+      expect(aavartPresent(floor), `floor ${floor}`).toBe(true);
     for (const floor of [41, 45, 49]) expect(aavartPresent(floor), `floor ${floor}`).toBe(false);
   });
 
@@ -1714,12 +1717,10 @@ describe('sentinel presence (the rotation)', () => {
     // sits the atrium out, the frozen floors belong to Chhaya and Aavart
     for (const floor of [71, 74, 79]) expect(gherPresent(floor), `floor ${floor}`).toBe(false);
     // and every floor ≤ 70 reads exactly as the shipped t7 rotation did
-    for (const floor of [50, 55, 59, 60, 70]) expect(gherPresent(floor), `floor ${floor}`).toBe(
-      true,
-    );
-    for (const floor of [41, 45, 49, 61, 65, 69]) expect(gherPresent(floor), `floor ${floor}`).toBe(
-      false,
-    );
+    for (const floor of [50, 55, 59, 60, 70])
+      expect(gherPresent(floor), `floor ${floor}`).toBe(true);
+    for (const floor of [41, 45, 49, 61, 65, 69])
+      expect(gherPresent(floor), `floor ${floor}`).toBe(false);
     expect(gherPresent(80)).toBe(true);
   });
 
@@ -1838,7 +1839,8 @@ describe('DWAAR_V_LAYOUT — the sunken arena (floor 50, Act II closes)', () => 
 
   it('is symmetric under 180° rotation', () => {
     for (let y = 0; y < 13; y++)
-      for (let x = 0; x < 13; x++) expect(DWAAR_V_LAYOUT[y]![x]).toBe(DWAAR_V_LAYOUT[12 - y]![12 - x]);
+      for (let x = 0; x < 13; x++)
+        expect(DWAAR_V_LAYOUT[y]![x]).toBe(DWAAR_V_LAYOUT[12 - y]![12 - x]);
   });
 
   it('holds 101 open cells — in the ~95–105 band the plan targets', () => {
@@ -2455,5 +2457,380 @@ describe('dwaarGrid floor 90', () => {
     expect(dwaarGrid(TIER_SIX_FLOORS).open.length).toBe(101);
     expect(dwaarGrid(TIER_SEVEN_FLOORS).open.length).toBe(95);
     expect(dwaarGrid(TIER_EIGHT_FLOORS).open.length).toBe(97);
+  });
+});
+
+// T10/T1 — THE FINALE. The campaign's last widening: TIER_TEN_FLOORS = 100,
+// floors 91–99 the Foundations ramp (echoes 6 all; beacons 4; braid
+// 0.10 + 0.002·(f−91) — the tightest tread in the game; chhayaDelay
+// max(2300, 2900 − 50·(f−91))), then floor 100: the Glazier's Ground —
+// echoes 6, beacons 4, braid 0.08 (the Ground is open — he IS the
+// difficulty), chhayaDelay 2200. Floor 100 is NOT a Dwaar: it is the ending
+// (isFinale), the Sentinels rest the whole tier, and descend() is the
+// machine's final no-op there.
+describe('T10 — campaign constants', () => {
+  it('pins the tier-ten campaign constant — 100 floors, the Ground on the last (THE FINALE)', () => {
+    expect(TIER_TEN_FLOORS).toBe(100);
+    expect(TIER_TEN_FLOORS).toBe(TIER_NINE_FLOORS + 10); // a full tier below the Warrens
+  });
+
+  it('pins ACT_III_FLOOR unchanged at 81 (the banner belongs to the Warrens, not the tier)', () => {
+    expect(ACT_III_FLOOR).toBe(81);
+    expect(ACT_III_FLOOR).toBeLessThan(TIER_NINE_FLOORS); // the t9 pin holds
+  });
+});
+
+describe('T10 — tierOf', () => {
+  it('splits the campaign at floor 90: 91–100 → 10 (the Glazier\u2019s tier)', () => {
+    expect(tierOf(91)).toBe(10);
+    expect(tierOf(94)).toBe(10);
+    expect(tierOf(95)).toBe(10);
+    expect(tierOf(99)).toBe(10);
+    expect(tierOf(100)).toBe(10);
+    // 90 keeps its own tier — and 100 is a tier of its OWN too, never a
+    // relabel of anything below (the dressing gates and the tier screens
+    // read equality and must keep reading false)
+    expect(tierOf(90)).toBe(9);
+    expect(tierOf(100)).not.toBe(2);
+    expect(tierOf(100)).not.toBe(3);
+    expect(tierOf(100)).not.toBe(4);
+    expect(tierOf(100)).not.toBe(5);
+    expect(tierOf(100)).not.toBe(6);
+    expect(tierOf(100)).not.toBe(7);
+    expect(tierOf(100)).not.toBe(8);
+    expect(tierOf(100)).not.toBe(9);
+  });
+
+  it('T10 — the tier-exclusive dressing gates stay put on the Foundations too', () => {
+    // the Foundations hang no ancestor portraits, pool no water and mount no
+    // carnival glass — the tier's teeth are its LONELINESS (no Sentinels, no
+    // mirrors at all), and the floorObjects rng streams for floors 1–90 stay
+    // pinned (the tier-10 draws are new-floor-only)
+    for (let f = TIER_NINE_FLOORS + 1; f <= TIER_TEN_FLOORS; f++) {
+      expect(tierOf(f) === 2, `floor ${f} portraits gate`).toBe(false);
+      expect(tierOf(f) === 3, `floor ${f} water gate`).toBe(false);
+      expect(tierOf(f) === 4, `floor ${f} distort gate`).toBe(false);
+      expect(tierOf(f) === 9, `floor ${f} warrens texture gate`).toBe(false);
+    }
+  });
+});
+
+describe('T10 — isFinale (the ending, not a Dwaar)', () => {
+  it('is true for floor 100 ONLY', () => {
+    for (let f = 1; f <= 99; f++) expect(isFinale(f), `floor ${f}`).toBe(false);
+    expect(isFinale(100)).toBe(true);
+    expect(isFinale(TIER_TEN_FLOORS)).toBe(true);
+  });
+
+  it('floor 100 is NOT a Dwaar — the Ground has the Glazier and the Door, not a threshold hall', () => {
+    expect(isDwaar(100)).toBe(false);
+    expect(isDwaar(91)).toBe(false);
+    expect(isDwaar(95)).toBe(false);
+    expect(isDwaar(99)).toBe(false);
+    // and the nine Dwaars keep their seats — 10..90, exactly nine thresholds
+    for (const floor of [10, 20, 30, 40, 50, 60, 70, 80, 90])
+      expect(isDwaar(floor), `floor ${floor}`).toBe(true);
+  });
+});
+
+// T10/T1 — THE LONELIEST TIER (the ratified rotation): the four Sentinels
+// rest 91–100 ENTIRELY — the Foundations are walked alone (you, the Echoes,
+// and the house holding its breath), and on floor 100 the GLAZIER walks
+// alone (T2 builds him; he is not a Sentinel and has no presence gate here).
+// Chhaya has no gate, as always — she walks every floor. Floors 1–90 read
+// EXACTLY as the shipped t9 rotation did.
+describe('T10 — the sentinel rotation rests 91–100 (the loneliest tier)', () => {
+  it('taalPresent: the apex streak ENDS — he rests 91–100', () => {
+    // from the Dwaar VIII duel call (80) onward he never rested — until now:
+    // the Foundations keep no beat, and the Ground keeps none either
+    for (const floor of [91, 94, 95, 99, 100])
+      expect(taalPresent(floor), `floor ${floor} taal rests`).toBe(false);
+    // every shipped row ≤ 90 is untouched
+    for (const floor of [80, 85, 89, 90])
+      expect(taalPresent(floor), `floor ${floor} taal walks`).toBe(true);
+  });
+
+  it('gherPresent: rests 91–100', () => {
+    for (const floor of [91, 94, 95, 99, 100])
+      expect(gherPresent(floor), `floor ${floor} gher rests`).toBe(false);
+    for (const floor of [80, 85, 89, 90])
+      expect(gherPresent(floor), `floor ${floor} gher walks`).toBe(true);
+  });
+
+  it('aavartPresent: rests 91–100', () => {
+    for (const floor of [91, 94, 95, 99, 100])
+      expect(aavartPresent(floor), `floor ${floor} aavart rests`).toBe(false);
+    for (const floor of [80, 85, 89, 90])
+      expect(aavartPresent(floor), `floor ${floor} aavart walks`).toBe(true);
+  });
+
+  it('T10 — the truth table extends: 91/95/99/100 are Chhaya ALONE (rows 1–90 IDENTICAL to shipped t9)', () => {
+    // the shipped t9 rotation, frozen INTO this test as the identity oracle:
+    // every row 1–90 must read EXACTLY as it did the day the Warrens closed.
+    const shippedT9 = (f: number): [boolean, boolean, boolean] => {
+      const taal = (f >= 11 && f <= 50) || (f >= 66 && f <= 70) || f >= 80;
+      const gher = (f >= 21 && f <= 40) || (f >= 50 && f <= 60) || f === 70 || f === 80 || f > 80;
+      const aavart = (f >= 31 && f <= 40) || (f >= 50 && f <= 60) || f > 70;
+      return [taal, gher, aavart];
+    };
+    for (let f = 1; f <= 90; f++) {
+      const [taal, gher, aavart] = shippedT9(f);
+      expect(taalPresent(f), `floor ${f} taal (shipped t9 row)`).toBe(taal);
+      expect(gherPresent(f), `floor ${f} gher (shipped t9 row)`).toBe(gher);
+      expect(aavartPresent(f), `floor ${f} aavart (shipped t9 row)`).toBe(aavart);
+    }
+    // the extension: the Foundations and the Ground are the house holding its
+    // breath — nobody walks them but Chhaya's shadow (and, on 100, the
+    // Glazier himself — T2's entity, not a Sentinel)
+    const table: [number, boolean, boolean, boolean][] = [
+      [90, true, true, true], // Dwaar IX keeps the apex duel
+      [91, false, false, false],
+      [95, false, false, false],
+      [99, false, false, false],
+      [100, false, false, false],
+    ];
+    for (const [f, taal, gher, aavart] of table) {
+      expect(taalPresent(f), `floor ${f} taal`).toBe(taal);
+      expect(gherPresent(f), `floor ${f} gher`).toBe(gher);
+      expect(aavartPresent(f), `floor ${f} aavart`).toBe(aavart);
+    }
+  });
+});
+
+// T10/T1 — the Foundations ramp (91–99) + the Ground's own row (100).
+describe('floorParams tier-ten ramp (floors 91–100 pinned)', () => {
+  // echoes = 6 on EVERY floor (no Dwaar here — the Ground carries the same 6);
+  // beacons = 4 (the pedestals); braid = 0.10 + 0.002*(f-91), floor 100 0.08;
+  // chhayaDelayMs = max(2300, 2900 - 50*(f-91)), floor 100 2200.
+  const pinned: [number, number, number, number, number][] = [
+    // floor, echoes, beacons, braid, chhayaDelayMs
+    [91, 6, 4, 0.1, 2900],
+    [92, 6, 4, 0.102, 2850],
+    [93, 6, 4, 0.104, 2800],
+    [94, 6, 4, 0.106, 2750],
+    [95, 6, 4, 0.108, 2700],
+    [96, 6, 4, 0.11, 2650],
+    [97, 6, 4, 0.112, 2600],
+    [98, 6, 4, 0.114, 2550],
+    [99, 6, 4, 0.116, 2500],
+    [100, 6, 4, 0.08, 2200],
+  ];
+
+  it('matches the pinned ramp for every tier-ten floor', () => {
+    expect(pinned.length).toBe(TIER_TEN_FLOORS - TIER_NINE_FLOORS);
+    for (const [floor, echoes, beacons, braid, delay] of pinned) {
+      const p = floorParams(floor);
+      expect(p.echoes, `floor ${floor} echoes`).toBe(echoes);
+      expect(p.beacons, `floor ${floor} beacons`).toBe(beacons);
+      expect(p.braid, `floor ${floor} braid`).toBeCloseTo(braid, 10);
+      expect(p.chhayaDelayMs, `floor ${floor} chhayaDelayMs`).toBe(delay);
+    }
+  });
+
+  it('delays never drop below the 2300 clamp on the Foundations', () => {
+    for (let f = TIER_NINE_FLOORS + 1; f < TIER_TEN_FLOORS; f++)
+      expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(2300);
+  });
+
+  it('the Ground braids LOOSER than the Foundations (0.08 — the Glazier is the difficulty)', () => {
+    expect(floorParams(TIER_TEN_FLOORS).braid).toBeCloseTo(0.08, 10);
+    expect(floorParams(TIER_TEN_FLOORS).braid).toBeLessThan(floorParams(91).braid);
+    expect(floorParams(TIER_TEN_FLOORS).chhayaDelayMs).toBe(2200); // she does not wait at the end
+  });
+
+  it('leaves every earlier tier pin untouched (floors 1–90 are frozen)', () => {
+    // braid rides toBeCloseTo — 0.4 + 0.004*9 is not the literal 0.436 in
+    // IEEE doubles (the elder suites' documented pitfall); the ramp math
+    // itself is untouched, only its precision
+    const p90 = floorParams(90);
+    expect(p90.echoes).toBe(6);
+    expect(p90.beacons).toBe(4);
+    expect(p90.braid).toBeCloseTo(0.436, 10);
+    expect(p90.chhayaDelayMs).toBe(2300);
+    expect(floorParams(81)).toEqual({ echoes: 5, beacons: 4, braid: 0.4, chhayaDelayMs: 3000 });
+    expect(floorParams(10)).toEqual({ echoes: 4, beacons: 4, braid: 0.21, chhayaDelayMs: 4000 });
+  });
+});
+
+// T10/T1 — descend: 90 → 91 walks (the T9 terminus retired), 100 is THE
+// terminal — the machine's final state, a same-object no-op.
+describe('T10 — descend walks into the Foundations and stops at the Ground', () => {
+  it('walks the whole campaign 1..100', () => {
+    let c = newCampaign('CCCC');
+    for (let i = 2; i <= TIER_TEN_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(TIER_TEN_FLOORS);
+  });
+
+  it('leaving Dwaar IX re-arms the tier flag for tier ten (the Foundations open)', () => {
+    // the T10 ratification: Dwaar IX no longer CLOSES the campaign — the
+    // claim at 90 banks (as a 1.8s interstitial now, main's wiring) and the
+    // stairs past the Warrens clear the flag so the Foundations pay their
+    // first-clear bonus.
+    const d = descend({ seedBase: 'DDDD', floor: TIER_NINE_FLOORS, tierComplete: true });
+    expect(d).toEqual({ seedBase: 'DDDD', floor: 91, tierComplete: false });
+  });
+
+  it('descend at floor 100 is a NO-OP returning the same object (THE terminal — the machine\u2019s final state)', () => {
+    // the Ground is the ending: there is no floor 101, the stair door at 100
+    // opens onto the finale, and the descend itself must refuse — the SAME
+    // object back, not a copy. Every earlier terminus (40/50/60/70/80/90)
+    // was retired by the next tier; this one is the last.
+    const at100 = { seedBase: 'GGGG', floor: TIER_TEN_FLOORS, tierComplete: true };
+    expect(descend(at100)).toBe(at100);
+    expect(descend(at100)).toEqual({ seedBase: 'GGGG', floor: 100, tierComplete: true });
+    // the flag survives the no-op untouched (no re-arm past the ending)
+    expect(at100.tierComplete).toBe(true);
+  });
+});
+
+// T10/T1 — completeTier: floor 100 claims the tier too (Truth-Shard X), even
+// though the Ground is not a Dwaar — the finale's screen names the shard.
+describe('T10 — completeTier claims the Ground', () => {
+  it('flags completion at floor 100 (Truth-Shard X)', () => {
+    let c = newCampaign('DDDD');
+    for (let i = 1; i < TIER_TEN_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(100);
+    expect(c.tierComplete).toBe(false); // the descent from 90 re-armed it
+    const done = completeTier(c);
+    expect(done.tierComplete).toBe(true);
+    expect(done).not.toBe(c); // pure
+    expect(c.tierComplete).toBe(false);
+  });
+
+  it('is a no-op on tier-ten procedural floors 91..99', () => {
+    for (const floor of [91, 95, 99]) {
+      const c = { seedBase: 'MMMM', floor, tierComplete: false };
+      expect(completeTier(c), `floor ${floor}`).toEqual(c);
+    }
+  });
+});
+
+// T10/T1 — the Glazier's Ground: a PLAIN 13×13 maze (the Glazier built the
+// foundations plainly — no ring, no rooms, no wall band, no gimmick; he IS
+// the difficulty). 95 open cells: staggered studs and short runs breaking
+// the lanes, nothing more. 180°-SYMMETRY IS NOT A GROUND PREDICATE (the
+// elder halls mirrored the exit onto the entrance; the Ground need not —
+// this layout is asymmetric by design and pinned as achieved). All 95 open
+// cells form one connected component; the entrance is (1,1) row-major and
+// the exit (11,11) is the UNIQUELY farthest open cell at 20 steps (≥ 18).
+describe('GROUND_LAYOUT — the Glazier\u2019s Ground (floor 100, the ending)', () => {
+  const isOpen = (x: number, y: number): boolean => GROUND_LAYOUT[y]![x] === '.';
+  const count = (layout: readonly string[]): number =>
+    layout.reduce((n, row) => n + [...row].filter((c) => c === '.').length, 0);
+
+  it('is 13 rows of 13 chars, walls and open cells only', () => {
+    expect(GROUND_LAYOUT.length).toBe(13);
+    for (const row of GROUND_LAYOUT) {
+      expect(row.length).toBe(13);
+      expect(row).toMatch(/^[#.]{13}$/);
+    }
+  });
+
+  it('holds 95 open cells — the ~95 the plan targets', () => {
+    expect(count(GROUND_LAYOUT)).toBe(95);
+    expect(count(GROUND_LAYOUT)).toBeGreaterThanOrEqual(90);
+    expect(count(GROUND_LAYOUT)).toBeLessThanOrEqual(100);
+  });
+
+  it('is PLAIN: no wall run longer than 3 cells and no 3×3 open chamber', () => {
+    // the elder halls' grand rings, shelves and wall bands are gone — the
+    // foundations are scattered studs and short runs, nothing grander
+    for (let y = 1; y < 12; y++) {
+      let run = 0;
+      for (let x = 1; x < 12; x++) {
+        run = isOpen(x, y) ? 0 : run + 1;
+        expect(run, `row ${y} wall run ending col ${x}`).toBeLessThanOrEqual(3);
+      }
+    }
+    for (let x = 1; x < 12; x++) {
+      let run = 0;
+      for (let y = 1; y < 12; y++) {
+        run = isOpen(x, y) ? 0 : run + 1;
+        expect(run, `col ${x} wall run ending row ${y}`).toBeLessThanOrEqual(3);
+      }
+    }
+    // and no 3×3 open room — the Ground is a maze, not a court
+    let rooms = 0;
+    for (let y = 1; y <= 10; y++)
+      for (let x = 1; x <= 10; x++) {
+        let all = true;
+        for (let yy = y; yy <= y + 2; yy++)
+          for (let xx = x; xx <= x + 2; xx++) if (!isOpen(xx, yy)) all = false;
+        if (all) rooms++;
+      }
+    expect(rooms).toBe(0);
+  });
+
+  it('is maze-shaped: it carries dead ends (not a field)', () => {
+    const DIRS: ReadonlyArray<readonly [number, number]> = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ];
+    const deadEnds: Array<[number, number]> = [];
+    for (let y = 1; y < 12; y++)
+      for (let x = 1; x < 12; x++) {
+        if (!isOpen(x, y)) continue;
+        const n = DIRS.filter(([dx, dy]) => isOpen(x + dx, y + dy)).length;
+        if (n === 1) deadEnds.push([x, y]);
+      }
+    expect(deadEnds.length).toBe(2); // pinned as achieved — a plain maze keeps a few caches
+  });
+
+  it('all open cells are connected (BFS via maze bfsDistances)', () => {
+    const { grid, open } = layoutGrid(GROUND_LAYOUT);
+    const entrance = open[0]!; // first open cell row-major = (1,1)
+    const dist = bfsDistances(grid, entrance);
+    const reached = Array.from(dist).filter((d) => d >= 0).length;
+    expect(open.length).toBe(95);
+    expect(reached).toBe(open.length); // every open cell reachable, walls sealed off
+  });
+
+  it('entrance/exit are derivable: (1,1) → farthest open cell (11,11), UNIQUELY at 20 steps (≥ 18)', () => {
+    const { grid, open } = layoutGrid(GROUND_LAYOUT);
+    const entrance = open[0]!;
+    expect(entrance).toEqual({ x: 1, y: 1 });
+    const dist = bfsDistances(grid, entrance);
+    let best = 0;
+    let ties = 0;
+    for (let i = 1; i < dist.length; i++) {
+      if (dist[i]! > dist[best]!) {
+        best = i;
+        ties = 1;
+      } else if (dist[i] === dist[best]) ties++;
+    }
+    expect(ties, 'the farthest cell is UNIQUE').toBe(1);
+    const exit: CellIndex = { x: best % 13, y: Math.floor(best / 13) };
+    expect(exit).toEqual({ x: 11, y: 11 }); // the Door stands at the mirror corner
+    expect(dist[best]).toBe(20); // a real traverse of the foundations
+    expect(dist[best]).toBeGreaterThanOrEqual(18);
+  });
+});
+
+describe('groundGrid', () => {
+  it('derives the Ground\u2019s open-cell set from GROUND_LAYOUT', () => {
+    const g = groundGrid();
+    expect(g.width).toBe(13);
+    expect(g.height).toBe(13);
+    expect(g.open.length).toBe(95);
+    expect(g.open[0]).toEqual({ x: 1, y: 1 });
+    for (const c of g.open) expect(GROUND_LAYOUT[c.y]![c.x]).toBe('.');
+    const seen = new Set(g.open.map((c) => `${c.x},${c.y}`));
+    expect(seen.size).toBe(g.open.length); // no duplicates
+    const sorted = [...g.open].sort((a, b) => a.y - b.y || a.x - b.x);
+    expect(g.open).toEqual(sorted); // row-major order (entrance = first open cell)
+  });
+
+  it('keeps every Dwaar hall on its own floor — all nine elders unchanged', () => {
+    expect(dwaarGrid().open.length).toBe(83); // Dwaar I unchanged
+    expect(dwaarGrid(TIER_TWO_FLOORS).open.length).toBe(96);
+    expect(dwaarGrid(TIER_THREE_FLOORS).open.length).toBe(107);
+    expect(dwaarGrid(TIER_FOUR_FLOORS).open.length).toBe(101);
+    expect(dwaarGrid(TIER_FIVE_FLOORS).open.length).toBe(101);
+    expect(dwaarGrid(TIER_SIX_FLOORS).open.length).toBe(101);
+    expect(dwaarGrid(TIER_SEVEN_FLOORS).open.length).toBe(95);
+    expect(dwaarGrid(TIER_EIGHT_FLOORS).open.length).toBe(97);
+    expect(dwaarGrid(TIER_NINE_FLOORS).open.length).toBe(85);
   });
 });
