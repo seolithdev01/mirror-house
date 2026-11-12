@@ -2844,3 +2844,115 @@ test('t8: aavart ambush returns', async ({ page }) => {
   );
   expect(errors).toEqual([]);
 });
+
+// T9/T3 — Act III opens end to end. Floor 81 dresses tier 9 in the Warden's
+// Warrens' iron (the LAST tier-one stand-in retires — its census is pinned
+// absent here), grinds the iron pentatonic through the saw, and the Act III
+// banner rises on the first floor-81 build (its 3s clock hides it; the same
+// once-per-session contract one act down). The apex holds EVERYTHING at
+// once: all four Sentinels walk the floor (Chhaya needs her delay grace to
+// surface — the poll below), the heat returns, and the texture stack comes
+// back thin — 2–3 water pools, 1–2 distort panes.
+test('t9: floor 81 opens act three', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T9RUN&floor=81');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      taal: h.taalPos(),
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+      echoes: h.enemyCount(),
+      mirrors: h.mirrors(),
+      audio: h.audioState(),
+      heat: h.heat(),
+    };
+  });
+  expect(snap.tier).toBe(9);
+  expect(snap.floor).toBe(81);
+  expect(snap.taal, 'the apex — the Sentinel never rests again').not.toBeNull();
+  expect(snap.gher, 'the apex — the Encircler never rests again').not.toBeNull();
+  expect(snap.avart, 'the apex — the Ambusher never rests again').not.toBeNull();
+  expect(snap.echoes, 'the warren is the swarm — 5 wardens on a tier-9 floor').toBe(5);
+  expect(snap.mirrors.water, 'the pools return thinned (2–3)').toBeGreaterThanOrEqual(2);
+  expect(snap.mirrors.distort, 'the distort panes return thin (1–2)').toBeGreaterThanOrEqual(1);
+  expect(snap.mirrors.portraits, 'the ancestor portraits stay tier-2-only').toBe(0);
+  expect(snap.heat.on, 'the heat returns on the apex (81–90)').toBe(true);
+  expect(snap.heat.fogMs, 'the heat is thin here — fog halves').toBe(FOG_DURATION_MS / 2);
+  expect(snap.heat.crackAnger, 'and every crack burns 25 anger').toBe(25);
+  // the iron pair: the ninth scale on the saw (the seam tracks both from
+  // buildFloor, gesture or not)
+  expect(snap.audio.scale).toEqual([0, 1, 3, 7, 8]);
+  expect(snap.audio.voice).toBe('sawtooth');
+  // the Act III banner: up on THIS build, then gone when its clock expires
+  // (once per session — a rebuild of 81 stays quiet behind the eye)
+  await expect(page.locator('#mh-act')).toBeVisible();
+  await expect(page.locator('#mh-act-title')).toHaveText('ACT III — THE GROUND DOOR');
+  await expect(page.locator('#mh-act-note')).toHaveText('The door is real. So is what guards it.');
+  await expect(page.locator('#mh-act')).toBeHidden({ timeout: 5000 });
+  await expect(page.locator('#mh-floor')).toHaveText('L81 · T9');
+  // the fourth Sentinel: Chhaya replays the RECORDED path, and the path only
+  // records while the run runs — one short step arms the run clock (the
+  // game's first-input contract, the t5 flood leg's move), then her 2.4s
+  // delay grace (the ramp's low end) expires and she surfaces
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(300);
+  await page.keyboard.up('KeyW');
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.chhayaPos() !==
+      null,
+    null,
+    { timeout: 6000 },
+  );
+  expect(errors).toEqual([]);
+});
+
+// T9/T3 — the Warden's own warren catches. Floor 90 is Dwaar IX: the hardest
+// duel, all four Sentinels in the tight maze (6 wardens — one MORE than every
+// elder duel hall). The warp leg rides Aavart — touch is the standard caught
+// fail — and the house fails like every duel before it.
+test('t9: the warren catches', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T9DUEL&floor=90');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      taal: h.taalPos(),
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+      echoes: h.enemyCount(),
+      heat: h.heat(),
+    };
+  });
+  expect(snap.tier).toBe(9);
+  expect(snap.floor).toBe(90);
+  expect(snap.taal, 'the duel — all four in the warren').not.toBeNull();
+  expect(snap.gher, 'the duel — all four in the warren').not.toBeNull();
+  expect(snap.avart, 'the duel — all four in the warren').not.toBeNull();
+  expect(snap.echoes, 'Dwaar IX alone carries 6 wardens').toBe(6);
+  expect(snap.heat.on, 'Dwaar IX burns with the Warrens').toBe(true);
+  await expect(page.locator('#mh-floor')).toHaveText('L90 · DWAAR IX ✦');
+  await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    const p = h.avartPos();
+    if (p !== null) h.warp(p.x, p.y);
+  });
+  // the touch: failed rises on the next fixed step — poll to see it true
+  // (post-reset it is false again)
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.house()
+        .failed,
+    null,
+    { timeout: 2000 },
+  );
+  await expect(page.locator('#mh-fail')).toHaveText('Caught by the glass');
+  expect(errors).toEqual([]);
+});

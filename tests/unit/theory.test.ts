@@ -11,6 +11,7 @@ import {
   TIER_EIGHT_SCALE,
   TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
+  TIER_NINE_SCALE,
   TIER_ONE_SCALE,
   TIER_SEVEN_INTENSITY_CEILING,
   TIER_SEVEN_SCALE,
@@ -77,6 +78,14 @@ describe('scales', () => {
   // the open frozen air the cold strings stretch.
   it('tier eight is the austere suspended pentatonic set', () => {
     expect(TIER_EIGHT_SCALE).toEqual([0, 2, 5, 7, 10]);
+  });
+
+  // T9/T3 — the Warden's Warrens' iron pentatonic (spec §6.1 row 9): root,
+  // flat second's iron bite, minor third, fifth, flat sixth — the Phrygian-
+  // kin rung the warren grinds out under the saw (the apex's own voice, not
+  // the Atrium's stand-in).
+  it('tier nine is the iron pentatonic set', () => {
+    expect(TIER_NINE_SCALE).toEqual([0, 1, 3, 7, 8]);
   });
 });
 
@@ -210,6 +219,20 @@ describe('nextMelodySemi', () => {
       expect(semi).toBeGreaterThanOrEqual(OCT);
       expect(semi).toBeLessThanOrEqual(OCT + 12);
       expect(suspended.has(semi % 12)).toBe(true);
+    }
+  });
+
+  // T9/T3 — the warren walker walks the iron set only: every emitted note is
+  // a tier-nine member inside the window (pcs of [0,1,3,7,8]).
+  it('after a tier-nine swap the walk only emits iron members in the window', () => {
+    const rng = createRng('WARREN-WALK');
+    let semi = OCT;
+    const iron = new Set(TIER_NINE_SCALE.map((s) => (OCT + s) % 12));
+    for (let i = 0; i < 200; i++) {
+      semi = nextMelodySemi(rng, TIER_NINE_SCALE, semi, 0.7, OCT);
+      expect(semi).toBeGreaterThanOrEqual(OCT);
+      expect(semi).toBeLessThanOrEqual(OCT + 12);
+      expect(iron.has(semi % 12)).toBe(true);
     }
   });
 

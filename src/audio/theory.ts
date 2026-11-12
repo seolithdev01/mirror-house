@@ -39,6 +39,12 @@ export const TIER_SEVEN_SCALE: readonly number[] = [0, 2, 3, 7, 8];
  *  air the cold strings stretch (spec §6.1 row 8). */
 export const TIER_EIGHT_SCALE: readonly number[] = [0, 2, 5, 7, 10];
 
+/** Tier-nine mood: the Warden's Warrens' iron pentatonic — root, flat
+ *  second's iron bite, minor third, fifth, flat sixth — the Phrygian-kin
+ *  rung the warren grinds out under the saw through the apex (spec §6.1
+ *  row 9). */
+export const TIER_NINE_SCALE: readonly number[] = [0, 1, 3, 7, 8];
+
 /** T7/T3 — the whisper ceiling: tier 7's melody intensity never rises past
  *  0.55. Main applies it in the per-frame audio feed as a MULTIPLIER on the
  *  raw threat blend (the disclosed method): the blend never exceeds 1, so

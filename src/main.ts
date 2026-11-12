@@ -7,6 +7,7 @@ import {
   TIER_EIGHT_SCALE,
   TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
+  TIER_NINE_SCALE,
   TIER_ONE_SCALE,
   TIER_SEVEN_INTENSITY_CEILING,
   TIER_SEVEN_SCALE,
@@ -1514,7 +1515,10 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // the melody stays sparse (see the audio feed below). T8/T3: the tier-8
   // stand-ins retire — the Atrium dresses in ice on deep void-blue and hums
   // the austere suspended pentatonic through the COLD STRINGS (the
-  // sawtooth's thin reed-bright edge: strings played over ice).
+  // sawtooth's thin reed-bright edge: strings played over ice). T9/T3: the
+  // LAST stand-in retires — the Warrens dress in iron on near-void and grind
+  // the iron pentatonic through the same saw (the apex hums on the warden's
+  // own voice, the reed-bright edge gone iron).
   // Venue side-floors stay tier-one dressed — scale AND voice: a return
   // from a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
@@ -1528,7 +1532,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       6: TIER_SIX_SCALE, // T6/T4 — the urgent pentatonic (the stand-in retires)
       7: TIER_SEVEN_SCALE, // T7/T3 — the whispered pentatonic (the stand-in retires)
       8: TIER_EIGHT_SCALE, // T8/T3 — the suspended pentatonic (the stand-in retires)
-      9: TIER_EIGHT_SCALE, // T9/T1 — the documented Atrium stand-in; the warren's iron scale (T9/T3) retires it
+      9: TIER_NINE_SCALE, // T9/T3 — the iron pentatonic (the LAST stand-in retires)
     } as const;
     const voiceByTier = {
       1: 'triangle',
@@ -1539,7 +1543,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       6: 'triangle', // the reed endures the heat — only the rung tightens
       7: 'sine', // T7/T3 — the whisper: the flute returns for the Library
       8: 'sawtooth', // T8/T3 — the cold strings: the saw sings over the ice
-      9: 'sawtooth', // T9/T1 — the documented Atrium stand-in; the warren's own voice (T9/T3) retires it
+      9: 'sawtooth', // T9/T3 — the warren keeps the saw: the iron rung grinds through it
     } as const;
     audio.setScale(scaleByTier[tier]);
     audio.setVoice(voiceByTier[tier]);

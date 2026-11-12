@@ -177,6 +177,29 @@ export const TIER_EIGHT_PALETTE: TierPalette = {
   exit: 0xd9a441,
 };
 
+/** The Warden's Warrens (floors 81–90, T9): iron on near-void — the apex by
+ *  furnace-dawn. Near-black iron void over a gunmetal floor, warden-steel
+ *  glass in the teal slot, iron-red in the rose-diamond slot, pale
+ *  iron-white lantern light. The slot NAMES hold one last time: the teal slot
+ *  wears the warren's watch-steel, the rose-diamond slot wears the iron-red
+ *  accent, so every palette-driven pattern re-dresses itself with zero
+ *  structural change (the T2 precedent) — and the LAST tier-one stand-in
+ *  retires with this commit. */
+export const TIER_NINE_PALETTE: TierPalette = {
+  void: 0x0a0c0e,
+  floorBase: 0x1a1e22,
+  floorLines: 0x262c30,
+  teal: 0x5a9a9a, // warden-steel — the warren's watch-steel glass
+  ivory: 0xd8dde0,
+  gold: 0xd9a441,
+  rose: 0x9a4a4a, // iron-red — the lattice diamonds in iron-red
+  wallTop: 0x565e66,
+  wallBottom: 0x2a3036,
+  lantern: 0xe8f0f0,
+  entrance: 0x5a9a9a,
+  exit: 0xd9a441,
+};
+
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
  *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
  *  retired. T4/T4: tier 4 wears the Carnival palette — the documented
@@ -193,9 +216,9 @@ export const TIER_EIGHT_PALETTE: TierPalette = {
  *  T8/T3: tier 8 wears the Frozen Atrium's ice-on-void-blue — the documented
  *  tier-one stand-in (T8/T1's fallthrough) is retired here, the same
  *  retire-the-stand-in pattern one tier down.
- *  T9/T1: tier 9 keeps the documented tier-one stand-in — every new tier's
- *  dressing was a tier-one stand-in once; the Warden's Warrens' iron palette
- *  (T9/T3) retires this one the same way. */
+ *  T9/T3: tier 9 wears the Warden's Warrens' iron-on-near-void — the LAST
+ *  documented tier-one stand-in (T9/T1's fallthrough) is retired here. Every
+ *  tier now dresses as itself. */
 export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
@@ -204,7 +227,8 @@ export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9): TierPal
   if (tier === 6) return TIER_SIX_PALETTE;
   if (tier === 7) return TIER_SEVEN_PALETTE; // T7/T3 — the stand-in retires
   if (tier === 8) return TIER_EIGHT_PALETTE; // T8/T3 — the stand-in retires
-  return TIER_ONE_PALETTE; // T9/T1 — the tier-one stand-in; T9/T3 retires it
+  if (tier === 9) return TIER_NINE_PALETTE; // T9/T3 — the LAST stand-in retires
+  return TIER_ONE_PALETTE;
 }
 
 /** Deterministic per-cell floor accent on a 6x6 lattice: gold grid lines on every 6th row/column,

@@ -6,6 +6,7 @@ import {
   TIER_EIGHT_PALETTE,
   TIER_FIVE_PALETTE,
   TIER_FOUR_PALETTE,
+  TIER_NINE_PALETTE,
   TIER_ONE_PALETTE,
   TIER_SEVEN_PALETTE,
   TIER_SIX_PALETTE,
@@ -75,6 +76,9 @@ describe('palette', () => {
     // T8/T3 — the Frozen Atrium dresses tier 8 (the tier-one stand-in retired,
     // the same retire-the-stand-in pattern one tier down)
     expect(paletteForTier(8)).toBe(TIER_EIGHT_PALETTE);
+    // T9/T3 — the Warden's Warrens dress tier 9 (the last tier-one stand-in
+    // retired — every tier's dressing was a tier-one stand-in once)
+    expect(paletteForTier(9)).toBe(TIER_NINE_PALETTE);
   });
 
   // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):
@@ -303,5 +307,41 @@ describe('palette', () => {
     // the two-tone checker flips to the sea-dark floor pair
     expect(floorAccent(1, 1, TIER_EIGHT_PALETTE)).toBe(0x1e3450);
     expect(floorAccent(2, 1, TIER_EIGHT_PALETTE)).toBe(0x14243a);
+  });
+
+  // T9/T3 — the Warden's Warrens palette (floors 81–90, spec §4.6 row 9):
+  // iron on near-void — the apex by furnace-dawn. Near-black iron void over a
+  // gunmetal floor, warden-steel glass in the teal slot, iron-red in the
+  // rose-diamond slot, pale iron-white lantern light. The slot NAMES hold one
+  // last time (the T2 precedent): every palette-driven pattern re-dresses
+  // itself with zero structural change — and the LAST tier-one stand-in
+  // retires with this commit.
+  it('tier-nine values are exact (Warden\'s Warrens: iron/warden-steel/iron-red)', () => {
+    expect(TIER_NINE_PALETTE).toEqual({
+      void: 0x0a0c0e,
+      floorBase: 0x1a1e22,
+      floorLines: 0x262c30,
+      teal: 0x5a9a9a, // the warden-steel slot — the warren's watch-steel glass
+      ivory: 0xd8dde0,
+      gold: 0xd9a441,
+      rose: 0x9a4a4a, // the iron-red slot — the lattice diamonds in iron-red
+      wallTop: 0x565e66,
+      wallBottom: 0x2a3036,
+      lantern: 0xe8f0f0,
+      entrance: 0x5a9a9a,
+      exit: 0xd9a441,
+    });
+  });
+
+  it('floorAccent with the tier-nine palette: same pattern, warren colors', () => {
+    // the rose-diamond slot becomes the iron-red accent; the gold lattice holds
+    expect(floorAccent(3, 3, TIER_NINE_PALETTE)).toBe(0x9a4a4a);
+    expect(floorAccent(9, 3, TIER_NINE_PALETTE)).toBe(0x9a4a4a);
+    expect(floorAccent(6, 2, TIER_NINE_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(2, 12, TIER_NINE_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(0, 0, TIER_NINE_PALETTE)).toBe(0xd9a441);
+    // the two-tone checker flips to the gunmetal floor pair
+    expect(floorAccent(1, 1, TIER_NINE_PALETTE)).toBe(0x262c30);
+    expect(floorAccent(2, 1, TIER_NINE_PALETTE)).toBe(0x1a1e22);
   });
 });
