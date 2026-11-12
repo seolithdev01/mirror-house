@@ -14,6 +14,7 @@ import {
   DWAAR_V_LAYOUT,
   DWAAR_VI_LAYOUT,
   DWAAR_VII_LAYOUT,
+  DWAAR_VIII_LAYOUT,
   dwaarGrid,
   floorParams,
   floorSeed,
@@ -28,6 +29,7 @@ import {
   DWAAR_FLOOR,
   TAAL_FLOOR,
   TAAL_RETURN_FLOOR,
+  TIER_EIGHT_FLOORS,
   TIER_ONE_FLOORS,
   TIER_FIVE_FLOORS,
   TIER_FOUR_FLOORS,
@@ -107,6 +109,10 @@ describe('campaign constants', () => {
 
   it('T7 — pins the beat-walker\u2019s return floor — Taal comes back mid-tier at 66', () => {
     expect(TAAL_RETURN_FLOOR).toBe(66);
+  });
+
+  it('T8 — pins the tier-eight campaign constant — 80 floors, Dwaar VIII on the last (the Frozen Atrium)', () => {
+    expect(TIER_EIGHT_FLOORS).toBe(80);
   });
 });
 
@@ -206,6 +212,34 @@ describe('tierOf', () => {
     // carnival glass — its hearing Echoes are the tier's teeth (T7/T2), and
     // the floorObjects rng streams stay pinned (no new draws on 61–70)
     for (let f = TIER_SIX_FLOORS + 1; f <= TIER_SEVEN_FLOORS; f++) {
+      expect(tierOf(f) === 2, `floor ${f} portraits gate`).toBe(false);
+      expect(tierOf(f) === 3, `floor ${f} water gate`).toBe(false);
+      expect(tierOf(f) === 4, `floor ${f} distort gate`).toBe(false);
+    }
+  });
+
+  it('T8 — splits the campaign at floor 70: 71–80 → 8 (the Frozen Atrium)', () => {
+    expect(tierOf(71)).toBe(8);
+    expect(tierOf(74)).toBe(8);
+    expect(tierOf(79)).toBe(8);
+    expect(tierOf(80)).toBe(8);
+    // 70 keeps its own tier — and 80 is a tier of its OWN too, never a
+    // relabel of anything below (the dressing gates and the tier screens
+    // read equality and must keep reading false)
+    expect(tierOf(70)).toBe(7);
+    expect(tierOf(80)).not.toBe(2);
+    expect(tierOf(80)).not.toBe(3);
+    expect(tierOf(80)).not.toBe(4);
+    expect(tierOf(80)).not.toBe(5);
+    expect(tierOf(80)).not.toBe(6);
+    expect(tierOf(80)).not.toBe(7);
+  });
+
+  it('T8 — the tier-exclusive dressing gates stay put on the Frozen Atrium too', () => {
+    // the Atrium hangs no ancestor portraits, pools no water and mounts no
+    // carnival glass — its frozen mirrors are the tier's teeth (T8/T2), and
+    // the floorObjects rng streams stay pinned (no new draws on 71–80)
+    for (let f = TIER_SEVEN_FLOORS + 1; f <= TIER_EIGHT_FLOORS; f++) {
       expect(tierOf(f) === 2, `floor ${f} portraits gate`).toBe(false);
       expect(tierOf(f) === 3, `floor ${f} water gate`).toBe(false);
       expect(tierOf(f) === 4, `floor ${f} distort gate`).toBe(false);
@@ -380,16 +414,43 @@ describe('descend', () => {
     expect(d.tierComplete).toBe(false); // the descent re-arms the flag
   });
 
-  it('T7 — descend at floor 70 is a NO-OP returning the same object (terminal until tier 8)', () => {
-    // Dwaar VII closes the campaign's third act of floors: there is no floor
-    // 71 until tier 8 exists, so the stair door at 70 opens onto the tier
-    // screen and the descend itself must refuse — the SAME object back, not
-    // a copy.
+  it('T8 — the T7 no-op at 70 is RETIRED: 70 → 71 is a real descent now', () => {
+    // the terminal floor moved to 80 (Act III still does not exist, but the
+    // Frozen Atrium does); purity preserved exactly as at every earlier
+    // terminus retirement (40 in T5, 50 in T6, 60 in T7)
     const at70 = { seedBase: 'XXXX', floor: TIER_SEVEN_FLOORS, tierComplete: true };
-    expect(descend(at70)).toBe(at70);
-    expect(descend(at70)).toEqual({ seedBase: 'XXXX', floor: 70, tierComplete: true });
+    const d = descend(at70);
+    expect(d.floor).toBe(71);
+    expect(d).not.toBe(at70);
+    expect(at70.floor).toBe(70); // original untouched
+    expect(d.tierComplete).toBe(false); // the descent re-arms the flag
+  });
+
+  it('T8 — walks the whole campaign 1..80', () => {
+    let c = newCampaign('CCCC');
+    for (let i = 2; i <= TIER_EIGHT_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(TIER_EIGHT_FLOORS);
+  });
+
+  it('T8 — leaving Dwaar VII re-arms the tier flag for tier eight (the Atrium opens)', () => {
+    // the T8 ratification: Dwaar VII no longer CLOSES the campaign — the
+    // claim at 70 banks and the stairs into the Frozen Atrium clear the flag
+    // so tier-eight floors pay their first-clear bonus (the tier screen is
+    // Dwaar VIII's now).
+    const d = descend({ seedBase: 'DDDD', floor: TIER_SEVEN_FLOORS, tierComplete: true });
+    expect(d).toEqual({ seedBase: 'DDDD', floor: 71, tierComplete: false });
+  });
+
+  it('T8 — descend at floor 80 is a NO-OP returning the same object (terminal until Act III tier 9)', () => {
+    // Dwaar VIII closes the campaign's fourth act of floors: there is no
+    // floor 81 until Act III exists, so the stair door at 80 opens onto the
+    // tier screen and the descend itself must refuse — the SAME object back,
+    // not a copy.
+    const at80 = { seedBase: 'YYYY', floor: TIER_EIGHT_FLOORS, tierComplete: true };
+    expect(descend(at80)).toBe(at80);
+    expect(descend(at80)).toEqual({ seedBase: 'YYYY', floor: 80, tierComplete: true });
     // the flag survives the no-op untouched (no re-arm past the tier close)
-    expect(at70.tierComplete).toBe(true);
+    expect(at80.tierComplete).toBe(true);
   });
 });
 
@@ -495,6 +556,22 @@ describe('completeTier', () => {
       expect(completeTier(c), `floor ${floor}`).toEqual(c);
     }
   });
+
+  it('T8 — flags completion at Dwaar VIII, the single flag set an eighth time at floor 80', () => {
+    let c = newCampaign('DDDD');
+    for (let i = 1; i < TIER_EIGHT_FLOORS; i++) c = descend(c);
+    expect(c.floor).toBe(80);
+    expect(c.tierComplete).toBe(false); // the descent from 70 re-armed it
+    const done = completeTier(c);
+    expect(done.tierComplete).toBe(true);
+  });
+
+  it('T8 — is a no-op on tier-eight procedural floors 71..79', () => {
+    for (const floor of [71, 75, 79]) {
+      const c = { seedBase: 'LLLL', floor, tierComplete: false };
+      expect(completeTier(c), `floor ${floor}`).toEqual(c);
+    }
+  });
 });
 
 describe('isDwaar', () => {
@@ -539,7 +616,14 @@ describe('isDwaar', () => {
     expect(isDwaar(TIER_SEVEN_FLOORS)).toBe(true);
     expect(isDwaar(70)).toBe(true);
     for (const floor of [61, 65, 69]) expect(isDwaar(floor), `floor ${floor}`).toBe(false);
-    expect(isDwaar(71)).toBe(false); // past the tier close — never a Dwaar
+    expect(isDwaar(71)).toBe(false); // a tier-eight ramp floor — procedural, never a Dwaar
+  });
+
+  it('T8 — Dwaar VIII joins the set at floor 80; 71..79 stay procedural', () => {
+    expect(isDwaar(TIER_EIGHT_FLOORS)).toBe(true);
+    expect(isDwaar(80)).toBe(true);
+    for (const floor of [71, 75, 79]) expect(isDwaar(floor), `floor ${floor}`).toBe(false);
+    expect(isDwaar(81)).toBe(false); // past the tier close — never a Dwaar
   });
 });
 
@@ -614,12 +698,12 @@ describe('floorParams tier-two ramp (floors 11–20 pinned)', () => {
       expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(4000);
   });
 
-  it('clamps floors past the campaign to the terminal floor (T7: Dwaar VII)', () => {
+  it('clamps floors past the campaign to the terminal floor (T8: Dwaar VIII)', () => {
     // T3 pinned this to the Dwaar III values; T4 moved it to Dwaar IV's row;
-    // T5 to Dwaar V's; T6 to Dwaar VI's; T7 widens the campaign to 70 — the
-    // clamp lands on Dwaar VII's row.
-    expect(floorParams(99)).toEqual(floorParams(TIER_SEVEN_FLOORS));
-    expect(floorParams(99)).not.toEqual(floorParams(TIER_SIX_FLOORS));
+    // T5 to Dwaar V's; T6 to Dwaar VI's; T7 to Dwaar VII's; T8 widens the
+    // campaign to 80 — the clamp lands on Dwaar VIII's row.
+    expect(floorParams(99)).toEqual(floorParams(TIER_EIGHT_FLOORS));
+    expect(floorParams(99)).not.toEqual(floorParams(TIER_SEVEN_FLOORS));
   });
 
   it('leaves every tier-one pin untouched (the tier-one experience is frozen)', () => {
@@ -1209,6 +1293,71 @@ describe('floorParams tier-seven ramp (floors 61–70 pinned)', () => {
   });
 });
 
+// T8/T1 — the Frozen Atrium ramp. Echoes hold at the Library's 4 (Dwaar VIII
+// ALONE carrying 5 — the all-four-Sentinel duel is the tier's apex); beacons
+// hold at 4; braid keeps the +0.004 tread from a 0.38 base; the delay keeps
+// its −60 slide toward the 2600 clamp, Dwaar VIII arriving early at 2500 —
+// the atrium freezes and Chhaya does not wait.
+describe('floorParams tier-eight ramp (floors 71–80 pinned)', () => {
+  // echoes = 4 on every procedural floor (Dwaar VIII fixed 5); beacons 4;
+  // braid = 0.38 + 0.004*(f-71);
+  // chhayaDelayMs = max(2600, 3200 - 60*(f-71)) (Dwaar VIII 2500).
+  const pinned: [number, number, number, number, number][] = [
+    // floor, echoes, beacons, braid, chhayaDelayMs
+    [71, 4, 4, 0.38, 3200],
+    [72, 4, 4, 0.384, 3140],
+    [73, 4, 4, 0.388, 3080],
+    [74, 4, 4, 0.392, 3020],
+    [75, 4, 4, 0.396, 2960],
+    [76, 4, 4, 0.4, 2900],
+    [77, 4, 4, 0.404, 2840],
+    [78, 4, 4, 0.408, 2780],
+    [79, 4, 4, 0.412, 2720],
+    [80, 5, 4, 0.416, 2500],
+  ];
+
+  it('matches the pinned ramp for every tier-eight floor', () => {
+    expect(pinned.length).toBe(TIER_EIGHT_FLOORS - TIER_SEVEN_FLOORS);
+    for (const [floor, echoes, beacons, braid, delay] of pinned) {
+      const p = floorParams(floor);
+      expect(p.echoes, `floor ${floor} echoes`).toBe(echoes);
+      expect(p.beacons, `floor ${floor} beacons`).toBe(beacons);
+      expect(p.braid, `floor ${floor} braid`).toBeCloseTo(braid, 10);
+      expect(p.chhayaDelayMs, `floor ${floor} chhayaDelayMs`).toBe(delay);
+    }
+  });
+
+  it('delays never drop below the 2600 clamp on tier-eight procedural floors', () => {
+    for (let f = TIER_SEVEN_FLOORS + 1; f < TIER_EIGHT_FLOORS; f++)
+      expect(floorParams(f).chhayaDelayMs).toBeGreaterThanOrEqual(2600);
+  });
+
+  it('Dwaar VIII alone carries 5 echoes — the all-four duel hall', () => {
+    for (let f = TIER_SEVEN_FLOORS + 1; f < TIER_EIGHT_FLOORS; f++)
+      expect(floorParams(f).echoes, `floor ${f}`).toBe(4);
+    expect(floorParams(TIER_EIGHT_FLOORS).echoes).toBe(5);
+    expect(floorParams(TIER_EIGHT_FLOORS).chhayaDelayMs).toBe(2500);
+  });
+
+  it('leaves every earlier tier pin untouched (floors 1–70 are frozen)', () => {
+    // braid rides toBeCloseTo — 0.36 + 0.004*9 is not the literal 0.396 in
+    // IEEE doubles (the elder suites' documented pitfall); the ramp math
+    // itself is untouched, only its precision
+    const p70 = floorParams(70);
+    expect(p70.echoes).toBe(5);
+    expect(p70.beacons).toBe(4);
+    expect(p70.braid).toBeCloseTo(0.396, 10);
+    expect(p70.chhayaDelayMs).toBe(2600);
+    expect(floorParams(61)).toEqual({ echoes: 4, beacons: 4, braid: 0.36, chhayaDelayMs: 3300 });
+    const p60 = floorParams(60);
+    expect(p60.echoes).toBe(5);
+    expect(p60.beacons).toBe(4);
+    expect(p60.braid).toBeCloseTo(0.356, 10);
+    expect(p60.chhayaDelayMs).toBe(2800);
+    expect(floorParams(10)).toEqual({ echoes: 4, beacons: 4, braid: 0.21, chhayaDelayMs: 4000 });
+  });
+});
+
 // T5/T1 — the sentinel ROTATION (spec §4.6 "escalate combinations", row 9
 // "all four"): the ladder stops accumulating. Floors 41–49 hunt with Taal
 // ALONE (Gher and Aavart rest — they were unreachable-code past 40 anyway);
@@ -1367,6 +1516,74 @@ describe('sentinel presence (the rotation)', () => {
       [66, true, false, false],
       [69, true, false, false],
       [70, true, true, false],
+    ];
+    for (const [f, taal, gher, aavart] of table) {
+      expect(taalPresent(f), `floor ${f} taal`).toBe(taal);
+      expect(gherPresent(f), `floor ${f} gher`).toBe(gher);
+      expect(aavartPresent(f), `floor ${f} aavart`).toBe(aavart);
+    }
+  });
+
+  it('T8 — taalPresent RESTS on 71–79, his beat returning ONLY for the Dwaar VIII duel (80)', () => {
+    // the rotation's fourth turn: the atrium belongs to the Ambusher's
+    // ambush and the frozen glass — the beat-walker sits 71–79 out and is
+    // called down for the all-four close
+    for (const floor of [71, 74, 79]) expect(taalPresent(floor), `floor ${floor}`).toBe(false);
+    // he keeps the shipped t7 rows he has always walked (66–70 — the
+    // beat in the silence and the duet) ...
+    for (const floor of [66, 67, 69, 70]) expect(taalPresent(floor), `floor ${floor}`).toBe(true);
+    // ... and takes the apex duel floor
+    expect(taalPresent(80)).toBe(true);
+  });
+
+  it('T8 — gherPresent rests 71–79 and joins ONLY at the Dwaar VIII duel (80)', () => {
+    // the same rest-to-the-duel shape his tier-7 cameo took: the Encircler
+    // sits the atrium out, the frozen floors belong to Chhaya and Aavart
+    for (const floor of [71, 74, 79]) expect(gherPresent(floor), `floor ${floor}`).toBe(false);
+    // and every floor ≤ 70 reads exactly as the shipped t7 rotation did
+    for (const floor of [50, 55, 59, 60, 70]) expect(gherPresent(floor), `floor ${floor}`).toBe(
+      true,
+    );
+    for (const floor of [41, 45, 49, 61, 65, 69]) expect(gherPresent(floor), `floor ${floor}`).toBe(
+      false,
+    );
+    expect(gherPresent(80)).toBe(true);
+  });
+
+  it('T8 — aavartPresent RETURNS: the Ambusher walks the whole Atrium (71–80)', () => {
+    // his gate was bare-`>= 31` shaped in the tier-7 era only through his
+    // explicit 50–60 bound — tier 7 rested him by OMISSION. The atrium
+    // calls him back: 71–80 all walk, and his shipped rows 61–70 stay rest
+    for (const floor of [71, 74, 79, 80]) expect(aavartPresent(floor), `floor ${floor}`).toBe(true);
+    // and every floor ≤ 70 reads exactly as the shipped t7 rotation did
+    for (const floor of [50, 55, 59, 60]) expect(aavartPresent(floor), `floor ${floor}`).toBe(true);
+    for (const floor of [41, 45, 49, 61, 65, 69, 70])
+      expect(aavartPresent(floor), `floor ${floor}`).toBe(false);
+  });
+
+  it('T8 — the truth table extends: 71–79 are Aavart ALONE, 80 the all-four duel — rows 1–70 IDENTICAL to shipped t7', () => {
+    // the shipped t7 rotation, frozen INTO this test as the identity oracle:
+    // every row 1–70 must read EXACTLY as it did the day the Library closed.
+    const shippedT7 = (f: number): [boolean, boolean, boolean] => {
+      const taal = (f >= 11 && f <= 50) || f >= 66;
+      const gher = (f >= 21 && f <= 40) || (f >= 50 && f <= 60) || f === 70;
+      const aavart = (f >= 31 && f <= 40) || (f >= 50 && f <= 60);
+      return [taal, gher, aavart];
+    };
+    for (let f = 1; f <= 70; f++) {
+      const [taal, gher, aavart] = shippedT7(f);
+      expect(taalPresent(f), `floor ${f} taal (shipped t7 row)`).toBe(taal);
+      expect(gherPresent(f), `floor ${f} gher (shipped t7 row)`).toBe(gher);
+      expect(aavartPresent(f), `floor ${f} aavart (shipped t7 row)`).toBe(aavart);
+    }
+    // the extension: 71–79 Chhaya+Aavart walk the Atrium (Taal and Gher
+    // rest); Dwaar VIII is the campaign's second all-four duel (Chhaya has
+    // no gate — she walks every floor as always)
+    const table: [number, boolean, boolean, boolean][] = [
+      [71, false, false, true],
+      [75, false, false, true],
+      [79, false, false, true],
+      [80, true, true, true],
     ];
     for (const [f, taal, gher, aavart] of table) {
       expect(taalPresent(f), `floor ${f} taal`).toBe(taal);
@@ -1722,5 +1939,130 @@ describe('dwaarGrid floor 70', () => {
     expect(dwaarGrid(TIER_FOUR_FLOORS).open.length).toBe(101);
     expect(dwaarGrid(TIER_FIVE_FLOORS).open.length).toBe(101);
     expect(dwaarGrid(TIER_SIX_FLOORS).open.length).toBe(101);
+  });
+});
+
+// T8/T1 — Dwaar VIII, the frozen atrium (floor 80, the all-four duel where
+// the campaign's fourth act of floors closes). 13×13 like its elders, 97 open
+// cells: a GRAND CENTRAL RING — the chebyshev-radius-3 wall ring (24 cells)
+// around a fully-open 5×5 inner court, broken by EXACTLY 4 gaps at the
+// compass midpoints (the atrium's four gates) — plus 4 RADIAL GALLERIES: one
+// gallery wall on each ring-corner→hall-corner diagonal, whose flanks form
+// the narrow corner galleries a walker takes toward the entrance/exit
+// corners. Nothing else is wall: the atrium floor stands grand where the
+// Library crowded its stacks. Invariant under 180° rotation so the exit
+// mirrors the entrance; all 97 open cells form one connected component —
+// four Sentinels need the room to walk their beats.
+describe('DWAAR_VIII_LAYOUT — the frozen atrium (floor 80, the campaign closes)', () => {
+  const isOpen = (x: number, y: number): boolean => DWAAR_VIII_LAYOUT[y]![x] === '.';
+  const count = (layout: readonly string[]): number =>
+    layout.reduce((n, row) => n + [...row].filter((c) => c === '.').length, 0);
+  const cheb = (x: number, y: number): number => Math.max(Math.abs(x - 6), Math.abs(y - 6));
+
+  it('is 13 rows of 13 chars, walls and open cells only', () => {
+    expect(DWAAR_VIII_LAYOUT.length).toBe(13);
+    for (const row of DWAAR_VIII_LAYOUT) {
+      expect(row.length).toBe(13);
+      expect(row).toMatch(/^[#.]{13}$/);
+    }
+  });
+
+  it('is symmetric under 180° rotation', () => {
+    for (let y = 0; y < 13; y++)
+      for (let x = 0; x < 13; x++)
+        expect(DWAAR_VIII_LAYOUT[y]![x]).toBe(DWAAR_VIII_LAYOUT[12 - y]![12 - x]);
+  });
+
+  it('holds 97 open cells — ~100 open, in the elder band', () => {
+    expect(count(DWAAR_VIII_LAYOUT)).toBe(97);
+    expect(count(DWAAR_VIII_LAYOUT)).toBeGreaterThanOrEqual(95);
+    expect(count(DWAAR_VIII_LAYOUT)).toBeLessThanOrEqual(105);
+    expect(count(DWAAR_VIII_LAYOUT)).toBeGreaterThan(count(DWAAR_VII_LAYOUT)); // 95 — the stacks gave back their air
+  });
+
+  it('carries the grand central ring: a wall ring with EXACTLY 4 compass gaps', () => {
+    // the chebyshev-radius-3 ring — 24 cells — opens at the compass
+    // midpoints ONLY: the atrium's four gates into its open inner court
+    const ring: Array<[number, number]> = [];
+    for (let y = 3; y <= 9; y++)
+      for (let x = 3; x <= 9; x++) if (cheb(x, y) === 3) ring.push([x, y]);
+    expect(ring.length).toBe(24);
+    expect(ring.filter(([x, y]) => isOpen(x, y))).toEqual([
+      [6, 3],
+      [3, 6],
+      [9, 6],
+      [6, 9],
+    ]); // N, W, E, S — the atrium's four gates
+    // and the ring's 5×5 inner court stands fully open
+    for (let y = 4; y <= 8; y++)
+      for (let x = 4; x <= 8; x++) expect(isOpen(x, y), `court ${x},${y}`).toBe(true);
+  });
+
+  it('carries 4 radial galleries — one wall on each ring-corner → hall-corner diagonal, and NOTHING ELSE is wall', () => {
+    // the gallery walls, 180°-mirrored in pairs ((2,2)↔(10,10) and
+    // (10,2)↔(2,10)); each sits strictly between a ring corner and the
+    // matching hall corner, and its flanks form the narrow corner galleries
+    const galleries: Array<[number, number]> = [
+      [2, 2],
+      [10, 2],
+      [2, 10],
+      [10, 10],
+    ];
+    for (const [x, y] of galleries) {
+      expect(isOpen(x, y), `gallery ${x},${y}`).toBe(false);
+      expect(cheb(x, y), `gallery ${x},${y} sits off the ring`).toBe(4);
+    }
+    // and beyond the ring the galleries are the ONLY interior walls — the
+    // atrium stays grand (no stacks, no alcoves, no chimneys)
+    let otherWalls = 0;
+    for (let y = 1; y < 12; y++)
+      for (let x = 1; x < 12; x++) if (!isOpen(x, y) && cheb(x, y) !== 3) otherWalls++;
+    expect(otherWalls).toBe(4);
+  });
+
+  it('all open cells are connected (BFS via maze bfsDistances)', () => {
+    const { grid, open } = layoutGrid(DWAAR_VIII_LAYOUT);
+    const entrance = open[0]!; // first open cell row-major = (1,1)
+    const dist = bfsDistances(grid, entrance);
+    const reached = Array.from(dist).filter((d) => d >= 0).length;
+    expect(open.length).toBe(97);
+    expect(reached).toBe(open.length); // every open cell reachable, walls sealed off
+  });
+
+  it('entrance/exit are derivable: (1,1) → farthest open cell (11,11), 20 steps', () => {
+    const { grid, open } = layoutGrid(DWAAR_VIII_LAYOUT);
+    const entrance = open[0]!;
+    expect(entrance).toEqual({ x: 1, y: 1 });
+    const dist = bfsDistances(grid, entrance);
+    let best = 0;
+    for (let i = 1; i < dist.length; i++) if (dist[i]! > dist[best]!) best = i;
+    const exit: CellIndex = { x: best % 13, y: Math.floor(best / 13) };
+    expect(exit).toEqual({ x: 11, y: 11 }); // bottom-right mirror of the entrance
+    expect(dist[best]).toBe(20); // a real traverse of the atrium
+  });
+});
+
+describe('dwaarGrid floor 80', () => {
+  it('derives the Dwaar VIII open-cell set from DWAAR_VIII_LAYOUT', () => {
+    const g = dwaarGrid(TIER_EIGHT_FLOORS);
+    expect(g.width).toBe(13);
+    expect(g.height).toBe(13);
+    expect(g.open.length).toBe(97);
+    expect(g.open[0]).toEqual({ x: 1, y: 1 });
+    for (const c of g.open) expect(DWAAR_VIII_LAYOUT[c.y]![c.x]).toBe('.');
+    const seen = new Set(g.open.map((c) => `${c.x},${c.y}`));
+    expect(seen.size).toBe(g.open.length); // no duplicates
+    const sorted = [...g.open].sort((a, b) => a.y - b.y || a.x - b.x);
+    expect(g.open).toEqual(sorted); // row-major order (entrance = first open cell)
+  });
+
+  it('still defaults to Dwaar I and keeps every elder hall on its own floor', () => {
+    expect(dwaarGrid().open.length).toBe(83); // Dwaar I unchanged
+    expect(dwaarGrid(TIER_TWO_FLOORS).open.length).toBe(96);
+    expect(dwaarGrid(TIER_THREE_FLOORS).open.length).toBe(107);
+    expect(dwaarGrid(TIER_FOUR_FLOORS).open.length).toBe(101);
+    expect(dwaarGrid(TIER_FIVE_FLOORS).open.length).toBe(101);
+    expect(dwaarGrid(TIER_SIX_FLOORS).open.length).toBe(101);
+    expect(dwaarGrid(TIER_SEVEN_FLOORS).open.length).toBe(95);
   });
 });

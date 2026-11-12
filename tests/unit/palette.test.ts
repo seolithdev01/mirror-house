@@ -71,6 +71,9 @@ describe('palette', () => {
     expect(paletteForTier(6)).toBe(TIER_SIX_PALETTE);
     // T7/T3 — the Whisper Library dresses tier 7 (the Furnace stand-in retired)
     expect(paletteForTier(7)).toBe(TIER_SEVEN_PALETTE);
+    // T8/T1 — tier 8 keeps the documented tier-one stand-in: the ice palette
+    // (T8/T3) retires it, the same retire-the-stand-in pattern one tier down
+    expect(paletteForTier(8)).toBe(TIER_ONE_PALETTE);
   });
 
   // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):

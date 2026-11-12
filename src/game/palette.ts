@@ -167,15 +167,18 @@ export const TIER_SEVEN_PALETTE: TierPalette = {
  *  same retire-the-stand-in pattern one tier down.
  *  T7/T3: tier 7 wears the Whisper Library's moonlit lavender-grey — the
  *  documented Furnace stand-in (T7/T1's fallthrough) is retired here, the
- *  same retire-the-stand-in pattern one tier down. */
-export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7): TierPalette {
+ *  same retire-the-stand-in pattern one tier down.
+ *  T8/T1: tier 8 keeps the documented tier-one stand-in — the Library's
+ *  dressing was ITS tier-one stand-in once; the Frozen Atrium's ice palette
+ *  (T8/T3) retires this one the same way. */
+export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
   if (tier === 4) return TIER_FOUR_PALETTE;
   if (tier === 5) return TIER_FIVE_PALETTE;
   if (tier === 6) return TIER_SIX_PALETTE;
   if (tier === 7) return TIER_SEVEN_PALETTE; // T7/T3 — the stand-in retires
-  return TIER_ONE_PALETTE;
+  return TIER_ONE_PALETTE; // T8/T1 — the tier-one stand-in; T8/T3 retires it
 }
 
 /** Deterministic per-cell floor accent on a 6x6 lattice: gold grid lines on every 6th row/column,

@@ -84,9 +84,10 @@ export interface Hud {
    *  same banner (`which: 2` names its own shard line). T4/T1: Dwaar III
    *  cascades (`which: 3`). T5/T1: Dwaar IV joins the cascade too (`which:
    *  4`). T6/T1: Dwaar V joins as well (`which: 5`). T7/T1: Dwaar VI joins
-   *  too (`which: 6`) — the full screen now belongs to the TIER CLOSE Dwaar
-   *  VII raises (`showTierComplete({ tier: 7 })`). */
-  showShardInterstitial(which?: 1 | 2 | 3 | 4 | 5 | 6): void;
+   *  too (`which: 6`). T8/T1: Dwaar VII cascades as well (`which: 7`) — the
+   *  full screen now belongs to the TIER CLOSE Dwaar VIII raises
+   *  (`showTierComplete({ tier: 8 })`). */
+  showShardInterstitial(which?: 1 | 2 | 3 | 4 | 5 | 6 | 7): void;
   /** M4/T2 — the Truth-Shard tier-complete screen (Play again / Stay).
    *  T2/T1 — `tier` picks the screen's title: 1 = Dwaar I, 2 = Dwaar II.
    *  T3/T1 — 3 = Dwaar III. T4/T1 — 4 = Dwaar IV (retired from the flow in
@@ -94,10 +95,16 @@ export interface Hud {
    *  II tier close; retired from the flow in T6/T1 — V cascades too).
    *  T6/T1 — 6 = Dwaar VI, the TIER VI close (retired from the flow in
    *  T7/T1 — VI cascades too; the stairs at 60 open into the Library).
-   *  T7/T1 — 7 = Dwaar VII, the TIER VII close: the full screen is the
-   *  campaign's terminal close (descend() is a no-op at 70 until tier 8
-   *  exists). */
-  showTierComplete(stats: { tier: 1 | 2 | 3 | 4 | 5 | 6 | 7; floors: number; shards: number }): void;
+   *  T7/T1 — 7 = Dwaar VII, the TIER VII close (retired from the flow in
+   *  T8/T1 — VII cascades too; the stairs at 70 open into the Atrium).
+   *  T8/T1 — 8 = Dwaar VIII, the TIER VIII close: the full screen is the
+   *  campaign's terminal close (descend() is a no-op at 80 until Act III
+   *  tier 9 exists). */
+  showTierComplete(stats: {
+    tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+    floors: number;
+    shards: number;
+  }): void;
   /** T5/T1 — the Act II opening banner: `ACT II — THE DECEPTION` + its
    *  copying-you line, a 3s auto-dismiss card (its own clock, like the
    *  shard interstitial's — a floor rebuild never cuts it short). Raised
@@ -363,7 +370,11 @@ export function createHud(init: HudInit): Hud {
   // re-feeding them. Derived display state, not a second truth: the values'
   // owners still write them.
   let muted = false;
-  let lastTierStats: { tier: 1 | 2 | 3 | 4 | 5 | 6 | 7; floors: number; shards: number } | null =
+  let lastTierStats: {
+    tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+    floors: number;
+    shards: number;
+  } | null =
     null;
   const lastChips: {
     streak?: number;
@@ -408,41 +419,48 @@ export function createHud(init: HudInit): Hud {
    *  IV cascades). T5/T1: tier 5 named the Dwaar V tier close (retired from
    *  the flow in T6/T1 — V cascades). T6/T1: tier 6 named the Dwaar VI tier
    *  close (retired from the flow in T7/T1 — VI cascades). T7/T1: tier 7
-   *  names the Dwaar VII tier close — the one full screen the house keeps. */
-  const tierTitleKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7): string =>
-    tier === 7
-      ? 'overlay.tierTitle7'
-      : tier === 6
-        ? 'overlay.tierTitle6'
-        : tier === 5
-          ? 'overlay.tierTitle5'
-          : tier === 4
-            ? 'overlay.actTitle'
-            : tier === 3
-              ? 'overlay.tierTitle3'
-              : tier === 2
-                ? 'overlay.tierTitle2'
-                : 'overlay.tierTitle';
+   *  named the Dwaar VII tier close (retired from the flow in T8/T1 — VII
+   *  cascades). T8/T1: tier 8 names the Dwaar VIII tier close — the one
+   *  full screen the house keeps. */
+  const tierTitleKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): string =>
+    tier === 8
+      ? 'overlay.tierTitle8'
+      : tier === 7
+        ? 'overlay.tierTitle7'
+        : tier === 6
+          ? 'overlay.tierTitle6'
+          : tier === 5
+            ? 'overlay.tierTitle5'
+            : tier === 4
+              ? 'overlay.actTitle'
+              : tier === 3
+                ? 'overlay.tierTitle3'
+                : tier === 2
+                  ? 'overlay.tierTitle2'
+                  : 'overlay.tierTitle';
 
   /** The tier screen's note key — the free-walk line for the tier screens
    *  (Dwaar VII's included), the Act II teaser for the retired act close. */
-  const tierNoteKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7): string =>
+  const tierNoteKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): string =>
     tier === 4 ? 'overlay.actNote' : 'overlay.tierNote';
 
   /** The shard interstitial's line key — one place for the `which` → key
-   *  map (T6/T1: Dwaar V's `5` joins; T7/T1: Dwaar VI's `6` joins). */
-  const shardKeyFor = (which: 1 | 2 | 3 | 4 | 5 | 6): string =>
-    which === 6
-      ? 'overlay.shardInterstitial6'
-      : which === 5
-        ? 'overlay.shardInterstitial5'
-        : which === 4
-          ? 'overlay.shardInterstitial4'
-          : which === 3
-            ? 'overlay.shardInterstitial3'
-            : which === 2
-              ? 'overlay.shardInterstitial2'
-              : 'overlay.shardInterstitial';
+   *  map (T6/T1: Dwaar V's `5` joins; T7/T1: Dwaar VI's `6` joins; T8/T1:
+   *  Dwaar VII's `7` joins). */
+  const shardKeyFor = (which: 1 | 2 | 3 | 4 | 5 | 6 | 7): string =>
+    which === 7
+      ? 'overlay.shardInterstitial7'
+      : which === 6
+        ? 'overlay.shardInterstitial6'
+        : which === 5
+          ? 'overlay.shardInterstitial5'
+          : which === 4
+            ? 'overlay.shardInterstitial4'
+            : which === 3
+              ? 'overlay.shardInterstitial3'
+              : which === 2
+                ? 'overlay.shardInterstitial2'
+                : 'overlay.shardInterstitial';
 
   /** One place that knows every static chrome label — boot and setLang().
    *  M5/T6: every HUD button also carries an aria-label from the same table —
@@ -555,7 +573,7 @@ export function createHud(init: HudInit): Hud {
     hideDescend: () => {
       descend.hidden = true;
     },
-    showShardInterstitial: (which: 1 | 2 | 3 | 4 | 5 | 6 = 1) => {
+    showShardInterstitial: (which: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 1) => {
       shardKey = shardKeyFor(which);
       shard.textContent = t(lang, shardKey);
       shard.hidden = false;

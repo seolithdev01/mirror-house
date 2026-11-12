@@ -86,8 +86,8 @@ interface DebugHook {
   // M4/T2 — the campaign spine (base seed, current floor, tier flag)
   campaign(): { base: string; floor: number; tierComplete: boolean };
   // T2/T4 — the tier the stage is dressed in (venue side-floors read 1;
-  // T7/T3 — the Whisper Library reads 7)
-  tier(): 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  // T7/T3 — the Whisper Library reads 7; T8/T1 — the Frozen Atrium reads 8)
+  tier(): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   // T7/T3 — the live noise ring's size (pings hearable right now; the
   // economy's fuel gauge — rises under a sprint, decays on silence)
   noise(): number;

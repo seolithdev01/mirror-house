@@ -5,6 +5,7 @@ import {
   GHER_SENTINEL_FLOOR,
   TAAL_RETURN_FLOOR,
   TAAL_SENTINEL_FLOOR,
+  TIER_EIGHT_FLOORS,
   TIER_FIVE_FLOORS,
   TIER_FOUR_FLOORS,
   TIER_ONE_FLOORS,
@@ -50,43 +51,45 @@ export function floorSeed(c: Campaign): string {
  *  here — but LEAVING a Dwaar floor re-arms the tier flag for the tier
  *  below (Act I continues past Dwaar I), so the single `tierComplete` flag
  *  always reads "the CURRENT tier's threshold has been claimed".
- *  T7: the campaign is TERMINAL at floor 70 (Dwaar VII closes the house's
- *  third act of floors) — descend there is a NO-OP that returns the same
- *  object, so the tier screen is the end of the house until tier 8 exists.
- *  (The T6-era terminus at 60 is retired: 60 → 61 is a real descent now —
- *  the Whisper Library opens, and Dwaar VI's claim joins the interstitial
- *  cascade like II/III/IV/V.) */
+ *  T8: the campaign is TERMINAL at floor 80 (Dwaar VIII closes the house's
+ *  fourth act of floors) — descend there is a NO-OP that returns the same
+ *  object, so the tier screen is the end of the house until Act III tier 9
+ *  exists. (The T7-era terminus at 70 is retired: 70 → 71 is a real descent
+ *  now — the Frozen Atrium opens, and Dwaar VII's claim joins the
+ *  interstitial cascade like II/III/IV/V/VI.) */
 export function descend(c: Campaign): Campaign {
-  if (c.floor >= TIER_SEVEN_FLOORS) return c; // the house ends at 70 — no floor 71 yet
+  if (c.floor >= TIER_EIGHT_FLOORS) return c; // the house ends at 80 — Act III is tier 9
   const next: Campaign = { ...c, floor: c.floor + 1 };
   return isDwaar(c.floor) ? { ...next, tierComplete: false } : next;
 }
 
 /** Truth-Shard claim: only takes effect standing on a Dwaar floor —
  *  Dwaar I (10), Dwaar II (20), Dwaar III (30), Dwaar IV (40), Dwaar V
- *  (50), Dwaar VI (60) or Dwaar VII (70). The flag stays single: each
- *  tier's completion sets it again after the descent from the tier above
- *  re-armed it. */
+ *  (50), Dwaar VI (60), Dwaar VII (70) or Dwaar VIII (80). The flag stays
+ *  single: each tier's completion sets it again after the descent from the
+ *  tier above re-armed it. */
 export function completeTier(c: Campaign): Campaign {
   return isDwaar(c.floor) ? { ...c, tierComplete: true } : c;
 }
 
 /** Which tier a floor belongs to: 1–10 → 1, 11–20 → 2, 21–30 → 3,
- *  31–40 → 4, 41–50 → 5, 51–60 → 6, 61–70 → 7. */
-export function tierOf(floor: number): 1 | 2 | 3 | 4 | 5 | 6 | 7 {
-  return floor > TIER_SIX_FLOORS
-    ? 7
-    : floor > TIER_FIVE_FLOORS
-      ? 6
-      : floor > TIER_FOUR_FLOORS
-        ? 5
-        : floor > TIER_THREE_FLOORS
-          ? 4
-          : floor > TIER_TWO_FLOORS
-            ? 3
-            : floor > TIER_ONE_FLOORS
-              ? 2
-              : 1;
+ *  31–40 → 4, 41–50 → 5, 51–60 → 6, 61–70 → 7, 71–80 → 8. */
+export function tierOf(floor: number): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 {
+  return floor > TIER_SEVEN_FLOORS
+    ? 8
+    : floor > TIER_SIX_FLOORS
+      ? 7
+      : floor > TIER_FIVE_FLOORS
+        ? 6
+        : floor > TIER_FOUR_FLOORS
+          ? 5
+          : floor > TIER_THREE_FLOORS
+            ? 4
+            : floor > TIER_TWO_FLOORS
+              ? 3
+              : floor > TIER_ONE_FLOORS
+                ? 2
+                : 1;
 }
 
 /** The Dwaar threshold halls occupy the last floor of each tier. */
@@ -98,57 +101,68 @@ export function isDwaar(floor: number): boolean {
     floor === TIER_FOUR_FLOORS ||
     floor === TIER_FIVE_FLOORS ||
     floor === TIER_SIX_FLOORS ||
-    floor === TIER_SEVEN_FLOORS
+    floor === TIER_SEVEN_FLOORS ||
+    floor === TIER_EIGHT_FLOORS
   );
 }
 
-// ---- the sentinel rotation (T5, extended T6/T7, spec §4.6) ------------------
+// ---- the sentinel rotation (T5, extended T6/T7/T8, spec §4.6) ---------------
 // The ladder STOPS GROWING: tiers 2–4 each added a Sentinel and the bare
 // `>=` gates expressed that. Act II rotates instead — floors 41–49 hunt with
 // Taal alone (Gher and Aavart rest — the ratified change), Dwaar V (50) was
 // the first ALL-FOUR duel, T6's Furnace Wings turned the wheel again (TAAL
 // RESTS 51–59, his first rest ever; Gher and Aavart RETURN to walk the
-// Wings), and T7's Whisper Library turns it once more: TAAL'S REST EXTENDS
-// through 65 (the ratified net change on the old floors is 60–65 gaining
-// rest — the Dwaar VI crucible now replays without him) and he RETURNS at
-// TAAL_RETURN_FLOOR (66) — the beat in the silence, his ticks the noise he
-// ignores but you cannot miss; GHER rests 61–69 and joins ONLY at the Dwaar
-// VII duet (70 — Taal + Gher in the stacks); AAVART rests all of tier 7
-// (returns in tier 8). Floors 1–59 read EXACTLY as the T6 rotation did and
-// Gher/Aavart keep the Furnace (50–60) they have always walked — the
-// rotation only ever changes behavior where the plan ratifies it.
+// Wings), T7's Whisper Library turned it once more (TAAL'S REST EXTENDED
+// through 65, he RETURNED at TAAL_RETURN_FLOOR (66); GHER rested 61–69 and
+// joined ONLY at the Dwaar VII duet (70); AAVART rested all of tier 7), and
+// T8's Frozen Atrium turns it again: TAAL AND GHER REST 71–79 and are
+// called down ONLY for the Dwaar VIII duel (80 — the campaign's second
+// all-four close), while AAVART RETURNS — the Ambusher walks the whole
+// Atrium beside Chhaya (she has no gate; she walks every floor as always).
+// Floors 1–70 read EXACTLY as the shipped t7 rotation did — the rotation
+// only ever changes behavior where the plan ratifies it.
 
 /** The beat-walker: his cameo floor (5) is a separate gate — from the
  *  Sentinel floor (11) through the Flood's close (50) he walked EVERY floor;
- *  the Furnace gave him his first rest (51–59) and the Library EXTENDS it
- *  through 65 before TAAL_RETURN_FLOOR (66) brings him back for the duet's
- *  approach (66–70). */
+ *  the Furnace gave him his first rest (51–59), the Library EXTENDED it
+ *  through 65 before TAAL_RETURN_FLOOR (66) brought him back for the duet's
+ *  approach (66–70), and the Atrium rests him again (71–79) until the Dwaar
+ *  VIII duel calls him down (80). */
 export function taalPresent(floor: number): boolean {
-  return (floor >= TAAL_SENTINEL_FLOOR && floor <= TIER_FIVE_FLOORS) || floor >= TAAL_RETURN_FLOOR;
+  return (
+    (floor >= TAAL_SENTINEL_FLOOR && floor <= TIER_FIVE_FLOORS) ||
+    (floor >= TAAL_RETURN_FLOOR && floor <= TIER_SEVEN_FLOORS) ||
+    floor === TIER_EIGHT_FLOORS
+  );
 }
 
 /** The Encircler: from the Gardens (21) through the Carnival (40) — exactly
  *  the accumulated ladder he has always walked, floors 1–40 frozen — he
  *  rested on the Flood Halls (41–49, the ratified T5 rotation) until the
  *  Dwaar V duel called him down (50); the Furnace is HIS home tier (50–60,
- *  untouched by T7) and the Library gives him the whole tier off EXCEPT the
- *  Dwaar VII duet (70). */
+ *  untouched by T7/T8), the Library gave him the whole tier off EXCEPT the
+ *  Dwaar VII duet (70), and the Atrium rests him again (71–79) until the
+ *  Dwaar VIII duel calls him down (80). */
 export function gherPresent(floor: number): boolean {
   return (
     (floor >= GHER_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) ||
     (floor >= TIER_FIVE_FLOORS && floor <= TIER_SIX_FLOORS) ||
-    floor === TIER_SEVEN_FLOORS
+    floor === TIER_SEVEN_FLOORS ||
+    floor === TIER_EIGHT_FLOORS
   );
 }
 
 /** The Ambusher: the Carnival (31–40), the T5 rest (41–49), the Dwaar V
  *  duel (50) — and like the Encircler he returned for the whole Furnace
- *  (50–60, untouched by T7). The Library rests him entirely (61–70): tier 7
- *  belongs to the hearing Echoes and the duet; he returns in tier 8. */
+ *  (50–60). The Library rested him entirely (61–70): tier 7 belonged to the
+ *  hearing Echoes and the duet. T8 brings him BACK — his gate walks the
+ *  whole Atrium (71–80): the frozen floors are his ambush and Chhaya's
+ *  shadow, and the all-four duel closes the tier. */
 export function aavartPresent(floor: number): boolean {
   return (
     (floor >= AVART_SENTINEL_FLOOR && floor <= TIER_FOUR_FLOORS) ||
-    (floor >= TIER_FIVE_FLOORS && floor <= TIER_SIX_FLOORS)
+    (floor >= TIER_FIVE_FLOORS && floor <= TIER_SIX_FLOORS) ||
+    floor > TIER_SEVEN_FLOORS
   );
 }
 
@@ -209,10 +223,27 @@ export function bestKey(c: Campaign): string {
  *  beacons = 4 on every floor;
  *  braid = 0.36 + 0.004*(floor-61);
  *  chhayaDelayMs = max(2700, 3300 - 60*(floor-61)) (Dwaar VII 2600 — the
- *  stacks hush, Chhaya does not wait). */
+ *  stacks hush, Chhaya does not wait).
+ *
+ *  T8 — floors 71..TIER_EIGHT_FLOORS (the Frozen Atrium):
+ *  echoes = 4 on every procedural floor, Dwaar VIII ALONE carrying 5 (the
+ *  all-four duel is the tier's apex — the tier's teeth are the frozen
+ *  mirrors and the Ambusher's return, not the echo count);
+ *  beacons = 4 on every floor;
+ *  braid = 0.38 + 0.004*(floor-71);
+ *  chhayaDelayMs = max(2600, 3200 - 60*(floor-71)) (Dwaar VIII 2500 — the
+ *  atrium freezes, Chhaya does not wait). */
 export function floorParams(floor: number): FloorRamp {
-  const f = Math.min(Math.max(floor, 1), TIER_SEVEN_FLOORS);
+  const f = Math.min(Math.max(floor, 1), TIER_EIGHT_FLOORS);
   const dwaar = isDwaar(f);
+  if (f > TIER_SEVEN_FLOORS) {
+    return {
+      echoes: dwaar ? 5 : 4,
+      beacons: 4,
+      braid: 0.38 + 0.004 * (f - TIER_SEVEN_FLOORS - 1),
+      chhayaDelayMs: dwaar ? 2500 : Math.max(2600, 3200 - 60 * (f - TIER_SEVEN_FLOORS - 1)),
+    };
+  }
   if (f > TIER_SIX_FLOORS) {
     return {
       echoes: dwaar ? 5 : 4,
@@ -445,10 +476,42 @@ export const DWAAR_VII_LAYOUT: readonly string[] = [
   '#############',
 ];
 
+/** Hand-authored Dwaar VIII — the frozen atrium, floor 80, where the
+ *  campaign's fourth act of floors closes on the all-four duel (Taal and
+ *  Gher called down from rest; Aavart back from his tier-7 sabbatical).
+ *  13×13 like its elders, 97 open cells: a GRAND CENTRAL RING — the
+ *  chebyshev-radius-3 wall ring (24 cells) around a fully-open 5×5 inner
+ *  court, broken by EXACTLY 4 gaps at the compass midpoints (the atrium's
+ *  four gates) — plus 4 RADIAL GALLERIES: one gallery wall on each
+ *  ring-corner→hall-corner diagonal, 180°-mirrored in pairs ((2,2)↔(10,10)
+ *  and (10,2)↔(2,10)), whose flanks form the narrow corner galleries a
+ *  walker takes toward the entrance/exit corners. Nothing else is wall: the
+ *  atrium floor stands grand where the Library crowded its stacks (the
+ *  frozen panes need the long sightlines their thaw will close). Invariant
+ *  under 180° rotation so the exit mirrors the entrance; all 97 open cells
+ *  form one connected component — four Sentinels need the room to walk
+ *  their beats. */
+export const DWAAR_VIII_LAYOUT: readonly string[] = [
+  '#############',
+  '#...........#',
+  '#.#.......#.#',
+  '#..###.###..#',
+  '#..#.....#..#',
+  '#..#.....#..#',
+  '#...........#',
+  '#..#.....#..#',
+  '#..#.....#..#',
+  '#..###.###..#',
+  '#.#.......#.#',
+  '#...........#',
+  '#############',
+];
+
 /** The hand-authored layout of a Dwaar floor: Dwaar I at 10, Dwaar II at 20,
  *  Dwaar III at 30, Dwaar IV at 40, Dwaar V at 50, Dwaar VI at 60, Dwaar
- *  VII at 70. */
+ *  VII at 70, Dwaar VIII at 80. */
 function dwaarLayout(floor: number): readonly string[] {
+  if (floor === TIER_EIGHT_FLOORS) return DWAAR_VIII_LAYOUT;
   if (floor === TIER_SEVEN_FLOORS) return DWAAR_VII_LAYOUT;
   if (floor === TIER_SIX_FLOORS) return DWAAR_VI_LAYOUT;
   if (floor === TIER_FIVE_FLOORS) return DWAAR_V_LAYOUT;
@@ -462,7 +525,7 @@ function dwaarLayout(floor: number): readonly string[] {
  *  open cells only — see maze.floorFromGrid). Defaults to Dwaar I; floor 20
  *  reads DWAAR_II_LAYOUT, floor 30 DWAAR_III_LAYOUT, floor 40
  *  DWAAR_IV_LAYOUT, floor 50 DWAAR_V_LAYOUT, floor 60 DWAAR_VI_LAYOUT,
- *  floor 70 DWAAR_VII_LAYOUT. */
+ *  floor 70 DWAAR_VII_LAYOUT, floor 80 DWAAR_VIII_LAYOUT. */
 export function dwaarGrid(floor: number = DWAAR_FLOOR): {
   width: number;
   height: number;

@@ -98,9 +98,14 @@ export const TIER_FIVE_FLOORS = 50;
 export const TIER_SIX_FLOORS = 60;
 // T7 — the Whisper Library: floors 61–69 procedural ramp, 70 = Dwaar VII (the
 // reading room; the Taal+Gher duet — Truth-Shard VII closes the tier on the
-// full tier screen, the campaign's terminal close until tier 8 exists:
-// descend() is a no-op there).
+// 1.8s interstitial, T8/T1: the full screen moved to Dwaar VIII and the
+// T7-era terminal close retired downward with it).
 export const TIER_SEVEN_FLOORS = 70;
+// T8 — the Frozen Atrium: floors 71–79 procedural ramp, 80 = Dwaar VIII (the
+// all-four-Sentinel duel — Truth-Shard VIII closes the tier on the full tier
+// screen, the campaign's terminal close until Act III tier 9 exists:
+// descend() is a no-op there).
+export const TIER_EIGHT_FLOORS = 80;
 // T7 — the beat-walker's RETURN: Taal's rest (his first, 51–59 in T6)
 // extends through 65 and he walks the Library's last five floors (66–70) —
 // his beat ticks are noise he ignores but you cannot miss.
