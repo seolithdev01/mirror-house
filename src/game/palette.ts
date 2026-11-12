@@ -155,6 +155,28 @@ export const TIER_SEVEN_PALETTE: TierPalette = {
   exit: 0xd9a441,
 };
 
+/** The Frozen Atrium (floors 71–80, T8): ice on deep void-blue — the atrium
+ *  by frost-light. Near-black blue void over a sea-dark floor, ice-teal glass
+ *  in the teal slot, frost-blue in the rose-diamond slot, pale ice lantern
+ *  light. The slot NAMES hold one last time: the teal slot wears the atrium's
+ *  frozen glass light, the rose-diamond slot wears the hoarfrost accent, so
+ *  every palette-driven pattern re-dresses itself with zero structural
+ *  change (the T2 precedent). */
+export const TIER_EIGHT_PALETTE: TierPalette = {
+  void: 0x08101a,
+  floorBase: 0x14243a,
+  floorLines: 0x1e3450,
+  teal: 0x9ad4e8, // ice — the atrium's frozen glass light
+  ivory: 0xeef4fa,
+  gold: 0xd9a441,
+  rose: 0x6a9ac2, // frost-blue — the lattice diamonds in hoarfrost
+  wallTop: 0x7c96ac,
+  wallBottom: 0x31465c,
+  lantern: 0xd8f0ff,
+  entrance: 0x9ad4e8,
+  exit: 0xd9a441,
+};
+
 /** The palette a floor dresses in, by tier (campaign.tierOf picks the side).
  *  T3/T4: tier 3 wears the Gardens palette — the tier-one stand-in is
  *  retired. T4/T4: tier 4 wears the Carnival palette — the documented
@@ -168,9 +190,9 @@ export const TIER_SEVEN_PALETTE: TierPalette = {
  *  T7/T3: tier 7 wears the Whisper Library's moonlit lavender-grey — the
  *  documented Furnace stand-in (T7/T1's fallthrough) is retired here, the
  *  same retire-the-stand-in pattern one tier down.
- *  T8/T1: tier 8 keeps the documented tier-one stand-in — the Library's
- *  dressing was ITS tier-one stand-in once; the Frozen Atrium's ice palette
- *  (T8/T3) retires this one the same way. */
+ *  T8/T3: tier 8 wears the Frozen Atrium's ice-on-void-blue — the documented
+ *  tier-one stand-in (T8/T1's fallthrough) is retired here, the same
+ *  retire-the-stand-in pattern one tier down. */
 export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
@@ -178,7 +200,8 @@ export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): TierPalette
   if (tier === 5) return TIER_FIVE_PALETTE;
   if (tier === 6) return TIER_SIX_PALETTE;
   if (tier === 7) return TIER_SEVEN_PALETTE; // T7/T3 — the stand-in retires
-  return TIER_ONE_PALETTE; // T8/T1 — the tier-one stand-in; T8/T3 retires it
+  if (tier === 8) return TIER_EIGHT_PALETTE; // T8/T3 — the stand-in retires
+  return TIER_ONE_PALETTE;
 }
 
 /** Deterministic per-cell floor accent on a 6x6 lattice: gold grid lines on every 6th row/column,

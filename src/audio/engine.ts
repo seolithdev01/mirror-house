@@ -18,15 +18,16 @@ export interface AudioEngine {
   setScale(scale: readonly number[]): void;
   /** Swap the melody osc's timbre live (T3/T4): 'sine' is the Gardens' flute
    *  lead, 'triangle' the tier-1/2 voice every reset returns to (venue floors
-   *  included — buildFloor re-sets scale AND voice together). */
-  setVoice(kind: 'triangle' | 'sine'): void;
+   *  included — buildFloor re-sets scale AND voice together), 'sawtooth' the
+   *  Frozen Atrium's cold strings (T8/T3). */
+  setVoice(kind: 'triangle' | 'sine' | 'sawtooth'): void;
   readonly started: boolean;
   readonly muted: boolean;
   /** The walker's current scale — the node test seam (no AudioContext needed
    *  to witness a setScale swap). */
   readonly scale: readonly number[];
   /** The melody osc's current kind — the setVoice test seam, same contract. */
-  readonly voice: 'triangle' | 'sine';
+  readonly voice: 'triangle' | 'sine' | 'sawtooth';
 }
 
 const SCHEDULE_MS = 50; // scheduler wake-up
@@ -41,7 +42,7 @@ function inertEngine(): AudioEngine {
   // witnesses setScale/setVoice swaps through them (the test seams documented
   // on the interface).
   let scale: readonly number[] = TIER_ONE_SCALE;
-  let voice: 'triangle' | 'sine' = 'triangle';
+  let voice: 'triangle' | 'sine' | 'sawtooth' = 'triangle';
   return {
     start: () => {},
     setIntensity: () => {},
@@ -49,7 +50,7 @@ function inertEngine(): AudioEngine {
     setScale: (s: readonly number[]) => {
       scale = s;
     },
-    setVoice: (kind: 'triangle' | 'sine') => {
+    setVoice: (kind: 'triangle' | 'sine' | 'sawtooth') => {
       voice = kind;
     },
     get started() {
@@ -86,7 +87,7 @@ export function createAudioEngine(seed: string): AudioEngine {
   let intensityTarget = 0.2;
   let intensity = intensityTarget;
   let melodyScale: readonly number[] = TIER_ONE_SCALE;
-  let melodyVoice: 'triangle' | 'sine' = 'triangle';
+  let melodyVoice: 'triangle' | 'sine' | 'sawtooth' = 'triangle';
   let prevSemi = MELODY_OCTAVE_SEMI;
   let tick = 0;
   let nextTickTime = 0;
@@ -115,9 +116,10 @@ export function createAudioEngine(seed: string): AudioEngine {
       osc.start();
     }
 
-    // Melody: one lead voice (triangle tier-1/2, sine = the Gardens' flute),
-    // portamento via linear frequency ramps. build() reads melodyVoice so a
-    // pre-start setVoice lands on the osc the moment it exists.
+    // Melody: one lead voice (triangle tier-1/2, sine = the Gardens' flute,
+    // sawtooth = the Atrium's cold strings), portamento via linear frequency
+    // ramps. build() reads melodyVoice so a pre-start setVoice lands on the
+    // osc the moment it exists.
     melodyOsc = ctx.createOscillator();
     melodyOsc.type = melodyVoice;
     melodyOsc.frequency.value = midiToHz(MELODY_OCTAVE_SEMI);
@@ -241,7 +243,7 @@ export function createAudioEngine(seed: string): AudioEngine {
     setScale(scale: readonly number[]) {
       melodyScale = scale;
     },
-    setVoice(kind: 'triangle' | 'sine') {
+    setVoice(kind: 'triangle' | 'sine' | 'sawtooth') {
       melodyVoice = kind;
       if (melodyOsc !== undefined) melodyOsc.type = kind;
     },

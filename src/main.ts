@@ -4,6 +4,7 @@ import { APP_VERSION } from './appVersion';
 import { createAudioEngine } from './audio/engine';
 import {
   intensityFrom,
+  TIER_EIGHT_SCALE,
   TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
   TIER_ONE_SCALE,
@@ -59,6 +60,7 @@ import {
   type InputMode,
 } from './engine/input';
 import { Dir, type CellIndex } from './engine/grid';
+import { losClear } from './engine/los';
 import {
   createAavart,
   createAvatar,
@@ -1479,8 +1481,8 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // The tier dresses the stage (T2/T3): campaign floors 11–20 wear the Hall
   // of Ancestors palette, 21–30 the Reflecting Gardens, 31–40 the Carnival
   // of Faces, 41–50 the Flood Halls, 51–60 the Furnace Wings, 61–70 the
-  // Whisper Library, 71–80 the Frozen Atrium (T8/T1: the documented tier-one
-  // dressing stand-in — the ice palette retires it in T8/T3) — the same
+  // Whisper Library, 71–80 the Frozen Atrium (T8/T3: the documented tier-one
+  // dressing stand-in retires — ice on deep void-blue) — the same
   // floorAccent lattice re-tinted, tiers 1–10
   // keep the night-blue tier-one set untouched. The melody moves with it
   // (T3/T4): Durga pentatonic on tier-2 floors, the pastoral pentatonic AND
@@ -1496,7 +1498,10 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   // in moonlit lavender-grey and hums the whispered pentatonic back on the
   // flute (the sine returns; the reed breathes, it does not speak), and the
   // frame feed hushes the intensity through TIER_SEVEN_INTENSITY_CEILING so
-  // the melody stays sparse (see the audio feed below).
+  // the melody stays sparse (see the audio feed below). T8/T3: the tier-8
+  // stand-ins retire — the Atrium dresses in ice on deep void-blue and hums
+  // the austere suspended pentatonic through the COLD STRINGS (the
+  // sawtooth's thin reed-bright edge: strings played over ice).
   // Venue side-floors stay tier-one dressed — scale AND voice: a return
   // from a sponsored floor resets both to the tier-one pair.
   const tier = tierOf(c.floor);
@@ -1509,7 +1514,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       5: TIER_FIVE_SCALE, // T5/T4 — the dark pentatonic (the stand-in retires)
       6: TIER_SIX_SCALE, // T6/T4 — the urgent pentatonic (the stand-in retires)
       7: TIER_SEVEN_SCALE, // T7/T3 — the whispered pentatonic (the stand-in retires)
-      8: TIER_SEVEN_SCALE, // T8/T1 — the documented Library stand-in; the cold strings (T8/T3) retire it
+      8: TIER_EIGHT_SCALE, // T8/T3 — the suspended pentatonic (the stand-in retires)
     } as const;
     const voiceByTier = {
       1: 'triangle',
@@ -1519,7 +1524,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
       5: 'triangle', // the reed stays — only the notes drown
       6: 'triangle', // the reed endures the heat — only the rung tightens
       7: 'sine', // T7/T3 — the whisper: the flute returns for the Library
-      8: 'sine', // T8/T1 — the documented Library stand-in; the sawtooth's cold strings (T8/T3) retire it
+      8: 'sawtooth', // T8/T3 — the cold strings: the saw sings over the ice
     } as const;
     audio.setScale(scaleByTier[tier]);
     audio.setVoice(voiceByTier[tier]);
@@ -3347,6 +3352,12 @@ if (import.meta.env.DEV || testMode) {
         total: allMirrors.length,
         fogged: mirrorRuntime.filter((r) => isFogged(r, now)).length,
         captured: mirrorRuntime.filter((r) => r.captured).length,
+        // T8/T3 — the Atrium's state census: the spawn ice (frozen ≥ 4 on a
+        // tier-8 floor — the standing glass + the heroes) and the thawed
+        // panes (0 at load; the thaw leg's witness). Both ride the same
+        // runtime the e2e's mirrorRuntime() already read — now as counts.
+        frozen: mirrorRuntime.filter((r) => r.frozen).length,
+        thawed: mirrorRuntime.filter((r) => r.thawed).length,
         // T2/T4 — the ancestor portrait census (kind count; tier-2 floors
         // hang 2–3, tier-1 and venues none).
         portraits: allMirrors.filter((m) => m.kind === 'portrait').length,
@@ -3357,6 +3368,15 @@ if (import.meta.env.DEV || testMode) {
         // everywhere else — the LAST-LAST gated rng's output).
         distort: allMirrors.filter((m) => m.kind === 'distort').length,
       };
+    },
+    // T8/T3 — one pane's single sight/display state (frost.mirrorVisual:
+    // 'clear' | 'fogged' | 'captured' | 'frozen') by id — the thaw leg's
+    // witness: frost on ice reads 'clear' (thawed) while mirrors().thawed
+    // counts it, and frost again reads 'fogged' (blind again). Null past
+    // the board. Additive; the pre-T8 states read exactly as before.
+    mirrorState: (id: number) => {
+      const rt = mirrorRuntime.find((r) => r.id === id);
+      return rt === undefined ? null : mirrorVisual(rt, performance.now());
     },
     // T4/T3 — where the house says the player stands right now: the true
     // position, or the first seeing distort pane's displaced lie (≠ getPlayer
@@ -3451,5 +3471,10 @@ if (import.meta.env.DEV || testMode) {
     mirrorRefs: () => allMirrors.map((m) => ({ ...m })),
     mirrorRuntime: () => mirrorRuntime.map((r) => ({ ...r })),
     canWalk: (x: number, y: number, d: number) => floor.grid.canWalk(x, y, d as Dir),
+    // T8/T3 — the grid LOS read-out (the same DDA the echo senses use), so a
+    // picking e2e can tell wall-blocked sight lines from open ones without
+    // duplicating the engine. Read-only.
+    los: (x1: number, y1: number, x2: number, y2: number) =>
+      losClear(floor.grid, x1, y1, x2, y2),
   };
 }

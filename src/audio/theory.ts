@@ -34,6 +34,11 @@ export const TIER_SIX_SCALE: readonly number[] = [0, 1, 5, 7, 8];
  *  breathes through the stacks (spec §6.1 row 7). */
 export const TIER_SEVEN_SCALE: readonly number[] = [0, 2, 3, 7, 8];
 
+/** Tier-eight mood: the Frozen Atrium's austere suspended pentatonic — root,
+ *  second, fourth, fifth, flat seventh, no third at all — the open frozen
+ *  air the cold strings stretch (spec §6.1 row 8). */
+export const TIER_EIGHT_SCALE: readonly number[] = [0, 2, 5, 7, 10];
+
 /** T7/T3 — the whisper ceiling: tier 7's melody intensity never rises past
  *  0.55. Main applies it in the per-frame audio feed as a MULTIPLIER on the
  *  raw threat blend (the disclosed method): the blend never exceeds 1, so

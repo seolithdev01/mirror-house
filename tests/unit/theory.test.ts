@@ -8,6 +8,7 @@ import {
   intensityFrom,
   midiToHz,
   nextMelodySemi,
+  TIER_EIGHT_SCALE,
   TIER_FIVE_SCALE,
   TIER_FOUR_SCALE,
   TIER_ONE_SCALE,
@@ -69,6 +70,13 @@ describe('scales', () => {
   // hushes to 0.11), disclosed there; this pins the constant itself.
   it('the whisper ceiling is exact (0.55)', () => {
     expect(TIER_SEVEN_INTENSITY_CEILING).toBe(0.55);
+  });
+
+  // T8/T3 — the Frozen Atrium's austere suspended pentatonic (spec §6.1
+  // row 8): root, second, fourth, fifth, flat seventh — no third at all,
+  // the open frozen air the cold strings stretch.
+  it('tier eight is the austere suspended pentatonic set', () => {
+    expect(TIER_EIGHT_SCALE).toEqual([0, 2, 5, 7, 10]);
   });
 });
 
@@ -190,6 +198,21 @@ describe('nextMelodySemi', () => {
     }
   });
 
+  // T8/T3 — the cold-string walker walks the suspended set only: every
+  // emitted note is a tier-eight member inside the window (pcs of
+  // [0,2,5,7,10]).
+  it('after a tier-eight swap the walk only emits suspended members in the window', () => {
+    const rng = createRng('ATRIUM-WALK');
+    let semi = OCT;
+    const suspended = new Set(TIER_EIGHT_SCALE.map((s) => (OCT + s) % 12));
+    for (let i = 0; i < 200; i++) {
+      semi = nextMelodySemi(rng, TIER_EIGHT_SCALE, semi, 0.7, OCT);
+      expect(semi).toBeGreaterThanOrEqual(OCT);
+      expect(semi).toBeLessThanOrEqual(OCT + 12);
+      expect(suspended.has(semi % 12)).toBe(true);
+    }
+  });
+
   it('walks wider on average at intensity 0.9 than at 0.2 (seeded statistics)', () => {
     const avgLeap = (seed: string, intensity: number): number => {
       const rng = createRng(seed);
@@ -301,14 +324,27 @@ describe('createAudioEngine (node)', () => {
 
   // T3/T4 — the voice test seam: the engine exposes the melody osc's live
   // kind so node can witness setVoice without an AudioContext. The flute is
-  // tier-3's lead (sine); triangle is the tier-1/2 default every reset
-  // returns to (venue floors included — buildFloor re-sets both scale+voice).
+  // tier-3's lead (sine); the Atrium's cold strings are tier-8's (sawtooth,
+  // T8/T3); triangle is the tier-1/2 default every reset returns to (venue
+  // floors included — buildFloor re-sets both scale+voice).
   it('setVoice swaps the melody voice live (starts triangle)', () => {
     const engine = createAudioEngine('FLUTE');
     expect(engine.voice).toBe('triangle');
     expect(() => engine.setVoice('sine')).not.toThrow();
     expect(engine.voice).toBe('sine');
     // swap is repeatable both ways — buildFloor re-sets it on every floor
+    engine.setVoice('triangle');
+    expect(engine.voice).toBe('triangle');
+  });
+
+  // T8/T3 — the cold strings: 'sawtooth' joins the voice union for the
+  // Frozen Atrium (the austere suspended set through the reedy saw), and the
+  // seam witnesses the swap like sine/triangle before it.
+  it('setVoice accepts sawtooth (the Atrium\'s cold strings)', () => {
+    const engine = createAudioEngine('FROST-STRINGS');
+    expect(() => engine.setVoice('sawtooth')).not.toThrow();
+    expect(engine.voice).toBe('sawtooth');
+    // buildFloor re-sets both — the walk home stays open
     engine.setVoice('triangle');
     expect(engine.voice).toBe('triangle');
   });

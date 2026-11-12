@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   floorAccent,
   paletteForTier,
+  TIER_EIGHT_PALETTE,
   TIER_FIVE_PALETTE,
   TIER_FOUR_PALETTE,
   TIER_ONE_PALETTE,
@@ -71,9 +72,9 @@ describe('palette', () => {
     expect(paletteForTier(6)).toBe(TIER_SIX_PALETTE);
     // T7/T3 — the Whisper Library dresses tier 7 (the Furnace stand-in retired)
     expect(paletteForTier(7)).toBe(TIER_SEVEN_PALETTE);
-    // T8/T1 — tier 8 keeps the documented tier-one stand-in: the ice palette
-    // (T8/T3) retires it, the same retire-the-stand-in pattern one tier down
-    expect(paletteForTier(8)).toBe(TIER_ONE_PALETTE);
+    // T8/T3 — the Frozen Atrium dresses tier 8 (the tier-one stand-in retired,
+    // the same retire-the-stand-in pattern one tier down)
+    expect(paletteForTier(8)).toBe(TIER_EIGHT_PALETTE);
   });
 
   // T3/T4 — the Reflecting Gardens palette (floors 21–30, spec §4.6 row 3):
@@ -266,5 +267,41 @@ describe('palette', () => {
     // the two-tone checker flips to the slate-blue floor pair
     expect(floorAccent(1, 1, TIER_SEVEN_PALETTE)).toBe(0x242436);
     expect(floorAccent(2, 1, TIER_SEVEN_PALETTE)).toBe(0x181824);
+  });
+
+  // T8/T3 — the Frozen Atrium palette (floors 71–80, spec §4.6 row 8): ice
+  // on deep void-blue — the atrium by frost-light. Near-black blue void over
+  // a sea-dark floor, ice-teal glass in the teal slot, frost-blue in the
+  // rose-diamond slot, pale ice lantern light. The slot NAMES hold one last
+  // time (the T2 precedent): every palette-driven pattern re-dresses itself
+  // with zero structural change — and the tier-one stand-in retires with
+  // this commit.
+  it('tier-eight values are exact (Frozen Atrium: ice on deep void-blue)', () => {
+    expect(TIER_EIGHT_PALETTE).toEqual({
+      void: 0x08101a,
+      floorBase: 0x14243a,
+      floorLines: 0x1e3450,
+      teal: 0x9ad4e8, // the ice slot — the atrium's frozen glass light
+      ivory: 0xeef4fa,
+      gold: 0xd9a441,
+      rose: 0x6a9ac2, // the frost-blue slot — the lattice diamonds in hoarfrost
+      wallTop: 0x7c96ac,
+      wallBottom: 0x31465c,
+      lantern: 0xd8f0ff,
+      entrance: 0x9ad4e8,
+      exit: 0xd9a441,
+    });
+  });
+
+  it('floorAccent with the tier-eight palette: same pattern, atrium colors', () => {
+    // the rose-diamond slot becomes the frost-blue accent; the gold lattice holds
+    expect(floorAccent(3, 3, TIER_EIGHT_PALETTE)).toBe(0x6a9ac2);
+    expect(floorAccent(9, 3, TIER_EIGHT_PALETTE)).toBe(0x6a9ac2);
+    expect(floorAccent(6, 2, TIER_EIGHT_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(2, 12, TIER_EIGHT_PALETTE)).toBe(0xd9a441);
+    expect(floorAccent(0, 0, TIER_EIGHT_PALETTE)).toBe(0xd9a441);
+    // the two-tone checker flips to the sea-dark floor pair
+    expect(floorAccent(1, 1, TIER_EIGHT_PALETTE)).toBe(0x1e3450);
+    expect(floorAccent(2, 1, TIER_EIGHT_PALETTE)).toBe(0x14243a);
   });
 });

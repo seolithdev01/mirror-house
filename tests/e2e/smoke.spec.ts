@@ -17,10 +17,21 @@ interface DebugHook {
     total: number;
     fogged: number;
     captured: number;
+    // T8/T3 — the Atrium's state census: the spawn ice and the thawed panes
+    frozen: number;
+    thawed: number;
     portraits: number;
     water: number;
     distort: number;
   };
+  // T8/T3 — one pane's single sight/display state by id
+  // (frost.mirrorVisual: 'clear' | 'fogged' | 'captured' | 'frozen'; null
+  // past the board) — the thaw leg's witness.
+  mirrorState(
+    id: number,
+  ): 'clear' | 'fogged' | 'captured' | 'frozen' | null;
+  // T8/T3 — the grid LOS read-out (the same DDA the echo senses use)
+  los(x1: number, y1: number, x2: number, y2: number): boolean;
   // T4/T3 — where the house says the player stands (the distort lie's read-out)
   apparentPlayer(): { x: number; y: number };
   avatarPresent: boolean;
@@ -46,8 +57,21 @@ interface DebugHook {
   doorTarget(): number | null;
   pushDoor(): void;
   doorsOpened(): number[];
-  mirrorRefs(): unknown[];
-  mirrorRuntime(): unknown[];
+  mirrorRefs(): Array<{
+    id: number;
+    kind: string;
+    x: number;
+    z: number;
+    cellX: number;
+    cellY: number;
+  }>;
+  mirrorRuntime(): Array<{
+    id: number;
+    kind: string;
+    captured: boolean;
+    frozen: boolean;
+    thawed: boolean;
+  }>;
   canWalk(x: number, y: number, d: number): boolean;
   // T8 hooks — scripted win/lose
   beaconsLeft(): number;
@@ -2434,6 +2458,367 @@ test('t7: taal returns at 66 + echoes hear noise', async ({ page }) => {
     },
     target!.i,
     { timeout: 9000 },
+  );
+  expect(errors).toEqual([]);
+});
+
+// T8/T3 — the Frozen Atrium loads END TO END. Floor 71 dresses tier 8 (the
+// tier-one stand-in retired): the hook reads 8, the chip carries `· T8`, the
+// rotation rests its pair (the Ambusher walks 71–79; Taal and Gher sit out
+// until Dwaar VIII), every fogable pane arrives FROZEN (the standing glass
+// plus the heroes — ≥ 4; the beacons and the true pair stay live glass), and
+// the austere suspended pentatonic hums through the cold strings (sawtooth).
+// Then the inversion, played for real: the F verb on ice THAWS it — the pane
+// reads 'clear' and the thawed census ticks — and a warden drawn within the
+// lure radius WALKS to the thawed pane and stands watching it. The pick runs
+// in ONE in-page pass over the real refs, re-polled inside the wait (the
+// wardens patrol — at load none stands within the radius): it fires when one
+// passes 3–6 m off a pane with NO sight line to it (a wall blocks the
+// reflection — the thawed glass can never become that warden's eye, so the
+// lure cannot be eaten by a chase), no live pane (beacon/true) co-watches
+// the stand spot with ANY warden (waiting at the glass for the frost cannot
+// start one either), and no beacon/exit cell sits where the player waits.
+// The retreat itself rides the thaw poll — the same in-page turn the thaw is
+// seen, before any sense tick can read a player 1 m from a live eye. No
+// movement key is ever pressed: the phase stays 'ready', the path stays
+// empty, and Chhaya stays hidden. Frost again and the pane cold-fogs:
+// 'fogged' — blind again, the thaw spent.
+test('t8: floor 71 loads the atrium frozen', async ({ page }) => {
+  test.setTimeout(90_000); // the pick waits out the wardens' patrol; the lure walk paths around walls
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T8RUN&floor=71');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      taal: h.taalPos(),
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+      echoes: h.enemyCount(),
+      mirrors: h.mirrors(),
+      audio: h.audioState(),
+    };
+  });
+  expect(snap.tier).toBe(8);
+  expect(snap.floor).toBe(71);
+  expect(snap.taal, 'the Sentinel rests the whole Atrium (71–79)').toBeNull();
+  expect(snap.gher, 'the Encircler joins only at Dwaar VIII').toBeNull();
+  expect(snap.avart, 'the Ambusher returns — Chhaya + Aavart walk 71–79').not.toBeNull();
+  expect(snap.echoes, 'the atrium is guarded — 4 wardens on a tier-8 floor').toBe(4);
+  expect(snap.mirrors.frozen, 'the fogable glass arrives encased').toBeGreaterThanOrEqual(4);
+  expect(snap.mirrors.captured, 'the ice is not a capture').toBe(0);
+  expect(snap.mirrors.thawed, 'nothing is thawed at spawn').toBe(0);
+  // the suspended pair: the eighth scale on the cold strings (the seam
+  // tracks both from buildFloor, gesture or not)
+  expect(snap.audio.scale).toEqual([0, 2, 5, 7, 10]);
+  expect(snap.audio.voice).toBe('sawtooth');
+  await expect(page.locator('#mh-floor')).toHaveText('L71 · T8');
+
+  // leg 2 — the pick: pane, warden, stand spots, retreat, all decided in-page
+  // against the live board (geometry mirrors the t6 ward leg: cells ↔ meters
+  // via the derived W/H, CELL = 4 m). The wardens PATROL — at load none stands
+  // within the lure radius of any pane — so the matcher re-runs inside the
+  // wait loop and fires when one passes within 3–6 m of a pane it cannot see.
+  // Alongside the pair it solves two safe spots: S (0.85 m off the glass, the
+  // frost stand) and R (a walkable cell 2–10 m out that the thawed pane can
+  // NOT see — a wall blocks the reflection — no live pane co-watches with any
+  // warden, and no beacon or exit claims it), where the player waits out the
+  // lure walk untouchable.
+  const CELL = CELL_SIZE;
+  type Pick = {
+    id: number;
+    i: number;
+    sx: number;
+    sz: number;
+    heading: number;
+    s3x: number;
+    s3z: number;
+    pcx: number;
+    pcy: number;
+    rx: number;
+    ry: number;
+    dEP: number;
+  };
+  const stash = '__t8pick'; // the matcher's answer, stashed in-page per poll
+  await page.waitForFunction(
+    (cellAndStash: { cell: number; stash: string }) => {
+      const w = window as unknown as Record<string, unknown>;
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      const cell = cellAndStash.cell;
+      const rt = h.mirrorRuntime();
+      const frozenById = new Map(rt.map((r) => [r.id, r]));
+      const any = h.mirrorAt('standing');
+      if (any === null) return false;
+      const gw = Math.round(2 * (any.cellX - any.cx / cell) + 1);
+      const gh = Math.round(2 * (any.cellY - any.cy / cell) + 1);
+      const cc = (ix: number, iy: number) => ({
+        x: (ix + 0.5 - gw / 2) * cell,
+        y: (iy + 0.5 - gh / 2) * cell,
+      });
+      const refs = h.mirrorRefs();
+      const panes = refs.filter((m) => m.kind === 'standing' && frozenById.get(m.id)?.frozen);
+      const live = refs.filter((m) => m.kind === 'beacon' || m.kind === 'true'); // the sighted glass
+      const n = h.enemyCount();
+      const echoAt = (j: number) => h.enemyPos(j);
+      // co-watch: some live pane and some warden stand in the same reflection
+      // of spot p (both legs ≤ 13 m, both LOS clear)
+      const cowatch = (px: number, py: number): boolean => {
+        for (const L of live) {
+          if (Math.hypot(L.x - px, L.z - py) > 13 || !h.los(px, py, L.x, L.z)) continue;
+          for (let j = 0; j < n; j++) {
+            const e2 = echoAt(j);
+            if (e2 === null) continue;
+            if (Math.hypot(L.x - e2.x, L.z - e2.y) <= 13 && h.los(e2.x, e2.y, L.x, L.z)) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+      // the safe retreat: a walkable cell 2–10 m off the pane that the pane
+      // cannot see (walls block) and no live pane co-watches — never a
+      // beacon's or the exit's cell, which the Ambusher ambushes (he would
+      // walk straight to the player parked there and touch)
+      const exitC = h.exitPos();
+      const goals = refs
+        .filter((m) => m.kind === 'beacon')
+        .map((m) => ({ x: m.cellX, y: m.cellY }));
+      goals.push({
+        x: Math.floor(exitC.x / cell + gw / 2),
+        y: Math.floor(exitC.z / cell + gh / 2),
+      });
+      const retreatFor = (px: number, pz: number): { x: number; y: number } | null => {
+        for (let ix = 0; ix < gw; ix++) {
+          for (let iy = 0; iy < gh; iy++) {
+            if (goals.some((g) => g.x === ix && g.y === iy)) continue;
+            const open =
+              h.canWalk(ix, iy, 0) ||
+              h.canWalk(ix, iy, 1) ||
+              h.canWalk(ix, iy, 2) ||
+              h.canWalk(ix, iy, 3);
+            if (!open) continue;
+            const c = cc(ix, iy);
+            const d = Math.hypot(c.x - px, c.y - pz);
+            if (d < 2 || d > 10) continue;
+            if (h.los(px, pz, c.x, c.y)) continue; // the thawed pane cannot see R
+            if (cowatch(c.x, c.y)) continue;
+            return c;
+          }
+        }
+        return null;
+      };
+      let best: Pick | null = null;
+      for (const P of panes) {
+        const c = cc(P.cellX, P.cellY);
+        const d = Math.hypot(c.x - P.x, c.y - P.z); // mount offset: glass on the cell's wall
+        const ux = (c.x - P.x) / d; // glass → cell center unit vector
+        const uy = (c.y - P.z) / d;
+        const sx = P.x + ux * 0.85; // stand 0.85 m off the glass, inside the room
+        const sz = P.z + uy * 0.85;
+        const heading = Math.atan2(P.x - sx, -(P.z - sz)); // heading 0 = north (−z)
+        const s3x = P.x + ux * 3.5; // the re-frost stand: far enough that the
+        const s3z = P.z + uy * 3.5; // lingering warden at the cell center cannot touch
+        const r = retreatFor(P.x, P.z);
+        if (r === null) continue;
+        for (let i = 0; i < n; i++) {
+          if (h.echoMode(i) !== 'patrol') continue;
+          const e = echoAt(i);
+          if (e === null) continue;
+          const dEP = Math.hypot(P.x - e.x, P.z - e.y);
+          if (dEP < 3 || dEP > 6) continue; // inside the lure, drift left to witness
+          if (h.los(e.x, e.y, P.x, P.z)) continue; // wall between: the thawed pane is not this warden's eye
+          if (cowatch(sx, sz)) continue; // no live pane co-watches the frost stand
+          if (best === null || dEP < best.dEP) {
+            best = { id: P.id, i, sx, sz, heading, s3x, s3z, pcx: c.x, pcy: c.y, rx: r.x, ry: r.y, dEP };
+          }
+        }
+      }
+      w[cellAndStash.stash] = best; // the wait resolves when a pass succeeds
+      return best !== null;
+    },
+    { cell: CELL, stash },
+    { timeout: 30000, polling: 200 },
+  );
+  const pick = (await page.evaluate(
+    (s: string) => (window as unknown as Record<string, Pick | null>)[s] ?? null,
+    stash,
+  )) as Pick | null;
+  expect(pick, 'a warden patrols within the lure radius of a blind pane').not.toBeNull();
+
+  // the thaw: warp to the glass, wait for the target and the breath, press F
+  await page.evaluate(
+    (p: { sx: number; sz: number; heading: number }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      h.warp(p.sx, p.sz, p.heading);
+    },
+    pick!,
+  );
+  await page.waitForFunction(
+    (id: number) =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.fogTarget() === id,
+    pick!.id,
+    { timeout: 4000 },
+  );
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.breath() >= 0.34,
+    null,
+    { timeout: 10000 },
+  );
+  const frozenBefore = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.mirrors().frozen;
+  });
+  await page.keyboard.press('KeyF');
+  // the thaw lands: the pane reads 'clear' (thawed) and the census ticks —
+  // and the SAME in-page turn retreats the player to the warden-blind spot R,
+  // before any sense tick can read a player 1 m from a freshly-woken eye
+  await page.waitForFunction(
+    (p: { id: number; rx: number; ry: number }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      const ok = h.mirrorState(p.id) === 'clear' && h.mirrors().thawed >= 1;
+      if (ok) h.warp(p.rx, p.ry);
+      return ok;
+    },
+    pick!,
+    { timeout: 4000 },
+  );
+  const afterThaw = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.mirrors();
+  });
+  expect(afterThaw.frozen, 'the thawed pane leaves the ice census').toBe(frozenBefore - 1);
+  expect(afterThaw.thawed).toBe(1);
+
+  // the lure: the chosen warden walks to the thawed pane's cell and lingers —
+  // the path runs around walls, so the euclidean read-out can wander before
+  // it plunges; 30 s covers the long way round at a warden's 2.2 m/s
+  await page.waitForFunction(
+    (p: { i: number; pcx: number; pcy: number }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      const e = h.enemyPos(p.i);
+      return e !== null && Math.hypot(e.x - p.pcx, e.y - p.pcy) <= 0.5;
+    },
+    pick!,
+    { timeout: 30000 },
+  );
+
+  // leg 3 — frost the SAME pane again from 3.5 m off the glass (the lingering
+  // warden parks on the cell center, 0.85 m off it would meet the touch
+  // radius): the cold fog closes the eye ('fogged' — blind again) and the
+  // thaw is spent
+  await page.evaluate(
+    (p: { s3x: number; s3z: number; heading: number }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      h.warp(p.s3x, p.s3z, p.heading);
+    },
+    pick!,
+  );
+  await page.waitForFunction(
+    (id: number) =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.fogTarget() === id,
+    pick!.id,
+    { timeout: 4000 },
+  );
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.breath() >= 0.34,
+    null,
+    { timeout: 10000 },
+  );
+  await page.keyboard.press('KeyF');
+  await page.waitForFunction(
+    (id: number) =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.mirrorState(id) === 'fogged',
+    pick!.id,
+    { timeout: 4000 },
+  );
+  // step back to R before the read — the released warden's last memory of the
+  // stand spot must not touch the closing assertions
+  await page.evaluate(
+    (p: { rx: number; ry: number }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook })
+        .__MIRROR_HOUSE_DEBUG__;
+      h.warp(p.rx, p.ry);
+    },
+    pick!,
+  );
+  const afterFog = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.mirrors();
+  });
+  expect(afterFog.thawed, 'the cold fog spends the thaw').toBe(0);
+  expect(afterFog.frozen, 'the pane is fogged, not re-frozen').toBe(frozenBefore - 1);
+  expect(errors).toEqual([]);
+});
+
+// T8/T3 — the Ambusher returns. Floor 72 pins the rotation: Chhaya + Aavart
+// walk the whole Atrium (71–79) while Taal and Gher rest until Dwaar VIII —
+// their spots read null, his is live. His touch is the standard caught fail:
+// warp onto avartPos() → house().failed rises on the next fixed step, the
+// freeze speaks 'Caught by the glass', and the reset banks the attempt.
+test('t8: aavart ambush returns', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=T8RUN2&floor=72');
+  await ready(page);
+  const snap = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return {
+      tier: h.tier(),
+      floor: h.campaign().floor,
+      taal: h.taalPos(),
+      gher: h.gherPos(),
+      avart: h.avartPos(),
+      mirrors: h.mirrors(),
+    };
+  });
+  expect(snap.tier).toBe(8);
+  expect(snap.floor).toBe(72);
+  expect(snap.taal, 'the Sentinel rests until Dwaar VIII').toBeNull();
+  expect(snap.gher, 'the Encircler rests until Dwaar VIII').toBeNull();
+  expect(snap.avart, 'the Ambusher walks the whole Atrium (71–79)').not.toBeNull();
+  expect(snap.mirrors.frozen, 'the atrium spawns encased on 72 too').toBeGreaterThanOrEqual(4);
+  await expect(page.locator('#mh-floor')).toHaveText('L72 · T8');
+  await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    const p = h.avartPos();
+    if (p !== null) h.warp(p.x, p.y);
+  });
+  // the freeze window: failed rises on the next fixed step and holds through
+  // the freeze — poll to see it true (post-reset it is false again)
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.house()
+        .failed,
+    null,
+    { timeout: 2000 },
+  );
+  await expect(page.locator('#mh-fail')).toHaveText('Caught by the glass');
+  // the tally banks at the reset AFTER the freeze — poll for it
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.attempts() === 1,
+    null,
+    { timeout: 2500 },
   );
   expect(errors).toEqual([]);
 });
