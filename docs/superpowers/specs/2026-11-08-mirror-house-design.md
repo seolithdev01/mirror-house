@@ -475,7 +475,7 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 > floor, the heat/water/distortion texture stack returned thin, the
 > `ACT III — THE GROUND DOOR` banner opening Act III on floor 81 and the
 > all-four Dwaar IX warren closing the tier).
-> 899 unit + 46 e2e green. **Act III is OPENED — the Foundations (floors
+> 900 unit + 46 e2e green. **Act III is OPENED — the Foundations (floors
 > 91–100) remain future content**: the campaign is
 > terminal at floor 90 — `descend()` is a no-op there and the Dwaar IX tier
 > screen is the end of the house until the Foundations are built.
