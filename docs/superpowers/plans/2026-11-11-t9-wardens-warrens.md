@@ -24,7 +24,7 @@
 
 **Files:** `src/game/campaign.ts` (TIER_NINE_FLOORS, tierOf→9, isDwaar +90, ramp 81–90, `DWAAR_IX_LAYOUT` 11×11 tight warren — twisty low-braid personal maze, 180°-symmetric+connected, ~85 open, presence fns widened `≥81` short-circuit all rests, `ACT_III_FLOOR`), `src/game/save.ts` (→ 90 same commit + tests: 85/90 round-trip, 91 rejected), constants, main/hud (chips `L84 · T9` / `DWAAR IX ✦`; `✦ Truth-Shard IX claimed — Tier IX complete` full screen; Dwaar VIII cascades to interstitial; **Act III banner** on first floor-81 build: `ACT III — THE GROUND DOOR` + `The door is real. So is what guards it.` en/hi 3s), heat extension (heat.ts heatOn `(51–60) || (81–90)` — heat.ts is pure floor fn; extend + pins; heatActiveFloor in main benefits automatically), tests (ramp 81–90; layout predicates; tierOf 9; validator 85/90+91; rotation rows 81/85/89/90 all-present + 1–80 identical; descend-no-op-at-90; heat bounds 80/81/90/91).
 
-- [ ] Tests → RED → implement → GREEN; gates + 44/44. Commit `feat(t9): campaign to floor 90 — all four hunt, act iii opens, validator widened`.
+- [x] Tests → RED → implement → GREEN; gates + 44/44. Commit `feat(t9): campaign to floor 90 — all four hunt, act iii opens, validator widened`.
 
 ---
 
@@ -32,7 +32,7 @@
 
 **Files:** Modify `src/game/floorObjects.ts` (tier-9: pools 2–3 + distort 1–2 placement — new rng draws appended AFTER existing kind draws so floors 1–90-before-81 streams pinned; verify with byte-identity tests for floors 1–80), `src/main.ts` (all-four wiring verified on 81–90: taalPos/gherPos/avartPos all non-null — taal needs his spawn gate widened `f >= 81` too; heat dressing auto-flows via heatActiveFloor), tests (tier-9 object counts; floors 1–80 stream pins; all-four position hook test in e2e T4).
 
-- [ ] Tests → RED → implement → GREEN; gates + 44/44. Commit `feat(t9): the apex texture stack — heat, pools, distort return`.
+- [x] Tests → RED → implement → GREEN; gates + 44/44. Commit `feat(t9): the apex texture stack — heat, pools, distort return`.
 
 ---
 
@@ -40,7 +40,7 @@
 
 **Files:** `src/game/palette.ts` (TIER_NINE_PALETTE: void 0x0a0c0e, floorBase 0x1a1e22, floorLines 0x262c30, teal→warden-steel 0x5a9a9a, ivory 0xd8dde0, gold 0xd9a441, rose→iron-red 0x9a4a4a, wallTop 0x565e66, wallBottom 0x2a3036, lantern 0xe8f0f0, entrance 0x5a9a9a, exit 0xd9a441), `src/audio/theory.ts` (TIER_NINE_SCALE [0,1,3,7,8]), `paletteForTier` 9, voice map {8: sawtooth, 9: sawtooth}, main (Act III banner from T1 verified visible; scale/voice/palette wiring), hook (`tier()`→9), e2e 44→46: (a) `t9: floor 81 opens act three` — `?seed=T9RUN&floor=81` → tier 9, chip `L81 · T9`, act banner once, ALL FOUR positions non-null, heat on, pools ≥ 2, distort ≥ 1; (b) `t9: the warren catches` — `?seed=T9DUEL&floor=90` → warp onto avartPos → house().failed.
 
-- [ ] Tests → implement → e2e 46/46 → gates; live :4199 check (floor 81 iron look + all-four + textures; floors 71/61/1 unchanged). Commit `feat(t9): iron warrens, act three banner, tier-nine e2e`.
+- [x] Tests → implement → e2e 46/46 → gates; live :4199 check (floor 81 iron look + all-four + textures; floors 71/61/1 unchanged). Commit `feat(t9): iron warrens, act three banner, tier-nine e2e`.
 
 ---
 
@@ -48,7 +48,7 @@
 
 Spec §4.6 row 9 delivered + §4.4 (apex reached — row 9 of the ladder) + §2.3 Act III opened; STATE_MACHINES (Campaign@90, rotation apex note, heat-extension row); README (Tier 9), CHANGELOG `[t9]`, FAQ +2 (the Warrens; all four at once — "you will not out-fight them. Out-think them, or die in the iron."), plan ticks; full gates + 46/46; bundle check.
 
-- [ ] Docs → gates → commit `docs(t9): delivery marks, the apex duels`.
+- [x] Docs → gates → commit `docs(t9): delivery marks, the apex duels`.
 
 ## Plan Self-Review
 

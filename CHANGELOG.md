@@ -7,6 +7,77 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t9] — 2026-11-12 — the Warden's Warrens (Tier 9, floors 81–90) — ACT III opens
+
+The campaign runs to ninety — the apex tier, where all four Sentinels hunt together on every floor, every mastered mechanic returns as thin texture, and the Ground Door's banner opens Act III.
+
+- **Floors 81–90** — the Warden's Warrens: a tier-9 ramp (four beacons, braids
+  to 0.432 by floor 89, Chhaya 3.0 s behind tightening to 2.5 s, 2.3 s in
+  Dwaar IX) carrying **five Echoes on every procedural floor, Dwaar IX ALONE
+  carrying six — the apex duel carries one more than every elder duel hall's
+  five; its teeth are the all-four hunt and the returned texture, not the
+  echo count** — the `L84 · T9` floor chip, and **Dwaar IX** at floor 90:
+  the Warden's own warren (85 open cells — the tightest hall in the house,
+  fewer than every elder hall but Dwaar I's 83), a waist band with exactly
+  three doors, twelve dead ends, zero 3×3 rooms, no lane longer than five,
+  180°-symmetric (the exit mirrors the entrance), one connected component,
+  and the exit UNIQUELY farthest at exactly 20 BFS steps — the elder halls'
+  traverse pin, hill-climbed until a tie or a deeper cell could not steal it.
+  The save validator widened to 90 in the same commit as the ramp (**the
+  binding held an eighth time**; 91 is the first rejection, round-trips
+  pinned at 85 and 90).
+- **The apex (spec §4.6 row 9)** — the rotation ends: `taalPresent` and
+  `gherPresent`'s `=== 80` crucible-only calls widened to open `>= 80` tails
+  (`aavartPresent`'s `f > 70` already walked it untouched) — **all four hunt
+  together on every floor 81–90; no one rests**. Truth table extended with
+  rows 81/85/89/90 (all pin `T,T,T`) and the identity oracle widened to a
+  full 1–80 sweep against t8's shipped table. The campaign's terminus moved
+  with it: 80 → 81 is a real descent again (the T8-era no-op retired, the
+  terminus-retirement pattern's fifth turn), and `descend()` now rests at
+  floor 90.
+- **The texture stack** — every mastered mechanic returns thin:
+  **heat** re-lights (`heatOn` = `(51–60) ∥ (81–90)` via
+  `HEAT_FLOOR_RETURN 81` — 12 500 ms fogs, 25-anger cracks, the furnace
+  dressing and Aaina's `heatNear` flowing from the same derivation);
+  **water pools** return (tier 9 asks 2, the count roll `int(2)` → 2–3
+  pools; the Gardens keep `int(3)`, 2–4); **distort panes** return (ask 1
+  plus the `int(2)` coin → 1–2). One ask, `textureParamsForTier(tier)`,
+  replaced `buildFloor`'s four inline per-kind gates; the new draws append
+  AFTER each kind's existing rng streams — floors 1–80 byte-identical,
+  swept and pinned per floor.
+- **Act III opens** — the FIRST floor-81 build of a session raises
+  `ACT III — THE GROUND DOOR` + `The door is real. So is what guards it.`
+  (en/hi) for 3 s, once per session — the Act II banner's contract, with
+  `hud.showActBanner(act?: 2 | 3)` parameterized so a `setLang`
+  re-localizes whichever banner is visible. The interstitial cascade grows
+  downward once more: **Dwaar VIII joins the 1.8 s claim banner** and the
+  full screen moves to **Dwaar IX's tier close** (`✦ Truth-Shard IX claimed
+  — Tier IX complete`, ninety floors and banked shards counted, ↻ Play
+  again / Stay) — the campaign's terminal screen. Iron dressing: the
+  iron/steel palette (void `0x0a0c0e`, warden-steel glass `0x5a9a9a`,
+  iron-red rose, slate-steel walls — the LAST tier-one stand-in retires;
+  every tier 1–9 dresses as itself) and the iron pentatonic `[0,1,3,7,8]`
+  on the sawtooth — the warden's own voice.
+- **Close-out** — §4.6 row 9 delivered, §2.3's Act III row marked opened
+  (the banner raises on floor 81; the ten-Shard ground door and the
+  mirrorless Foundations stay tier 10's; mistaken-for-a-copy stays
+  deferred) and §4.4's delivered note extended with the wheel's end in the
+  spec; §13.1's scope note refreshed to t9 (Act III opened, the Foundations
+  what remains, terminal at 90). README gains the Tier 9 + ACT III OPENS
+  section (its Tier 8 section re-marks the cascade and the iron descent;
+  the frost/anger paragraphs gain the re-lit furnace; the Daily runs the
+  ninety-floor spine); the FAQ grows to 48 (the Warrens — ACT III opens,
+  everything at once, thin; the apex exam — "you will not out-fight them.
+  Out-think them, or die in the iron."), with the stale marks the delivery
+  retires (41–80 → 41–90 for the decoys, the rotation/Taal tails, the
+  Atrium's end-of-the-house claim, the beta roadmap). STATE_MACHINES'
+  Campaign section refreshed for 90 floors / nine Dwaars (the DWAAR_IX
+  warren, the tier-9 ramp row, the interstitial cascade to Dwaar IX's
+  screen, the `L84 · T9` / `L90 · DWAAR IX ✦` chips), the rotation table's
+  apex column, the heat extension (the look-alike now two-band) and the
+  tier-9 content note. 899→900 unit (the Warrens pair test) + 46/46 e2e
+  green; build ok — ~195 KB gzip, wiring grepped in the artifact.
+
 ## [t8] — 2026-11-11 — the Frozen Atrium (Tier 8, floors 71–80) — ACT II freezes
 
 The campaign runs to eighty — Act II's last tier, where every mirror arrives iced, the frost lantern thaws instead of fogs, and waking glass draws the wardens.

@@ -303,13 +303,13 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('step003: FAQ opens with 46 entries and H toggles', async ({ page }) => {
+test('step003: FAQ opens with 48 entries and H toggles', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=FAQ');
   await ready(page);
   await page.locator('#mh-faq').click();
-  // 46 since t8/T4 — the Atrium pair joined the t7 Library + noise pair
-  await expect(page.locator('#mh-faq-box details')).toHaveCount(46);
+  // 48 since t9/T4 — the Warrens pair joined the t8 Atrium + thaw pair
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(48);
   await page.keyboard.press('KeyH'); // closes
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens

@@ -50,8 +50,8 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 46 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair)', () => {
-    expect(FAQ).toHaveLength(46);
+  it('grows to 48 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair)', () => {
+    expect(FAQ).toHaveLength(48);
   });
 
   it('the T5 entry explains the mirror-you decoys — the lure and the shatter bounty', () => {
@@ -59,7 +59,7 @@ describe('faq — the beta launch pair', () => {
     expect(e, 'an entry about the mirror-you decoys exists').toBeDefined();
     expect(e!.a).toContain('Echo'); // the lure is the copy's job
     expect(e!.a).toContain('shatters'); // the touch is the bounty
-    expect(e!.a).toContain('41–80'); // copies walk the Flood Halls, Wings, Library AND Atrium (t8)
+    expect(e!.a).toContain('41–90'); // copies walk the Flood Halls, Wings, Library, Atrium AND Warrens (t9)
     expect(e!.a).toContain('guards the copy'); // the warden wards them now (t6)
   });
 
@@ -199,5 +199,21 @@ describe('faq — the beta launch pair', () => {
     expect(thaw!.a).toContain('ten meters'); // the lure radius
     expect(thaw!.a).toContain('cold-fogs'); // frost again blinds it
     expect(thaw!.a).toContain('Choose what they watch'); // Aaina's rule
+  });
+
+  it('the Warrens pair teaches the tier and the all-four apex (T9/T4)', () => {
+    const warrens = FAQ.find((f) => /below the frozen atrium/i.test(f.q));
+    expect(warrens, 'the Warden\u2019s Warrens tier entry exists').toBeDefined();
+    expect(warrens!.a).toContain('L81 · T9'); // the chip readers see
+    expect(warrens!.a).toContain('ACT III'); // the act opens on floor 81
+    expect(warrens!.a).toContain('ALL FOUR'); // the apex hunt on every floor
+    expect(warrens!.a).toContain('12.5 seconds'); // the heat's returned fog
+    expect(warrens!.a).toContain('Truth-Shard IX'); // Dwaar IX's claim
+    const apex = FAQ.find((f) => /hunt together below floor 80/i.test(f.q));
+    expect(apex, 'the apex-survival entry exists').toBeDefined();
+    expect(apex!.a).toContain('Out-think them'); // the tier's rule
+    expect(apex!.a).toContain('dim beat'); // Taal's counter still holds
+    expect(apex!.a).toContain('feint'); // Gher's counter still holds
+    expect(apex!.a).toContain('change your pace'); // Aavart's counter still holds
   });
 });

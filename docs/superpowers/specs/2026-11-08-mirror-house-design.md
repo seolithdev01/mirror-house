@@ -53,7 +53,7 @@ You are **the Surveyor** — a heritage architect sent to appraise the palace be
 | ------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **I — The Trap**          | 1–40 (Tiers 1–4)    | Learn the house's rules. Meet Aaina. Discover the Echoes are former guests' peeled reflections. First truth: _the house keeps people by copying them._ — **closed 2026-11-10 (t4)**: all forty floors delivered (§4.6 rows 1–4); Dwaar IV's clear raises the act-completion screen (`ACT I COMPLETE — The Trap`, the campaign's floors and banked shards counted, with the Act II tease)                                   |
 | **II — The Deception**    | 41–80 (Tiers 5–8)   | The house starts impersonating _you_ — mirror-you decoys that enemies protect and you may be mistaken for. Allies behind glass may be copies. Second truth: _the house can no longer tell originals from copies — including itself._ — **opened 2026-11-11 (t5)**: floors 41–50 delivered (§4.6 row 5), the first floor-41 build raising `ACT II — THE DECEPTION` (the house has begun copying you); the decoys' **first form — lures** — is live (an Echo reads the nearer of you and a copy as "you"; touching a copy shatters it for shards). **Deepened 2026-11-11 (t6)**: floors 51–60 delivered (§4.6 row 6 — the Furnace Wings); the decoys' **second element — enemies _protect_ the copies — is live** (Gher's seal reads alive decoy cells as objectives: a copy crossing his sector pulls the Encircler onto it, the caption admits it once per floor — "The warden guards the copy." — so shard-farming a copy is genuinely risky now). **Deepened 2026-11-11 (t7)**: floors 61–70 delivered (§4.6 row 7 — the Whisper Library); **the Echoes go blind and grow ears — the tier's own deception inverts the mirror**: mirror-sight is gone on 61–70, and the hunt tracks **noise** instead (a sprint rings loud, a walk rings soft, frost/push/step-through ping once — and from floor 66 Taal's returning beat is the loudest thing in the stacks, bait the blind wardens cannot refuse); the third element — _you_ may be mistaken for a copy — remains deferred to the deeper tiers. **Deepened 2026-11-11 (t8)**: floors 71–80 delivered (§4.6 row 8 — the Frozen Atrium); **the tier turns the Surveyor's oldest tool around**: every fogable pane arrives **frozen** — the house starts eye-blind — and frost no longer fogs ice but **thaws** it, so _you_ open the eyes: a thawed pane is a live Echo eye **and a lure** (wardens within radius walk to the glass and stand watching it), and frosting a thawed pane cold-fogs it blind again — the fight is choosing what the house watches; the third element — _you_ may be mistaken for a copy — remains deferred to Act III   |
-| **III — The Ground Door** | 81–100 (Tiers 9–10) | The Foundations have no mirrors at all — nothing to hide behind, nothing to hide _behind you_. The door opens only for someone carrying all **ten Truth-Shards** (one per tier, from each Sentinel hall) — proof of being an original. |
+| **III — The Ground Door** | 81–100 (Tiers 9–10) | The Foundations have no mirrors at all — nothing to hide behind, nothing to hide _behind you_. The door opens only for someone carrying all **ten Truth-Shards** (one per tier, from each Sentinel hall) — proof of being an original. — **opened 2026-11-12 (t9)**: floors 81–90 delivered (§4.6 row 9), the first floor-81 build raising `ACT III — THE GROUND DOOR` (the door is real. So is what guards it.); the Warden's Warrens hunt with all four Sentinels at once, and every mastered mechanic returns as thin texture — heat, water, distortion; the ten-Shard ground door itself and the mirrorless Foundations (91–100) remain tier 10's, and the third deception — _you_ may be mistaken for a copy — stays deferred |
 
 **Endings (post-beta):** _Escape_ (any completion), _True Escape_ (all ten shards — the house lets go), and a hidden _Stay_ ending (you choose the glass). Beta delivers Act I's opening fully polished.
 
@@ -118,7 +118,7 @@ You carry the Glazier's **Frost Lantern**. Aim at any standing mirror and fog it
 Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → Tier 4 Aavart → Tiers 5–10 escalate combinations, speeds, sense ranges, and tier mechanics. Each tier ends in a **Dwaar** (threshold) — that tier's lead Sentinel in a handcrafted duel-hall, guarding the floor's **Truth-Shard**.
 
 > **Delivered note (recorded 2026-11-11, t5; the wheel turns again — t6, t7,
-> t8).** The
+> t8; the wheel ends — t9).** The
 > ladder **accumulates** — a new tier's Sentinel joins, the old ones stay:
 > **all four walk by tier 4** — Chhaya always (from floor 1), Taal from 11 (his
 > spawn gate was widened from "the tier-2 floors" to _every floor from 11
@@ -151,15 +151,29 @@ Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → T
 > `(11–50) ∥ 66–70 ∥ 80`, Gher's to `(21–40) ∥ (50–60) ∥ 70 ∥ 80` — the
 > duet disbands into the ice), and the Dwaar VIII hall at 80 calls BOTH down
 > to join the walking pair — the third all-four crucible, row 9's apex
-> previewed in a frozen atrium where every pane starts blind.** Chhaya never
+> previewed in a frozen atrium where every pane starts blind.** **Tier 9 ends
+> the wheel (t9): the Warden's Warrens ARE row 9's apex — all four hunt
+> together on every floor 81–90** (`taalPresent` = `(11–50) ∥ 66–70 ∥ f ≥ 80`,
+> `gherPresent` = `(21–40) ∥ (50–60) ∥ 70 ∥ f ≥ 80`, `aavartPresent` =
+> `(31–40) ∥ (50–60) ∥ f > 70` — Aavart's open tail already walked the apex
+> untouched; the two `=== 80` crucible-only calls widened to open `≥ 80`
+> tails, and every rest in the house ends). Every mastered mechanic returns
+> as thin texture on the iron: the heat re-lights (fog halved, cracks 25
+> again), 2–3 water pools and 1–2 distort panes hang beside them (new draws
+> appended AFTER each kind's existing streams — floors 1–80 byte-identical,
+> swept and pinned), and Dwaar IX at 90 is the Warden's own warren — the
+> tightest hall in the house (85 open cells, a three-door waist, twelve dead
+> ends) walked by all four with six Echoes, one more than every elder duel
+> hall.** Chhaya never
 > rests at all: she replays every path in the house on every floor of all
-> eight tiers.
+> nine tiers.
 > The bare `>=` gates became presence functions
 > (`taalPresent`/`gherPresent`/`aavartPresent`) — floors 1–40 read
 > byte-identical, pinned by truth-table tests (rows 51/55/59/60 added with
 > t6; 61/65/66/69/70 with t7 — row 60 re-pinned `F,T,T`, Taal's extended
 > rest; 71/75/79/80 with t8 — row 79 `F,F,T`, the Ambusher alone with her
-> shadow, row 80 `T,T,T`, the crucible).
+> shadow, row 80 `T,T,T`, the crucible; 81/85/89/90 with t9 — every row
+> `T,T,T`, the apex).
 
 ### 4.5 Economy & progression
 
@@ -180,7 +194,7 @@ Tier ladder: Tier 1 introduces Chhaya → Tier 2 adds Taal → Tier 3 Gher → T
 | 6    | 51–60  | The Furnace Wings    | Heat fogs mirrors at range but cracks spread faster   | Urgent, percussive — delivered 2026-11-11 (t6)   |
 | 7    | 61–70  | The Whisper Library  | Sound-based Echoes (they hear, not see)               | Sparse, whispered — delivered 2026-11-11 (t7)    |
 | 8    | 71–80  | The Frozen Atrium    | All mirrors pre-fogged — _you_ unfog to lure          | Austere, cold strings — delivered 2026-11-11 (t8) |
-| 9    | 81–90  | The Warden's Warrens | All four Sentinels hunt together                      | Dread, low drone                                 |
+| 9    | 81–90  | The Warden's Warrens | All four Sentinels hunt together                      | Dread, low drone — delivered 2026-11-12 (t9)     |
 | 10   | 91–100 | The Foundations      | No mirrors at all — pure maze, the Glazier himself    | Resolve; silence between notes                   |
 
 ### 4.7 Movement & trap language (Wolfenstein feet, Prince of Persia hands)
@@ -436,9 +450,10 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 > M4 criterion is the human one: **five strangers completing Tier 1 unaided**.
 > It needs real humans: recruit them, watch them, close this line.
 
-> **Scope today (recorded 2026-11-11, t8).** This section is the Tier 1 beta
+> **Scope today (recorded 2026-11-12, t9).** This section is the Tier 1 beta
 > scope, delivered as written above; on top of it, the post-beta content
-> milestones have **opened Act II** — **Tier 2, floors 11–20**
+> milestones have **opened Act II — and, with tier 9, Act III** —
+> **Tier 2, floors 11–20**
 > (§4.6 row 2: the Hall of Ancestors, Taal the lethal Sentinel, ancestor
 > portraits, Dwaar II), **Tier 3, floors 21–30** (§4.6 row 3: the Reflecting
 > Gardens, Gher the Encircler, water-mirrors, Dwaar III), **Tier 4, floors
@@ -455,11 +470,15 @@ Apache-2.0 for code; CC-BY 4.0 for art/music/docs (D1, confirmed 2026-11-08). Th
 > floors 71–80** (§4.6 row 8: the Frozen Atrium — every fogable pane arrives
 > frozen and the frost lantern THAWS instead of fogs, the thawed pane a live
 > eye and a warden lure, Aavart back from rest and the all-four Dwaar VIII
-> crucible closing Act II's descent).
-> 838 unit + 44 e2e green. **Act III (floors 81–100) remains future
-> content**: the campaign is
-> terminal at floor 80 — `descend()` is a no-op there and the Dwaar VIII tier
-> screen is the end of the house until Act III is built.
+> crucible closing Act II's descent) and **Tier 9, floors 81–90** (§4.6 row
+> 9: the Warden's Warrens — all four Sentinels hunting together on every
+> floor, the heat/water/distortion texture stack returned thin, the
+> `ACT III — THE GROUND DOOR` banner opening Act III on floor 81 and the
+> all-four Dwaar IX warren closing the tier).
+> 899 unit + 46 e2e green. **Act III is OPENED — the Foundations (floors
+> 91–100) remain future content**: the campaign is
+> terminal at floor 90 — `descend()` is a no-op there and the Dwaar IX tier
+> screen is the end of the house until the Foundations are built.
 
 ### 13.2 Milestones (part-time, ~13 weeks)
 
