@@ -9,7 +9,7 @@ is steps + expected result.
 **Ground rules**
 
 - Play your personal link unless a case says otherwise:
-  `https://mirror-house-8fg.pages.dev/?seed=TESTXX&test=1` (yours is in your
+  `https://mirror-house.seolith.com/?seed=TESTXX&test=1` (yours is in your
   invite). The TESTER chip (bottom-left) should read
   `TESTER · {fps} · TESTXX:1` — that chip's value goes in every report.
 - Defaults assumed: keys are rebindable in ⚙ → Controls, and the whole loop
@@ -26,10 +26,10 @@ is steps + expected result.
 ### SMK-1 — Boot the personal link
 
 **Steps:** Open your personal link
-(`https://mirror-house-8fg.pages.dev/?seed=TESTXX&test=1`) in a normal
+(`https://mirror-house.seolith.com/?seed=TESTXX&test=1`) in a normal
 browser tab. Watch for the one-time banner, then the chip bottom-left; note
 the chip's fps number for a few seconds. In a second tab, open the plain URL
-`https://mirror-house-8fg.pages.dev` with no parameters.
+`https://mirror-house.seolith.com` with no parameters.
 
 **Expected:** The banner "TESTER MODE — diagnostics unlocked for this
 session" appears once and hides itself within ~6 s. The chip reads
@@ -88,7 +88,7 @@ TESTER chip `TESTXX:2`. The clear line shows your time and best.
 
 **Steps:** Immediately after SMK-5, refresh the page (same personal link).
 Check the floor chip and TESTER chip, then reopen the plain URL
-(`https://mirror-house-8fg.pages.dev`, no params) in a new tab.
+(`https://mirror-house.seolith.com`, no params) in a new tab.
 
 **Expected:** The refresh resumes floor 2, not floor 1 — same position in
 the house, banked shards intact. The plain URL resumes the same saved
@@ -286,7 +286,7 @@ leftovers.
 ### SAV-1 — Close the tab mid-tier
 
 **Steps:** Clear two floors, then kill the tab entirely (no logout, no
-URL tricks). Reopen the plain URL `https://mirror-house-8fg.pages.dev` in
+URL tricks). Reopen the plain URL `https://mirror-house.seolith.com` in
 the same browser. Check the floor chip, TESTER chip (absent), and shards.
 
 **Expected:** The game resumes your campaign on the floor you left with
@@ -357,7 +357,7 @@ you); the campaign, banked shards, and bests are untouched.
 ### VEN-2 — The venue URL param
 
 **Steps:** Open
-`https://mirror-house-8fg.pages.dev/?seed=TESTXX&test=1&venue=demo-glasshouse-cafe`.
+`https://mirror-house.seolith.com/?seed=TESTXX&test=1&venue=demo-glasshouse-cafe`.
 Then try `?venue=not-a-pack` the same way.
 
 **Expected:** The first boots the café floor directly — banner up, daily
@@ -390,7 +390,7 @@ venue floor (⚙ → Floors) plays the same as desktop.
 
 ---
 
-*Found something? 📮 in-game (top right) or
+_Found something? 📮 in-game (top right) or
 [github.com/seolithdev01/mirror-house/issues](https://github.com/seolithdev01/mirror-house/issues)
 — always with your chip's `SEED:FLOOR`. Private things: reply to your
-invite email.*
+invite email._

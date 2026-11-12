@@ -7,7 +7,7 @@ persists (a few "sticks" params save to your device's own storage, never to a
 server).
 
 > **Tester quick links:** your personal link looks like
-> `https://mirror-house-8fg.pages.dev/?seed=TESTIS&test=1` — a personal base
+> `https://mirror-house.seolith.com/?seed=TESTIS&test=1` — a personal base
 > seed plus tester mode. See [TESTERS.md](TESTERS.md) for what to do with it.
 
 Combining is free — order never matters:

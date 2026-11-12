@@ -17,7 +17,7 @@ Each invited tester gets a personal base seed (e.g. `TESTIS`). Your link is
 the game's URL plus that seed plus tester mode:
 
 ```
-https://mirror-house-8fg.pages.dev/?seed=TESTIS&test=1
+https://mirror-house.seolith.com/?seed=TESTIS&test=1
 ```
 
 Open it, and within a few seconds you should see:

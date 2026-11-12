@@ -26,7 +26,7 @@ and everything you do stays on your device.
 Your personal start link:
 
 ```
-https://mirror-house-8fg.pages.dev/?seed=<TAG>&test=1
+https://mirror-house.seolith.com/?seed=<TAG>&test=1
 ```
 
 It opens the game in tester mode: you'll see a one-time "TESTER MODE"
