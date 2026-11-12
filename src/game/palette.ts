@@ -192,8 +192,11 @@ export const TIER_EIGHT_PALETTE: TierPalette = {
  *  same retire-the-stand-in pattern one tier down.
  *  T8/T3: tier 8 wears the Frozen Atrium's ice-on-void-blue — the documented
  *  tier-one stand-in (T8/T1's fallthrough) is retired here, the same
- *  retire-the-stand-in pattern one tier down. */
-export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): TierPalette {
+ *  retire-the-stand-in pattern one tier down.
+ *  T9/T1: tier 9 keeps the documented tier-one stand-in — every new tier's
+ *  dressing was a tier-one stand-in once; the Warden's Warrens' iron palette
+ *  (T9/T3) retires this one the same way. */
+export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9): TierPalette {
   if (tier === 2) return TIER_TWO_PALETTE;
   if (tier === 3) return TIER_THREE_PALETTE;
   if (tier === 4) return TIER_FOUR_PALETTE;
@@ -201,7 +204,7 @@ export function paletteForTier(tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): TierPalette
   if (tier === 6) return TIER_SIX_PALETTE;
   if (tier === 7) return TIER_SEVEN_PALETTE; // T7/T3 — the stand-in retires
   if (tier === 8) return TIER_EIGHT_PALETTE; // T8/T3 — the stand-in retires
-  return TIER_ONE_PALETTE;
+  return TIER_ONE_PALETTE; // T9/T1 — the tier-one stand-in; T9/T3 retires it
 }
 
 /** Deterministic per-cell floor accent on a 6x6 lattice: gold grid lines on every 6th row/column,

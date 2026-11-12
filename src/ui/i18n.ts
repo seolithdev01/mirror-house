@@ -144,6 +144,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.tier6': 'T6', // T6/T1 — the Furnace-Wings suffix: L54 · T6
     'chip.tier7': 'T7', // T7/T1 — the Whisper-Library suffix: L64 · T7
     'chip.tier8': 'T8', // T8/T1 — the Frozen-Atrium suffix: L74 · T8
+    'chip.tier9': 'T9', // T9/T1 — the Warden's-Warrens suffix: L84 · T9
     // overlays and banners
     'overlay.failCaught': 'Caught by the glass',
     'overlay.failCollapse': 'The mirrors collapsed',
@@ -188,6 +189,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // close's now — Dwaar VIII's): the shard banks mid-descent into the
     // Frozen Atrium.
     'overlay.shardInterstitial7': '✦ Truth-Shard VII claimed — the house deepens…',
+    // T9/T1 — Dwaar VIII joins the cascade as well (the full screen is the
+    // TIER close's now — Dwaar IX's): the shard banks mid-descent past the
+    // Atrium, down the Ground Door into the Warden's Warrens.
+    'overlay.shardInterstitial8': '✦ Truth-Shard VIII claimed — the house deepens…',
     // T5/T1 — the Dwaar V tier screen (floor 50, the row-9 apex duel): the
     // one full screen Act II keeps, the campaign's terminal close.
     // T6/T1 — the screen retires downward: Dwaar V cascades (above) and the
@@ -199,14 +204,23 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // the full screen is Dwaar VIII's — the all-four duel's close in the
     // frozen atrium, the campaign's terminal close (descend() is a no-op at
     // 80 until Act III tier 9).
+    // T9/T1 — and once more again: Dwaar VIII cascades (above) and the full
+    // screen is Dwaar IX's — the all-four apex duel's close in the Warden's
+    // Warrens, the campaign's terminal close (descend() is a no-op at 90
+    // until tier 10 exists).
     'overlay.tierTitle5': '✦ Truth-Shard V claimed — Tier V complete',
     'overlay.tierTitle6': '✦ Truth-Shard VI claimed — Tier VI complete',
     'overlay.tierTitle7': '✦ Truth-Shard VII claimed — Tier VII complete',
     'overlay.tierTitle8': '✦ Truth-Shard VIII claimed — Tier VIII complete',
+    'overlay.tierTitle9': '✦ Truth-Shard IX claimed — Tier IX complete',
     // T5/T1 — the Act II opening banner: the first floor-41 build of a
     // session raises it for 3s, once per session.
     'overlay.actBanner': 'ACT II — THE DECEPTION',
     'overlay.actBannerNote': 'The house has begun copying you.',
+    // T9/T1 — the ACT III opening banner: the first floor-81 build of a
+    // session raises it for 3s, once per session — the Ground Door is real.
+    'overlay.actBanner3': 'ACT III — THE GROUND DOOR',
+    'overlay.actBanner3Note': 'The door is real. So is what guards it.',
     // hint line prompts (M5/T2: the verb prompts name the LIVE bound key)
     'hint.step': '{key} — step through',
     'hint.push': '{key} — push',
@@ -398,6 +412,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.tier6': 'चरण 6', // T6/T1 — भट्टी की भुजाओं का प्रत्यय: स्तर 54 · चरण 6
     'chip.tier7': 'चरण 7', // T7/T1 — विस्मय-पुस्तकालय का प्रत्यय: स्तर 64 · चरण 7
     'chip.tier8': 'चरण 8', // T8/T1 — हिम-आँगन का प्रत्यय: स्तर 74 · चरण 8
+    'chip.tier9': 'चरण 9', // T9/T1 — वार्डन की बिलों का प्रत्यय: स्तर 84 · चरण 9
     // परदे और पट्टियाँ — घर की आवाज़ में, पर संक्षेप में
     'overlay.failCaught': 'काँच ने आपको पकड़ लिया',
     'overlay.failCollapse': 'दर्पण ढह गए',
@@ -432,6 +447,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // T8/T1 — द्वार VII भी अंतराल-श्रृंखला में (पूर्ण परदा अब द्वार VIII का है):
     // शार्ड हिम-आँगन में उतरते हुए जमा होता है।
     'overlay.shardInterstitial7': '✦ सत्य-शार्ड VII प्राप्त — घर और गहरा होता है…',
+    // T9/T1 — द्वार VIII भी अंतराल में: पूर्ण परदा द्वार IX का — अति-द्वंद्व
+    // वार्डन की बिलों में, हिम-आँगन से नीचे, ज़मीन के दरवाज़े के पार।
+    'overlay.shardInterstitial8': '✦ सत्य-शार्ड VIII प्राप्त — घर और गहरा होता है…',
     // T5/T1 — द्वार V का चरण-परदा (मंज़िल 50, नौवीं पंक्ति का शिखर-द्वंद्व)
     // T6/T1 — परदा नीचे उतर गया: द्वार V अंतराल में, पूर्ण परदा द्वार VI का —
     // चार-रक्षक की भट्ठी का समापन, अभियान का अंतिम परदा।
@@ -443,9 +461,16 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'overlay.tierTitle6': '✦ सत्य-शार्ड VI प्राप्त — चरण VI पूर्ण',
     'overlay.tierTitle7': '✦ सत्य-शार्ड VII प्राप्त — चरण VII पूर्ण',
     'overlay.tierTitle8': '✦ सत्य-शार्ड VIII प्राप्त — चरण VIII पूर्ण',
+    // T9/T1 — परदा एक बार फिर नीचे उतरा: द्वार VIII अंतराल में, पूर्ण परदा
+    // द्वार IX का — वार्डन की बिलों में चारों रक्षकों का अति-द्वंद्व,
+    // अभियान का अंतिम परदा (स्तर 90 पर descend() कोई-नहीं, जब तक चरण 10)।
+    'overlay.tierTitle9': '✦ सत्य-शार्ड IX प्राप्त — चरण IX पूर्ण',
     // T5/T1 — अंक II का उद्घाटन-बैनर: सत्र के पहले मंज़िल-41 निर्माण पर 3 सेकंड
     'overlay.actBanner': 'अंक II — धोखा',
     'overlay.actBannerNote': 'घर ने आपकी नक़ल करना शुरू कर दी है।',
+    // T9/T1 — अंक III का उद्घाटन-बैनर: सत्र के पहले मंज़िल-81 निर्माण पर 3 सेकंड
+    'overlay.actBanner3': 'अंक III — ज़मीन का दरवाज़ा',
+    'overlay.actBanner3Note': 'दरवाज़ा असली है। और जो उसकी रखवाली करता है, वो भी।',
     // संकेत-पंक्ति (M5/T2: क्रिया-संकेत जीवंत बद्ध कुंजी का नाम लेते हैं)
     'hint.step': '{key} — पार करें',
     'hint.push': '{key} — धकेलें',
@@ -539,6 +564,7 @@ export const CHIP_KEYS: readonly string[] = [
   'chip.tier6',
   'chip.tier7',
   'chip.tier8',
+  'chip.tier9',
   'tab.ask',
   'tab.hint',
   'tab.lore',

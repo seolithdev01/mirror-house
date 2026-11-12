@@ -246,6 +246,49 @@ describe('i18n — the T8 tier-eight chrome', () => {
   });
 });
 
+// T9/T1 — the Warden's Warrens chrome: the Dwaar IX tier screen, Dwaar VIII
+// cascading to the 1.8s interstitial, the `L84 · T9` floor-chip suffix, and
+// the ACT III banner that opens the act at floor 81.
+describe('i18n — the T9 tier-nine chrome', () => {
+  it('Truth-Shard IX names Tier IX complete on the full tier screen', () => {
+    expect(STRINGS.en['overlay.tierTitle9']).toBe('✦ Truth-Shard IX claimed — Tier IX complete');
+    expect(STRINGS.hi['overlay.tierTitle9']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['overlay.tierTitle9']).not.toBe(STRINGS.en['overlay.tierTitle9']);
+  });
+
+  it('Dwaar VIII joins the interstitial cascade with its own shard line', () => {
+    expect(STRINGS.en['overlay.shardInterstitial8']).toBe(
+      '✦ Truth-Shard VIII claimed — the house deepens…',
+    );
+    expect(STRINGS.hi['overlay.shardInterstitial8']!).toMatch(/[\u0900-\u097F]/);
+    expect(STRINGS.hi['overlay.shardInterstitial8']).not.toBe(
+      STRINGS.en['overlay.shardInterstitial8'],
+    );
+  });
+
+  it('the tier-nine chip suffix exists in both languages', () => {
+    expect(STRINGS.en['chip.tier9']).toBe('T9');
+    expect(STRINGS.hi['chip.tier9']!).toMatch(/[\u0900-\u097F]/);
+  });
+
+  it('chip.tier9 is enumerated as a chip (single-line hi discipline applies)', () => {
+    expect(CHIP_KEYS).toContain('chip.tier9');
+  });
+
+  it('the ACT III banner names the act and the ground door, verbatim', () => {
+    expect(STRINGS.en['overlay.actBanner3']).toBe('ACT III — THE GROUND DOOR');
+    expect(STRINGS.en['overlay.actBanner3Note']).toBe('The door is real. So is what guards it.');
+  });
+
+  it('the ACT III banner carries authored hindi (Devanagari, never a copy of en)', () => {
+    for (const k of ['overlay.actBanner3', 'overlay.actBanner3Note']) {
+      const hi = STRINGS.hi[k]!;
+      expect(hi, k).toMatch(/[\u0900-\u097F]/);
+      expect(hi, k).not.toBe(STRINGS.en[k]);
+    }
+  });
+});
+
 // T6/T2 — the Furnace's hint line: the tier's standing advice, authored in
 // both languages (the table carries it; the Aaina panel itself speaks
 // English content by design — see src/ui/aaina.ts).

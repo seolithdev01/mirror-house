@@ -102,10 +102,17 @@ export const TIER_SIX_FLOORS = 60;
 // T7-era terminal close retired downward with it).
 export const TIER_SEVEN_FLOORS = 70;
 // T8 — the Frozen Atrium: floors 71–79 procedural ramp, 80 = Dwaar VIII (the
-// all-four-Sentinel duel — Truth-Shard VIII closes the tier on the full tier
-// screen, the campaign's terminal close until Act III tier 9 exists:
-// descend() is a no-op there).
+// all-four-Sentinel duel — Truth-Shard VIII cascades to the 1.8s interstitial
+// as of T9; the full tier screen moved down with the Warrens).
 export const TIER_EIGHT_FLOORS = 80;
+// T9 — the Warden's Warrens (Act III opens): floors 81–89 procedural ramp,
+// 90 = Dwaar IX (the all-four apex duel in the warren — Truth-Shard IX
+// closes the tier on the full tier screen; the campaign is terminal there
+// until tier 10 exists: descend() is a no-op at 90). ACT_III_FLOOR is the
+// Ground Door banner's floor — the first Warrens build of a session raises
+// `ACT III — THE GROUND DOOR` once.
+export const TIER_NINE_FLOORS = 90;
+export const ACT_III_FLOOR = 81;
 // T7 — the beat-walker's RETURN: Taal's rest (his first, 51–59 in T6)
 // extends through 65 and he walks the Library's last five floors (66–70) —
 // his beat ticks are noise he ignores but you cannot miss.

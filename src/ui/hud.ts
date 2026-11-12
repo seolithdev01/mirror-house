@@ -84,10 +84,10 @@ export interface Hud {
    *  same banner (`which: 2` names its own shard line). T4/T1: Dwaar III
    *  cascades (`which: 3`). T5/T1: Dwaar IV joins the cascade too (`which:
    *  4`). T6/T1: Dwaar V joins as well (`which: 5`). T7/T1: Dwaar VI joins
-   *  too (`which: 6`). T8/T1: Dwaar VII cascades as well (`which: 7`) — the
-   *  full screen now belongs to the TIER CLOSE Dwaar VIII raises
-   *  (`showTierComplete({ tier: 8 })`). */
-  showShardInterstitial(which?: 1 | 2 | 3 | 4 | 5 | 6 | 7): void;
+   *  too (`which: 6`). T8/T1: Dwaar VII cascades as well (`which: 7`).
+   *  T9/T1: Dwaar VIII joins too (`which: 8`) — the full screen now belongs
+   *  to the TIER CLOSE Dwaar IX raises (`showTierComplete({ tier: 9 })`). */
+  showShardInterstitial(which?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): void;
   /** M4/T2 — the Truth-Shard tier-complete screen (Play again / Stay).
    *  T2/T1 — `tier` picks the screen's title: 1 = Dwaar I, 2 = Dwaar II.
    *  T3/T1 — 3 = Dwaar III. T4/T1 — 4 = Dwaar IV (retired from the flow in
@@ -97,19 +97,23 @@ export interface Hud {
    *  T7/T1 — VI cascades too; the stairs at 60 open into the Library).
    *  T7/T1 — 7 = Dwaar VII, the TIER VII close (retired from the flow in
    *  T8/T1 — VII cascades too; the stairs at 70 open into the Atrium).
-   *  T8/T1 — 8 = Dwaar VIII, the TIER VIII close: the full screen is the
-   *  campaign's terminal close (descend() is a no-op at 80 until Act III
-   *  tier 9 exists). */
+   *  T8/T1 — 8 = Dwaar VIII, the TIER VIII close (retired from the flow in
+   *  T9/T1 — VIII cascades too; the stairs past 80 open the Warrens).
+   *  T9/T1 — 9 = Dwaar IX, the TIER IX close: the full screen is the
+   *  campaign's terminal close (descend() is a no-op at 90 until tier 10
+   *  exists). */
   showTierComplete(stats: {
-    tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+    tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
     floors: number;
     shards: number;
   }): void;
   /** T5/T1 — the Act II opening banner: `ACT II — THE DECEPTION` + its
    *  copying-you line, a 3s auto-dismiss card (its own clock, like the
    *  shard interstitial's — a floor rebuild never cuts it short). Raised
-   *  once per session by main on the first floor-41 build. */
-  showActBanner(): void;
+   *  once per session by main on the first floor-41 build.
+   *  T9/T1 — `act: 3` raises the Act III banner instead (`ACT III — THE
+   *  GROUND DOOR` + its guarding line), on the first floor-81 build. */
+  showActBanner(act?: 2 | 3): void;
   hideTier(): void;
   showFail(reason: string): void;
   hideFail(): void;
@@ -365,13 +369,16 @@ export function createHud(init: HudInit): Hud {
   let shardTimer = 0;
   let shardKey = 'overlay.shardInterstitial';
   let actTimer = 0;
+  // T9/T1 — which act banner is live (2 = the Act II deception banner, 3 =
+  // the Act III ground-door banner): setLang re-pins the visible one.
+  let liveAct: 2 | 3 = 2;
   // M4/T6 — the last values fed to the value-bearing setters, so setLang() can
   // recompose every label-bearing surface (chips, mute, tier) without main
   // re-feeding them. Derived display state, not a second truth: the values'
   // owners still write them.
   let muted = false;
   let lastTierStats: {
-    tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+    tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
     floors: number;
     shards: number;
   } | null =
@@ -420,47 +427,59 @@ export function createHud(init: HudInit): Hud {
    *  the flow in T6/T1 — V cascades). T6/T1: tier 6 named the Dwaar VI tier
    *  close (retired from the flow in T7/T1 — VI cascades). T7/T1: tier 7
    *  named the Dwaar VII tier close (retired from the flow in T8/T1 — VII
-   *  cascades). T8/T1: tier 8 names the Dwaar VIII tier close — the one
-   *  full screen the house keeps. */
-  const tierTitleKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): string =>
-    tier === 8
-      ? 'overlay.tierTitle8'
-      : tier === 7
-        ? 'overlay.tierTitle7'
-        : tier === 6
-          ? 'overlay.tierTitle6'
-          : tier === 5
-            ? 'overlay.tierTitle5'
-            : tier === 4
-              ? 'overlay.actTitle'
-              : tier === 3
-                ? 'overlay.tierTitle3'
-                : tier === 2
-                  ? 'overlay.tierTitle2'
-                  : 'overlay.tierTitle';
+   *  cascades). T8/T1: tier 8 named the Dwaar VIII tier close (retired from
+   *  the flow in T9/T1 — VIII cascades). T9/T1: tier 9 names the Dwaar IX
+   *  tier close — the one full screen the house keeps. */
+  const tierTitleKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9): string =>
+    tier === 9
+      ? 'overlay.tierTitle9'
+      : tier === 8
+        ? 'overlay.tierTitle8'
+        : tier === 7
+          ? 'overlay.tierTitle7'
+          : tier === 6
+            ? 'overlay.tierTitle6'
+            : tier === 5
+              ? 'overlay.tierTitle5'
+              : tier === 4
+                ? 'overlay.actTitle'
+                : tier === 3
+                  ? 'overlay.tierTitle3'
+                  : tier === 2
+                    ? 'overlay.tierTitle2'
+                    : 'overlay.tierTitle';
 
   /** The tier screen's note key — the free-walk line for the tier screens
    *  (Dwaar VII's included), the Act II teaser for the retired act close. */
-  const tierNoteKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): string =>
+  const tierNoteKey = (tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9): string =>
     tier === 4 ? 'overlay.actNote' : 'overlay.tierNote';
 
   /** The shard interstitial's line key — one place for the `which` → key
    *  map (T6/T1: Dwaar V's `5` joins; T7/T1: Dwaar VI's `6` joins; T8/T1:
-   *  Dwaar VII's `7` joins). */
-  const shardKeyFor = (which: 1 | 2 | 3 | 4 | 5 | 6 | 7): string =>
-    which === 7
-      ? 'overlay.shardInterstitial7'
-      : which === 6
-        ? 'overlay.shardInterstitial6'
-        : which === 5
-          ? 'overlay.shardInterstitial5'
-          : which === 4
-            ? 'overlay.shardInterstitial4'
-            : which === 3
-              ? 'overlay.shardInterstitial3'
-              : which === 2
-                ? 'overlay.shardInterstitial2'
-                : 'overlay.shardInterstitial';
+   *  Dwaar VII's `7` joins; T9/T1: Dwaar VIII's `8` joins). */
+  const shardKeyFor = (which: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): string =>
+    which === 8
+      ? 'overlay.shardInterstitial8'
+      : which === 7
+        ? 'overlay.shardInterstitial7'
+        : which === 6
+          ? 'overlay.shardInterstitial6'
+          : which === 5
+            ? 'overlay.shardInterstitial5'
+            : which === 4
+              ? 'overlay.shardInterstitial4'
+              : which === 3
+                ? 'overlay.shardInterstitial3'
+                : which === 2
+                  ? 'overlay.shardInterstitial2'
+                  : 'overlay.shardInterstitial';
+
+  /** The act banner's two line keys for one act number — one place (T9/T1):
+   *  act 2 = the deception banner, act 3 = the ground-door banner. */
+  const actKeysFor = (act: 2 | 3): { title: string; note: string } =>
+    act === 3
+      ? { title: 'overlay.actBanner3', note: 'overlay.actBanner3Note' }
+      : { title: 'overlay.actBanner', note: 'overlay.actBannerNote' };
 
   /** One place that knows every static chrome label — boot and setLang().
    *  M5/T6: every HUD button also carries an aria-label from the same table —
@@ -573,7 +592,7 @@ export function createHud(init: HudInit): Hud {
     hideDescend: () => {
       descend.hidden = true;
     },
-    showShardInterstitial: (which: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 1) => {
+    showShardInterstitial: (which: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 = 1) => {
       shardKey = shardKeyFor(which);
       shard.textContent = t(lang, shardKey);
       shard.hidden = false;
@@ -582,9 +601,11 @@ export function createHud(init: HudInit): Hud {
         shard.hidden = true;
       }, SHARD_INTERSTITIAL_MS);
     },
-    showActBanner: () => {
-      actTitle.textContent = t(lang, 'overlay.actBanner');
-      actNote.textContent = t(lang, 'overlay.actBannerNote');
+    showActBanner: (whichAct: 2 | 3 = 2) => {
+      liveAct = whichAct;
+      const keys = actKeysFor(whichAct);
+      actTitle.textContent = t(lang, keys.title);
+      actNote.textContent = t(lang, keys.note);
       act.hidden = false;
       window.clearTimeout(actTimer);
       actTimer = window.setTimeout(() => {
@@ -638,10 +659,12 @@ export function createHud(init: HudInit): Hud {
         tierNote.textContent = t(lang, tierNoteKey(lastTierStats.tier)); // T4/T1 — the act tease flips too
       }
       if (!shard.hidden) shard.textContent = t(lang, shardKey); // T2/T5, T3/T1, T4/T1 — the live line
-      // T5/T1 — the act banner flips too while it is on screen
+      // T5/T1 — the act banner flips too while it is on screen (T9/T1: the
+      // Act III ground-door banner rides the same live-act pin)
       if (!act.hidden) {
-        actTitle.textContent = t(lang, 'overlay.actBanner');
-        actNote.textContent = t(lang, 'overlay.actBannerNote');
+        const keys = actKeysFor(liveAct);
+        actTitle.textContent = t(lang, keys.title);
+        actNote.textContent = t(lang, keys.note);
       }
     },
     captionBar,
