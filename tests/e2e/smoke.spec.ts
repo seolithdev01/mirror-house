@@ -3043,6 +3043,10 @@ test('t10: floor 91 enters the foundations', async ({ page }) => {
 // TERMINAL: floor stays 100, tier stays 10, the shard claimed, descend a
 // no-op forever.
 test('t10: the glazier hunts and the door opens', async ({ page }) => {
+  // four captures each wait out a breath recharge (0.34 at 0.25/s) in GAME
+  // time, which runs behind the wall clock on a slow runner — the default
+  // 30 s budget is not enough there
+  test.setTimeout(120_000);
   const errors = collectErrors(page);
   await page.goto('/?seed=T10END&floor=100');
   await ready(page);
@@ -3074,21 +3078,30 @@ test('t10: the glazier hunts and the door opens', async ({ page }) => {
   for (const k of snap.kinds) expect(k, 'still no glass — beacons only').toBe('beacon');
   await expect(page.locator('#mh-floor')).toHaveText('L100 · THE GROUND');
   // THE HUNT: warp onto the master — contact is the standard caught fail
-  await page.evaluate(() => {
-    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-    const p = h.glazierPos();
-    if (p !== null) h.warp(p.x, p.y);
-  });
+  // (he walks: each poll warps onto his LIVE spot in-page, so a slow
+  // round-trip can never leave the player parked where he used to be)
   await page.waitForFunction(
-    () =>
-      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.house()
-        .failed,
+    () => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      if (h.house().failed) return true;
+      const p = h.glazierPos();
+      if (p !== null) h.warp(p.x, p.y);
+      return false;
+    },
     null,
-    { timeout: 2000 },
+    { timeout: 15000, polling: 100 },
   );
   await expect(page.locator('#mh-fail')).toHaveText('Caught by the glass');
-  // FAIL_FREEZE_MS is 1200ms; +margin → resetFloor has re-armed the Ground
-  await page.waitForTimeout(1600);
+  // FAIL_FREEZE_MS is 1200ms → resetFloor re-arms the Ground (the reset
+  // rides a frame, so wait for the state rather than a fixed sleep)
+  await page.waitForFunction(
+    () => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.attempts() === 1 && !h.house().failed;
+    },
+    null,
+    { timeout: 15000 },
+  );
   const rearmed = await page.evaluate(() => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     return { attempts: h.attempts(), failed: h.house().failed };
@@ -3097,19 +3110,46 @@ test('t10: the glazier hunts and the door opens', async ({ page }) => {
   expect(rearmed.failed).toBe(false);
   // the clear check needs a started run — take one step first (the game's
   // first-input contract, the m2 win leg's move)
+  // (held until the player has actually moved: a 200 ms tap can fall wholly
+  // between two frames on a slow runner, and an unsampled key starts no run)
+  const at0 = await page.evaluate(() =>
+    (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.getPlayer(),
+  );
   await page.keyboard.down('KeyW');
-  await page.waitForTimeout(200);
+  await page.waitForFunction(
+    (p: { x: number; y: number }) => {
+      const q = (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.getPlayer();
+      return Math.hypot(q.x - p.x, q.y - p.y) > 0.05;
+    },
+    at0,
+    { timeout: 15000 },
+  );
   await page.keyboard.up('KeyW');
   // THE FOUR PEDESTALS: capture all four beacons (warp+frost, floor 100's
   // beacons live glass — frost works here, nothing freezes it)
-  while (
-    (await page.evaluate(() => {
+  // (one in-page turn per capture — aim, frost keydown and the read all ride
+  // the same poll, so the master gains no ground on Playwright round-trips
+  // while the player stands at the glass)
+  await page.waitForFunction(
+    () => {
       const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-      return h.beaconsLeft();
-    })) > 0
-  ) {
-    await captureNextBeacon(page);
-  }
+      if (h.beaconsLeft() === 0) return true;
+      if (h.breath() < 0.34) return false;
+      const m = h.mirrorAt('beacon');
+      if (m === null) return false;
+      const d = Math.hypot(m.cx - m.x, m.cy - m.z);
+      const sx = m.x + ((m.cx - m.x) / d) * 1.0;
+      const sz = m.z + ((m.cy - m.z) / d) * 1.0;
+      h.warp(sx, sz, Math.atan2(m.x - sx, -(m.z - sz)));
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', key: 'f' }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyF', key: 'f' }));
+      return h.beaconsLeft() === 0;
+    },
+    null,
+    { timeout: 60000, polling: 100 },
+  );
   expect(
     await page.evaluate(() => {
       const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
@@ -3127,7 +3167,7 @@ test('t10: the glazier hunts and the door opens', async ({ page }) => {
     h.warp(e.x, e.z);
   }, exit);
   // the finale screen REPLACES the tier screen
-  await expect(page.locator('#mh-tier-overlay')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#mh-tier-overlay')).toBeVisible({ timeout: 15000 });
   await expect(page.locator('#mh-tier-title')).toHaveText(
     'ACT III COMPLETE — THE GROUND DOOR OPENS',
   );
