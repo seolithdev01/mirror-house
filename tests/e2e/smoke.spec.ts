@@ -195,6 +195,16 @@ function collectErrors(page: Page): string[] {
 }
 
 /** Wait for the dev hook to exist (module script has run). */
+// CI's runners render in software at a few frames a second. To reproduce
+// their timing locally: `MH_CPU_THROTTLE=6 npm run e2e` (a CDP CPU slowdown
+// factor, Chromium only). Unset, nothing changes.
+const CPU_THROTTLE = Number(process.env.MH_CPU_THROTTLE ?? 0);
+test.beforeEach(async ({ page }) => {
+  if (!(CPU_THROTTLE > 1)) return;
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE });
+});
+
 async function ready(page: Page): Promise<void> {
   await page.waitForFunction(
     () => (window as unknown as Record<string, unknown>).__MIRROR_HOUSE_DEBUG__ !== undefined,
@@ -2014,10 +2024,53 @@ test('t5: water rises and decoy walks', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=T5RUN&floor=41');
   await ready(page);
-  // leg 1 — one step starts the run; the flood is derived from its clock
+  // Order matters on a slow runner. Once the run starts, Chhaya replays the
+  // player's path ~3 s behind (floor 41), so a player who steps and then
+  // stands is caught about 3 s later and the floor resets — the old layout
+  // (step, watch the flood 2 s, then chase the copy) finished inside that
+  // window only on a fast machine. The copy leg therefore runs FIRST, in the
+  // 'ready' phase: the fixed step is live (copies walk, touches count) but no
+  // path is recorded, so nothing is following yet.
+
+  // leg 1 — the copy: forced, walking, worth 5 shards, shatterable once
+  const spot = await page.evaluate(() => {
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+    return h.forceDecoy();
+  });
+  expect(spot, 'the faucet spawns a copy on the Flood Halls').not.toBeNull();
+  // the copy strides at DECOY_SPEED — it is live and off its spawn cell
+  await page.waitForFunction(
+    (p: { x: number; y: number }) => {
+      const ds = (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.decoys();
+      return ds.length >= 1 && (ds[0]!.x !== p.x || ds[0]!.y !== p.y);
+    },
+    spot!,
+    { timeout: 10000 },
+  );
+  // the touch: +DECOY_SHARD banked pending on the next fixed step (50ms),
+  // and the shattered copy leaves the live list — the once-gate holds. The
+  // copy keeps walking (2 m/s against a 0.7 m touch radius), so each poll
+  // warps onto its LIVE position in-page: a position read in one Playwright
+  // round-trip and warped to in the next is already stale.
+  await page.waitForFunction(
+    () => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      const ds = h.decoys();
+      if (ds.length > 0) h.warp(ds[0]!.x, ds[0]!.y);
+      return h.house().pendingShards === 5 && ds.length === 0;
+    },
+    null,
+    { timeout: 10000, polling: 100 },
+  );
+
+  // leg 2 — one step starts the run; the flood is derived from its clock.
+  // (W stays held until the flood answers: a short tap can fall wholly
+  // between two frames on a slow runner, and a key the fixed step never
+  // sampled starts no run.) The second read waits for a higher level rather
+  // than sleeping a fixed 2 s — the leg ends well inside Chhaya's delay.
   await page.keyboard.down('KeyW');
-  await page.waitForTimeout(300);
-  await page.keyboard.up('KeyW');
   await page.waitForFunction(
     () =>
       (
@@ -2026,57 +2079,20 @@ test('t5: water rises and decoy walks', async ({ page }) => {
     null,
     { timeout: 20000 },
   );
+  await page.keyboard.up('KeyW');
   const l1 = await page.evaluate(() =>
     (
       window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
     ).__MIRROR_HOUSE_DEBUG__.waterLevel(),
   );
-  await page.waitForTimeout(2000);
-  const l2 = await page.evaluate(() =>
-    (
-      window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
-    ).__MIRROR_HOUSE_DEBUG__.waterLevel(),
-  );
   expect(l1, 'the flood rises the moment the run begins').toBeGreaterThan(0);
-  expect(l2, 'the flood keeps climbing').toBeGreaterThan(l1);
-
-  // leg 2 — the copy: forced, walking, worth 5 shards, shatterable once
-  const spot = await page.evaluate(() => {
-    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-    return h.forceDecoy();
-  });
-  expect(spot, 'the faucet spawns a copy on the Flood Halls').not.toBeNull();
   await page.waitForFunction(
-    () =>
-      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.decoys()
-        .length >= 1,
-    null,
-    { timeout: 2000 },
-  );
-  await page.waitForTimeout(700); // the copy strides at DECOY_SPEED — let it move
-  const walk = await page.evaluate(() => {
-    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-    const ds = h.decoys();
-    return ds.length > 0 ? ds[0]! : null;
-  });
-  expect(walk, 'the live copy is on the board').not.toBeNull();
-  expect(
-    walk!.x !== spot!.x || walk!.y !== spot!.y,
-    'the copy has walked off its spawn cell toward the exit',
-  ).toBe(true);
-  await page.evaluate((p: { x: number; y: number }) => {
-    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-    h.warp(p.x, p.y);
-  }, walk!);
-  // the touch: +DECOY_SHARD banked pending on the next fixed step (50ms),
-  // and the shattered copy leaves the live list — the once-gate holds
-  await page.waitForFunction(
-    () => {
-      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-      return h.house().pendingShards === 5 && h.decoys().length === 0;
-    },
-    null,
-    { timeout: 2500 },
+    (prev: number) =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.waterLevel() > prev,
+    l1,
+    { timeout: 5000 },
   );
   expect(errors).toEqual([]);
 });
@@ -2757,34 +2773,27 @@ test('t8: floor 71 loads the atrium frozen', async ({ page }) => {
   // warden parks on the cell center, 0.85 m off it would meet the touch
   // radius): the cold fog closes the eye ('fogged' — blind again) and the
   // thaw is spent
-  await page.evaluate((p: { s3x: number; s3z: number; heading: number }) => {
-    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
-    h.warp(p.s3x, p.s3z, p.heading);
-  }, pick!);
+  // The thawed pane SEES the stand spot, so the lingering warden turns on the
+  // player the moment they appear there (2.2 m/s over ~1.5 m). Warp, aim
+  // check, the frost keydown and the retreat to R therefore all happen in ONE
+  // in-page turn — no frame, and so no sense tick, can run between them. (As
+  // separate Playwright round-trips this raced the warden and lost on slow
+  // runners: caught at the stand spot, floor reset, pane frozen again.)
   await page.waitForFunction(
-    (id: number) =>
-      (
-        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
-      ).__MIRROR_HOUSE_DEBUG__.fogTarget() === id,
-    pick!.id,
-    { timeout: 4000 },
-  );
-  await page.waitForFunction(
-    () =>
-      (
-        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
-      ).__MIRROR_HOUSE_DEBUG__.breath() >= 0.34,
-    null,
-    { timeout: 10000 },
-  );
-  await page.keyboard.press('KeyF');
-  await page.waitForFunction(
-    (id: number) =>
-      (
-        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
-      ).__MIRROR_HOUSE_DEBUG__.mirrorState(id) === 'fogged',
-    pick!.id,
-    { timeout: 4000 },
+    (p: { id: number; s3x: number; s3z: number; heading: number; rx: number; ry: number }) => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      if (h.mirrorState(p.id) === 'fogged') return true;
+      if (h.breath() < 0.34) return false; // wait it out at R, unseen
+      h.warp(p.s3x, p.s3z, p.heading);
+      if (h.fogTarget() === p.id) {
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', key: 'f' }));
+        window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyF', key: 'f' }));
+      }
+      h.warp(p.rx, p.ry);
+      return h.mirrorState(p.id) === 'fogged';
+    },
+    pick!,
+    { timeout: 15000, polling: 200 },
   );
   // step back to R before the read — the released warden's last memory of the
   // stand spot must not touch the closing assertions
