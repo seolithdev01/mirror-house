@@ -596,6 +596,73 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
     delete legacy.body; // the widening gap is legal; the stowaway is not
     expect(validateSave(a11yWith(legacy))).toBeNull();
   });
+
+  // T11/T3 softening — REBINDS WIN OVER NEW DEFAULTS: a legacy save may have
+  // legally rebound an action onto what a widening later claims (faq → KeyN
+  // pre-T11; mute → KeyB in the T1 era). Filling the gap blindly would make
+  // the default a duplicate of the rebind → the duplicate gate rejects → the
+  // WHOLE save wipes. So the collided action ships unbound instead, and the
+  // rebind keeps its key.
+  it('a rebind sitting on KeyN survives the migration — map ships unbound, not a wipe', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.map;
+    delete legacy.body;
+    legacy.faq = 'KeyN'; // a legal pre-T11 rebind onto the minimap's future default
+    const out = validateSave(a11yWith(legacy));
+    expect(out).not.toBeNull(); // the save is NOT discarded
+    expect(out?.a11y?.keyMap.faq).toBe('KeyN'); // the REBIND keeps the key
+    expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'map')).toBe(false); // the default is dropped
+    expect(out?.a11y?.keyMap.body).toBe('KeyB'); // the uncollided gap still fills
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(16); // 15 stored + body
+  });
+
+  it('a rebind sitting on KeyB survives too — body ships unbound (T1-era shape)', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.body;
+    legacy.mute = 'KeyB'; // a legal T1-era rebind onto the motion pane's future default
+    const out = validateSave(a11yWith(legacy));
+    expect(out).not.toBeNull();
+    expect(out?.a11y?.keyMap.mute).toBe('KeyB');
+    expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'body')).toBe(false);
+    expect(out?.a11y?.keyMap.map).toBe('KeyN');
+  });
+
+  it('a stored map rebind on KeyB beats the body default too — rebind wins regardless of which action holds the key', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.body;
+    legacy.map = 'KeyB'; // T1-era: the user moved the minimap toggle onto B
+    const out = validateSave(a11yWith(legacy));
+    expect(out).not.toBeNull();
+    expect(out?.a11y?.keyMap.map).toBe('KeyB');
+    expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'body')).toBe(false);
+  });
+
+  it('both defaults collide at once — both rebinds win, both gaps stay open, the save survives', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.map;
+    delete legacy.body;
+    legacy.faq = 'KeyN'; // pre-T11 rebind on N
+    legacy.mute = 'KeyB'; // pre-T11 rebind on B
+    const out = validateSave(a11yWith(legacy));
+    expect(out).not.toBeNull();
+    expect(out?.a11y?.keyMap.faq).toBe('KeyN');
+    expect(out?.a11y?.keyMap.mute).toBe('KeyB');
+    expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'map')).toBe(false);
+    expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'body')).toBe(false);
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(15);
+  });
+
+  it('the softened migration is idempotent — re-validating the dropped shape re-drops the same default', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.map;
+    delete legacy.body;
+    legacy.faq = 'KeyN';
+    const first = validateSave(a11yWith(legacy));
+    expect(first).not.toBeNull();
+    // the migrated record (map absent again) round-trips to the same shape
+    const second = validateSave(a11yWith(first!.a11y!.keyMap as Record<string, string>));
+    expect(second).toEqual(first);
+  });
 });
 
 describe('save: idb wrapper is inert under node (no indexedDB)', () => {

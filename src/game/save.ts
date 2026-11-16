@@ -232,7 +232,18 @@ const RESERVED_CODES: readonly string[] = ['Escape', 'Tab'];
  *  gate would then return null for the WHOLE record on idbGet, discarding
  *  the campaign on first boot (progress, bests, shards — the T3/T1 "saves
  *  wipe in the same commit the bound moves" lesson, applied to the keymap).
- *  Any OTHER missing action, or an extra one, is still a rejection. */
+ *  Any OTHER missing action, or an extra one, is still a rejection.
+ *  T11/T3 softening — REBINDS WIN OVER NEW DEFAULTS: a legacy save may have
+ *  legally rebound some action onto what a widening later claims as ITS
+ *  default (faq → KeyN pre-T11; mute → KeyB in the T1 era). Filling the gap
+ *  blindly then makes the default a duplicate of the rebind — the duplicate
+ *  gate would reject and wipe the whole save. So a gap whose default's code
+ *  is already taken by a STORED binding fills with nothing: the new action
+ *  ships unbound (the ⚙ Controls row shows "?" and can be captured; the dock
+ *  chip still toggles the pane), and the rebind keeps its key. Consumers
+ *  already tolerate absence (actionFor iterates entries; keyOf/keysToMoveInput
+ *  only read non-widening actions). The migration stays idempotent — the next
+ *  load re-detects the same gap and re-drops the same default. */
 const WIDENING_ACTIONS: readonly string[] = ['map', 'body'];
 
 function validateKeyMap(raw: unknown): KeyMap | null {
@@ -245,6 +256,11 @@ function validateKeyMap(raw: unknown): KeyMap | null {
   // unknown keys reject even alongside a legal widening gap — a junk key
   // riding a migration is still junk (T1's exact-count caught this shape)
   for (const a of actions) if (!known.includes(a)) return null;
+  // the codes the STORED bindings own — a widening default landing on one of
+  // these is a collision, and the rebind wins (the gap stays a gap)
+  const storedCodes = new Set(
+    actions.map((a) => raw[a]).filter((c): c is string => typeof c === 'string'),
+  );
   const byCode = new Map<string, string[]>();
   const out: Record<string, string> = {};
   for (const action of known) {
@@ -252,6 +268,9 @@ function validateKeyMap(raw: unknown): KeyMap | null {
     // The gaps a legacy map may leave are exactly the widening's actions.
     if (!Object.hasOwn(raw, action)) {
       if (!(legacy && WIDENING_ACTIONS.includes(action))) return null;
+      // rebinds win over new defaults: the default's code is taken by a
+      // stored binding — leave this action unbound rather than duplicate
+      if (storedCodes.has(DEFAULT_KEYMAP[action]!)) continue;
     }
     const code: unknown = Object.hasOwn(raw, action) ? raw[action] : DEFAULT_KEYMAP[action];
     if (typeof code !== 'string' || !CODE_RE.test(code)) return null;
