@@ -1481,6 +1481,219 @@
           opacity 320ms ease,
           visibility 0s linear 320ms;
       }
+      /* ============================================================
+         T12/T2 — THE TOUCH OVERLAY (#mh-touch): the VISUAL MIRROR of the
+         input collector's stick pointer state — never a control. The whole
+         layer is pointer-events:none (input stays in input.ts); main.ts
+         feeds it once per frame from touchSnapshot(). The base ring is
+         2×TOUCH_STICK_RADIUS_PX (56) and the nub 2×TOUCH_NUB_RADIUS_PX
+         (24) — the widths/heights/margins are set from the constants in
+         touchUi.ts, this sheet only dresses them.
+         ============================================================ */
+      #mh-touch {
+        position: fixed;
+        inset: 0;
+        z-index: 9; /* under the #hud chrome — chips and plates draw over the mirror */
+        pointer-events: none;
+      }
+      #mh-touch[hidden] {
+        display: none;
+      }
+      /* the look-zone hairline: the only thing the right 55% paints — a
+         quiet ink divider at classifyZone's exact 0.45 boundary */
+      #mh-touch-divider {
+        position: absolute;
+        left: 45%;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: linear-gradient(
+          180deg,
+          transparent,
+          rgba(255, 255, 255, 0.16) 18%,
+          rgba(255, 255, 255, 0.16) 82%,
+          transparent
+        );
+      }
+      /* the base ring — RESTING (no thumb): parked bottom-left, dimmed, the
+         affordance that says "drag here". LIVE (thumb down): touchUi.ts
+         jumps it to the down point via a translate3d. */
+      #mh-touch-stick {
+        position: absolute;
+        left: 18px;
+        bottom: 28px; /* the corner rest spot — clear of the lifted captions */
+        border-radius: 50%;
+        background: rgba(27, 26, 36, 0.5); /* the ink plate */
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        opacity: 0.5;
+      }
+      #mh-touch-stick.mh-touch-live {
+        left: 0;
+        bottom: auto;
+        top: 0;
+        opacity: 0.92;
+        border-color: rgba(247, 201, 72, 0.55);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      }
+      /* the nub — the yellow thumb shadow, centered by half-radius margins
+         (touchUi.ts), dragged by one clean translate3d */
+      #mh-touch-nub {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        border-radius: 50%;
+        background: var(--yellow);
+        box-shadow: 0 3px #b88a00; /* the PoD hard shadow */
+      }
+      /* ============================================================
+         T12/T2 — RESPONSIVE DECLUTTER (body.compact): main.ts owns the
+         class — isCompactLayout(innerWidth, hasCoarse) at boot + on
+         resize (viewport ≤ COMPACT_BREAKPOINT_PX 900 or a coarse pointer).
+         Desktop (> 900px + fine pointer) is untouched; everything below
+         only dresses the compact form. The minimap/motion canvases hide
+         via their session toggles (panesDefault boots them OFF here — the
+         dock chips summon them back as overlays, repositioned below).
+         ============================================================ */
+      /* no keys on touch/small screens — the dock carries the actions */
+      body.compact #mh-keys {
+        display: none;
+      }
+      /* the district plate shrinks to its one line (the big floor number) */
+      body.compact #mh-district-kicker,
+      body.compact #mh-floor-area {
+        display: none;
+      }
+      body.compact #mh-district {
+        padding: 5px 14px 6px 10px;
+        border-left-width: 4px;
+      }
+      body.compact #mh-floor {
+        margin: 0;
+        font-size: calc(22px * var(--mh-text-scale, 1));
+      }
+      /* the chips row wraps tighter (5 value chips on a phone width) */
+      body.compact #mh-chips {
+        gap: 4px;
+        max-width: 58vw;
+      }
+      body.compact .mh-chip {
+        padding: 2px 8px;
+        font-size: calc(11px * var(--mh-text-scale, 1));
+      }
+      /* noise/anger fold into ONE status plate: shared width, the anger
+         bar tucks up under the breath bar, one rounded outline around both */
+      body.compact #mh-breath {
+        width: 112px;
+        border-radius: 5px 5px 0 0;
+      }
+      body.compact #mh-anger {
+        width: 112px;
+        margin-top: -6px;
+        border-top: 0;
+        border-radius: 0 0 5px 5px;
+      }
+      /* THE DOCK: a 2-column grid of ≥56px thumb targets (the plan's 2×3
+         sketch, grown to fit the dock's real population — every action
+         stays reachable). Full-width rows first (view chip, mode/lang row,
+         the folded status plate), then the action pairs — rows size to
+         their content so the chip/bars rows don't burn 56px of dead space. */
+      body.compact #mh-dock {
+        display: grid;
+        grid-template-columns: repeat(2, 76px);
+        grid-template-areas:
+          'view view'
+          'modes modes'
+          'breath breath'
+          'anger anger'
+          'map motion'
+          'faq aaina'
+          'frost mute';
+        grid-auto-rows: min-content;
+        gap: 6px;
+        align-items: center;
+        justify-items: stretch;
+      }
+      body.compact #mh-dock > #mh-view {
+        grid-area: view;
+        justify-self: center;
+      }
+      body.compact #mh-dock > #mh-modes {
+        grid-area: modes;
+      }
+      body.compact #mh-dock > #mh-breath {
+        grid-area: breath;
+      }
+      body.compact #mh-dock > #mh-anger {
+        grid-area: anger;
+        margin-top: -7px; /* pull the anger bar up over the row gap — one plate */
+      }
+      body.compact #mh-dock > #mh-map {
+        grid-area: map;
+      }
+      body.compact #mh-dock > #mh-motion-btn {
+        grid-area: motion;
+      }
+      body.compact #mh-dock > #mh-faq {
+        grid-area: faq;
+      }
+      body.compact #mh-dock > #mh-aaina {
+        grid-area: aaina;
+      }
+      body.compact #mh-dock > #mh-frost {
+        grid-area: frost;
+      }
+      body.compact #mh-dock > #mh-mute {
+        grid-area: mute;
+      }
+      body.compact #mh-dock > button {
+        min-width: 56px;
+        min-height: 56px;
+        padding: 4px 6px;
+        font-size: calc(11px * var(--mh-text-scale, 1));
+        line-height: 1.2;
+      }
+      /* the save-management utilities (daily/export/import) floor at 44px —
+         useful, but not in-game thumb actions */
+      body.compact #mh-dock > #mh-daily,
+      body.compact #mh-dock > #mh-export,
+      body.compact #mh-dock > #mh-import {
+        min-height: 44px;
+      }
+      /* the mode/lang row stays a wrapping row of compact ghosts (it is
+         chrome, not a thumb action — 34px floors, not 56) */
+      body.compact #mh-modes {
+        justify-content: center;
+      }
+      body.compact #mh-modes button {
+        min-width: 40px;
+        min-height: 34px;
+        padding: 2px 6px;
+        font-size: calc(10px * var(--mh-text-scale, 1));
+      }
+      /* SUMMONED PANES as overlays: the chips' toggles still own visibility
+         (the canvases' inline display from setVisible); compact only
+         repositions the visible ones. The minimap takes the free LEFT
+         column under the district plate; the motion pane mirrors it on the
+         RIGHT, below the wrapped chips row and above the dock's reach —
+         both collision-free at the 390×844 phone shape. */
+      body.compact #mh-minimap {
+        left: 10px;
+        bottom: auto;
+        top: 64px;
+      }
+      body.compact #mh-motion {
+        left: auto;
+        right: 10px;
+        bottom: auto;
+        top: 138px;
+      }
+      /* captions ride above the stick rest spot and the dock's lower rows */
+      body.compact #mh-captions {
+        bottom: 168px;
+        max-width: 86vw;
+      }
     </style>
   </head>
   <body>

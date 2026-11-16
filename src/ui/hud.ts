@@ -183,7 +183,10 @@ export function createHud(init: HudInit): Hud {
   const modes = document.createElement('div');
   modes.id = 'mh-modes';
   const buttons: Record<string, HTMLButtonElement> = {};
-  for (const m of ['keyboard', 'mouse', 'hybrid'] as const) {
+  // T12/T2 — 'touch' joins the row: the i18n'd label shipped in T1
+  // (`mode.touch`, en TOUCH / hi स्पर्श), and main's onMode persists it —
+  // validateSave has accepted 'touch' since the union widened.
+  for (const m of ['keyboard', 'mouse', 'hybrid', 'touch'] as const) {
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.mode = m;

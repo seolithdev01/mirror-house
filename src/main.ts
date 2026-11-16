@@ -60,17 +60,20 @@ import {
   TIER_THREE_FLOORS,
   TIER_TWO_FLOORS,
   THAW_LURE_RADIUS,
+  TOUCH_LOOK_SENS,
   WALK_SPEED,
 } from './engine/constants';
 import { createRng, type Rng } from './engine/rng';
 import {
   actionFor,
+  defaultMode,
   InputCollector,
   keysToMoveInput,
   mouseOnlyInput,
   rebind,
   withoutKey,
   type InputMode,
+  type TouchSnapshot,
 } from './engine/input';
 import { Dir, type CellIndex } from './engine/grid';
 import { losClear } from './engine/los';
@@ -156,6 +159,7 @@ import {
 } from './game/houseState';
 import { crackAngerFor, fogDurationMs, heatOn } from './game/heat';
 import { parseLook } from './game/look';
+import { stickToMove } from './game/touch';
 import { apparentPlayer as computeApparent } from './game/distort';
 import { diagnosticsSnapshot, keymapDiffCount, recordError, type RingError } from './game/feedback';
 import {
@@ -259,6 +263,12 @@ import { createMinimap } from './ui/minimap';
 import { createMotionPane } from './ui/motionPane';
 import { createOverhead, pingOpacity } from './ui/overhead';
 import { buildSettingsOverlay, keyLabel, type TextScale } from './ui/settings';
+import {
+  createTouchUi,
+  isCompactLayout,
+  panesDefault,
+  shouldShowTouchUi,
+} from './ui/touchUi';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const overheadCanvas = document.querySelector<HTMLCanvasElement>('#overhead')!;
@@ -287,6 +297,12 @@ window.addEventListener('unhandledrejection', (e) => {
 // waitForFunction tolerates that whenever it lands.
 const urlParams = new URLSearchParams(window.location.search);
 const urlSeed = normalizeSeed(urlParams.get('seed') ?? '');
+// T12/T2 — the device hint the responsive layer reads once at boot: a coarse
+// primary pointer (a touchscreen where fingers are the FIRST input) forces
+// the compact declutter and auto-selects 'touch' for brand-new saves. A
+// fine-pointer device with a touchscreen still opts in — the overlay waits
+// for its first seen touch (shouldShowTouchUi).
+const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
 // step007/T3 — tester mode: `?test=1` (never `0`, nothing else) unlocks the
 // diagnostics hook + the TESTER chip for THIS session in ANY build — PROD
 // included, because invited testers play the deployed game. Session-only by
@@ -358,7 +374,14 @@ function migrateFromMetaV1(): SaveData | null {
 // M5/T1 — normalizeSave fills the additive a11y defaults post-load: every
 // pre-M5 save (stored, exported, migrated) arrives without the block and
 // leaves this line carrying the full default one.
-let save: SaveData = normalizeSave((await idbGet()) ?? migrateFromMetaV1() ?? defaultSave());
+// T12/T2 — the boot ALSO records whether this save is brand-new (nothing in
+// IDB, nothing to migrate): that is the one case defaultMode's auto-select
+// may speak for — a new save on a coarse-pointer device boots 'touch', an
+// existing save keeps its stored mode, never wiped by a device hint.
+const storedSave = await idbGet();
+const migratedMeta = storedSave === null ? migrateFromMetaV1() : null;
+const isNewSave = storedSave === null && migratedMeta === null;
+let save: SaveData = normalizeSave(storedSave ?? migratedMeta ?? defaultSave());
 /** The save's a11y block, defaulted — never undefined past boot. */
 function a11y(): A11ySettings {
   return save.a11y ?? DEFAULT_A11Y;
@@ -382,6 +405,19 @@ function applyReducedFlash(on: boolean): void {
 }
 applyTextScale(a11y().textScale);
 applyReducedFlash(a11y().reducedFlash);
+// T12/T2 — THE COMPACT DECLUTTER CLASS: body.compact when the viewport sits
+// at or under COMPACT_BREAKPOINT_PX or the pointer is coarse (the pure
+// isCompactLayout). One class flip re-dresses the whole HUD (index.html's
+// body.compact block): keys bar gone, district plate one line, the dock a
+// grid of 56px thumb targets, chips tighter, captions lifted, and the
+// summonable panes repositioned as overlays. Session-live on resize — a
+// desktop window dragged narrow de-clutters too (its panes keep their
+// session state; only the boot DEFAULTS are compact's, via panesDefault).
+function applyCompactClass(): void {
+  document.body.classList.toggle('compact', isCompactLayout(window.innerWidth, hasCoarsePointer));
+}
+applyCompactClass();
+window.addEventListener('resize', applyCompactClass);
 let campaign: Campaign = isValidSeed(urlSeed)
   ? { seedBase: urlSeed, floor: bootFloorFromUrl(), tierComplete: false } // URL wins over the save
   : {
@@ -1258,7 +1294,18 @@ const QUAD_SIDE_YAW: readonly { cam: THREE.PerspectiveCamera; yaw: number }[] = 
 
 const input = new InputCollector();
 input.attach(window);
-let mode: InputMode = save.mode;
+// T12/T2 — the boot mode: a stored mode always wins (defaultMode's own
+// contract); a BRAND-NEW save consults the device (coarse → 'touch'). The
+// DEV-only `?ui=touch` override forces the session mode for touch testing
+// on a desktop (the live-check path) without ever touching the save.
+const modeOverride: InputMode | null =
+  import.meta.env.DEV && urlParams.get('ui') === 'touch' ? 'touch' : null;
+let mode: InputMode =
+  modeOverride ?? (isNewSave ? defaultMode(hasCoarsePointer) : save.mode);
+if (modeOverride === null && mode !== save.mode) {
+  save = { ...save, mode }; // the auto-selected touch mode sticks (T12 ratified)
+  persist();
+}
 const faq = buildFaqOverlay();
 // step007/T1 — the About panel: version, pitch, beta, credits, links, tagline.
 // Two doors: the ⓘ beside 🌐 (hud.ts) and the entry inside ⚙ (settings.ts);
@@ -1379,6 +1426,7 @@ const hud = createHud({
   onMode: (m) => {
     mode = m;
     hud.setMode(m);
+    refreshTouchUi(); // T12/T2 — the overlay follows the mode (and hides again off 'touch')
     save = { ...save, mode: m };
     persist();
   },
@@ -1415,6 +1463,31 @@ const hud = createHud({
   onMotion: () => toggleMotion(),
 });
 
+// T12/T2 — THE TOUCH OVERLAY: the pure-visual mirror of the collector's
+// stick pointer state (pointer-events:none throughout — INPUT stays in the
+// input.ts collector; this DOM only shadows it, fed once per frame in the
+// frame loop). Visibility is shouldShowTouchUi's verdict: mode === 'touch'
+// AND (coarse pointer OR a touch seen this session). The first `touchstart`
+// flips seenTouch — the touchscreen laptop that booted hybrid and switched
+// to TOUCH sees its stick appear on the first real touch, not before.
+let seenTouch = false;
+const touchUi = createTouchUi(document.body, {
+  stick: t(lang, 'touch.stick'),
+  look: t(lang, 'touch.look'),
+});
+function refreshTouchUi(): void {
+  touchUi.setVisible(shouldShowTouchUi(hasCoarsePointer, seenTouch, mode));
+}
+window.addEventListener(
+  'touchstart',
+  () => {
+    seenTouch = true;
+    refreshTouchUi();
+  },
+  { once: true, passive: true },
+);
+refreshTouchUi();
+
 // T11/T1 — THE PAC-MINIMAP: the full maze as a Pac-Man-style guide, mounted
 // bottom-left above the keys bar (the PoD plate styling lives in index.html).
 // No fog of war — reveal-all is the point (the OVERHEAD tactical map keeps
@@ -1429,7 +1502,15 @@ minimapCanvas.width = MINIMAP_SIZE_PX;
 minimapCanvas.height = MINIMAP_SIZE_PX;
 hud.root.appendChild(minimapCanvas);
 const minimap = createMinimap(minimapCanvas);
-let minimapOn = true;
+// T12/T2 — the boot defaults go through panesDefault: desktop keeps the
+// shipped always-on panes; compact/touch boots both HIDDEN (the dock chips
+// summon them as overlays). Session vars, never persisted — a chip press
+// still flips the same toggle KeyN always drove.
+const paneDefaults = panesDefault(
+  isCompactLayout(window.innerWidth, hasCoarsePointer),
+  mode === 'touch',
+);
+let minimapOn = paneDefaults.map;
 function toggleMinimap(): void {
   minimapOn = !minimapOn;
   minimap.setVisible(minimapOn);
@@ -1484,7 +1565,7 @@ motionCanvas.width = MOTION_W;
 motionCanvas.height = MOTION_H;
 hud.root.appendChild(motionCanvas);
 const motion = createMotionPane(motionCanvas);
-let motionOn = true;
+let motionOn = paneDefaults.motion; // T12/T2 — the same compact/touch boot default
 function toggleMotion(): void {
   motionOn = !motionOn;
   motion.setVisible(motionOn);
@@ -1536,6 +1617,7 @@ function refreshChrome(): void {
   hud.setFloorArea(venue === null ? floorAreaLabel(campaign) : venue.name); // ui-pod — the plate's accent line
   hud.setMuted(audio.muted);
   pushKeys(); // ui-pod — the keys bar follows the live keymap + language
+  touchUi.setLabels({ stick: t(lang, 'touch.stick'), look: t(lang, 'touch.look') }); // T12/T2 — the overlay's aria names flip too
   if (venue !== null) showVenueBanner(venue); // M6/T1 — the banner re-localizes
 }
 
@@ -2839,6 +2921,38 @@ function setPerfChoice(choice: PerfChoice): void {
   applyPreset(choice === 'auto' ? detectedPreset() : choice);
 }
 
+// ---- T12/T2 — touch input consumption ---------------------------------------
+/** The touch frame's idle (mode ≠ touch, or no pointer has ever landed):
+ *  one shared constant, so a stale reference can never carry motion. */
+const IDLE_TOUCH_SNAPSHOT: TouchSnapshot = {
+  stick: { active: false, dx: 0, dy: 0 },
+  lookDx: 0,
+  origin: { x: 0, y: 0 },
+};
+/** The ratified sprint threshold (the T1 decision, kept out of the constants
+ *  block on purpose — it is a movement-policy constant, not a house fact): a
+ *  stick magnitude past this buys the full SPRINT_SPEED 6.0; below it the
+ *  stick walks its analog WALK_SPEED continuum. */
+const TOUCH_SPRINT_MAGNITUDE = 0.85;
+/**
+ * The touch snapshot → one MoveInput (the 'touch' branch of the fixed step).
+ * stickToMove owns the axes + deadzone (analog forward/strafe); the sprint
+ * bit reads the RAW vector's magnitude against the threshold above (an
+ * inactive stick never sprints — hypot(0,0)=0); the look bank's pixels
+ * convert at TOUCH_LOOK_SENS exactly once per FRAME (firstStep — the drain
+ * happens at the frame level so the DOM mirror sees every move, and total
+ * radians-per-pixel stay identical to a per-step drain).
+ */
+function touchMoveFrame(ts: TouchSnapshot, firstStep: boolean): MoveInput {
+  const move = stickToMove(ts.stick);
+  return {
+    forward: move.forward,
+    strafe: move.strafe,
+    sprint: ts.stick.active && Math.hypot(ts.stick.dx, ts.stick.dy) > TOUCH_SPRINT_MAGNITUDE,
+    turn: firstStep ? ts.lookDx * TOUCH_LOOK_SENS : 0,
+  };
+}
+
 function frame(now: number): void {
   const elapsed = Math.min(now - last, 250) / 1000;
   last = now;
@@ -2860,6 +2974,18 @@ function frame(now: number): void {
   waterLevelNow = waterActiveFloor() ? waterLevel(runElapsedMs(phase, now), dwaarWaterFast()) : 0;
   const dtMove = FIXED_STEP * speedFactor(waterLevelNow);
   const eyeOff = eyeBlind(waterLevelNow);
+  // T12/T2 — ONE touch drain per frame, at the frame level: the DOM mirror
+  // updates even while a pause holds the sim (the nub follows the thumb; a
+  // paused frame still spills the look bank, so no resume spin), and the
+  // fixed steps below consume this same snapshot. The stick vector is live
+  // state (every step of the frame reads the same vector); the look pixels
+  // convert on the frame's FIRST step only (see touchMoveFrame).
+  let touchSnap: TouchSnapshot = IDLE_TOUCH_SNAPSHOT;
+  let touchFirstStep = true;
+  if (mode === 'touch') {
+    touchSnap = input.touchSnapshot();
+    touchUi.update(touchSnap);
+  }
   if (shouldReset) {
     phase = reArmed;
     resetFloor(now);
@@ -2892,9 +3018,12 @@ function frame(now: number): void {
           snap = withoutKey(snap, arrow);
       }
       const inputFrame =
-        mode === 'mouse'
-          ? mouseOnlyInput(input.mouseState())
-          : keysToMoveInput(snap, mode, a11y().keyMap);
+        mode === 'touch'
+          ? touchMoveFrame(touchSnap, touchFirstStep) // T12/T2 — the stick + look bank
+          : mode === 'mouse'
+            ? mouseOnlyInput(input.mouseState())
+            : keysToMoveInput(snap, mode, a11y().keyMap);
+      touchFirstStep = false; // the look pixels convert once per frame
       const prevX = player.x;
       const prevY = player.y;
       player = movePlayer(player, inputFrame, floor.grid, dtMove); // T5/T3 — wading stride

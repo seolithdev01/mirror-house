@@ -21,6 +21,11 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // button itself ships with Task 2's touch UI, the label lives here now so
     // the string table and the union widen in the same commit)
     'mode.touch': 'TOUCH',
+    // T12/T2 — the touch overlay's two zone names (the stick ring and the
+    // look-zone hairline describe themselves to assistive tech; the zones
+    // are pointer surfaces, never focus stops)
+    'touch.stick': 'Move stick',
+    'touch.look': 'Look zone',
     // the view chip ([V] cycles)
     'view.focus': 'Focus',
     'view.quad': 'Quad',
@@ -352,6 +357,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'mode.hybrid': '⌨+🖱 दोनों',
     // T12 — स्पर्श मोड (टच-स्क्रीन वाले यंत्रों पर स्वतः चुना जाता है)
     'mode.touch': 'स्पर्श',
+    // T12/T2 — स्पर्श परत के दो क्षेत्र-नाम (स्टिक छल्ला और देखने की रेखा)
+    'touch.stick': 'चलने का स्टिक',
+    'touch.look': 'देखने का हिस्सा',
     // दृश्य चिप ([V] से बदलती है)
     'view.focus': 'फोकस',
     'view.quad': 'चौक',
@@ -649,6 +657,8 @@ export const CHIP_KEYS: readonly string[] = [
   'mode.mouse',
   'mode.hybrid',
   'mode.touch', // T12 — the touch mode's one-line label (en TOUCH / hi स्पर्श)
+  'touch.stick', // T12/T2 — the stick ring's aria name (en / hi)
+  'touch.look', // T12/T2 — the look-zone hairline's aria name
   'view.focus',
   'view.quad',
   'view.overhead',

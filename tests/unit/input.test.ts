@@ -368,6 +368,19 @@ describe('InputCollector touch tracking (T12/T1)', () => {
     });
   });
 
+  it('the snapshot carries the stick origin — the DOM mirror anchors the base ring there (T12/T2)', () => {
+    withDocStub(() => {
+      const { win, c } = collector();
+      win.fire('pointerdown', ptr(1, 200, 400));
+      const ts = c.touchSnapshot();
+      expect(ts.origin.x).toBe(200);
+      expect(ts.origin.y).toBe(400);
+      // the origin never follows the drag — it is the DOWN point
+      win.fire('pointermove', ptr(1, 260, 410));
+      expect(c.touchSnapshot().origin).toEqual({ x: 200, y: 400 });
+    });
+  });
+
   it('first touch owns its zone; a later same-zone touch is ignored; the zone boundary is look', () => {
     withDocStub(() => {
       const { win, c } = collector();

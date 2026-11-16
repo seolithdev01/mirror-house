@@ -164,11 +164,15 @@ export function mouseOnlyInput(m: MouseState): MoveInput {
 }
 
 /** One frame's touch state (T12/T1): the stick's live vector (raw — the
- *  deadzone is stickToMove's policy) and the look drag's pixel bank, drained
- *  by the read exactly like mouseDx. */
+ *  deadzone is stickToMove's policy) and the look bank, drained by the read
+ *  exactly like mouseDx. T12/T2 adds `origin` — the stick pointer's DOWN
+ *  point in client px: the DOM mirror anchors the base ring there (the nub
+ *  rides origin + clamped vector). It holds the last origin while the stick
+ *  is up (meaningless until the next `stick.active` frame). */
 export interface TouchSnapshot {
   stick: TouchStick;
   lookDx: number;
+  origin: { x: number; y: number };
 }
 
 export class InputCollector {
@@ -296,7 +300,7 @@ export class InputCollector {
     const stick: TouchStick = { active: this.stickActive, dx: this.stickDx, dy: this.stickDy };
     const lookDx = this.lookDx;
     this.lookDx = 0;
-    return { stick, lookDx };
+    return { stick, lookDx, origin: { x: this.stickOriginX, y: this.stickOriginY } };
   }
 
   mouseState(): MouseState {
