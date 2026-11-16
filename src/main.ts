@@ -35,6 +35,8 @@ import {
   FOG_COST,
   FOG_DURATION_MS,
   GLAZIER_FLOOR,
+  MINIMAP_REPAINT_MS,
+  MINIMAP_SIZE_PX,
   NOISE_ACTION_R,
   NOISE_SPRINT_R,
   NOISE_WALK_EVERY_MS,
@@ -249,6 +251,7 @@ import { buildFeedbackOverlay } from './ui/feedback';
 import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
 import { fill, resolveLang, t, type Lang } from './ui/i18n';
+import { createMinimap } from './ui/minimap';
 import { createOverhead, pingOpacity } from './ui/overhead';
 import { buildSettingsOverlay, keyLabel, type TextScale } from './ui/settings';
 
@@ -1400,7 +1403,62 @@ const hud = createHud({
   onAbout: () => about.toggle(),
   // step007/T2 — the 📮 beside ⓘ.
   onFeedback: () => feedback.toggle(),
+  // T11 — the MAP dock chip: the same toggle KeyN runs.
+  onMap: () => toggleMinimap(),
 });
+
+// T11/T1 — THE PAC-MINIMAP: the full maze as a Pac-Man-style guide, mounted
+// bottom-left above the keys bar (the PoD plate styling lives in index.html).
+// No fog of war — reveal-all is the point (the OVERHEAD tactical map keeps
+// its fog); the pane redraws on a MINIMAP_REPAINT_MS throttle fed from the
+// SAME runtime objects drawOverhead reads. Visibility is a session var
+// (default ON, never persisted — a pane preference, not a save fact), and
+// KeyN + the #mh-map dock chip both drive the one toggle below, so the two
+// controls can never disagree.
+const minimapCanvas = document.createElement('canvas');
+minimapCanvas.id = 'mh-minimap';
+minimapCanvas.width = MINIMAP_SIZE_PX;
+minimapCanvas.height = MINIMAP_SIZE_PX;
+hud.root.appendChild(minimapCanvas);
+const minimap = createMinimap(minimapCanvas);
+let minimapOn = true;
+function toggleMinimap(): void {
+  minimapOn = !minimapOn;
+  minimap.setVisible(minimapOn);
+  hud.setMapVisible(minimapOn); // the dock chip mirrors the session state
+}
+minimap.setVisible(minimapOn);
+hud.setMapVisible(minimapOn);
+/** The last frame-batch the pane repainted on (the MINIMAP_REPAINT_MS gate). */
+let lastMinimapDrawAt = -Infinity;
+/** Feed the pane from the same runtime objects the overhead view reads —
+ *  Sentinels pass through only while they walk this floor (the rotation owns
+ *  who that is; a resting warden's null never draws). */
+function drawMinimap(): void {
+  minimap.draw({
+    grid: floor.grid,
+    player,
+    mirrors: allMirrors.map((m, i) => ({
+      x: m.x,
+      z: m.z,
+      kind: m.kind,
+      captured: mirrorRuntime[i]?.captured ?? false,
+    })),
+    exit: {
+      cx: exitCenter.cx,
+      cy: exitCenter.cy,
+      unlocked: exitUnlocked(allMirrors, mirrorRuntime),
+    },
+    entrance: floor.grid.cellCenter(floor.entrance.x, floor.entrance.y),
+    taal: taal !== null ? { x: taal.x, y: taal.y } : null,
+    gher: gher !== null ? { x: gher.x, y: gher.y } : null,
+    aavart: aavart !== null ? { x: aavart.x, y: aavart.y } : null,
+    chhaya: chhaya.visible ? { x: chhaya.position.x, y: chhaya.position.z } : null,
+    decoys: decoys.filter((d) => !d.shattered),
+    water: waterRt.map((w) => ({ x: w.x, y: w.y })),
+    glazier: glazier !== null ? { x: glazier.x, y: glazier.y } : null,
+  });
+}
 
 /** M4/T6 — one fn that re-feeds every localized surface the HUD/overlays own.
  *  The HUD's own setLang relabels its buttons/chips from cached values; the
@@ -2583,6 +2641,9 @@ window.addEventListener('keydown', (e) => {
     case 'tactical':
       if (view === 'overhead') setViewMode('tactical');
       break;
+    case 'map': // T11 — the Pac-minimap's toggle (the dock chip does the same)
+      toggleMinimap();
+      break;
     case 'stepThrough':
       e.preventDefault(); // nothing else in the UI owns the step key
       stepThrough();
@@ -3403,6 +3464,16 @@ function frame(now: number): void {
     renderer.render(scene, camera);
   }
 
+  // T11 — the Pac-minimap repaints on its own slow heartbeat (150 ms): walls
+  // and beacons barely move, so the throttle keeps the arrow and the live
+  // Sentinel dots honest at a flat cost. It rides every frame-batch whatever
+  // the view — a guide pane, not a view mode — and skips entirely while
+  // toggled off.
+  if (minimapOn && now - lastMinimapDrawAt >= MINIMAP_REPAINT_MS) {
+    lastMinimapDrawAt = now;
+    drawMinimap();
+  }
+
   frames++;
   if (now - fpsClock >= 250) {
     fps = Math.round((frames * 1000) / (now - fpsClock));
@@ -3561,6 +3632,8 @@ if (import.meta.env.DEV || testMode) {
     visitedCount: () => visited.size,
     pings: () => pings.length,
     waypoints: () => waypoints.map((w) => ({ ...w })),
+    // T11 — the Pac-minimap pane's session visibility (the toggle's witness).
+    minimap: () => minimapOn,
     // T3 review fix witness: every camera (front + quad sides) tracks the
     // window aspect — the side panes are w/2 × h/2, not square.
     camAspects: () => [camera.aspect, ...QUAD_SIDE_YAW.map((s) => s.cam.aspect)],

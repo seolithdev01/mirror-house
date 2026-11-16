@@ -372,10 +372,11 @@
       }
       /* step007/T3 — the TESTER chip (?test=1 only; main.ts creates it, so a
          default load never carries the element): docked bottom-left, ABOVE
-         the keys bar, teal text naming its nature. */
+         the keys bar AND (since t11) the minimap pane, teal text naming its
+         nature. */
       #mh-tester {
         position: fixed;
-        bottom: 84px;
+        bottom: 252px;
         left: 8px;
         z-index: 10;
         font:
@@ -518,6 +519,24 @@
         background: var(--cream);
         border-radius: 3px;
         padding: 1px 7px;
+      }
+      /* t11 — THE PAC-MINIMAP (bottom-left, above the keys bar): the full
+         maze as a Pac-Man-style guide on a PoD dark plate. The canvas paints
+         its own inner bezel every repaint; the plate chrome here is the
+         border/blur frame. Never a gate: pointer-events:none (the pane is a
+         poster, the dock's MAP chip + KeyN own the toggling). */
+      #mh-minimap {
+        position: absolute;
+        bottom: 64px;
+        left: 14px;
+        width: 176px;
+        height: 176px;
+        background: var(--plate);
+        border: 1px solid var(--edge);
+        border-radius: var(--r);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        pointer-events: none;
       }
       /* ui-pod — HUD-META (top-right): the value chips as dark blurred plates. */
       #mh-chips {

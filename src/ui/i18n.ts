@@ -54,7 +54,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'settings.perf_high': 'High',
     'settings.perfNote':
       'Sharpness applies at once; mirror detail applies on the next floor. Auto follows your frame rate.',
-    // M5/T2 — the Controls section: the 15 rebindable actions
+    // M5/T2 — the Controls section: the rebindable actions (16 since T11)
     'settings.controls': 'Controls',
     'settings.keyNote': 'Click a key to change it. Escape cancels.',
     'settings.pressKey': 'press a key…',
@@ -76,6 +76,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'key.faq': 'FAQ',
     'key.mute': 'Mute',
     'key.tactical': 'Tactical pause',
+    // T11 — the 16th action: the Pac-minimap pane's toggle (KeyN)
+    'key.map': 'Minimap',
+    'pane.map': 'MAP',
     'settings.close': '✕ Close',
     // M6/T1 — the Floors section: the venue side-floor card (demo pack + Play)
     'settings.floors': 'Floors',
@@ -400,6 +403,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'key.faq': 'सहायता',
     'key.mute': 'मौन',
     'key.tactical': 'रणनीति विराम',
+    // T11 — 16वीं क्रिया: पैक-मिनीमैप पैने का टॉगल (KeyN)
+    'key.map': 'नक्शा',
+    'pane.map': 'नक्शा',
     'settings.close': '✕ बंद करें',
     // M6/T1 — मंज़िलें अनुभाग: वेन्यू साइड-फ़्लोर कार्ड (डेमो पैक + खेलें)
     'settings.floors': 'मंज़िलें',
@@ -672,6 +678,7 @@ export const CHIP_KEYS: readonly string[] = [
   'area.tier9',
   'area.tier10',
   'keys.move',
+  'pane.map', // T11 — the dock's minimap-chip label (a one-line button)
   'tab.ask',
   'tab.hint',
   'tab.lore',

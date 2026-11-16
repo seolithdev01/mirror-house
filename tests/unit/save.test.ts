@@ -414,8 +414,8 @@ describe('save: normalizeSave — perf default (M5/T4)', () => {
 });
 
 describe('DEFAULT_KEYMAP (M5/T1)', () => {
-  it('has exactly the 15 actions with the authoritative defaults', () => {
-    expect(Object.keys(DEFAULT_KEYMAP).length).toBe(15);
+  it('has exactly the 16 actions with the authoritative defaults', () => {
+    expect(Object.keys(DEFAULT_KEYMAP).length).toBe(16);
     expect(DEFAULT_KEYMAP).toEqual({
       forward: 'KeyW',
       back: 'KeyS',
@@ -432,6 +432,7 @@ describe('DEFAULT_KEYMAP (M5/T1)', () => {
       faq: 'KeyH',
       mute: 'KeyM',
       tactical: 'KeyT',
+      map: 'KeyN', // T11 — the Pac-minimap's toggle joins the keymap
     });
   });
 
@@ -476,12 +477,12 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
     expect(out?.a11y?.keyMap).not.toBe(keyMap); // fresh tree, never the input's
   });
 
-  it('rejects unknown actions — the 15 are the whole vocabulary', () => {
+  it('rejects unknown actions — the 16 are the whole vocabulary', () => {
     expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, macro: 'KeyP' }))).toBeNull(); // extra action
     expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, Forward: 'KeyP' }))).toBeNull(); // case is not a rename
   });
 
-  it('rejects missing actions — a valid map binds every one of the 15', () => {
+  it('rejects missing actions — a valid map binds every one of the 16', () => {
     const partial = { ...DEFAULT_KEYMAP } as Record<string, string>;
     delete partial.frost;
     expect(validateSave(a11yWith(partial))).toBeNull();
@@ -550,6 +551,28 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
     ).toBeNull(); // a triple
     expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, frost: 'KeyW' }))).toBeNull(); // forward+frost share
     expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, turnR: 'KeyR', aaina: 'KeyR' }))).toBeNull(); // turnR+aaina is not the sanctioned pair
+  });
+
+  // T11 migration — the FIRST keymap widening: every save stored by a pre-T11
+  // build carries the 15-action map. The gate must accept it by defaulting
+  // the new action in, or idbGet's all-or-nothing validateSave would discard
+  // the whole campaign record on first boot (the T3/T1 saves-wipe lesson).
+  it('a pre-T11 15-action map migrates: map takes its default, the stored rebinds survive', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.map;
+    legacy.forward = 'KeyP'; // a stored rebind that must ride the migration
+    const out = validateSave(a11yWith(legacy));
+    expect(out).not.toBeNull(); // the record is NOT discarded
+    expect(out?.a11y?.keyMap.map).toBe('KeyN'); // the widening's default fills the gap
+    expect(out?.a11y?.keyMap.forward).toBe('KeyP'); // the rebind survives
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(16); // canonical full shape back
+  });
+
+  it('the legacy shape with any OTHER missing action still rejects', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.map;
+    delete legacy.faq; // not the widening's gap — junk is junk
+    expect(validateSave(a11yWith(legacy))).toBeNull();
   });
 });
 

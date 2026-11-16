@@ -38,6 +38,9 @@ export type HudInit = {
   onAbout(): void;
   /** step007/T2 — the 📮 button (beside ⓘ): open/close the feedback composer. */
   onFeedback(): void;
+  /** T11 — the MAP dock chip: toggles the Pac-minimap pane (KeyN does the
+   *  same; main owns the session state and mirrors it back via setMapVisible). */
+  onMap(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -146,6 +149,9 @@ export interface Hud {
    *  at boot, after every rebind/reset, and on refreshChrome, so a remapped
    *  key never leaves the bar naming a dead key. */
   setKeys(map: Record<string, string>): void;
+  /** T11 — the MAP dock chip's pressed state: KeyN and the chip stay in sync
+   *  (standard toggle semantics — pressed = the pane is showing). */
+  setMapVisible(visible: boolean): void;
   /** M5/T3 — the caption bar (#mh-captions, bottom-center). main feeds it
    *  renderCaptions(el, feed, now) every frame; its fade is the reduced-flash
    *  CSS family. A polite live region: the lines read themselves. */
@@ -215,6 +221,13 @@ export function createHud(init: HudInit): Hud {
   faq.type = 'button';
   faq.id = 'mh-faq';
   faq.addEventListener('click', () => init.onFaq());
+  // T11 — the MAP dock chip: the Pac-minimap pane's second door (KeyN is the
+  // first). A PoD chip like its dock siblings; main mirrors the session state
+  // back via setMapVisible so the two controls never disagree.
+  const mapBtn = document.createElement('button');
+  mapBtn.type = 'button';
+  mapBtn.id = 'mh-map';
+  mapBtn.addEventListener('click', () => init.onMap());
   const aaina = document.createElement('button');
   aaina.type = 'button';
   aaina.id = 'mh-aaina';
@@ -346,7 +359,20 @@ export function createHud(init: HudInit): Hud {
   // buttons alone own clicks (the #hud button rule re-arms pointer-events).
   const dock = document.createElement('div');
   dock.id = 'mh-dock';
-  dock.append(viewChip, modes, breath, anger, faq, aaina, daily, frost, mute, exportBtn, importBtn);
+  dock.append(
+    viewChip,
+    modes,
+    breath,
+    anger,
+    mapBtn,
+    faq,
+    aaina,
+    daily,
+    frost,
+    mute,
+    exportBtn,
+    importBtn,
+  );
   // ui-pod — the keys bar: kbd hints bottom-left, live from the save's keymap
   // (setKeys below), aria-hidden (it is a poster, not a reading order).
   const keysBar = document.createElement('div');
@@ -425,6 +451,9 @@ export function createHud(init: HudInit): Hud {
   // re-feeding them. Derived display state, not a second truth: the values'
   // owners still write them.
   let muted = false;
+  // T11 — the MAP chip's live pressed state (main mirrors the pane's session
+  // visibility here, so KeyN and the chip always agree).
+  let mapVisible = true;
   let lastTierStats: {
     tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     floors: number;
@@ -601,6 +630,11 @@ export function createHud(init: HudInit): Hud {
     gearBtn.setAttribute('aria-label', t(lang, 'btn.settings'));
     faq.textContent = t(lang, 'btn.faq');
     faq.setAttribute('aria-label', t(lang, 'btn.faq'));
+    // T11 — the MAP chip's label + accessible name flip with the language.
+    mapBtn.textContent = t(lang, 'pane.map');
+    mapBtn.title = t(lang, 'pane.map');
+    mapBtn.setAttribute('aria-label', t(lang, 'pane.map'));
+    mapBtn.setAttribute('aria-pressed', mapVisible ? 'true' : 'false'); // same polarity setMapVisible writes
     aaina.textContent = t(lang, 'btn.aaina');
     aaina.setAttribute('aria-label', t(lang, 'btn.aaina'));
     daily.textContent = t(lang, 'btn.daily');
@@ -661,6 +695,11 @@ export function createHud(init: HudInit): Hud {
     setKeys: (map) => {
       lastKeys = { ...map };
       renderKeys();
+    },
+    setMapVisible: (visible) => {
+      mapVisible = visible;
+      mapBtn.classList.toggle('active', visible); // the pane is on — the chip says so
+      mapBtn.setAttribute('aria-pressed', visible ? 'true' : 'false');
     },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;

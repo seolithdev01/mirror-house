@@ -33,10 +33,11 @@ export interface SaveData {
  *  copies; nothing mutates the default in place. */
 export type KeyMap = Readonly<Record<string, string>>;
 
-/** The 15 actions and their default codes (M5/T1, authoritative from the plan).
- *  Aaina moved from KeyQ to KeyI — her own key, Q/E stay pure turning. The one
- *  sanctioned dual: turnR and push share KeyE (push is contextual — the door
- *  claims E only while the push hint shows, via withoutKey). */
+/** The 16 actions and their default codes (M5/T1, authoritative from the plan;
+ *  T11 adds the 16th — `map`, KeyN, the Pac-minimap's toggle). Aaina moved
+ *  from KeyQ to KeyI — her own key, Q/E stay pure turning. The one sanctioned
+ *  dual: turnR and push share KeyE (push is contextual — the door claims E
+ *  only while the push hint shows, via withoutKey). */
 export const DEFAULT_KEYMAP: KeyMap = {
   forward: 'KeyW',
   back: 'KeyS',
@@ -53,6 +54,7 @@ export const DEFAULT_KEYMAP: KeyMap = {
   faq: 'KeyH',
   mute: 'KeyM',
   tactical: 'KeyT',
+  map: 'KeyN',
 };
 
 /** The default accessibility block — nothing on unless asked for, 1× text. */
@@ -212,24 +214,37 @@ const RESERVED_CODE_RE = /^(Arrow|Shift)/;
 const RESERVED_CODES: readonly string[] = ['Escape', 'Tab'];
 
 /** M5/T2 — the remap layer's keymap gate, stricter than T1's opaque box: the
- *  action set must be EXACTLY the 15 known actions (unknown actions rejected,
+ *  action set must be EXACTLY the known actions (unknown actions rejected,
  *  missing ones too — a valid map binds every action), every code must be
  *  KeyboardEvent.code-shaped, no code may sit on the reserved families above
  *  (the default's ShiftLeft sprint excepted), and duplicated codes are legal
  *  only for the turnR+push pair. The result is a fresh map in
  *  DEFAULT_KEYMAP's canonical order; the validated object never shares
- *  structure with the input. */
+ *  structure with the input.
+ *  T11 migration — the FIRST keymap widening since this gate existed: pre-T11
+ *  builds stored the 15-action map (no `map` action). A stored or imported
+ *  map binding exactly the legacy actions validates by TAKING the new action's
+ *  default (KeyN) for the one gap — the strict exact-count alternative would
+ *  fail every stored save's a11y block, and validateSave's all-or-nothing
+ *  gate would then return null for the WHOLE record on idbGet, discarding the
+ *  campaign on first boot (progress, bests, shards — the T3/T1 "saves wipe in
+ *  the same commit the bound moves" lesson, applied to the keymap). Any OTHER
+ *  missing action, or an extra one, is still a rejection. */
 function validateKeyMap(raw: unknown): KeyMap | null {
   if (!isPlainObject(raw)) return null;
   const actions = Object.keys(raw);
   const known = Object.keys(DEFAULT_KEYMAP);
-  if (actions.length !== known.length) return null; // extra (unknown) or missing actions
+  const legacy = actions.length === known.length - 1 && !Object.hasOwn(raw, 'map');
+  if (!legacy && actions.length !== known.length) return null; // extra (unknown) or missing actions
   const byCode = new Map<string, string[]>();
   const out: Record<string, string> = {};
   for (const action of known) {
-    // hasOwn, not truthiness: an own property is required, inherited or junk keys fail
-    if (!Object.hasOwn(raw, action)) return null;
-    const code: unknown = raw[action];
+    // hasOwn, not truthiness: an own property is required, inherited or junk keys fail.
+    // The one gap a legacy map may leave is the widening's own action.
+    if (!Object.hasOwn(raw, action)) {
+      if (!(legacy && action === 'map')) return null;
+    }
+    const code: unknown = Object.hasOwn(raw, action) ? raw[action] : DEFAULT_KEYMAP.map;
     if (typeof code !== 'string' || !CODE_RE.test(code)) return null;
     // M5 final review — a hand-edited file cannot smuggle in what the capture
     // UI would refuse; the default's own ShiftLeft sprint is the one survivor.

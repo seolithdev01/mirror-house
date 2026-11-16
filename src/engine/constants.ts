@@ -51,6 +51,15 @@ export const EXIT_LOCKED_EMISSIVE = 0x5c2a2a; // exit marker while beacons remai
 export const PING_TTL_MS = 4000; // ms a map ping stays visible before it is dropped
 export const CHHAYA_PING_MS = 2000; // ms between Chhaya's map pings while her sample exists
 
+// T11 — the Pac-minimap (the guidance pane): a compact, always-on square
+// canvas showing the FULL maze layout — no fog of war, reveal-all is the
+// point (the OVERHEAD tactical view keeps its fog). It redraws on a slow
+// throttle: walls and beacons barely move, and a 150 ms heartbeat keeps the
+// player arrow and the live Sentinel dots honest at a flat cost.
+export const MINIMAP_SIZE_PX = 176; // square CSS px — the pane's fixed size
+export const MINIMAP_REPAINT_MS = 150; // ms between minimap redraws (frame-loop throttle)
+export const MINIMAP_PADDING_PX = 6; // px of breathing room inside the pane's plate
+
 // Passages (M2/T7) — true-mirror step-through, silvered push-doors
 export const PASSAGE_RANGE = 1.4; // m — nearest-mirror range for step-through and push
 export const DOOR_SLIDE_M = 1.2; // m a silvered door slides along its wall
