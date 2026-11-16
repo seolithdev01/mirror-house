@@ -5,7 +5,7 @@
 The normative registry of every machine lives in [STATE_MACHINES.md](STATE_MACHINES.md).
 This document is the *motion* picture: how those machines chain together into the
 end-to-end journeys a player (and the house) actually walks. Mermaid renders natively
-on GitHub; [atlas.html](atlas.html) renders the same model animated.
+on GitHub; [atlas.html](https://mirror-house.seolith.com/atlas.html) renders the same model animated.
 
 ---
 
@@ -207,4 +207,4 @@ floor, quality, language, error ring) — no personal data beyond the player age
 ---
 
 *Normative machine registry: [STATE_MACHINES.md](STATE_MACHINES.md). Catalog:
-[USE-CASES.md](USE-CASES.md). Animated: [atlas.html](atlas.html).*
+[USE-CASES.md](USE-CASES.md). Animated: [atlas.html](https://mirror-house.seolith.com/atlas.html).*

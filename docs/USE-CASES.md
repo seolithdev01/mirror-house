@@ -6,7 +6,7 @@ Every use case below is anchored to the module that implements it. Planned-but-u
 work lives in the last section and is labeled as such. The normative state registry is
 [STATE_MACHINES.md](STATE_MACHINES.md); the end-to-end journeys are in
 [WORKFLOWS.md](WORKFLOWS.md); the animated rendering of both is
-[atlas.html](atlas.html).
+[atlas.html](https://mirror-house.seolith.com/atlas.html).
 
 **Actors:** Player (human, device-local), Tester (Player + `?test=1` diagnostics),
 The House (the game itself — Sentinels, Echoes, decoys, water, heat), Venue (sponsored

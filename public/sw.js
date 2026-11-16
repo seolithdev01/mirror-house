@@ -5,6 +5,8 @@
 //   activate  → delete every cache whose name !== CACHE + clients.claim
 //   fetch     → same-origin GET only:
 //                 /assets/*   → cache-first (match, else fetch + put)
+//                 /fonts/*    → cache-first (the self-hosted type; immutable
+//                                 files, precached at install)
 //                 /venues/*   → cache-first (the precached packs; match, else
 //                                 fetch + put — a shipped pack survives offline)
 //                 navigations → network-first, offline fallback to '/'
@@ -21,11 +23,34 @@ const CACHE = `mh-${BUILD.startsWith('__') ? 'v6' : BUILD}`;
 // M6/T4 — the demo venue pack rides the precache: a sponsored floor is an
 // opt-in side excursion, and the pack's fetch failing offline would toast
 // "venue floor unavailable" for a pack we shipped — so the shell banks it.
+// ui-pod — the self-hosted type precaches too (offline-first, no remote
+// loads), as does the re-themed system atlas and its script.
+const FONTS = [
+  '/fonts/bsd-latin.woff2',
+  '/fonts/mukta-400-latin.woff2',
+  '/fonts/mukta-400-latin-ext.woff2',
+  '/fonts/mukta-400-devanagari.woff2',
+  '/fonts/mukta-500-latin.woff2',
+  '/fonts/mukta-500-latin-ext.woff2',
+  '/fonts/mukta-500-devanagari.woff2',
+  '/fonts/mukta-600-latin.woff2',
+  '/fonts/mukta-600-latin-ext.woff2',
+  '/fonts/mukta-600-devanagari.woff2',
+  '/fonts/mukta-700-latin.woff2',
+  '/fonts/mukta-700-latin-ext.woff2',
+  '/fonts/mukta-700-devanagari.woff2',
+  '/fonts/mukta-800-latin.woff2',
+  '/fonts/mukta-800-latin-ext.woff2',
+  '/fonts/mukta-800-devanagari.woff2',
+];
 const PRECACHE = [
   '/', // not '/index.html': Pages 308s it to '/', and one failed entry fails the whole install
   '/manifest.webmanifest',
   '/icon.svg',
   '/venues/demo-glasshouse-cafe.json',
+  '/atlas.html', // ui-pod — the system atlas now ships on-site
+  '/atlas.js',
+  ...FONTS,
   ...ASSETS,
 ];
 
@@ -55,7 +80,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // passthrough — never remote
 
-  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/venues/')) {
+  if (
+    url.pathname.startsWith('/assets/') ||
+    url.pathname.startsWith('/fonts/') ||
+    url.pathname.startsWith('/venues/')
+  ) {
     // cache-first: hashed filenames are immutable, so a miss fetches and banks;
     // venue packs are precached at install and a miss (a pack we did not ship)
     // fetches and banks the same way
