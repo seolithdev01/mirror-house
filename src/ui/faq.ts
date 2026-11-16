@@ -18,7 +18,11 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'How do I move?',
-    a: 'Three modes, all fully playable alone — switch with the buttons at top right. Keys: WASD + mouse look (hybrid). Keys only: arrows or Q/E turn. Mouse only: hold left button to walk toward the cursor, hold right to sprint.',
+    a: 'Four modes, all fully playable alone — switch with the buttons at top right (on a phone, the dock\u2019s mode row). Keys: WASD + mouse look (hybrid). Keys only: arrows or Q/E turn. Mouse only: hold left button to walk toward the cursor, hold right to sprint. Touch: a thumb stick on the left of the screen, drag-look on the right — see the phone question just below.',
+  },
+  {
+    q: 'Can I play on my phone?',
+    a: 'Yes — the house is built for thumbs (t12). On a touch screen a brand-new save boots straight into the TOUCH mode: drag anywhere on the left of the screen and a virtual stick appears under your thumb — push a little to walk, push to the rim to sprint — while a drag on the right turns your head, and the dock at the bottom right carries the actions as big thumb buttons (frost, the map, views, the Daily). Small screens also get the compact layout: the keys bar hides (nothing to press on a phone) and the guide panes step aside until their dock chips summon them. It is the same house underneath — the same seeds, the same saves on your device, the same rules — in the phone\u2019s browser, no install. An existing saved mode is never overwritten: switch back with the dock\u2019s mode row, and a keyboard keeps working whenever you plug one in.',
   },
   {
     q: 'How do the views and the map work?',
@@ -223,7 +227,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 51
+  // M4/T6 — the heading and the close button are chrome (localized); the 52
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

@@ -50,8 +50,21 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 51 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair, the T10 foundations + ground-door pair, the T11 panes entry)', () => {
-    expect(FAQ).toHaveLength(51);
+  it('grows to 52 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair, the T10 foundations + ground-door pair, the T11 panes entry, the T12 phone entry)', () => {
+    expect(FAQ).toHaveLength(52);
+  });
+
+  it('the T12 entry answers the phone — thumb stick, drag-look, dock buttons, compact layout', () => {
+    const e = FAQ.find((f) => /play on my phone/i.test(f.q));
+    expect(e, 'an entry about playing on a phone exists').toBeDefined();
+    expect(e!.a).toContain('TOUCH');
+    expect(e!.a).toContain('virtual stick');
+    expect(e!.a).toContain('compact');
+    // the movement entry names all four modes now — the copy keeps pace with the union
+    const move = FAQ.find((f) => /How do I move/i.test(f.q));
+    expect(move, 'the movement entry exists').toBeDefined();
+    expect(move!.a).toContain('Four modes');
+    expect(move!.a).toContain('Touch');
   });
 
   it('the T11 entry explains both panes — the minimap guide and the motion mirror', () => {
