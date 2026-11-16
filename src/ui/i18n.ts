@@ -150,6 +150,22 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.tier9': 'T9', // T9/T1 — the Warden's-Warrens suffix: L84 · T9
     'chip.tier10': 'T10', // T10/T1 — the Foundations suffix: L94 · T10
     'chip.ground': 'THE GROUND', // T10/T1 — the FINALE floor names itself: L100 · THE GROUND (never a Dwaar)
+    // ui-pod — the district plate: the plate's kicker and the accent area line
+    // (TIER N — WING NAME; the wing names are the atlas's ten tier names).
+    'area.kicker': 'FLOOR',
+    'area.prefix': 'TIER',
+    'area.tier1': 'THE GLASS GALLERY',
+    'area.tier2': 'THE HALL OF ANCESTORS',
+    'area.tier3': 'THE REFLECTING GARDENS',
+    'area.tier4': 'THE CARNIVAL OF FACES',
+    'area.tier5': 'THE FLOOD HALLS',
+    'area.tier6': 'THE FURNACE WINGS',
+    'area.tier7': 'THE WHISPER LIBRARY',
+    'area.tier8': 'THE FROZEN ATRIUM',
+    'area.tier9': "THE WARDEN'S WARRENS",
+    'area.tier10': 'THE FOUNDATIONS',
+    // ui-pod — the keys bar's one label the key.* table lacks (WASD's row).
+    'keys.move': 'Move',
     // overlays and banners
     'overlay.failCaught': 'Caught by the glass',
     'overlay.failCollapse': 'The mirrors collapsed',
@@ -447,6 +463,22 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'chip.tier9': 'चरण 9', // T9/T1 — वार्डन की बिलों का प्रत्यय: स्तर 84 · चरण 9
     'chip.tier10': 'चरण 10', // T10/T1 — नींवों का प्रत्यय: स्तर 94 · चरण 10
     'chip.ground': 'ज़मीन', // T10/T1 — अंतिम मंज़िल अपना नाम बोलती है: स्तर 100 · ज़मीन (कोई द्वार नहीं)
+    // ui-pod — ज़िला-पट्टिका: किकर और चरण-पंक्ति (चरण N — पंक्ति का नाम; पंखों के
+    // नाम वही जो एटलस के दस चरणों के हैं)।
+    'area.kicker': 'स्तर',
+    'area.prefix': 'चरण',
+    'area.tier1': 'काँच की दीर्घा',
+    'area.tier2': 'पूर्वजों की हॉल',
+    'area.tier3': 'प्रतिबिंब-उद्यान',
+    'area.tier4': 'आरसी-का-मेला',
+    'area.tier5': 'बाढ़ की हॉलें',
+    'area.tier6': 'भट्टी की भुजाएँ',
+    'area.tier7': 'विस्मय-पुस्तकालय',
+    'area.tier8': 'हिम-आँगन',
+    'area.tier9': 'वार्डन की बिलें',
+    'area.tier10': 'नींवें',
+    // ui-pod — कीज़ पट्टी की वह एक पंक्ति जो key.* मेज़ में नहीं है (WASD की पंक्ति)।
+    'keys.move': 'चलें',
     // परदे और पट्टियाँ — घर की आवाज़ में, पर संक्षेप में
     'overlay.failCaught': 'काँच ने आपको पकड़ लिया',
     'overlay.failCollapse': 'दर्पण ढह गए',
@@ -619,6 +651,19 @@ export const CHIP_KEYS: readonly string[] = [
   'chip.tier9',
   'chip.tier10',
   'chip.ground',
+  'area.kicker',
+  'area.prefix',
+  'area.tier1',
+  'area.tier2',
+  'area.tier3',
+  'area.tier4',
+  'area.tier5',
+  'area.tier6',
+  'area.tier7',
+  'area.tier8',
+  'area.tier9',
+  'area.tier10',
+  'keys.move',
   'tab.ask',
   'tab.hint',
   'tab.lore',

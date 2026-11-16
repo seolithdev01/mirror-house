@@ -138,6 +138,14 @@ export interface Hud {
   /** M4/T6 — re-label every chrome string this HUD owns (buttons, chips,
    *  overlays) in the new language; values recompose from cached state. */
   setLang(lang: Lang): void;
+  /** ui-pod — the district plate's accent area line (`TIER N — WING NAME`
+   *  under the big floor number). main composes the string (i18n + campaign)
+   *  on every buildFloor / refreshChrome; setLang re-applies the last value. */
+  setFloorArea(label: string): void;
+  /** ui-pod — the keys bar's live bindings (action → key label). main pushes
+   *  at boot, after every rebind/reset, and on refreshChrome, so a remapped
+   *  key never leaves the bar naming a dead key. */
+  setKeys(map: Record<string, string>): void;
   /** M5/T3 — the caption bar (#mh-captions, bottom-center). main feeds it
    *  renderCaptions(el, feed, now) every frame; its fade is the reduced-flash
    *  CSS family. A polite live region: the lines read themselves. */
@@ -234,17 +242,30 @@ export function createHud(init: HudInit): Hud {
   importBtn.id = 'mh-import';
   importBtn.textContent = '📂';
   importBtn.addEventListener('click', () => init.onImport());
+  // ui-pod — the chips row splits into the PoD zones: the floor chip becomes
+  // the district plate (top-left), the view chip joins the dock (bottom-
+  // right), and the five value chips stay the hud-meta plates (top-right).
+  const viewChip = chip('', 'view');
+  const floorChip = chip('', 'floor');
   const chips = document.createElement('div');
   chips.id = 'mh-chips';
   chips.append(
-    chip('', 'view'),
-    chip('', 'floor'),
     chip('', 'streak'),
     chip('', 'best'),
     chip('', 'timer'),
     chip('', 'beacons'),
     chip('', 'shards'),
   );
+  // ui-pod — the district plate: kicker (FLOOR) + big display number (#mh-floor,
+  // exact text contract unchanged) + the accent area line (#mh-floor-area,
+  // `TIER N — WING NAME`, composed by main). Skewed, accent-edged on the left.
+  const district = document.createElement('div');
+  district.id = 'mh-district';
+  const districtKicker = document.createElement('div');
+  districtKicker.id = 'mh-district-kicker';
+  const floorArea = document.createElement('div');
+  floorArea.id = 'mh-floor-area';
+  district.append(districtKicker, floorChip, floorArea);
   const breath = document.createElement('div');
   breath.id = 'mh-breath';
   const breathFill = document.createElement('div');
@@ -319,26 +340,36 @@ export function createHud(init: HudInit): Hud {
   captionBar.hidden = true;
   captionBar.setAttribute('role', 'status');
   captionBar.setAttribute('aria-live', 'polite');
+  // ui-pod — the bottom-right dock: view chip on top, the mode/lang row, the
+  // two bars, then the action buttons. Every id is unchanged — the buttons
+  // only moved house. #mh-dock rides the pointer-events:none #hud frame; the
+  // buttons alone own clicks (the #hud button rule re-arms pointer-events).
+  const dock = document.createElement('div');
+  dock.id = 'mh-dock';
+  dock.append(viewChip, modes, breath, anger, faq, aaina, daily, frost, mute, exportBtn, importBtn);
+  // ui-pod — the keys bar: kbd hints bottom-left, live from the save's keymap
+  // (setKeys below), aria-hidden (it is a poster, not a reading order).
+  const keysBar = document.createElement('div');
+  keysBar.id = 'mh-keys';
+  keysBar.setAttribute('aria-hidden', 'true');
+  // ui-pod — the top-center notice column: the transient banners keep their
+  // flex stacking (several can be live at once) inside one positioned wrap.
+  const notices = document.createElement('div');
+  notices.id = 'mh-notices';
+  notices.append(cleared, descend, fail, hint, toast);
+  // ui-pod — the full-frame chrome: #hud becomes the fixed inset-0 layer the
+  // PoD zones position inside (district top-left, meta top-right, notices
+  // top-center, dock bottom-right, keys bottom-left; shard/act/captions keep
+  // their own viewport-fixed spots).
   root.append(
-    modes,
-    faq,
-    aaina,
-    daily,
-    frost,
-    mute,
-    exportBtn,
-    importBtn,
+    district,
+    keysBar,
     chips,
     venueBanner,
-    breath,
-    anger,
-    cleared,
-    descend,
+    dock,
+    notices,
     shard,
     act,
-    fail,
-    hint,
-    toast,
     captionBar,
   );
   document.body.appendChild(root);
@@ -406,6 +437,28 @@ export function createHud(init: HudInit): Hud {
     beacons?: { captured: number; total: number };
     shards?: number | string; // M4/T7 — the unified display, composed upstream
   } = {};
+  // ui-pod — the district plate's area line and the keys bar's live bindings,
+  // cached so setLang() can recompose both without main re-feeding them.
+  let lastArea = '';
+  let lastKeys: Record<string, string> | null = null;
+  /** Rebuild the keys bar from `lastKeys` in the live language — one kbd chip
+   *  per action (`W` Move · `F` Frost · …), display font, aria-hidden bar. */
+  function renderKeys(): void {
+    if (lastKeys === null) return;
+    keysBar.replaceChildren();
+    for (const action of ['move', 'frost', 'view', 'aaina', 'faq', 'mute'] as const) {
+      const key = lastKeys[action];
+      if (key === undefined || key === '') continue;
+      const hint = document.createElement('span');
+      hint.className = 'mh-key-hint';
+      const k = document.createElement('kbd');
+      k.textContent = key;
+      const label = document.createElement('span');
+      label.textContent = t(lang, `keys.${action}`);
+      hint.append(k, label);
+      keysBar.appendChild(hint);
+    }
+  }
 
   const chipText = (id: string, text: string): void => {
     const el = document.getElementById(`mh-${id}`);
@@ -521,6 +574,8 @@ export function createHud(init: HudInit): Hud {
       b.textContent = t(lang, `mode.${m}`);
       b.setAttribute('aria-label', t(lang, `mode.${m}`));
     }
+    districtKicker.textContent = t(lang, 'area.kicker'); // ui-pod — the plate's kicker
+    floorArea.textContent = lastArea; // ui-pod — the area line re-localizes
     langBtn.textContent = t(lang, lang === 'en' ? 'btn.langHi' : 'btn.langEn');
     langBtn.title = t(lang, 'btn.langTitle');
     langBtn.setAttribute('aria-label', t(lang, 'btn.langTitle'));
@@ -587,6 +642,14 @@ export function createHud(init: HudInit): Hud {
     },
     setFloor: (label) => {
       (document.getElementById('mh-floor') as HTMLElement).textContent = label;
+    },
+    setFloorArea: (label) => {
+      lastArea = label;
+      floorArea.textContent = label;
+    },
+    setKeys: (map) => {
+      lastKeys = { ...map };
+      renderKeys();
     },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;
@@ -688,6 +751,7 @@ export function createHud(init: HudInit): Hud {
       lang = next;
       relabelStatic();
       renderChips();
+      renderKeys(); // ui-pod — the keys bar re-localizes with the chrome
       if (lastTierStats !== null && !tier.hidden) {
         tierTitle.textContent = t(lang, tierTitleKey(lastTierStats.tier));
         tierStats.textContent = fill(t(lang, tierStatsKey(lastTierStats.tier)), lastTierStats);

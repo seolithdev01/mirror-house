@@ -284,6 +284,41 @@ const urlSeed = normalizeSeed(urlParams.get('seed') ?? '');
 // included, because invited testers play the deployed game. Session-only by
 // nature: the flag lives in the URL and nothing persists it.
 const testMode = parseTestMode(window.location.search);
+// ui-pod — the boot poster: the People-of-Delhi boot composition (left 6vw,
+// bottom 16vh) with the kicker MIRROR, the giant HOUSE and the tagline. It
+// paints from the first HTML parse, holds ~1.6 s, fades over 320 ms, and is
+// pointer-events:none throughout — a poster, never a gate (no focusable
+// children, nothing intercepted). Once per session (sessionStorage), and
+// skipped ENTIRELY under ?test=1 so a tester's first frame is the floor.
+const bootPlate = document.getElementById('mh-boot');
+function dismissBoot(): void {
+  if (bootPlate === null || !bootPlate.isConnected) return;
+  bootPlate.classList.add('mh-boot-hide');
+  window.setTimeout(() => bootPlate.remove(), 360); // the 320 ms fade, then gone
+}
+(function runBootPoster(): void {
+  if (bootPlate === null) return;
+  if (testMode) {
+    bootPlate.remove();
+    return;
+  }
+  let seen = false;
+  try {
+    seen = window.sessionStorage.getItem('mh-boot-seen') === '1';
+  } catch {
+    /* storage unavailable (private mode) — the poster simply shows once */
+  }
+  if (seen) {
+    bootPlate.remove();
+    return;
+  }
+  try {
+    window.sessionStorage.setItem('mh-boot-seen', '1');
+  } catch {
+    /* storage unavailable — nothing to remember */
+  }
+  window.setTimeout(dismissBoot, 1600);
+})();
 function bootFloorFromUrl(): number {
   if (!import.meta.env.DEV) return 1; // the floor jump is a dev-only affordance
   const n = Number.parseInt(urlParams.get('floor') ?? '', 10);
@@ -1297,6 +1332,7 @@ const settings = buildSettingsOverlay({
     persist();
     pushA11yValues();
     pushCloseKeys();
+    pushKeys(); // ui-pod — the keys bar names the new binding at once
     return null;
   },
   onResetKeys: () => {
@@ -1304,6 +1340,7 @@ const settings = buildSettingsOverlay({
     persist();
     pushA11yValues();
     pushCloseKeys();
+    pushKeys(); // ui-pod — the bar follows the reset too
   },
   // M6/T1 — the Floors section: play the DEMO venue side-floor / return.
   onVenueFloor: () => void toggleDemoVenue(),
@@ -1375,8 +1412,28 @@ function refreshChrome(): void {
   hud.setMode(mode);
   hud.setView(viewLabel(view));
   hud.setFloor(venue === null ? floorChipLabel(campaign) : `☕ ${venue.name}`);
+  hud.setFloorArea(venue === null ? floorAreaLabel(campaign) : venue.name); // ui-pod — the plate's accent line
   hud.setMuted(audio.muted);
+  pushKeys(); // ui-pod — the keys bar follows the live keymap + language
   if (venue !== null) showVenueBanner(venue); // M6/T1 — the banner re-localizes
+}
+
+/** ui-pod — compose the keys bar's live bindings from the save's keymap: the
+ *  WASD row reads the four movement bindings (W A S D by default), the rest
+ *  name their own action's key. Pushed at boot, on every rebind/reset, and
+ *  on refreshChrome — a remapped key never leaves the bar naming a dead key. */
+function pushKeys(): void {
+  const move = [keyOf('forward'), keyOf('left'), keyOf('back'), keyOf('right')]
+    .map(keyLabel)
+    .join('');
+  hud.setKeys({
+    move,
+    frost: keyLabel(keyOf('frost')),
+    view: keyLabel(keyOf('view')),
+    aaina: keyLabel(keyOf('aaina')),
+    faq: keyLabel(keyOf('faq')),
+    mute: keyLabel(keyOf('mute')),
+  });
 }
 
 function cycleLang(): void {
@@ -1460,29 +1517,43 @@ function teardownFloor(): void {
  *  is NOT a Dwaar: it names the place (`L100 · THE GROUND`).
  *  M4/T6: the `L`/`स्तर` prefix, the `DWAAR`/`द्वार` name and the tier
  *  suffix localize. */
+/** ui-pod — the Roman numeral of a Dwaar threshold floor (extracted from
+ *  floorChipLabel so the district plate's area line names the same hall). */
+function dwaarNumeral(floor: number): string {
+  return floor === DWAAR_FLOOR
+    ? 'I'
+    : floor === TIER_TWO_FLOORS
+      ? 'II'
+      : floor === TIER_FOUR_FLOORS
+        ? 'IV'
+        : floor === TIER_FIVE_FLOORS
+          ? 'V'
+          : floor === TIER_SIX_FLOORS
+            ? 'VI'
+            : floor === TIER_SEVEN_FLOORS
+              ? 'VII'
+              : floor === TIER_EIGHT_FLOORS
+                ? 'VIII'
+                : floor === TIER_NINE_FLOORS
+                  ? 'IX'
+                  : 'III';
+}
+
+/** ui-pod — the district plate's accent area line: `TIER N — WING NAME`
+ *  (the atlas's ten tier names, localized), a Dwaar floor naming its
+ *  threshold hall, and the finale naming the Ground. */
+function floorAreaLabel(c: Campaign): string {
+  if (isFinale(c.floor)) return t(lang, 'chip.ground');
+  if (isDwaar(c.floor)) return `${t(lang, 'chip.dwaar')} ${dwaarNumeral(c.floor)}`;
+  const tier = tierOf(c.floor);
+  return `${t(lang, 'area.prefix')} ${tier} — ${t(lang, `area.tier${tier}`)}`;
+}
+
 function floorChipLabel(c: Campaign): string {
   const tag = `${t(lang, 'chip.floor')}${String(c.floor).padStart(2, '0')}`;
   if (isFinale(c.floor)) return `${tag} · ${t(lang, 'chip.ground')}`; // the ending — never a Dwaar label
   if (isDwaar(c.floor)) {
-    const numeral =
-      c.floor === DWAAR_FLOOR
-        ? 'I'
-        : c.floor === TIER_TWO_FLOORS
-          ? 'II'
-          : c.floor === TIER_FOUR_FLOORS
-            ? 'IV'
-            : c.floor === TIER_FIVE_FLOORS
-              ? 'V'
-              : c.floor === TIER_SIX_FLOORS
-                ? 'VI'
-                : c.floor === TIER_SEVEN_FLOORS
-                  ? 'VII'
-                  : c.floor === TIER_EIGHT_FLOORS
-                    ? 'VIII'
-                    : c.floor === TIER_NINE_FLOORS
-                      ? 'IX'
-                      : 'III';
-    return `${tag} · ${t(lang, 'chip.dwaar')} ${numeral} ✦`;
+    return `${tag} · ${t(lang, 'chip.dwaar')} ${dwaarNumeral(c.floor)} ✦`;
   }
   const tier = tierOf(c.floor);
   return tier === 10
@@ -2030,6 +2101,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   hud.hideTier();
   setExitLocked(true); // the stair door starts sealed behind its beacons
   hud.setFloor(pack === null ? floorChipLabel(c) : `☕ ${pack.name}`);
+  hud.setFloorArea(pack === null ? floorAreaLabel(c) : pack.name); // ui-pod — the plate's accent line
   hud.setChips({
     beacons: beaconsCaptured(allMirrors, mirrorRuntime),
     timerMs: null,

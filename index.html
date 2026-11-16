@@ -28,7 +28,241 @@
     <meta property="og:url" content="https://mirror-house.seolith.com/" />
     <meta property="og:image" content="https://mirror-house.seolith.com/og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- ui-pod — self-hosted fonts (SIL OFL; PROVENANCE.md). Preload the three
+         files the first paint needs (the boot poster's Big Shoulders Display,
+         the body's Mukta 400/600); every other subset loads on demand through
+         its unicode-range. NO remote loads — the CSP allows font-src 'self'
+         only and the SW precaches every file. -->
+    <link rel="preload" href="/fonts/bsd-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link
+      rel="preload"
+      href="/fonts/mukta-400-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/mukta-600-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <style>
+      /* ============================================================
+         ui-pod — the People-of-Delhi chrome
+         The frame around the wardens' world re-dresses in our sibling
+         project's design language: ink plates, cream type, one yellow
+         accent, Big Shoulders Display as the voice (kickers, titles,
+         buttons, chips, keys) and Mukta as the body — Devanagari-native,
+         so the Hindi chrome finally gets proper type. The 3D stage, the
+         tier scene palettes and every id/aria contract are untouched:
+         this stylesheet only re-dresses the chrome around them.
+         ============================================================ */
+      /* -- Self-hosted fonts (see PROVENANCE.md for licenses/foundries) -- */
+      /* Big Shoulders Display — Tyler Finck / Etcetera Type Co, SIL OFL 1.1.
+         Google serves one variable latin file for all three weights; each
+         @font-face pins the weight exactly as fonts.googleapis.com does. */
+      @font-face {
+        font-family: 'Big Shoulders Display';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url(/fonts/bsd-latin.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: 'Big Shoulders Display';
+        font-style: normal;
+        font-weight: 800;
+        font-display: swap;
+        src: url(/fonts/bsd-latin.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: 'Big Shoulders Display';
+        font-style: normal;
+        font-weight: 900;
+        font-display: swap;
+        src: url(/fonts/bsd-latin.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      /* Mukta — Indian Type Foundry, SIL OFL 1.1. Latin + latin-ext +
+         devanagari per weight; the devanagari subset is what makes the
+         Hindi chrome render in the house's own type instead of a fallback. */
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(/fonts/mukta-400-devanagari.woff2) format('woff2');
+        unicode-range: U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0,
+          U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(/fonts/mukta-400-latin-ext.woff2) format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+          U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4,
+          U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url(/fonts/mukta-400-latin.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url(/fonts/mukta-500-devanagari.woff2) format('woff2');
+        unicode-range: U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0,
+          U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url(/fonts/mukta-500-latin-ext.woff2) format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+          U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4,
+          U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url(/fonts/mukta-500-latin.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url(/fonts/mukta-600-devanagari.woff2) format('woff2');
+        unicode-range: U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0,
+          U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url(/fonts/mukta-600-latin-ext.woff2) format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+          U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4,
+          U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url(/fonts/mukta-600-latin.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url(/fonts/mukta-700-devanagari.woff2) format('woff2');
+        unicode-range: U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0,
+          U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url(/fonts/mukta-700-latin-ext.woff2) format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+          U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4,
+          U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url(/fonts/mukta-700-latin.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 800;
+        font-display: swap;
+        src: url(/fonts/mukta-800-devanagari.woff2) format('woff2');
+        unicode-range: U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0,
+          U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 800;
+        font-display: swap;
+        src: url(/fonts/mukta-800-latin-ext.woff2) format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+          U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4,
+          U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+      @font-face {
+        font-family: Mukta;
+        font-style: normal;
+        font-weight: 800;
+        font-display: swap;
+        src: url(/fonts/mukta-800-latin.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+          U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+          U+FEFF, U+FFFD;
+      }
+      /* -- The PoD token row: ink depth, cream type, one yellow accent -- */
+      :root {
+        --ink: #1b1a24;
+        --ink-2: #26243a;
+        --ink-3: #343150;
+        --cream: #fff4e2;
+        --muted: #b9b2c9;
+        --yellow: #ffc20e;
+        --blue: #1f5ba8;
+        --red: #d7262d;
+        --green: #1f9a55;
+        --pink: #e5609b;
+        --magenta: #9b2a8d;
+        --sand: #b5532e;
+        --accent: var(--yellow);
+        --r: 4px;
+        --display: 'Big Shoulders Display', Mukta, system-ui, sans-serif;
+        --body: Mukta, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --plate: #1b1a24db; /* hud chips + keys bar */
+        --plate-solid: #1b1a24f2; /* panels */
+        --edge: rgba(255, 255, 255, 0.1);
+      }
       /* M5/T1 — the text-scale ladder every HUD/overlay font multiplies in.
          main.ts sets the inline body value from the save (1 | 1.25 | 1.5);
          this default keeps a no-JS first paint at 100%. */
@@ -40,7 +274,7 @@
         margin: 0;
         height: 100%;
         overflow: hidden;
-        background: #05060a;
+        background: var(--ink);
       }
       #game {
         display: block;
@@ -60,36 +294,97 @@
         background: #05060a;
         cursor: crosshair;
       }
+      /* ui-pod — the scene vignette: a static, aria-hidden radial shade over
+         the 3D stage (below the overhead map and the HUD, above the canvas).
+         Pure decoration — pointer-events:none, no DOM from main.ts. */
+      #mh-vignette {
+        position: fixed;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 52%, rgba(10, 9, 16, 0.42) 100%);
+      }
+      /* ui-pod — the boot poster (the one PR moment): kicker MIRROR, the
+         giant HOUSE, the tagline — the PoD boot composition, left 6vw /
+         bottom 16vh. Statically marked so it paints from the first parse;
+         main.ts owns the once-per-session clock and the removal. Never a
+         gate: pointer-events:none and no focusable children, ever. */
+      #mh-boot {
+        position: fixed;
+        left: 6vw;
+        bottom: 16vh;
+        z-index: 40;
+        pointer-events: none;
+        color: var(--cream);
+      }
+      #mh-boot .mh-boot-kicker {
+        font: 700 calc(20px * var(--mh-text-scale, 1)) / 1 var(--display);
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      #mh-boot .mh-boot-title {
+        font: 900 calc(clamp(88px, 16vw, 210px) * var(--mh-text-scale, 1)) / 0.82 var(--display);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        text-shadow: 0 6px 30px #00000073;
+      }
+      #mh-boot .mh-boot-tagline {
+        margin: 10px 0 0;
+        font: 400 calc(18px * var(--mh-text-scale, 1)) / 1.4 var(--body);
+        color: var(--muted);
+      }
+      #mh-boot.mh-boot-hide {
+        opacity: 0;
+        transition: opacity 320ms ease;
+      }
+      /* the poster's entrance is motion, so reduced-flash stands it still */
+      body:not(.mh-reduced-flash) #mh-boot {
+        animation: mh-boot-in 420ms ease-out;
+      }
+      @keyframes mh-boot-in {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      /* dev diagnostics + the tester chip keep their monospace read-out, on
+         PoD plates; the diagnostics step below the district plate, the tester
+         chip steps above the keys bar. */
       #diagnostics {
         position: fixed;
-        top: 8px;
+        top: 132px;
         left: 8px;
         z-index: 10;
         font:
-          calc(12px * var(--mh-text-scale, 1))/1.5 ui-monospace,
+          calc(12px * var(--mh-text-scale, 1)) / 1.5 ui-monospace,
           monospace;
-        color: #9fb4c8;
-        background: rgba(5, 6, 10, 0.7);
+        color: var(--muted);
+        background: var(--plate);
         padding: 6px 10px;
-        border-radius: 6px;
+        border-radius: var(--r);
         pointer-events: none;
         white-space: pre;
       }
       /* step007/T3 — the TESTER chip (?test=1 only; main.ts creates it, so a
-         default load never carries the element): the diagnostics chip's
-         styling docked bottom-left, teal text naming its nature. */
+         default load never carries the element): docked bottom-left, ABOVE
+         the keys bar, teal text naming its nature. */
       #mh-tester {
         position: fixed;
-        bottom: 8px;
+        bottom: 84px;
         left: 8px;
         z-index: 10;
         font:
-          calc(12px * var(--mh-text-scale, 1))/1.5 ui-monospace,
+          calc(12px * var(--mh-text-scale, 1)) / 1.5 ui-monospace,
           monospace;
         color: #2ec4b6;
-        background: rgba(5, 6, 10, 0.7);
+        background: var(--plate);
         padding: 6px 10px;
-        border-radius: 6px;
+        border-radius: var(--r);
         pointer-events: none;
         white-space: pre;
       }
@@ -102,55 +397,247 @@
         transform: translateX(-50%);
         z-index: 10;
         max-width: min(480px, 90vw);
-        background: rgba(11, 16, 38, 0.92);
+        background: var(--plate-solid);
         border: 1px solid #2ec4b6;
-        border-radius: 8px;
+        border-radius: var(--r);
         padding: 8px 14px;
-        font: calc(13px * var(--mh-text-scale, 1))/1.5 system-ui;
-        color: #f2e9d8;
+        font: calc(13px * var(--mh-text-scale, 1)) / 1.5 var(--body);
+        color: var(--cream);
         text-align: center;
         pointer-events: none;
       }
       #mh-tester-banner[hidden] {
         display: none;
       }
+      /* ============================================================
+         THE HUD FRAME — #hud is the fixed inset-0 chrome layer; the PoD
+         zones position inside it. The whole frame is pointer-events:none;
+         only the buttons re-arm clicks.
+         ============================================================ */
       #hud {
         position: fixed;
-        top: 8px;
-        right: 8px;
+        inset: 0;
         z-index: 10;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 6px;
-        font: calc(13px * var(--mh-text-scale, 1))/1.4 system-ui;
-        color: #f2e9d8;
         pointer-events: none;
+        font: calc(13px * var(--mh-text-scale, 1)) / 1.4 var(--body);
+        color: var(--cream);
       }
+      /* ui-pod — every HUD button is the PoD ghost: dark-alpha fill, hairline
+         white border, display font 800, uppercase, 1px tracking. */
       #hud button {
         pointer-events: auto;
         cursor: pointer;
-        background: rgba(11, 16, 38, 0.8);
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
-        padding: 4px 10px;
-        margin-left: 4px;
+        background: #ffffff14;
+        color: var(--cream);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: var(--r);
+        padding: 4px 12px;
+        font: 800 calc(12.5px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
       }
+      #hud button:hover:not(:disabled) {
+        border-color: var(--yellow);
+        color: var(--yellow);
+      }
+      /* active = the PoD tab answer: solid yellow, ink text, hard shadow */
       #hud button.active {
-        border-color: #2ec4b6;
-        color: #2ec4b6;
+        background: var(--yellow);
+        border-color: var(--yellow);
+        color: var(--ink);
+        box-shadow: 0 3px #b88a00;
       }
       #hud button:disabled {
         opacity: 0.45;
         cursor: default;
       }
+      /* ui-pod — THE DISTRICT PLATE (top-left): skewed ink plate, accent
+         edge on the left, kicker / big display number / accent area line.
+         #mh-floor keeps its exact text contract (the e2e reads it); the
+         plate only re-dresses it. */
+      #mh-district {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        transform: skew(-9deg);
+        background: #1b1a24e0;
+        border-left: 5px solid var(--accent);
+        padding: 8px 18px 10px 14px;
+      }
+      #mh-district-kicker {
+        font: 700 calc(11px * var(--mh-text-scale, 1)) / 1 var(--display);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      #mh-floor {
+        margin: 3px 0 2px;
+        font: 900 calc(30px * var(--mh-text-scale, 1)) / 0.9 var(--display);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: var(--cream);
+      }
+      #mh-floor-area {
+        font: 800 calc(12px * var(--mh-text-scale, 1)) / 1 var(--display);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      /* ui-pod — THE KEYS BAR (bottom-left): kbd hints, display font, skewed
+         keys, live from the save's keymap. aria-hidden; pointer-events:none. */
+      #mh-keys {
+        position: absolute;
+        bottom: 14px;
+        left: 14px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        background: var(--plate);
+        border: 1px solid var(--edge);
+        border-radius: var(--r);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        padding: 6px 14px;
+        pointer-events: none;
+      }
+      #mh-keys .mh-key-hint {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        font: 600 calc(12px * var(--mh-text-scale, 1)) var(--body);
+        color: var(--cream);
+        white-space: nowrap;
+      }
+      #mh-keys kbd {
+        transform: skew(-9deg);
+        font: 800 calc(12px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1px;
+        color: var(--ink);
+        background: var(--cream);
+        border-radius: 3px;
+        padding: 1px 7px;
+      }
+      /* ui-pod — HUD-META (top-right): the value chips as dark blurred plates. */
+      #mh-chips {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end;
+        max-width: min(520px, 56vw);
+        pointer-events: none;
+      }
+      .mh-chip {
+        white-space: nowrap;
+        background: var(--plate);
+        border: 1px solid var(--edge);
+        border-radius: var(--r);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        padding: 3px 10px;
+        font: 600 calc(13px * var(--mh-text-scale, 1)) var(--body);
+        color: var(--cream);
+      }
+      /* ui-pod — the venue side-floor banner: a rose-edged plate under the
+         meta chips (the pack's accent family; the card rides the
+         pointer-events:none frame, its button alone owns clicks). */
+      #mh-venue {
+        position: absolute;
+        top: 110px;
+        right: 14px;
+        max-width: 300px;
+        background: var(--plate-solid);
+        border: 1px solid var(--pink);
+        border-left: 5px solid var(--pink);
+        border-radius: var(--r);
+        padding: 8px 12px;
+        font-size: calc(13px * var(--mh-text-scale, 1));
+        text-align: right;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      #mh-venue[hidden] {
+        display: none;
+      }
+      #mh-venue p {
+        margin: 2px 0;
+        color: var(--cream);
+      }
+      #mh-venue .mh-venue-note {
+        color: var(--muted);
+        font-size: calc(12px * var(--mh-text-scale, 1));
+      }
+      #mh-venue button {
+        pointer-events: auto;
+        cursor: pointer;
+        margin: 4px 0 0;
+        background: var(--yellow);
+        color: var(--ink);
+        border: 1px solid var(--yellow);
+        border-radius: var(--r);
+        box-shadow: 0 3px #b88a00;
+        padding: 4px 12px;
+        font: 800 calc(12px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      #mh-venue button:hover {
+        border-color: var(--yellow);
+        color: var(--ink);
+      }
+      /* "Your venue here?" — the sponsor door, on the one banner a venue
+         owner trying the demo is already reading. */
+      #mh-venue a {
+        pointer-events: auto;
+        display: block;
+        margin-top: 6px;
+        color: var(--yellow);
+        font-size: calc(12px * var(--mh-text-scale, 1));
+      }
+      /* ui-pod — THE DOCK (bottom-right): view chip, the mode/lang row, the
+         two bars, then the action buttons — every id unchanged, only moved. */
+      #mh-dock {
+        position: absolute;
+        bottom: 14px;
+        right: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        max-width: min(420px, 70vw);
+        pointer-events: none;
+      }
+      #mh-dock button,
+      #mh-dock #mh-view {
+        pointer-events: auto;
+      }
+      #mh-modes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: flex-end;
+      }
+      #mh-view {
+        background: var(--plate);
+        border: 1px solid var(--edge);
+        border-radius: var(--r);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        padding: 3px 10px;
+        font: 600 calc(13px * var(--mh-text-scale, 1)) var(--body);
+        color: var(--cream);
+        white-space: nowrap;
+        pointer-events: none;
+      }
       #mh-breath {
         width: 150px;
         height: 10px;
-        margin-right: 4px;
-        background: rgba(11, 16, 38, 0.8);
-        border: 1px solid #2a3560;
+        background: var(--plate);
+        border: 1px solid var(--edge);
         border-radius: 5px;
         overflow: hidden;
       }
@@ -163,9 +650,8 @@
       #mh-anger {
         width: 150px;
         height: 10px;
-        margin-right: 4px;
-        background: rgba(11, 16, 38, 0.8);
-        border: 1px solid #2a3560;
+        background: var(--plate);
+        border: 1px solid var(--edge);
         border-radius: 5px;
         overflow: hidden;
       }
@@ -175,93 +661,66 @@
         background: linear-gradient(90deg, #7a2f35, #e07a5f);
         transition: width 0.15s linear;
       }
-      #mh-chips {
+      /* ui-pod — the top-center notice column: the transient banners keep
+         their stacking (several can be live at once) as accent-edged plates. */
+      #mh-notices {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
         display: flex;
-        gap: 8px;
-        background: rgba(11, 16, 38, 0.7);
-        border-radius: 6px;
-        padding: 4px 10px;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        max-width: min(480px, 80vw);
+        pointer-events: none;
       }
-      /* M6/T1 — the venue side-floor banner: pack name, its tagline, the
-         no-banking note, and the return button. Rose-edged (the pack's
-         primary accent family) so a sponsored floor reads at a glance; the
-         card rides the pointer-events:none HUD column, its button alone owns
-         clicks. */
-      #mh-venue {
-        max-width: 300px;
-        background: rgba(11, 16, 38, 0.92);
-        border: 1px solid #c2548a;
-        border-radius: 8px;
-        padding: 8px 12px;
-        font-size: calc(13px * var(--mh-text-scale, 1));
-        text-align: right;
-      }
-      #mh-venue[hidden] {
-        display: none;
-      }
-      #mh-venue p {
-        margin: 2px 0;
-        color: #f2e9d8;
-      }
-      #mh-venue .mh-venue-note {
-        color: #9fb4c8;
-        font-size: calc(12px * var(--mh-text-scale, 1));
-      }
-      #mh-venue button {
-        pointer-events: auto;
-        cursor: pointer;
-        margin: 4px 0 0;
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #c2548a;
-        border-radius: 6px;
-        padding: 4px 10px;
-      }
-      #mh-venue button:hover {
-        border-color: #d9a441;
-        color: #d9a441;
-      }
-      /* "Your venue here?" — the sponsor door, on the one banner a venue
-         owner trying the demo is already reading. */
-      #mh-venue a {
-        pointer-events: auto;
-        display: block;
-        margin-top: 6px;
-        color: #d9a441;
-        font-size: calc(12px * var(--mh-text-scale, 1));
-      }
-      /* M4/T6 — chips are single-line in every language; long labels move the
-         row wider instead of wrapping mid-chip. */
-      .mh-chip {
-        white-space: nowrap;
+      #mh-cleared,
+      #mh-descend,
+      #mh-fail,
+      #mh-hint,
+      #mh-toast {
+        background: var(--plate);
+        border: 1px solid var(--edge);
+        border-radius: var(--r);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        padding: 6px 14px;
+        font: 600 calc(13px * var(--mh-text-scale, 1)) var(--body);
+        color: var(--cream);
+        text-align: center;
+        pointer-events: none;
       }
       #mh-cleared {
-        background: rgba(11, 16, 38, 0.92);
-        border: 1px solid #d9a441;
-        color: #f2e9d8;
-        border-radius: 8px;
-        padding: 10px 16px;
+        border-left: 5px solid var(--yellow);
         font-size: calc(15px * var(--mh-text-scale, 1));
-        pointer-events: none;
       }
-      /* M4/T2 — the brief `descending…` banner between floors (auto-hides when
-         the next floor arms). */
       #mh-descend {
-        background: rgba(11, 16, 38, 0.92);
-        border: 1px solid #2ec4b6;
-        color: #f2e9d8;
-        border-radius: 8px;
-        padding: 10px 16px;
+        border-left: 5px solid var(--green);
         font-size: calc(15px * var(--mh-text-scale, 1));
-        pointer-events: none;
       }
-      #mh-descend[hidden] {
+      #mh-fail {
+        border-left: 5px solid var(--red);
+        font-size: calc(15px * var(--mh-text-scale, 1));
+      }
+      #mh-hint {
+        border-left: 5px solid var(--blue);
+        max-width: 360px;
+      }
+      #mh-toast {
+        border-left: 5px solid var(--magenta);
+      }
+      #mh-cleared[hidden],
+      #mh-descend[hidden],
+      #mh-fail[hidden],
+      #mh-hint[hidden],
+      #mh-toast[hidden] {
         display: none;
       }
       /* T2/T5 — the Truth-Shard I interstitial (the T1 adjudication): the
-         tier-complete card's visual language — indigo card, gold border,
-         gold line — as a centered banner that auto-dismisses from hud.ts
-         after 1.8s. No backdrop and no pointer events: the 0.8s descend
+         tier-complete card's visual language — ink plate, accent edge, the
+         shard line in yellow — as a centered banner that auto-dismisses from
+         hud.ts after 1.8s. No backdrop and no pointer events: the 0.8s descend
          beneath it keeps running, and only Dwaar II (floor 20) raises the
          full tier screen. */
       #mh-shard {
@@ -271,23 +730,25 @@
         transform: translate(-50%, -50%);
         z-index: 15;
         max-width: min(480px, 90vw);
-        background: #0b1026;
-        border: 1px solid #d9a441;
-        border-radius: 10px;
+        background: var(--plate-solid);
+        border: 1px solid var(--edge);
+        border-left: 5px solid var(--yellow);
+        border-radius: var(--r);
         padding: 18px 26px;
-        color: #d9a441;
-        font: calc(19px * var(--mh-text-scale, 1))/1.6 system-ui;
+        color: var(--yellow);
+        font: calc(19px * var(--mh-text-scale, 1)) / 1.6 var(--body);
         text-align: center;
         pointer-events: none;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
       }
       #mh-shard[hidden] {
         display: none;
       }
       /* T5/T1 — the Act II opening banner: the act's name over its one-line
-         threat ("The house has begun copying you."), the shard interstitial's
-         centered-card shape dressed in the act close's rose — the act-turn
-         tint (T4/T1's `.act` family). Auto-dismisses from hud.ts after 3s;
-         raised once per session on the first floor-41 build. */
+         threat, the shard interstitial's centered-card shape dressed in the
+         act close's rose — the act-turn tint. Auto-dismisses from hud.ts
+         after 3s; raised once per session on the first floor-41 build. */
       #mh-act {
         position: fixed;
         top: 30%;
@@ -295,91 +756,147 @@
         transform: translate(-50%, -50%);
         z-index: 15;
         max-width: min(480px, 90vw);
-        background: #0b1026;
-        border: 1px solid #c2548a;
-        border-radius: 10px;
+        background: var(--plate-solid);
+        border: 1px solid var(--edge);
+        border-left: 5px solid var(--pink);
+        border-radius: var(--r);
         padding: 16px 26px 14px;
-        color: #f2e9d8;
-        font: calc(15px * var(--mh-text-scale, 1))/1.6 system-ui;
+        color: var(--cream);
+        font: calc(15px * var(--mh-text-scale, 1)) / 1.6 var(--body);
         text-align: center;
         pointer-events: none;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
       }
       #mh-act-title {
-        color: #c2548a;
-        font-size: calc(20px * var(--mh-text-scale, 1));
-        font-weight: 600;
-        letter-spacing: 0.08em;
+        color: var(--pink);
+        font: 900 calc(20px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 2px;
+        text-transform: uppercase;
       }
       #mh-act-note {
         margin: 6px 0 0;
-        color: #9fb4c8;
+        color: var(--muted);
       }
       #mh-act[hidden] {
         display: none;
       }
-      /* M4/T2 — tier-complete screen: Truth-Shard I, final stats, Play again /
-         Stay. A modal in the FAQ's image, above the HUD. */
+      /* ============================================================
+         PANELS — the PoD panel: solid-ink plate, 5px accent top edge,
+         backdrop blur, 180ms slide-in; headers in yellow display type.
+         ============================================================ */
+      @keyframes mh-panel-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      #mh-faq-overlay,
+      #mh-settings-overlay,
+      #mh-about-overlay,
+      #mh-feedback-overlay,
       #mh-tier-overlay {
         position: fixed;
         inset: 0;
         z-index: 20;
-        background: rgba(5, 8, 20, 0.82);
+        background: rgba(11, 10, 18, 0.66);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
         display: grid;
         place-items: center;
       }
+      #mh-faq-overlay[hidden],
+      #mh-settings-overlay[hidden],
+      #mh-about-overlay[hidden],
+      #mh-feedback-overlay[hidden],
       #mh-tier-overlay[hidden] {
         display: none;
       }
+      #mh-faq-box,
+      #mh-settings-box,
+      #mh-about-box,
+      #mh-feedback-box,
       #mh-tier-box {
-        background: #0b1026;
-        border: 1px solid #d9a441;
-        border-radius: 10px;
+        background: var(--plate-solid);
+        border: 1px solid var(--edge);
+        border-top: 5px solid var(--accent);
+        border-radius: var(--r);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: var(--cream);
+        animation: mh-panel-in 180ms ease-out;
+      }
+      #mh-faq-box h2,
+      #mh-settings-box h2,
+      #mh-about-box h2,
+      #mh-feedback-box h2,
+      #mh-tier-box h2 {
+        font: 900 calc(20px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      #mh-faq-box summary,
+      #mh-aaina-box summary {
+        cursor: pointer;
+        color: var(--cream);
+        font-weight: 600;
+      }
+      #mh-faq-box summary:hover,
+      #mh-aaina-box summary:hover {
+        color: var(--yellow);
+      }
+      /* M4/T2 — tier-complete screen: Truth-Shard I, final stats, Play again /
+         Stay. A modal in the FAQ's image, above the HUD. */
+      #mh-tier-box {
         padding: 24px 30px;
-        color: #f2e9d8;
-        font: calc(15px * var(--mh-text-scale, 1))/1.6 system-ui;
+        font: calc(15px * var(--mh-text-scale, 1)) / 1.6 var(--body);
         text-align: center;
         max-width: 480px;
       }
       #mh-tier-box h2 {
         margin: 0 0 10px;
-        color: #d9a441;
-        font-size: calc(19px * var(--mh-text-scale, 1));
+        font-size: calc(22px * var(--mh-text-scale, 1));
       }
       #mh-tier-box p {
         margin: 6px 0;
       }
       #mh-tier-note {
-        color: #9fb4c8;
+        color: var(--muted);
         font-size: calc(13px * var(--mh-text-scale, 1));
       }
       /* T4/T1 — the ACT I completion screen Dwaar IV raises: the same
          tier-complete card dressed in the carnival's rose (the act close, not
          a tier screen — gold stays the tiers'). */
       #mh-tier-box.act {
-        border-color: #c2548a;
-        box-shadow: 0 0 28px rgba(194, 84, 138, 0.35);
+        border-top-color: var(--pink);
+        box-shadow: 0 0 28px rgba(229, 96, 155, 0.35);
       }
       #mh-tier-box.act h2 {
-        color: #c2548a;
-        letter-spacing: 0.08em;
+        color: var(--pink);
+        letter-spacing: 2px;
       }
       #mh-tier-box.act #mh-tier-note {
-        color: #d9a441;
+        color: var(--yellow);
       }
       /* T10/T3 — the GROUND DOOR finale: the same tier-complete card dressed
-         in the Foundations' stone — pale-stone border, the gold door light,
+         in the Foundations' stone — the sand accent, the gold door light,
          the closing line in the palette's ivory. The ending, not a tier
          close: no rose, no shard-gold chrome. */
       #mh-tier-box.ground {
-        border-color: #8a94a0;
-        box-shadow: 0 0 28px rgba(217, 164, 65, 0.4);
+        border-top-color: var(--sand);
+        box-shadow: 0 0 28px rgba(255, 194, 14, 0.4);
       }
       #mh-tier-box.ground h2 {
-        color: #d9a441;
-        letter-spacing: 0.08em;
+        color: var(--yellow);
+        letter-spacing: 2px;
       }
       #mh-tier-box.ground #mh-tier-note {
-        color: #e8ecf0;
+        color: var(--cream);
       }
       #mh-tier-buttons {
         display: flex;
@@ -388,61 +905,35 @@
         margin: 14px 0 4px;
       }
       #mh-tier-buttons button {
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
+        background: #ffffff14;
+        color: var(--cream);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: var(--r);
         padding: 8px 16px;
         cursor: pointer;
+        font: 800 calc(13px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
       }
       #mh-tier-buttons button:hover {
-        border-color: #2ec4b6;
-        color: #2ec4b6;
+        border-color: var(--yellow);
+        color: var(--yellow);
       }
-      #mh-fail {
-        background: rgba(26, 10, 14, 0.92);
-        border: 1px solid #b33939;
-        color: #f2e9d8;
-        border-radius: 8px;
-        padding: 10px 16px;
-        font-size: calc(15px * var(--mh-text-scale, 1));
-        pointer-events: none;
+      /* the PoD primary: solid yellow, ink text, hard shadow, no fluff */
+      #mh-tier-again {
+        background: var(--yellow);
+        border-color: var(--yellow);
+        color: var(--ink);
+        box-shadow: 0 3px #b88a00;
       }
-      #mh-fail[hidden] {
-        display: none;
-      }
-      #mh-hint {
-        background: rgba(11, 16, 38, 0.85);
-        border: 1px solid #2a3560;
-        color: #f2e9d8;
-        border-radius: 6px;
-        padding: 4px 10px;
-        font-size: calc(13px * var(--mh-text-scale, 1));
-        max-width: 360px;
-        pointer-events: none;
-      }
-      #mh-hint[hidden] {
-        display: none;
-      }
-      /* M4/T4 — short-lived notices (import rejections, export confirmations).
-         Gold-edged like the cleared banner: it speaks for the save, not the
-         floor. Auto-hides from hud.ts after 2.5s. */
-      #mh-toast {
-        background: rgba(11, 16, 38, 0.92);
-        border: 1px solid #d9a441;
-        color: #f2e9d8;
-        border-radius: 8px;
-        padding: 8px 14px;
-        font-size: calc(13px * var(--mh-text-scale, 1));
-        pointer-events: none;
-      }
-      #mh-toast[hidden] {
-        display: none;
+      #mh-tier-again:hover {
+        border-color: var(--yellow);
+        color: var(--ink);
       }
       /* M5/T3 — the caption bar: bottom-center, the latest two sound-cue
          lines (renderCaptions joins them with \n; pre-line stacks them).
-         Fixed inside the pointer-events:none #hud root, so it centres on the
-         viewport whatever the column does, and its font rides the text-scale
+         Fixed inside the pointer-events:none #hud frame, so it centres on the
+         viewport whatever the zones do, and its font rides the text-scale
          ladder like every HUD surface. */
       #mh-captions {
         position: fixed;
@@ -450,12 +941,14 @@
         left: 50%;
         transform: translateX(-50%);
         max-width: min(560px, 90vw);
-        background: rgba(5, 6, 10, 0.72);
-        border: 1px solid #2a3560;
-        border-radius: 8px;
+        background: var(--plate);
+        border: 1px solid var(--edge);
+        border-radius: var(--r);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
         padding: 8px 14px;
-        font: calc(15px * var(--mh-text-scale, 1))/1.5 system-ui;
-        color: #f2e9d8;
+        font: calc(15px * var(--mh-text-scale, 1)) / 1.5 var(--body);
+        color: var(--cream);
         text-align: center;
         white-space: pre-line;
         pointer-events: none;
@@ -463,180 +956,164 @@
       #mh-captions[hidden] {
         display: none;
       }
-      #mh-faq-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 20;
-        background: rgba(5, 8, 20, 0.82);
-        display: grid;
-        place-items: center;
-      }
-      #mh-faq-overlay[hidden] {
-        display: none;
-      }
       #mh-faq-box {
         max-width: 640px;
         max-height: 82vh;
         overflow: auto;
-        background: #0b1026;
-        border: 1px solid #2a3560;
-        border-radius: 10px;
         padding: 20px 26px;
-        color: #f2e9d8;
-        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
+        font: calc(14px * var(--mh-text-scale, 1)) / 1.6 var(--body);
       }
       #mh-faq-box h2 {
         margin: 0 0 12px;
-        color: #d9a441;
-        font-size: calc(18px * var(--mh-text-scale, 1));
+        font-size: calc(22px * var(--mh-text-scale, 1));
       }
       #mh-faq-box details {
-        border-bottom: 1px solid #1d2440;
+        border-bottom: 1px solid var(--edge);
         padding: 8px 0;
-      }
-      #mh-faq-box summary {
-        cursor: pointer;
-        color: #2ec4b6;
       }
       #mh-faq-box button {
         margin-top: 14px;
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
+        background: #ffffff14;
+        color: var(--cream);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: var(--r);
         padding: 6px 14px;
         cursor: pointer;
+        font: 800 calc(12.5px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
       }
-      /* Aaina (M3) — the FAQ's diegetic sister: same box styling, docked beside
-         the maze instead of a centered pause, so the floor stays visible and
-         live while the lantern talks. */
+      #mh-faq-box button:hover {
+        border-color: var(--yellow);
+        color: var(--yellow);
+      }
+      /* Aaina (M3) — the FAQ's sister. ui-pod: she takes the centered panel
+         shape too (ink plate, accent top, blur backdrop — the floor still
+         ghosts through the light veil). */
       #mh-aaina-overlay {
         position: fixed;
-        left: 8px;
-        top: 76px;
-        bottom: 8px;
-        width: min(400px, 92vw);
+        inset: 0;
         z-index: 20;
         display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(11, 10, 18, 0.55);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
         pointer-events: auto;
       }
       #mh-aaina-overlay[hidden] {
         display: none;
       }
       #mh-aaina-box {
-        flex: 1;
+        flex: 0 1 480px;
+        max-width: min(480px, 92vw);
+        max-height: 82vh;
         overflow: auto;
-        background: rgba(11, 16, 38, 0.94);
-        border: 1px solid #2a3560;
-        border-radius: 10px;
         padding: 16px 20px;
-        color: #f2e9d8;
-        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
+        font: calc(14px * var(--mh-text-scale, 1)) / 1.6 var(--body);
         display: flex;
         flex-direction: column;
         gap: 10px;
       }
       #mh-aaina-box h2 {
         margin: 0;
-        color: #d9a441;
-        font-size: calc(17px * var(--mh-text-scale, 1));
+        font-size: calc(21px * var(--mh-text-scale, 1));
       }
       #mh-aaina-tabs {
         display: flex;
         gap: 6px;
       }
+      /* ui-pod tabs: flat dark-alpha, active = solid yellow + ink text */
       #mh-aaina-tabs button {
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
-        padding: 4px 12px;
+        background: #ffffff0f;
+        color: var(--cream);
+        border: 1px solid transparent;
+        border-radius: var(--r);
+        padding: 4px 14px;
         cursor: pointer;
+        font: 800 calc(12.5px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
       }
       #mh-aaina-tabs button.active {
-        border-color: #2ec4b6;
-        color: #2ec4b6;
+        background: var(--yellow);
+        color: var(--ink);
+        box-shadow: 0 3px #b88a00;
       }
       #mh-aaina-box details {
-        border-bottom: 1px solid #1d2440;
+        border-bottom: 1px solid var(--edge);
         padding: 6px 0;
-      }
-      #mh-aaina-box summary {
-        cursor: pointer;
-        color: #2ec4b6;
       }
       #mh-aaina-hint-text {
         white-space: pre-wrap;
       }
       #mh-aaina-buy {
         align-self: flex-start;
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
+        background: var(--yellow);
+        color: var(--ink);
+        border: 1px solid var(--yellow);
+        border-radius: var(--r);
+        box-shadow: 0 3px #b88a00;
         padding: 6px 14px;
         cursor: pointer;
+        font: 800 calc(13px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1px;
+        text-transform: uppercase;
       }
       #mh-aaina-buy:disabled {
         opacity: 0.45;
         cursor: default;
       }
       #mh-aaina-lore-count {
-        color: #d9a441;
+        color: var(--yellow);
         margin: 0;
       }
       #mh-aaina-lore-list p {
         margin: 6px 0;
       }
       #mh-aaina-lore-list p.locked {
-        color: #6b7280;
+        color: var(--muted);
         font-style: italic;
       }
       #mh-aaina-close {
         align-self: flex-start;
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
+        background: #ffffff14;
+        color: var(--cream);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: var(--r);
         padding: 6px 14px;
         cursor: pointer;
+        font: 800 calc(12.5px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+      }
+      #mh-aaina-close:hover {
+        border-color: var(--yellow);
+        color: var(--yellow);
       }
       /* ⚙ Settings (M5/T1) — the FAQ overlay's modal shape. Two sections this
          milestone: Display (text scale radio) and Access (reduced-flash +
          captions toggles). Performance lands in T4 and Controls in T2 — no
          stub sections until then. */
-      #mh-settings-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 20;
-        background: rgba(5, 8, 20, 0.82);
-        display: grid;
-        place-items: center;
-      }
-      #mh-settings-overlay[hidden] {
-        display: none;
-      }
       #mh-settings-box {
         min-width: 300px;
         max-width: 440px;
         max-height: 82vh;
         overflow: auto;
-        background: #0b1026;
-        border: 1px solid #2a3560;
-        border-radius: 10px;
         padding: 20px 26px;
-        color: #f2e9d8;
-        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
+        font: calc(14px * var(--mh-text-scale, 1)) / 1.6 var(--body);
       }
       #mh-settings-box h2 {
         margin: 0 0 12px;
-        color: #d9a441;
-        font-size: calc(18px * var(--mh-text-scale, 1));
+        font-size: calc(22px * var(--mh-text-scale, 1));
       }
       #mh-settings-box h3 {
         margin: 12px 0 6px;
-        color: #2ec4b6;
-        font-size: calc(15px * var(--mh-text-scale, 1));
+        color: var(--cream);
+        font: 800 calc(15px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
       }
       #mh-settings-box fieldset {
         border: none;
@@ -645,7 +1122,7 @@
       }
       #mh-settings-box legend {
         padding: 0;
-        color: #f2e9d8;
+        color: var(--cream);
       }
       #mh-settings-box label {
         display: block;
@@ -654,17 +1131,24 @@
       }
       #mh-settings-box .mh-settings-note {
         margin: 2px 0 8px;
-        color: #9fb4c8;
+        color: var(--muted);
         font-size: calc(12px * var(--mh-text-scale, 1));
       }
       #mh-settings-box button {
         margin-top: 10px;
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
+        background: #ffffff14;
+        color: var(--cream);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: var(--r);
         padding: 6px 14px;
         cursor: pointer;
+        font: 800 calc(12.5px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+      }
+      #mh-settings-box button:hover {
+        border-color: var(--yellow);
+        color: var(--yellow);
       }
       /* M5/T2 — Controls rows: action label left, the bound key right. Click
          arms the capture (gold italic "press a key…"), the next keydown
@@ -687,8 +1171,8 @@
         text-align: center;
       }
       #mh-settings-box .mh-key-btn.mh-key-capturing {
-        border-color: #d9a441;
-        color: #d9a441;
+        border-color: var(--yellow);
+        color: var(--yellow);
         font-style: italic;
       }
       #mh-keymap-msg.mh-key-conflict {
@@ -697,51 +1181,35 @@
       /* M6/T1 — the Floors section's venue card: one bordered card naming the
          DEMO pack, its Play/Return button, and the never-touches note. */
       #mh-settings-box .mh-venue-card {
-        border: 1px solid #2a3560;
-        border-radius: 8px;
+        border: 1px solid var(--edge);
+        border-radius: var(--r);
         padding: 8px 12px;
         margin: 4px 0 8px;
       }
       #mh-settings-box .mh-venue-card .mh-venue-name {
-        color: #f2e9d8;
+        color: var(--cream);
       }
       #mh-settings-box .mh-venue-card button {
         margin-top: 6px;
       }
       /* step007/T1 — the About overlay: the settings modal's shape (centered,
-         gold-titled box), holding the version line, the two-line pitch, the
+         accent-titled box), holding the version line, the two-line pitch, the
          beta/credits notes, the four launch links and the tagline. */
-      #mh-about-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 20;
-        background: rgba(5, 8, 20, 0.82);
-        display: grid;
-        place-items: center;
-      }
-      #mh-about-overlay[hidden] {
-        display: none;
-      }
       #mh-about-box {
         min-width: 300px;
         max-width: 480px;
         max-height: 82vh;
         overflow: auto;
-        background: #0b1026;
-        border: 1px solid #2a3560;
-        border-radius: 10px;
         padding: 20px 26px;
-        color: #f2e9d8;
-        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
+        font: calc(14px * var(--mh-text-scale, 1)) / 1.6 var(--body);
       }
       #mh-about-box h2 {
         margin: 0 0 6px;
-        color: #d9a441;
-        font-size: calc(18px * var(--mh-text-scale, 1));
+        font-size: calc(22px * var(--mh-text-scale, 1));
       }
       #mh-about-version {
         margin: 0 0 10px;
-        color: #9fb4c8;
+        color: var(--muted);
         font-family: ui-monospace, monospace;
         font-size: calc(12px * var(--mh-text-scale, 1));
       }
@@ -755,11 +1223,10 @@
         margin: 12px 0 4px;
       }
       #mh-about-links a {
-        color: #2ec4b6;
+        color: var(--yellow);
       }
       /* The support row: the house's two income doors (host a floor, and a
-         donation link when the build carries one) — gold, a step apart from
-         the teal papers above it. */
+         donation link when the build carries one). */
       #mh-about-support {
         display: flex;
         flex-wrap: wrap;
@@ -767,52 +1234,43 @@
         margin: 4px 0;
       }
       #mh-about-support a {
-        color: #d9a441;
+        color: var(--pink);
       }
       #mh-about-tagline {
-        color: #9fb4c8;
+        color: var(--muted);
         font-style: italic;
       }
       #mh-about-box button {
         margin-top: 12px;
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
+        background: #ffffff14;
+        color: var(--cream);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: var(--r);
         padding: 6px 14px;
         cursor: pointer;
+        font: 800 calc(12.5px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+      }
+      #mh-about-box button:hover {
+        border-color: var(--yellow);
+        color: var(--yellow);
       }
       /* step007/T2 — the 📮 feedback composer: the About modal's shape holding
          a form — the kind radio (🐞/💡/💙), the short title, the body textarea
          (prompt + diagnostics prefilled, monospace so the block reads), the
          privacy line, and the two exit anchors. */
-      #mh-feedback-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 20;
-        background: rgba(5, 8, 20, 0.82);
-        display: grid;
-        place-items: center;
-      }
-      #mh-feedback-overlay[hidden] {
-        display: none;
-      }
       #mh-feedback-box {
         min-width: 300px;
         max-width: 560px;
         max-height: 86vh;
         overflow: auto;
-        background: #0b1026;
-        border: 1px solid #2a3560;
-        border-radius: 10px;
         padding: 20px 26px;
-        color: #f2e9d8;
-        font: calc(14px * var(--mh-text-scale, 1))/1.6 system-ui;
+        font: calc(14px * var(--mh-text-scale, 1)) / 1.6 var(--body);
       }
       #mh-feedback-box h2 {
         margin: 0 0 8px;
-        color: #d9a441;
-        font-size: calc(18px * var(--mh-text-scale, 1));
+        font-size: calc(22px * var(--mh-text-scale, 1));
       }
       #mh-feedback-kind {
         border: 0;
@@ -820,7 +1278,7 @@
         margin: 0 0 6px;
       }
       #mh-feedback-kind legend {
-        color: #9fb4c8;
+        color: var(--muted);
         padding: 0;
         margin-bottom: 4px;
       }
@@ -832,7 +1290,7 @@
       #mh-feedback-box label {
         display: block;
         margin: 6px 0 2px;
-        color: #9fb4c8;
+        color: var(--muted);
       }
       #mh-feedback-kind label {
         color: inherit;
@@ -841,10 +1299,10 @@
       #mh-feedback-body {
         width: 100%;
         box-sizing: border-box;
-        background: #101736;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
+        background: var(--ink-2);
+        color: var(--cream);
+        border: 1px solid var(--edge);
+        border-radius: var(--r);
         font: inherit;
         padding: 6px 8px;
       }
@@ -856,7 +1314,7 @@
         white-space: pre-wrap;
       }
       #mh-feedback-privacy {
-        color: #9fb4c8;
+        color: var(--muted);
         font-size: calc(12px * var(--mh-text-scale, 1));
         margin: 10px 0 6px;
       }
@@ -866,36 +1324,65 @@
         flex-wrap: wrap;
       }
       #mh-feedback-actions a {
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
+        background: #ffffff14;
+        color: var(--cream);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: var(--r);
         padding: 6px 14px;
         cursor: pointer;
         text-decoration: none;
+        font: 800 calc(12.5px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+      }
+      #mh-feedback-actions a:hover {
+        border-color: var(--yellow);
+        color: var(--yellow);
       }
       #mh-feedback-actions #mh-feedback-github {
-        border-color: #2ec4b6;
-        color: #2ec4b6;
+        background: var(--yellow);
+        border-color: var(--yellow);
+        color: var(--ink);
+        box-shadow: 0 3px #b88a00;
+      }
+      #mh-feedback-actions #mh-feedback-github:hover {
+        color: var(--ink);
       }
       #mh-feedback-box > button {
         margin-top: 12px;
-        background: #1d2440;
-        color: #f2e9d8;
-        border: 1px solid #2a3560;
-        border-radius: 6px;
+        background: #ffffff14;
+        color: var(--cream);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: var(--r);
         padding: 6px 14px;
         cursor: pointer;
+        font: 800 calc(12.5px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+      }
+      #mh-feedback-box > button:hover {
+        border-color: var(--yellow);
+        color: var(--yellow);
       }
       /* Reduced-flash (M5/T1): with the body class on (the ⚙ Access toggle),
          every overlay and banner fades in and out over ≥300ms instead of
-         appearing at once. A [hidden] overlay keeps its layout box but goes
-         fully transparent and inert — opacity transitions, display cannot.
-         M5/T6: a faded overlay also drops to visibility:hidden — but only
-         AFTER the 320ms fade (visibility flips on a 0s transition delayed to
-         the fade's end), so the fade still shows while a faded overlay is no
-         longer a pile of ghost tab stops for the keyboard. The shown rules
-         never transition visibility, so it snaps back visible at once. */
+         appearing at once, and every panel/boot animation stands still. A
+         [hidden] overlay keeps its layout box but goes fully transparent and
+         inert — opacity transitions, display cannot. M5/T6: a faded overlay
+         also drops to visibility:hidden — but only AFTER the 320ms fade
+         (visibility flips on a 0s transition delayed to the fade's end), so
+         the fade still shows while a faded overlay is no longer a pile of
+         ghost tab stops for the keyboard. The shown rules never transition
+         visibility, so it snaps back visible at once. */
+      body.mh-reduced-flash #mh-faq-box,
+      body.mh-reduced-flash #mh-settings-box,
+      body.mh-reduced-flash #mh-about-box,
+      body.mh-reduced-flash #mh-feedback-box,
+      body.mh-reduced-flash #mh-tier-box,
+      body.mh-reduced-flash #mh-aaina-box,
+      body.mh-reduced-flash #mh-boot {
+        animation: none;
+      }
       body.mh-reduced-flash #mh-faq-overlay,
       body.mh-reduced-flash #mh-settings-overlay,
       body.mh-reduced-flash #mh-about-overlay,
@@ -911,7 +1398,8 @@
       body.mh-reduced-flash #mh-toast,
       body.mh-reduced-flash #mh-venue,
       body.mh-reduced-flash #mh-captions,
-      body.mh-reduced-flash #mh-tester-banner {
+      body.mh-reduced-flash #mh-tester-banner,
+      body.mh-reduced-flash #mh-boot {
         transition: opacity 320ms ease;
       }
       body.mh-reduced-flash #mh-faq-overlay[hidden],
@@ -959,6 +1447,12 @@
   <body>
     <canvas id="game"></canvas>
     <canvas id="overhead"></canvas>
+    <div id="mh-vignette" aria-hidden="true"></div>
+    <div id="mh-boot" aria-hidden="true">
+      <div class="mh-boot-kicker">Mirror</div>
+      <div class="mh-boot-title">House</div>
+      <p class="mh-boot-tagline">Fog the glass. Outthink what hunts you. Descend.</p>
+    </div>
     <div id="diagnostics"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
