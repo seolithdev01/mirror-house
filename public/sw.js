@@ -9,7 +9,11 @@
 //                                 files, precached at install)
 //                 /venues/*   → cache-first (the precached packs; match, else
 //                                 fetch + put — a shipped pack survives offline)
-//                 navigations → network-first, offline fallback to '/'
+//                 /atlas.js   → cache-first (the precached atlas script rides
+//                                 the same bank as the immutable files)
+//                 navigations → network-first, offline fallback to '/' — except
+//                                 the atlas: an offline /atlas.html serves the
+//                                 precached atlas, never the game shell
 //                 everything else → passthrough (no respondWith at all)
 // The build stamps both placeholders (vite.config.ts → mhPostBuild): BUILD is a
 // content hash of the shell + the hashed asset list, so every deploy opens its
@@ -83,11 +87,13 @@ self.addEventListener('fetch', (event) => {
   if (
     url.pathname.startsWith('/assets/') ||
     url.pathname.startsWith('/fonts/') ||
-    url.pathname.startsWith('/venues/')
+    url.pathname.startsWith('/venues/') ||
+    url.pathname.startsWith('/atlas.js')
   ) {
     // cache-first: hashed filenames are immutable, so a miss fetches and banks;
     // venue packs are precached at install and a miss (a pack we did not ship)
-    // fetches and banks the same way
+    // fetches and banks the same way; atlas.js is precached too and was stuck
+    // in the passthrough — final review: it takes this bank like the fonts do
     event.respondWith(
       caches.open(CACHE).then(async (cache) => {
         const hit = await cache.match(req);
@@ -102,8 +108,14 @@ self.addEventListener('fetch', (event) => {
 
   if (req.mode === 'navigate') {
     // network-first: the newest shell wins while online; offline falls back
-    // to the precached '/' (index.html) and the runtime-cached /assets/
-    event.respondWith(fetch(req).catch(() => caches.match('/')));
+    // to the precached '/' (index.html) and the runtime-cached /assets/ —
+    // final review: an ATLAS navigation serves the precached atlas.html
+    // instead, never the game shell (the atlas is its own page now)
+    event.respondWith(
+      fetch(req).catch(() =>
+        url.pathname.includes('atlas') ? caches.match('atlas.html') : caches.match('/'),
+      ),
+    );
     return;
   }
 

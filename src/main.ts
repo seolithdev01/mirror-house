@@ -467,6 +467,13 @@ if (save.lang !== lang) {
   save = { ...save, lang };
   persist();
 }
+// ui-pod — the boot poster's tagline follows the resolved lang (final review):
+// the poster is aria-hidden decoration, so a textContent swap at boot — before
+// the 1.6 s fade — is the whole localization. The kicker/title above it stay
+// brand marks; when the poster was already removed (test mode / seen this
+// session) the lookup is simply null and nothing writes.
+const bootTagline = bootPlate?.querySelector<HTMLElement>('.mh-boot-tagline') ?? null;
+if (bootTagline !== null) bootTagline.textContent = t(lang, 'boot.tagline');
 // M4/T4 — the URL `?look=` still wins for this visit; otherwise the saved
 // look returns. The resolved name becomes the saved one (parseLook heals a
 // junk name to indigo-gold), so a URL choice or self-heal persists.

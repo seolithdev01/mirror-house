@@ -166,6 +166,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'area.tier10': 'THE FOUNDATIONS',
     // ui-pod — the keys bar's one label the key.* table lacks (WASD's row).
     'keys.move': 'Move',
+    // ui-pod — the boot poster's tagline (final review: the poster element is
+    // aria-hidden decoration, so main.ts writes textContent from the resolved
+    // lang at boot, before the fade; the kicker/title stay brand marks).
+    'boot.tagline': 'Fog the glass. Outthink what hunts you. Descend.',
     // overlays and banners
     'overlay.failCaught': 'Caught by the glass',
     'overlay.failCollapse': 'The mirrors collapsed',
@@ -479,6 +483,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'area.tier10': 'नींवें',
     // ui-pod — कीज़ पट्टी की वह एक पंक्ति जो key.* मेज़ में नहीं है (WASD की पंक्ति)।
     'keys.move': 'चलें',
+    // ui-pod — बूट पोस्टर की टैगलाइन (अंतिम समीक्षा: पोस्टर एरिया-हिडन सजावट है,
+    // इसलिए main.ts बूट पर सुलझी भाषा से textContent लिखता है — किकर/शीर्षक
+    // ब्रांड-चिह्न रहते हैं)।
+    'boot.tagline': 'काँच जमाइए। शिकारी को पछाड़िए। नीचे उतरिए।',
     // परदे और पट्टियाँ — घर की आवाज़ में, पर संक्षेप में
     'overlay.failCaught': 'काँच ने आपको पकड़ लिया',
     'overlay.failCollapse': 'दर्पण ढह गए',

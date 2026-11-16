@@ -611,8 +611,10 @@
         max-width: min(420px, 70vw);
         pointer-events: none;
       }
-      #mh-dock button,
-      #mh-dock #mh-view {
+      /* final review — #mh-view is deliberately NOT re-armed here: the view
+         chip is a read-only indicator, not a control, so it stays
+         pointer-events:none with its #mh-dock parent (its own rule pins it). */
+      #mh-dock button {
         pointer-events: auto;
       }
       #mh-modes {
