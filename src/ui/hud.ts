@@ -441,12 +441,23 @@ export function createHud(init: HudInit): Hud {
   // cached so setLang() can recompose both without main re-feeding them.
   let lastArea = '';
   let lastKeys: Record<string, string> | null = null;
+  const KEYS_ACTIONS = ['move', 'frost', 'view', 'aaina', 'faq', 'mute'] as const;
+  /** The keys bar's label key per action — Move has no key.* row (WASD is
+   *  four bindings), the rest reuse the Controls section's names. */
+  const KEYS_LABEL: Record<(typeof KEYS_ACTIONS)[number], string> = {
+    move: 'keys.move',
+    frost: 'key.frost',
+    view: 'key.view',
+    aaina: 'key.aaina',
+    faq: 'key.faq',
+    mute: 'key.mute',
+  };
   /** Rebuild the keys bar from `lastKeys` in the live language — one kbd chip
    *  per action (`W` Move · `F` Frost · …), display font, aria-hidden bar. */
   function renderKeys(): void {
     if (lastKeys === null) return;
     keysBar.replaceChildren();
-    for (const action of ['move', 'frost', 'view', 'aaina', 'faq', 'mute'] as const) {
+    for (const action of KEYS_ACTIONS) {
       const key = lastKeys[action];
       if (key === undefined || key === '') continue;
       const hint = document.createElement('span');
@@ -454,7 +465,7 @@ export function createHud(init: HudInit): Hud {
       const k = document.createElement('kbd');
       k.textContent = key;
       const label = document.createElement('span');
-      label.textContent = t(lang, `keys.${action}`);
+      label.textContent = t(lang, KEYS_LABEL[action]);
       hint.append(k, label);
       keysBar.appendChild(hint);
     }
