@@ -390,6 +390,37 @@ venue floor (⚙ → Floors) plays the same as desktop.
 
 ---
 
+## 9. Panes — minimap & motion [PANE]
+
+### PANE-1 — The minimap guides by default
+
+**Steps:** Load any floor and look at the bottom-left pane column: the
+square Pac-minimap canvas. Walk a little and watch it; press `N` once,
+then again; toggle the dock's MAP chip as well.
+
+**Expected:** The minimap shows on load — the FULL maze as a Pac-Man-style
+guide, no fog of war, your arrow and the wardens' dots moving on a slow
+heartbeat. `N` (or the chip) hides the pane and pressing `N` again brings
+it back; the chip's pressed state always matches the pane. It is a
+session preference — never saved, every fresh boot starts with it on.
+
+### PANE-2 — The motion pane mirrors you
+
+**Steps:** With the motion pane visible above the minimap, stand still;
+hold `W`; hold `W`+`Shift`; release. Frost a beacon (`F`) and step
+through a mirror (`Space`). Press `B` and watch the compass as you turn.
+
+**Expected:** Standing reads STILL; walking flips the stencil to WALK
+with the figure striding (the cycle only advances while you actually
+move — push a wall and the pose freezes); `W`+`Shift` leans the figure
+forward and reads SPRINT; releasing lands STILL within about two
+seconds. A fresh cast raises the lantern arm (FROST), a step-through
+holds the bright flash-forward pose (STEP), and the ring's N/E/S/W
+rotates with your heading. `B` (or the MOTION chip) hides and shows the
+pane; reduced-flash freezes the figure at one pose with the label only.
+
+---
+
 _Found something? 📮 in-game (top right) or
 [github.com/seolithdev01/mirror-house/issues](https://github.com/seolithdev01/mirror-house/issues)
 — always with your chip's `SEED:FLOOR`. Private things: reply to your

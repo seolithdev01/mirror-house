@@ -117,8 +117,13 @@ const FONT_DISPLAY = '"Big Shoulders Display", "Arial Narrow", sans-serif';
 export function createMotionPane(canvas: HTMLCanvasElement): {
   draw(s: MotionSnapshot): void;
   setVisible(visible: boolean): void;
+  /** The last drawn pose's label (init STILL) — the DEV hook's motionLabel()
+   *  witness, so the e2e can read the canvas stencil (the label is drawn with
+   *  fillText on the pane, not a DOM node). Additive, T11/T3. */
+  label(): MotionLabel;
 } {
   const ctx = canvas.getContext('2d')!;
+  let lastLabel: MotionLabel = 'STILL';
 
   /** One robotic limb: a round-capped stroke from the joint, angle 0 hanging
    *  straight down, rotating about the joint, its own stroke width. */
@@ -147,6 +152,7 @@ export function createMotionPane(canvas: HTMLCanvasElement): {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const pose = poseFor(s);
+    lastLabel = pose.label; // the DEV hook's label witness rides every draw
     const reduced = document.body.classList.contains('mh-reduced-flash');
     // Reduced-flash: NO cycling — the pose freezes at a fixed mid-stride
     // (phase 0.25) whatever the distance, so the pane never animates; the
@@ -270,5 +276,9 @@ export function createMotionPane(canvas: HTMLCanvasElement): {
     canvas.style.display = visible ? 'block' : 'none';
   }
 
-  return { draw, setVisible };
+  function label(): MotionLabel {
+    return lastLabel;
+  }
+
+  return { draw, setVisible, label };
 }

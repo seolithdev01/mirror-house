@@ -165,6 +165,12 @@ interface DebugHook {
     heroRt: number;
     trueRt: number;
   };
+  // T11 — the panes' witnesses: session visibility of the minimap and the
+  // motion pane, plus the motion stencil's last drawn label (the SPRINT/WALK/
+  // STILL stencil is canvas fillText, not a DOM node — the hook is its voice)
+  minimap(): boolean;
+  motion(): boolean;
+  motionLabel(): string;
 }
 // page.evaluate results cannot carry functions across the process boundary,
 // so the closure-backed members (look/mode/streak/best) are invoked in the
@@ -315,13 +321,13 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('step003: FAQ opens with 50 entries and H toggles', async ({ page }) => {
+test('step003: FAQ opens with 51 entries and H toggles', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=FAQ');
   await ready(page);
   await page.locator('#mh-faq').click();
-  // 50 since t10/T4 — the Foundations + Ground Door pair joined the t9 Warrens + apex pair
-  await expect(page.locator('#mh-faq-box details')).toHaveCount(50);
+  // 51 since t11/T3 — the panes entry joined the t10 Foundations + Ground Door pair
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(51);
   await page.keyboard.press('KeyH'); // closes
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens
@@ -3182,5 +3188,72 @@ test('t10: the glazier hunts and the door opens', async ({ page }) => {
   expect(final.campaign.tierComplete, 'Truth-Shard X claimed').toBe(true);
   expect(final.tier).toBe(10);
   expect(final.beacons.captured).toBe(4);
+  expect(errors).toEqual([]);
+});
+
+// T11/T3 — THE PANES' e2e legs (the plan's Task 3): the Pac-minimap guides by
+// default and KeyN toggles it; the motion pane mirrors a held sprint through
+// its label witness. Both panes are session vars (default ON, never
+// persisted), so a fresh context boots with both showing.
+test('t11: minimap guides by default', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=PANES-MAP');
+  await ready(page);
+  const minimapOn = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.minimap(),
+    );
+  // the pane canvas mounts visible on load (the guide is the point)
+  await expect(page.locator('#mh-minimap')).toBeVisible();
+  expect(await minimapOn()).toBe(true);
+  await expect(page.locator('#mh-map'), 'the dock chip starts pressed').toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  // KeyN hides it — pane canvas display:none, chip unpresses with it
+  await page.keyboard.press('KeyN');
+  await expect(page.locator('#mh-minimap')).toBeHidden();
+  expect(await minimapOn()).toBe(false);
+  await expect(page.locator('#mh-map')).toHaveAttribute('aria-pressed', 'false');
+  // KeyN shows it again
+  await page.keyboard.press('KeyN');
+  await expect(page.locator('#mh-minimap')).toBeVisible();
+  expect(await minimapOn()).toBe(true);
+  await expect(page.locator('#mh-map')).toHaveAttribute('aria-pressed', 'true');
+  expect(errors).toEqual([]);
+});
+
+test('t11: motion pane mirrors you', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?seed=PANES-MOTION');
+  await ready(page);
+  const label = () =>
+    page.evaluate(() =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.motionLabel(),
+    );
+  // the robotic mirror mounts with the pane column (canvas owns #mh-motion;
+  // the dock chip is #mh-motion-btn — the disclosed id split)
+  await expect(page.locator('#mh-motion')).toBeVisible();
+  expect(await label()).toBe('STILL');
+  // hold W+Shift through several fixed steps — the sprint frame wins the label
+  await page.keyboard.down('KeyW');
+  await page.keyboard.down('ShiftLeft');
+  await page.waitForTimeout(600);
+  expect(await label(), 'a held sprint reads SPRINT').toBe('SPRINT');
+  // release → the pose table lands STILL within 2 s (the label is per-frame)
+  await page.keyboard.up('ShiftLeft');
+  await page.keyboard.up('KeyW');
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }
+      ).__MIRROR_HOUSE_DEBUG__.motionLabel() === 'STILL',
+    null,
+    { timeout: 2000 },
+  );
+  expect(await label()).toBe('STILL');
   expect(errors).toEqual([]);
 });

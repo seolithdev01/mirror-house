@@ -3715,6 +3715,10 @@ if (import.meta.env.DEV || testMode) {
     // e2e reads the label through the canvas; the toggle witness rides here).
     motion: () => motionOn,
     motionMovedM: () => distanceMovedM,
+    // T11/T3 — the pane's last drawn state label ('SPRINT' | 'WALK' | …): the
+    // stencil lives on the canvas (fillText), not the DOM, so the e2e reads it
+    // here. Additive DEV-hook witness only — no production surface changes.
+    motionLabel: () => motion.label(),
     // T3 review fix witness: every camera (front + quad sides) tracks the
     // window aspect — the side panes are w/2 × h/2, not square.
     camAspects: () => [camera.aspect, ...QUAD_SIDE_YAW.map((s) => s.cam.aspect)],

@@ -159,6 +159,10 @@ The full statement — every mode named with the file that implements it, the wh
 
 `V` walks **Focus → Quad → Overhead → Focus**. Focus is the first-person view. Quad fills the screen with four live panes — front, left, right, back (the side panes render on alternate frames to hold the frame budget). Overhead is a walking 2D map that shows only what you have explored: corridors fill in as you enter them, and a fading ping marks Chhaya each time she walks. From the Overhead map, `T` enters the **tactical pause**: the floor freezes while you plan — click cells to drop up to eight ivory waypoints, the first `Esc` clears your marks, and the next `Esc` (or any `V`) returns you to your eyes with the route still drawn on the map. The run clock keeps running while you plan: best times are pause-proof by construction.
 
+### The panes — Tier 11's guides (`N` the map, `B` the motion mirror)
+
+Bottom-left, stacked above the keys bar, sit two toggleable panes (session prefs — never saved): the **Pac-minimap** (`N` or the MAP chip) draws the full maze as a fog-free guide with your arrow and the wardens' dots, and the **motion pane** (`B` or the MOTION chip) mirrors your live body — walk cycle, sprint lean, frost arm, heading compass and a STILL/WALK/SPRINT stencil.
+
 ### House Anger — don't sprint into the glass
 
 Sprinting body-first into a mirror cracks it: +15 anger, once per pane. Seven cracks — 100 anger — and the mirrors collapse: the floor fails and instantly re-arms, and the shards you had banked on it are forfeit. Walking never cracks anything. When glass is near, arrive at a walk. In the Furnace Wings (floors 51–60) the heat makes every crack burn wider — +25 anger, four cracks to collapse — and the Warden's Warrens re-light that furnace (81–90: the same +25, the same four-crack collapse, with all four Sentinels walking) — down there, never sprint near glass at all.

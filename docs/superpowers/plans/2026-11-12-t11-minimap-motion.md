@@ -32,7 +32,7 @@ export function minimapLayout(...): // internal
 
 **Draw (compact, fog-free — the Pac-Man guide):** full wall layout (all segments, steel ink), beacons as dots (uncaught = pulsing-free solid teal; captured = dim), exit door dot (gold; dim while locked), player as gold arrow rotated by heading, Sentinels as live dots (red — Taal/Gher/Aavart; Chhaya violet) shown whenever they walk this floor, decoys as hollow dots, visited-cell dim overlay OFF (reveal-all is the point), pools as teal squares if present. Redraw throttled MINIMAP_REPAINT_MS; hidden when toggled off.
 
-- [ ] Tests (fitScale; render smoke via tiny canvas stub if trivial — else fitScale + toggle-state pure fn only) → RED → implement → GREEN; gates + 48/48. Commit `feat(t11): pac-minimap — the maze as a guide`.
+- [x] Tests (fitScale; render smoke via tiny canvas stub if trivial — else fitScale + toggle-state pure fn only) → RED → implement → GREEN; gates + 48/48. Commit `feat(t11): pac-minimap — the maze as a guide`.
 
 ---
 
@@ -51,7 +51,7 @@ export function poseFor(s: MotionSnapshot): { lean: number; stride: number; armF
 
 **Draw (robotic figure, back view):** head + torso + two legs (stride swing by sin(walkPhase·2π)), two arms (opposite swing), frost arm raised when frost active (brief), step-through = whole figure flash-forward pose (static), lean forward ∝ sprint, lateral tilt ∝ strafe; heading compass ring with N/E/S/W ticks rotating −headingDeg; motion-state label under the figure (display font). Reduced-flash: figure static in the pose, label only.
 
-- [ ] Tests (walkPhase period/membership; poseFor precedence + stride math) → RED → implement → GREEN; gates + 48/48. Commit `feat(t11): motion pane — the robotic mirror`.
+- [x] Tests (walkPhase period/membership; poseFor precedence + stride math) → RED → implement → GREEN; gates + 48/48. Commit `feat(t11): motion pane — the robotic mirror`.
 
 ---
 
@@ -59,7 +59,14 @@ export function poseFor(s: MotionSnapshot): { lean: number; stride: number; armF
 
 **Files:** `src/main.ts` (both panes' toggles + labels en/hi i18n keys `pane.map` / `pane.motion` / aria-labels; dock buttons `#mh-map`, `#mh-motion`), `src/ui/i18n.ts` (keys + hi), `src/engine/input.ts` (validateKeyMap count 17), `tests/unit/save.test.ts` (keymap count), e2e 48→50: (a) `t11: minimap guides by default` — canvas `#mh-minimap` visible on load, KeyN hides/shows; (b) `t11: motion pane mirrors you` — canvas `#mh-motion` present, hold W+Shift → label SPRINT visible, release → WALK/STILL; docs: TEST-CASES +2, README panes note, STATE_MACHINES look-alike rows (minimap/motion = derived renderers), FAQ +1.
 
-- [ ] Tests → e2e 50/50 → gates. Commit `test(t11): panes e2e + docs` (may fold into T3 commits as coherent pairs).
+- [x] Tests → e2e 50/50 → gates. Commit `test(t11): panes e2e + docs` (may fold into T3 commits as coherent pairs).
+
+> **T3 id correction (disclosed):** the dock button is `#mh-motion-btn`, not
+> `#mh-motion` — the PANE canvas owns `#mh-motion` (the brief's e2e text
+> "canvas `#mh-motion` present" pins that id, and T2 landed it that way), so
+> the plan's `#mh-motion` dock-button name could not hold for both. Kept as
+> landed; the e2e targets `#mh-motion` for the canvas and `#mh-motion-btn`
+> for the chip.
 
 ## Plan Self-Review
 

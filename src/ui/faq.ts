@@ -25,6 +25,10 @@ export const FAQ: readonly FaqEntry[] = [
     a: 'V cycles: Focus (first person) → Quad (front, left, right and back panes at once) → Overhead (a walking 2D map of everything you have explored) → back to Focus. From the Overhead map, T is the tactical pause: the floor freezes while you plan, a click marks a cell as a waypoint (up to eight), the first Esc clears your marks and the next Esc — or any V — returns you to your eyes with the route still drawn. The run clock keeps running while you plan: best times are pause-proof.',
   },
   {
+    q: 'What are the two panes at the bottom left?',
+    a: 'Your guides (t11). The Pac-minimap — press N, or the dock\u2019s MAP chip — shows the WHOLE maze at once, no fog of war: your arrow, the beacons and every warden\u2019s dot on a slow heartbeat. Above it the motion pane — press B, or the MOTION chip — is a small schematic of you: the figure strides only while you actually move (push a wall and the pose freezes), leans into a sprint, raises a teal lantern when a frost lands, holds a bright flash-forward pose as you step through a mirror, and its compass ring turns with your heading — the stencil underneath names the state: STILL, WALK, SPRINT, FROST, STEP. Both panes are session toggles — hiding one is never saved, and the next boot shows both again. They only watch the house; neither ever gates anything.',
+  },
+  {
     q: 'Why do I see myself in the mirrors?',
     a: 'Because it is the point. Your reflection is you — coat and lantern are yours to configure (try ?look=teal-white in the URL). In later floors, the house will try to fake it.',
   },
@@ -219,7 +223,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 50
+  // M4/T6 — the heading and the close button are chrome (localized); the 51
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

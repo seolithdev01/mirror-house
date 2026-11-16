@@ -50,8 +50,18 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 50 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair, the T10 foundations + ground-door pair)', () => {
-    expect(FAQ).toHaveLength(50);
+  it('grows to 51 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair, the T10 foundations + ground-door pair, the T11 panes entry)', () => {
+    expect(FAQ).toHaveLength(51);
+  });
+
+  it('the T11 entry explains both panes — the minimap guide and the motion mirror', () => {
+    const e = FAQ.find((f) => /two panes at the bottom left/i.test(f.q));
+    expect(e, 'an entry about the panes exists').toBeDefined();
+    expect(e!.a).toContain('Pac-minimap');
+    expect(e!.a).toContain('N');
+    expect(e!.a).toContain('motion pane');
+    expect(e!.a).toContain('B');
+    expect(e!.a).toContain('SPRINT');
   });
 
   it('the T5 entry explains the mirror-you decoys — the lure and the shatter bounty', () => {
