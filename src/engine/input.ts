@@ -1,14 +1,37 @@
 // SPDX-License-Identifier: Apache-2.0
-import { KEY_TURN_PER_STEP, MOUSE_TURN_PER_STEP, TURN_SENSITIVITY } from './constants';
+import {
+  KEY_TURN_PER_STEP,
+  MOUSE_TURN_PER_STEP,
+  TOUCH_STICK_RADIUS_PX,
+  TURN_SENSITIVITY,
+} from './constants';
 import type { MoveInput } from '../game/player';
 import { CODE_RE, DEFAULT_KEYMAP, type KeyMap } from '../game/save';
+import { classifyZone } from '../game/touch';
+import type { TouchStick } from '../game/touch';
 
 export interface KeyboardSnapshot {
   keys: ReadonlySet<string>;
   mouseDx: number;
 }
 
-export type InputMode = 'keyboard' | 'mouse' | 'hybrid';
+/** T12 — the union widens `'touch'` in the SAME commit validateSave's mode
+ *  list accepts it (the enum-widening lesson: the validator touches the union
+ *  in the commit that moves it, or stored saves wipe on reload). */
+export type InputMode = 'keyboard' | 'mouse' | 'hybrid' | 'touch';
+
+/**
+ * The boot-time mode auto-select (T12/T1), pure: a stored mode always wins —
+ * existing saves keep their choice, never wiped by a device hint. With no
+ * stored mode (a brand-new save), a coarse-pointer device (touch screen)
+ * starts on `'touch'`; everything else falls back to the long-time default
+ * `'hybrid'`. main.ts calls this once at boot with
+ * `matchMedia('(pointer: coarse)').matches` and the save's stored mode.
+ */
+export function defaultMode(hasCoarsePointer: boolean, stored?: InputMode): InputMode {
+  if (stored !== undefined) return stored;
+  return hasCoarsePointer ? 'touch' : 'hybrid';
+}
 
 /**
  * A snapshot with one key's hold claim released — the ratified way a dual-use
@@ -140,6 +163,14 @@ export function mouseOnlyInput(m: MouseState): MoveInput {
   };
 }
 
+/** One frame's touch state (T12/T1): the stick's live vector (raw — the
+ *  deadzone is stickToMove's policy) and the look drag's pixel bank, drained
+ *  by the read exactly like mouseDx. */
+export interface TouchSnapshot {
+  stick: TouchStick;
+  lookDx: number;
+}
+
 export class InputCollector {
   private keys = new Set<string>();
   private mouseDx = 0;
@@ -147,6 +178,21 @@ export class InputCollector {
   private rightDown = false;
   private cursorX = 0;
   private win: Window | null = null;
+  // T12 — the two-zone touch tracker. `pointerType === 'touch'` only: a
+  // desktop mouse's pointer events never enter this state, so keyboard/mouse/
+  // hybrid behavior stays byte-identical. First touch down in the LEFT 45%
+  // owns the stick until it lifts (origin = the down point); first touch in
+  // the RIGHT 55% is the look pointer (dx accumulation like the mouse bank).
+  // No setPointerCapture — manual id tracking, exactly as the plan ratified.
+  private stickActive = false;
+  private stickId: number | null = null;
+  private stickOriginX = 0;
+  private stickOriginY = 0;
+  private stickDx = 0;
+  private stickDy = 0;
+  private lookId: number | null = null;
+  private lookLastX = 0;
+  private lookDx = 0;
 
   attach(win: Window): () => void {
     const down = (e: KeyboardEvent) => this.keys.add(e.code);
@@ -168,6 +214,46 @@ export class InputCollector {
     const onPointerLockChange = () => {
       if (!document.pointerLockElement) this.keys.clear();
     };
+    const pointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return;
+      const viewW = this.win?.innerWidth ?? 0;
+      if (classifyZone(e.clientX, viewW) === 'stick') {
+        if (this.stickActive) return; // first touch owns the zone until it lifts
+        this.stickActive = true;
+        this.stickId = e.pointerId;
+        this.stickOriginX = e.clientX;
+        this.stickOriginY = e.clientY;
+        this.stickDx = 0;
+        this.stickDy = 0;
+      } else if (this.lookId === null) {
+        this.lookId = e.pointerId;
+        this.lookLastX = e.clientX;
+      }
+    };
+    const pointerMove = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return;
+      if (this.stickActive && e.pointerId === this.stickId) {
+        const dx = (e.clientX - this.stickOriginX) / TOUCH_STICK_RADIUS_PX;
+        const dy = (e.clientY - this.stickOriginY) / TOUCH_STICK_RADIUS_PX;
+        const mag = Math.hypot(dx, dy);
+        const scale = mag > 1 ? 1 / mag : 1; // direction holds, magnitude clamps to 1
+        this.stickDx = dx * scale;
+        this.stickDy = dy * scale;
+      } else if (e.pointerId === this.lookId) {
+        this.lookDx += e.clientX - this.lookLastX;
+        this.lookLastX = e.clientX;
+      }
+    };
+    const pointerEnd = (e: PointerEvent) => {
+      if (this.stickActive && e.pointerId === this.stickId) {
+        this.stickActive = false;
+        this.stickId = null;
+        this.stickDx = 0;
+        this.stickDy = 0;
+      } else if (e.pointerId === this.lookId) {
+        this.lookId = null;
+      }
+    };
     this.win = win;
     win.addEventListener('keydown', down);
     win.addEventListener('keyup', up);
@@ -176,6 +262,10 @@ export class InputCollector {
     win.addEventListener('mouseup', mouseUp);
     win.addEventListener('contextmenu', contextMenu);
     win.addEventListener('blur', clearKeys);
+    win.addEventListener('pointerdown', pointerDown);
+    win.addEventListener('pointermove', pointerMove);
+    win.addEventListener('pointerup', pointerEnd);
+    win.addEventListener('pointercancel', pointerEnd);
     document.addEventListener('pointerlockchange', onPointerLockChange);
     return () => {
       win.removeEventListener('keydown', down);
@@ -185,6 +275,10 @@ export class InputCollector {
       win.removeEventListener('mouseup', mouseUp);
       win.removeEventListener('contextmenu', contextMenu);
       win.removeEventListener('blur', clearKeys);
+      win.removeEventListener('pointerdown', pointerDown);
+      win.removeEventListener('pointermove', pointerMove);
+      win.removeEventListener('pointerup', pointerEnd);
+      win.removeEventListener('pointercancel', pointerEnd);
       document.removeEventListener('pointerlockchange', onPointerLockChange);
     };
   }
@@ -193,6 +287,16 @@ export class InputCollector {
     const snap: KeyboardSnapshot = { keys: new Set(this.keys), mouseDx: this.mouseDx };
     this.mouseDx = 0;
     return snap;
+  }
+
+  /** The touch frame (T12/T1): the stick's live raw vector (it does NOT drain
+   *  — a held thumb keeps steering) and the look bank, which DOES drain on the
+   *  read, one pixel-accumulation per snapshot, exactly like mouseDx. */
+  touchSnapshot(): TouchSnapshot {
+    const stick: TouchStick = { active: this.stickActive, dx: this.stickDx, dy: this.stickDy };
+    const lookDx = this.lookDx;
+    this.lookDx = 0;
+    return { stick, lookDx };
   }
 
   mouseState(): MouseState {

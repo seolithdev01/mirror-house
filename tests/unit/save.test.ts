@@ -87,6 +87,11 @@ describe('save: validateSave', () => {
     expect(validateSave(mutated((r) => (r.lookName = 42)))).toBeNull();
   });
 
+  it('T12 — the mode union widens in the same commit: touch validates, teleport never does', () => {
+    expect(validateSave(mutated((r) => (r.mode = 'touch')))!.mode).toBe('touch');
+    expect(validateSave(mutated((r) => (r.mode = 'teleport')))).toBeNull();
+  });
+
   it('rejects malformed best records', () => {
     expect(validateSave(mutated((r) => (r.best = [])))).toBeNull();
     expect(validateSave(mutated((r) => (r.best = 'nope')))).toBeNull();

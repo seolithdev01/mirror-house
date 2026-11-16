@@ -17,6 +17,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'mode.keyboard': '⌨ Keys',
     'mode.mouse': '🖱 Mouse',
     'mode.hybrid': '⌨+🖱 Both',
+    // T12 — the touch mode (auto-selected on coarse-pointer devices; the HUD
+    // button itself ships with Task 2's touch UI, the label lives here now so
+    // the string table and the union widen in the same commit)
+    'mode.touch': 'TOUCH',
     // the view chip ([V] cycles)
     'view.focus': 'Focus',
     'view.quad': 'Quad',
@@ -346,6 +350,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'mode.keyboard': '⌨ कुंजियाँ',
     'mode.mouse': '🖱 माउस',
     'mode.hybrid': '⌨+🖱 दोनों',
+    // T12 — स्पर्श मोड (टच-स्क्रीन वाले यंत्रों पर स्वतः चुना जाता है)
+    'mode.touch': 'स्पर्श',
     // दृश्य चिप ([V] से बदलती है)
     'view.focus': 'फोकस',
     'view.quad': 'चौक',
@@ -642,6 +648,7 @@ export const CHIP_KEYS: readonly string[] = [
   'mode.keyboard',
   'mode.mouse',
   'mode.hybrid',
+  'mode.touch', // T12 — the touch mode's one-line label (en TOUCH / hi स्पर्श)
   'view.focus',
   'view.quad',
   'view.overhead',

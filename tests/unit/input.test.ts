@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
 import {
+  InputCollector,
   actionFor,
   capturableCode,
+  defaultMode,
   keysToMoveInput,
   keysToMoveInput as map,
   mouseOnlyInput,
@@ -239,5 +241,147 @@ describe('capturableCode — the rebind capture gate (M5/T5)', () => {
     // the non-hardwired modifiers stay bindable — only the shifts are alternates
     expect(capturableCode('ControlLeft')).toBe(true);
     expect(capturableCode('AltRight')).toBe(true);
+  });
+});
+
+// ---- T12/T1 — the touch plumbing: boot auto-select + pointer tracking --------
+
+describe('defaultMode — the boot-time auto-select (T12/T1)', () => {
+  it('a stored mode always wins — existing saves keep their mode, no wipe', () => {
+    expect(defaultMode(true, 'keyboard')).toBe('keyboard');
+    expect(defaultMode(true, 'mouse')).toBe('mouse');
+    expect(defaultMode(true, 'hybrid')).toBe('hybrid');
+    expect(defaultMode(false, 'touch')).toBe('touch');
+  });
+  it('a NEW save (no stored mode): coarse pointer → touch, fine pointer → hybrid', () => {
+    expect(defaultMode(true)).toBe('touch');
+    expect(defaultMode(false)).toBe('hybrid');
+  });
+});
+
+/** Minimal Window stand-in: records the listeners attach() registers so tests
+ *  can fire synthetic pointer events; innerWidth 1000 puts the 45/55 zone
+ *  boundary at x = 450. */
+class FakeWin {
+  innerWidth = 1000;
+  private readonly ls = new Map<string, (e: unknown) => void>();
+  addEventListener(type: string, l: (e: unknown) => void): void {
+    this.ls.set(type, l);
+  }
+  removeEventListener(type: string): void {
+    this.ls.delete(type);
+  }
+  fire(type: string, e: unknown): void {
+    this.ls.get(type)?.(e);
+  }
+}
+
+/** attach() touches the global `document` for the pointerlock listener — node
+ *  has none, so the tests install a minimal stub for the duration. */
+function withDocStub<T>(fn: () => T): T {
+  const g = globalThis as { document?: unknown };
+  const prev = g.document;
+  g.document = { addEventListener: () => {}, removeEventListener: () => {}, pointerLockElement: null };
+  try {
+    return fn();
+  } finally {
+    g.document = prev;
+  }
+}
+
+/** A synthetic pointer event: only the fields the tracker reads. */
+const ptr = (id: number, x: number, y: number, type = 'touch'): PointerEvent =>
+  ({ pointerType: type, pointerId: id, clientX: x, clientY: y }) as unknown as PointerEvent;
+
+/** attach a fresh collector over a fresh fake window. */
+function collector(): { win: FakeWin; c: InputCollector } {
+  const win = new FakeWin();
+  const c = new InputCollector();
+  c.attach(win as unknown as Window);
+  return { win, c };
+}
+
+describe('InputCollector touch tracking (T12/T1)', () => {
+  it('a left-zone touch becomes the stick: origin at the down point, vector normalized by the 56px radius', () => {
+    withDocStub(() => {
+      const { win, c } = collector();
+      win.fire('pointerdown', ptr(1, 200, 400));
+      let ts = c.touchSnapshot();
+      expect(ts.stick.active).toBe(true);
+      expect(ts.stick.dx).toBe(0); // the nub starts where the thumb landed
+      expect(ts.stick.dy).toBe(0);
+      expect(ts.lookDx).toBe(0);
+      // one radius right AND one radius up = magnitude √2 — the tracker clamps
+      // to the rim, direction held: (√2⁄2, −√2⁄2)
+      win.fire('pointermove', ptr(1, 200 + 56, 400 - 56));
+      ts = c.touchSnapshot();
+      expect(ts.stick.dx).toBeCloseTo(Math.SQRT1_2);
+      expect(ts.stick.dy).toBeCloseTo(-Math.SQRT1_2);
+      // half a radius → analog 0.5 (deadzone is stickToMove's business, not the tracker's)
+      win.fire('pointermove', ptr(1, 200 + 28, 400));
+      ts = c.touchSnapshot();
+      expect(ts.stick.dx).toBeCloseTo(0.5);
+      expect(ts.stick.dy).toBeCloseTo(0);
+    });
+  });
+
+  it('the stick vector clamps to magnitude 1 beyond the radius; lifting clears it', () => {
+    withDocStub(() => {
+      const { win, c } = collector();
+      win.fire('pointerdown', ptr(1, 200, 400));
+      win.fire('pointermove', ptr(1, 200 + 84, 400)); // 1.5 radii along +x
+      let ts = c.touchSnapshot();
+      expect(ts.stick.dx).toBe(1); // clamped
+      expect(ts.stick.dy).toBe(0);
+      win.fire('pointerup', ptr(1, 200 + 84, 400));
+      ts = c.touchSnapshot();
+      expect(ts.stick.active).toBe(false);
+      expect(ts.stick.dx).toBe(0);
+      expect(ts.stick.dy).toBe(0);
+      win.fire('pointermove', ptr(1, 400, 400)); // pointer gone — the stick stays idle
+      expect(c.touchSnapshot().stick.active).toBe(false);
+    });
+  });
+
+  it('a right-zone touch is the look pointer: dx accumulates like mouseDx, snapshot drains it', () => {
+    withDocStub(() => {
+      const { win, c } = collector();
+      win.fire('pointerdown', ptr(2, 800, 300)); // x = 800 ≥ 450 → look zone
+      win.fire('pointermove', ptr(2, 812, 300));
+      win.fire('pointermove', ptr(2, 819, 300));
+      expect(c.touchSnapshot().lookDx).toBe(19);
+      expect(c.touchSnapshot().lookDx).toBe(0); // drained, exactly like the mouse bank
+      win.fire('pointerup', ptr(2, 819, 300));
+      win.fire('pointermove', ptr(2, 900, 300)); // no active look pointer — nothing banks
+      expect(c.touchSnapshot().lookDx).toBe(0);
+    });
+  });
+
+  it('mouse pointer events never become stick or look — desktop behavior untouched', () => {
+    withDocStub(() => {
+      const { win, c } = collector();
+      win.fire('pointerdown', ptr(1, 100, 100, 'mouse'));
+      win.fire('pointermove', ptr(1, 300, 100, 'mouse'));
+      const ts = c.touchSnapshot();
+      expect(ts.stick.active).toBe(false);
+      expect(ts.lookDx).toBe(0);
+    });
+  });
+
+  it('first touch owns its zone; a later same-zone touch is ignored; the zone boundary is look', () => {
+    withDocStub(() => {
+      const { win, c } = collector();
+      win.fire('pointerdown', ptr(1, 100, 100)); // stick
+      win.fire('pointerdown', ptr(3, 449, 100)); // also left of 450 — but the stick is taken
+      win.fire('pointermove', ptr(3, 400, 100)); // id 3 moves — the stick must not follow
+      expect(c.touchSnapshot().stick.dx).toBe(0);
+      win.fire('pointerdown', ptr(4, 450, 100)); // exactly at 0.45·viewW → look, not stick
+      win.fire('pointermove', ptr(4, 480, 100));
+      expect(c.touchSnapshot().lookDx).toBe(30);
+      expect(c.touchSnapshot().stick.active).toBe(true); // the stick pointer is still id 1
+      // cancelling the stick clears it like a lift
+      win.fire('pointercancel', ptr(1, 100, 100));
+      expect(c.touchSnapshot().stick.active).toBe(false);
+    });
   });
 });

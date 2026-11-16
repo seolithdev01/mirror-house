@@ -203,3 +203,20 @@ export const WATER_MAX_M = 1.2; // m — the deepest the halls flood
 export const WATER_SLOW = 0.85; // speed multiplier while level > 0.6 m
 export const WATER_EYE_OFF_M = 0.9; // m above which mirrors stop being eyes
 export const DWAAR_V_WATER_S = 120; // s to full depth in the sunken arena
+
+// T12 — touch controls. The virtual stick reports its drag as a vector
+// normalized by TOUCH_STICK_RADIUS_PX (a full-radius push reads 1.0, beyond
+// the radius clamps to 1.0); stickToMove gates anything under
+// TOUCH_DEADZONE to idle and passes the rest through UNscaled — the analog
+// walk→sprint continuum. The ratified speed decision: MoveInput's shape never
+// changes; forward/strafe ∈ [−1,1] already multiply WALK_SPEED, so a touch
+// player below the sprint threshold walks the analog 3.5 m/s (main.ts maps a
+// magnitude > 0.85 to `sprint: true` for the full 6.0). Look drags bank raw
+// pixels; the consumer multiplies by TOUCH_LOOK_SENS. COMPACT_BREAKPOINT_PX
+// is the responsive declutter line (Task 2): at or under it the HUD goes
+// compact.
+export const TOUCH_STICK_RADIUS_PX = 56; // px — the base ring's radius (the vector's normalizer)
+export const TOUCH_NUB_RADIUS_PX = 24; // px — the nub's radius (Task 2 renders it)
+export const TOUCH_DEADZONE = 0.18; // normalized magnitude below which the stick is idle
+export const TOUCH_LOOK_SENS = 0.0045; // radians per look-drag pixel
+export const COMPACT_BREAKPOINT_PX = 900; // px — viewport width at/below which the HUD goes compact

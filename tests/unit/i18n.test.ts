@@ -340,6 +340,13 @@ describe('i18n — t() lookup + fallback', () => {
     expect(t('hi', 'mode.hybrid')).toBe(STRINGS.hi['mode.hybrid']);
   });
 
+  it('T12 — the touch mode has its label in both langs (en TOUCH / hi स्पर्श)', () => {
+    expect(t('en', 'mode.touch')).toBe('TOUCH');
+    expect(t('hi', 'mode.touch')).toBe('स्पर्श');
+    // the parity test walks CHIP_KEYS — this pin keeps the new key ON that list
+    expect(CHIP_KEYS).toContain('mode.touch');
+  });
+
   it('falls back to en when a hi key goes missing (a parity hole never blanks the HUD)', () => {
     const key = 'chip.streak';
     const stolen = STRINGS.hi[key]!;

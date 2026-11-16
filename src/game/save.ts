@@ -77,7 +77,11 @@ export interface A11ySettings {
   keyMap: KeyMap;
 }
 
-const MODES: readonly string[] = ['keyboard', 'mouse', 'hybrid'];
+// T12 — 'touch' joins in the SAME commit the InputMode union widens (the
+// enum-widening lesson: validator and union move together, or every touch-mode
+// save wipes on reload). migrateMeta reads the same list, so a v1 meta may
+// name 'touch' too.
+const MODES: readonly string[] = ['keyboard', 'mouse', 'hybrid', 'touch'];
 const LANGS: readonly string[] = ['en', 'hi'];
 const TEXT_SCALES: readonly number[] = [1, 1.25, 1.5];
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
