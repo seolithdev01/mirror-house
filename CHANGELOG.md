@@ -7,6 +7,55 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [ui] — 2026-11-16 — the People-of-Delhi chrome (v0.2.0-beta.2)
+
+No gameplay change — the frame around the wardens' world re-dresses in the
+design language of our sibling project People of Delhi (same owner; the visual
+language transfers within our own portfolio). Ink plates, cream type, one
+yellow accent.
+
+- **Type** — the first self-hosted fonts: **Big Shoulders Display** 700–900
+  (Tyler Finck / Etcetera Type Co) and **Mukta** 400–800 (Indian Type Foundry),
+  both SIL OFL 1.1, committed as woff2 subsets under `public/fonts/` with
+  `unicode-range` per subset, `font-display: swap`, three preloads, `/fonts/*`
+  immutable cache headers, and a full SW precache (dev cache name `mh-v6`;
+  stamped builds keep their content-hash cache names). Zero remote loads — the
+  CSP's `font-src 'self'` holds. Mukta is Devanagari-native, so the Hindi
+  chrome finally renders in the house's own type instead of a fallback.
+  See [PROVENANCE.md](PROVENANCE.md) for the licensing record.
+- **Boot poster** — a full-screen ink boot sequence in the PoD composition
+  (left 6vw, bottom 16vh): kicker `MIRROR` in yellow display type, a giant
+  cream `HOUSE` at `clamp(88px, 16vw, 210px)`, then the tagline. Holds ~1.6 s,
+  fades over 320 ms, `pointer-events: none` throughout, once per session
+  (sessionStorage), skipped entirely under `?test=1`, and static under
+  reduced-flash. A poster, never a gate.
+- **HUD re-dress** — the floor chip becomes the **district plate** (top-left:
+  skewed ink plate, 5px accent edge, `FLOOR` kicker, the floor number in 900
+  display type, and a new accent area line `TIER N — WING NAME` — the atlas's
+  ten tier names, bilingual; `#mh-floor`'s exact text contract is unchanged).
+  The action buttons move into a **bottom-right dock** (every id unchanged —
+  #mh-frost, #mh-faq, #mh-daily, #mh-aaina, #mh-mute, #mh-export, #mh-import,
+  #mh-settings, #mh-lang, #mh-view, mode buttons). A **keys bar** lands
+  bottom-left: live `kbd` hints (WASD move · F frost · V view · I aaina ·
+  H faq · M mute) that follow rebinds and language. A static scene **vignette**
+  overlays the 3D canvas (aria-hidden). The value chips stay top-right as
+  dark `hud-meta` plates; captions stay bottom-center.
+- **Buttons, tabs, panels** — PoD buttons (ghost dark-alpha; active = solid
+  yellow + ink text; primary = solid yellow with a `0 3px #b88a00` hard
+  shadow); Aaina's tabs flat with yellow-active; every panel (FAQ, Aaina,
+  ⚙ Settings, About, Feedback, tier-complete) now the centered PoD panel:
+  `#1b1a24f2`, `border-top: 5px solid var(--accent)`, backdrop blur, 180 ms
+  slide-in, headers in yellow display type, the act/ground variants re-tinted
+  to the PoD pink/sand. All ids, aria attributes, focus traps, Escape
+  behavior, i18n parity and the text-scale machinery carry over unchanged.
+- **Atlas on-site** — `docs/atlas.html` moves to `public/atlas.html`
+  (deployed at `/atlas.html`) with a matching ink/cream/yellow re-theme, its
+  script extracted to `/atlas.js` and every `innerHTML` sink rebuilt as DOM
+  (the site CSP requires Trusted Types; inline scripts would not run in
+  production). Both files precache; docs links now point at the live URL.
+- Version → `0.2.0-beta.2`. Tier scene palettes, game logic, and the 3D look
+  are untouched.
+
 ## [domain-live] — 2026-11-12 — mirror-house.seolith.com serves the house
 
 The custom domain's DNS record (`CNAME mirror-house →
