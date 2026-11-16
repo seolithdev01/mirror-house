@@ -294,6 +294,101 @@
         height: 100vh;
         touch-action: none; /* the game owns all touches on the play surface */
       }
+      /* ============================================================
+         t12 hotfix — REAL-DEVICE TOUCH. Emulation dispatched pointer
+         events at window and never hit-tested; a real phone hit-tests,
+         and with only #game on touch-action:none a touch landing on any
+         other surface let the browser claim the gesture — pointercancel
+         a few pixels in killed the stick, and a gesture the browser
+         consumed never synthesizes the click, so dock taps did nothing.
+         The blanket: no browser gesture ANYWHERE on the play surface or
+         the HUD chrome (html/body carry it, and every touch's effective
+         touch-action intersects its ancestor chain). The overlay boxes
+         are their own scroll containers — per the Pointer Events spec
+         the chain stops at the nearest scroller, so a body-level `none`
+         cannot reach into them — and they take pan-y to keep their
+         scroll. Buttons keep manipulation (the tap→click survives, the
+         double-tap zoom dies); form fields keep text selection so the
+         feedback composer stays editable; -webkit-touch-callout and
+         user-select:none kill the iOS long-press callout and the
+         text-selection steal on every chrome surface.
+         ============================================================ */
+      html,
+      body {
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+      }
+      /* buttons keep taps working — manipulation allows the tap→click
+         while killing the double-tap zoom */
+      button,
+      a {
+        touch-action: manipulation;
+      }
+      /* form fields keep their editing affordances (the 📮 textarea is
+         edited, not just read) */
+      input,
+      select,
+      textarea {
+        touch-action: manipulation;
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      /* the play surface + every display surface of the HUD: the browser
+         never claims a touch starting here — the input.ts collector
+         reads raw pointermove, and a claimed gesture is a pointercancel
+         is a dead stick */
+      #game,
+      #overhead,
+      #hud,
+      #mh-vignette,
+      #mh-boot,
+      #mh-touch,
+      #mh-touch-divider,
+      #mh-touch-stick,
+      #mh-touch-nub,
+      #mh-minimap,
+      #mh-motion,
+      #mh-district,
+      #mh-chips,
+      .mh-chip,
+      #mh-venue,
+      #mh-dock,
+      #mh-keys,
+      #mh-notices,
+      #mh-captions,
+      #mh-breath,
+      #mh-anger,
+      #diagnostics,
+      #mh-tester,
+      #mh-tester-banner,
+      #mh-faq-overlay,
+      #mh-settings-overlay,
+      #mh-about-overlay,
+      #mh-feedback-overlay,
+      #mh-aaina-overlay,
+      #mh-tier-overlay {
+        touch-action: none;
+      }
+      /* the stick ring is a VISUAL MIRROR only — explicit pointer-events
+         stays off it (and the nub + divider) even if a future rule ever
+         re-arms the #mh-touch layer; input lives on the window collector */
+      #mh-touch-stick,
+      #mh-touch-nub,
+      #mh-touch-divider {
+        pointer-events: none;
+      }
+      /* scrollable panels keep their scroll — each box IS the nearest
+         scroll container, so its pan-y governs the touches that start
+         inside it */
+      #mh-faq-box,
+      #mh-settings-box,
+      #mh-aaina-box,
+      #mh-feedback-box,
+      #mh-about-box {
+        touch-action: pan-y;
+      }
       /* Overhead/tactical map (M3/T4) — a 2D canvas over the paused 3D stage.
          display:none unless the view mode is overhead/tactical (main.ts owns
          the toggle); above #game, below the HUD and diagnostics. */
