@@ -37,7 +37,7 @@ export function classifyZone(xPx: number, viewW: number): 'stick' | 'look';
 
 Analog speed: stick magnitude scales movement (walk→sprint continuum) — `movePlayer` currently gates sprint on a boolean; pass `input.sprint = magnitude > 0.85` OR extend MoveInput with a speed scalar? **Decision: keep MoveInput shape unchanged** — `forward/strafe ∈ [−1,1]` are already analog multipliers of WALK_SPEED; sprint threshold maps magnitude > 0.85 to `sprint: true` for the full 6.0. Document: touch players get analog 3.5 m/s below the threshold.
 
-- [ ] Tests (stickToMove deadzone/analog/clamp; classifyZone boundary; InputMode union widen: validateSave accepts 'touch', rejects 'teleport'; mode auto-select pure fn `defaultMode(hasCoarse, storedMode)`; keymap/rotation/floor pins untouched) → RED → implement → GREEN; gates + 50/50. Commit `feat(t12): touch plumbing — stick, look, mode`.
+- [x] Tests (stickToMove deadzone/analog/clamp; classifyZone boundary; InputMode union widen: validateSave accepts 'touch', rejects 'teleport'; mode auto-select pure fn `defaultMode(hasCoarse, storedMode)`; keymap/rotation/floor pins untouched) → RED → implement → GREEN; gates + 50/50. Commit `feat(t12): touch plumbing — stick, look, mode`.
 
 ---
 
@@ -50,7 +50,7 @@ Analog speed: stick magnitude scales movement (walk→sprint continuum) — `mov
 - KEPT: dock (bigger), captions, exit/beacon in-world cues, shards chip.
 - Desktop unchanged (> 900 px + fine pointer): everything as shipped.
 
-- [ ] Tests (panesDefault truth table; compact class logic pure fn) → RED → implement → GREEN; gates + 50/50. Commit `feat(t12): touch UI — stick, look, declutter`.
+- [x] Tests (panesDefault truth table; compact class logic pure fn) → RED → implement → GREEN; gates + 50/50. Commit `feat(t12): touch UI — stick, look, declutter`.
 
 ---
 
@@ -58,7 +58,7 @@ Analog speed: stick magnitude scales movement (walk→sprint continuum) — `mov
 
 **Files:** `tests/e2e/touch.spec.ts` (NEW file — separate touch project/context with `hasTouch: true` + viewport 390×844 iPhone-ish; tests: stick drag moves the player, right-drag rotates heading, frost button tap captures/captures-attempt, MAP chip summons minimap, compact class present on coarse), `src/ui/i18n.ts` (any missing keys), docs: TEST-CASES +3 (touch cases), README (touch section — "playable on your phone"), STATE_MACHINES (InputMode union row update), FAQ +1 (play on your phone), plan ticks; full gates + 50/50 desktop + new touch spec.
 
-- [ ] Implement → e2e 50/50 + touch spec → gates. Commit `test(t12): touch e2e + docs — playable on your phone`.
+- [x] Implement → e2e 50/50 + touch spec → gates. Commit `test(t12): touch e2e + docs — playable on your phone`.
 
 ## Plan Self-Review
 

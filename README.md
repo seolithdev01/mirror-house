@@ -132,15 +132,20 @@ Below Dwaar IX the palace gives up its oldest material: **there are no mirrors a
 
 The Frost Lantern breathes on the mirror you face (press `F` or the **❄ Frost** button): the glass fogs over for 25 seconds and its reflection dies. Echoes see you only through clear glass, so a fogged mirror is a door you just closed in their face — fog enough eyes around one Echo and it stalls, confused, slowly spinning. Each breath spends about a third of your lantern's air; it refills in four seconds. (In the Furnace Wings the heat burns a fog off in half the time — 12.5 seconds — so frost wide, not lone. In the Whisper Library the blind wardens cannot be confused by your fog at all — frost there still captures beacons, but the breath itself pings 2.5 m of noise, so frost on the move sparingly. In the Frozen Atrium the breath wakes what it touches: frost on ice THAWS it — a live eye and a warden lure — and frost on thawed glass cold-fogs it for ten minutes; see the tier above. And in the Warden's Warrens below, the furnace re-lights — the heat is back on 81–90, 12.5-second fogs and 25-anger cracks — with all four Sentinels walking at once; see the tier above that. And at the very bottom, in the Foundations, the glass is simply gone: nothing to fog but the four pedestal beacons per floor, no heat to burn them — the lantern's last work is capture, not concealment.)
 
-### Movement — three modes (HUD buttons, top right)
+### Movement — four modes (HUD buttons, top right)
 
-Three fully playable ways to walk — switch anytime with the buttons at the top right. Your choice is remembered between sessions.
+Four fully playable ways to walk — switch anytime with the buttons at the top right (on a phone, the dock's mode row). Your choice is remembered between sessions.
 
 | HUD button | Mode             | How it works                                                                                                               |
 | ---------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | ⌨ Keys     | Keyboard only    | `W`/`S` or `↑`/`↓` walk, `←`/`→` or `Q`/`E` turn, `Shift` sprint. No mouse needed.                                         |
 | 🖱 Mouse    | Mouse only       | Hold the **left button** to walk, hold the **right button** to sprint, steer by moving the cursor left or right of center. |
-| ⌨+🖱 Both   | Hybrid (default) | `WASD` move and strafe, mouse to look (click the view to capture the pointer), `Q`/`E` also turn, `Shift` sprint.          |
+| ⌨+🖱 Both   | Hybrid (default on a mouse device) | `WASD` move and strafe, mouse to look (click the view to capture the pointer), `Q`/`E` also turn, `Shift` sprint.          |
+| 👆 Touch    | Touch (default on a touch screen) | Left of the screen is a **virtual stick** under your thumb (push farther to walk faster, to the rim to sprint), drag the right side to **look**, and the dock's big thumb buttons fire the actions. See the phone section just below. |
+
+### Mirror House on your phone — playable on touch
+
+Open the game in your phone's browser and it plays — no keyboard, no mouse, no install. On a touch screen a brand-new save boots straight into the **TOUCH** mode: the **left ~45%** of the screen is a virtual stick that appears wherever your thumb lands (an analog walk — push to the rim for full speed), the **right side** is drag-look, and the dock at the bottom right carries frost, the map, views, the Daily and the rest as ≥56 px thumb targets. Small screens (≤900 px wide, or any coarse-pointer device) also get the **compact layout**: the keys bar hides — there are no keys to press — and the guide panes step aside until their MAP/MOTION chips summon them. It is the same house underneath: the same seeds, the same saves on your device, the same rules. An existing saved mode is never overwritten, and a keyboard keeps working whenever you plug one in.
 
 ### Accessibility
 

@@ -31,7 +31,7 @@ a single value with named transitions.
 | 3   | **DoorPhase**      | `closed` · `opening` · `open`                                            | `src/game/passages.ts`                                          | Explicit (step 5)                                                                                                                           |
 | 4   | **Echo mode**      | `patrol` · `chase` · `confused`                                          | `src/game/echo.ts`                                              | Pure machine, now documented                                                                                                                |
 | 5   | **Pending shards** | `pending` → `banked` \| `forfeited`                                      | `src/game/houseState.ts` + `meta.ts`                            | Lifecycle, documented                                                                                                                       |
-| 6   | **InputMode**      | `keyboard` · `mouse` · `hybrid`                                          | `src/engine/input.ts` + `main.ts`                               | Configuration, not a lifecycle                                                                                                              |
+| 6   | **InputMode**      | `keyboard` · `mouse` · `hybrid` · `touch`                                | `src/engine/input.ts` + `main.ts` + `src/game/touch.ts`         | Configuration, not a lifecycle (t12 grew `touch` — the union and validateSave's list widened in the same commit)                              |
 | 7   | **Input gate**     | FAQ `closed` · `open` ∥ composer `closed` · `open` ∥ ViewMode `tactical` | `src/ui/faq.ts` + `src/ui/feedback.ts` + `src/game/viewMode.ts` | Three pauses gate the loop: the FAQ overlay, the 📮 feedback composer (step007/T2 — the FAQ's document-driven shape), and the tactical view |
 | 8   | **ViewMode**       | `focus` · `quad` · `overhead` · `tactical`                               | `src/game/viewMode.ts`                                          | Pure machine (M3/T3); `tactical` is the pause view                                                                                          |
 | 9   | **Aaina overlay**  | `closed` · `open{tab}`                                                   | `src/ui/aaina.ts`                                               | Diegetic panel — does **not** pause                                                                                                         |
@@ -198,13 +198,30 @@ is no path where a fail banks them.
 
 ## 6. InputMode — `src/engine/input.ts` + `main.ts`
 
-`keyboard` | `mouse` | `hybrid`. A configuration with side effects, not a
-lifecycle:
+`keyboard` | `mouse` | `hybrid` | `touch`. A configuration with side effects,
+not a lifecycle:
 
 - `hybrid` requests pointer lock on canvas click; the other modes never do.
 - Every change writes `meta.mode`; `meta.mode` is the boot value.
+- **Boot auto-select (t12):** `defaultMode(hasCoarsePointer, stored)` — a
+  stored mode ALWAYS wins (existing saves keep their choice, never wiped by
+  a device hint); a brand-new save on a coarse-pointer device boots `touch`,
+  everything else `hybrid`. The DEV-only `?ui=touch` URL override forces the
+  session mode without ever touching the save.
 - Pointer lock itself is browser-owned; `InputCollector` only mirrors it by
   clearing held keys on `pointerlockchange`.
+- **`touch` (t12)** — the two-zone thumb mode, no pointer lock anywhere: the
+  collector's pointer tracker classifies every `pointerType === 'touch'`
+  pointer at down (`classifyZone` — the LEFT 45% of the viewport is the move
+  stick, origin = the down-point; the RIGHT 55% is drag-look), the first
+  touch in a zone owns it until it lifts. Per frame, `touchSnapshot()` hands
+  the stick's live normalized vector (drained never — a held thumb steers
+  the whole hold) and the look bank (drained once per frame, converted at
+  `TOUCH_LOOK_SENS` on the frame's first fixed step); `stickToMove` owns the
+  deadzone and the analog walk→sprint continuum (`magnitude > 0.85` maps to
+  the sprint boolean — MoveInput's shape is unchanged). The stick visual is
+  a pure DOM mirror (`src/ui/touchUi.ts`, `pointer-events: none`) — input
+  never lives in the overlay.
 - **Dual-use key claims** (`withoutKey`, claimed per fixed step in `main.ts`):
   a key that also drives a verb yields only its movement share while the verb
   owns it — the aaina key (`I` by default, whatever her binding is after a

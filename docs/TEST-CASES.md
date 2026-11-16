@@ -368,10 +368,11 @@ your campaign floor (no error screen, no broken boot).
 
 ### MOB-1 — The whole loop on a touchscreen
 
-**Steps:** On a phone or tablet, open your personal link. Tap the 🖱 Mouse
-button, then hold a finger on the view to walk, steering by
-moving the finger left or right of centre. Frost beacons with the ❄
-button; buy a hint; clear the floor.
+**Steps:** On a phone or tablet, open your personal link — since T12 it
+boots the 👆 TOUCH mode by itself (a pre-T12 save keeps whatever mode it
+stored; switch with the dock's mode row). Drag on the left of the screen
+to walk, steering and pacing with the stick; frost beacons with the dock's
+❄ button; buy a hint; clear the floor.
 
 **Expected:** Touch-hold walks toward the touch point; steering follows
 the finger; the loop — walk, frost, descend — completes with no keyboard
@@ -387,6 +388,51 @@ instead". Check the chips and the caption bar in both orientations.
 caption bar stays readable; no fixed-width overflow, no pointer capture
 asked. The composer types, the mailto hand-off works on mobile, and the
 venue floor (⚙ → Floors) plays the same as desktop.
+
+### MOB-3 — The touch stick walks and the right drag looks (T12)
+
+**Steps:** On a phone (or a desktop browser's touch emulation), load any
+floor in the TOUCH mode. Put a thumb down on the **left** of the screen
+and drag upward, hold a beat, then lift. Then put a thumb down on the
+**right** side and sweep it ~200 px sideways; lift. Watch your position
+and your heading both times.
+
+**Expected:** The stick drag walks — a virtual stick ring appears under
+the thumb's down-point with a nub riding the drag, the farther the push
+the faster the walk (to the rim: sprint-speed). Lifting the stick stops
+you within a step — no coasting drift. The right-side sweep turns your
+view with the drag (about 0.26° per pixel — a 200 px sweep turns ~51°)
+and moves your body not at all — look turns, it never walks. A mouse pointer never summons the
+stick; only real touch pointers drive the zones.
+
+### MOB-4 — The compact screen de-clutters; the dock chips summon (T12)
+
+**Steps:** On a phone-width screen (≤900 px, or any coarse-pointer
+device), load a floor. Look for the keys bar, the minimap and the motion
+pane; then tap the dock's **MAP** chip and the **MOTION** chip, and tap
+each again. Resize a desktop window down past 900 px and back.
+
+**Expected:** The compact layout is on (`body.compact`): the keys bar is
+hidden — there are no keys on a phone — and both guide panes boot HIDDEN.
+The MAP/MOTION chips summon the minimap and the motion pane as overlays
+(the chip's pressed state matches), and a second tap sends them away.
+Back on a wide fine-pointer desktop the shipped layout returns: keys bar
+and panes visible as always. Pane visibility is a session preference —
+it is never written to the save.
+
+### MOB-5 — The frost dock button captures like the `F` key (T12)
+
+**Steps:** On the phone layout, stand ~1 m in front of a 🪞 beacon's
+glass with the lantern's breath affording a frost (the bar above the
+dock is full), and tap the dock's **❄ Frost** button. Repeat with the
+breath still recharging, and once with no mirror in view.
+
+**Expected:** The tap fogs/captures exactly like pressing `F`: a beacon
+in the 60° cone captures permanently (the 🪞 counter ticks up, the exit
+door counts it), the breath spends ~a third of the bar, and a frost with
+the bar short or no mirror faced does nothing harmful — the verb just
+stands down. Every dock button works by tap alone; nothing on the
+compact HUD needs a keyboard.
 
 ---
 
