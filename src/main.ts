@@ -37,6 +37,10 @@ import {
   GLAZIER_FLOOR,
   MINIMAP_REPAINT_MS,
   MINIMAP_SIZE_PX,
+  MOTION_FROST_POSE_MS,
+  MOTION_H,
+  MOTION_STEP_POSE_MS,
+  MOTION_W,
   NOISE_ACTION_R,
   NOISE_SPRINT_R,
   NOISE_WALK_EVERY_MS,
@@ -252,6 +256,7 @@ import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
 import { fill, resolveLang, t, type Lang } from './ui/i18n';
 import { createMinimap } from './ui/minimap';
+import { createMotionPane } from './ui/motionPane';
 import { createOverhead, pingOpacity } from './ui/overhead';
 import { buildSettingsOverlay, keyLabel, type TextScale } from './ui/settings';
 
@@ -1091,6 +1096,7 @@ function tryFrost(now: number): void {
     );
   }
   breath = updateBreath(breath, 0, true);
+  motionFrostAt = now; // T11/T2 — the motion pane raises the frost arm (brief pose window)
   // T7/T2 — the verbs are NOISE: a frost's crunch pings NOISE_ACTION_R once
   // at the action (the ring is inert where every echo is glass).
   noiseEvents = emit(noiseEvents, player.x, player.y, NOISE_ACTION_R, now);
@@ -1405,6 +1411,8 @@ const hud = createHud({
   onFeedback: () => feedback.toggle(),
   // T11 — the MAP dock chip: the same toggle KeyN runs.
   onMap: () => toggleMinimap(),
+  // T11/T2 — the MOTION dock chip: the same toggle KeyB runs.
+  onMotion: () => toggleMotion(),
 });
 
 // T11/T1 — THE PAC-MINIMAP: the full maze as a Pac-Man-style guide, mounted
@@ -1457,6 +1465,54 @@ function drawMinimap(): void {
     decoys: decoys.filter((d) => !d.shattered),
     water: waterRt.map((w) => ({ x: w.x, y: w.y })),
     glazier: glazier !== null ? { x: glazier.x, y: glazier.y } : null,
+  });
+}
+
+// T11/T2 — THE MOTION PANE: the robotic mirror, mounted above the minimap in
+// the bottom-left pane column (the PoD plate styling lives in index.html).
+// It repaints EVERY frame — the pose is a handful of strokes — fed from the
+// latest fixed-step input frame, the player's heading, and distanceMovedM,
+// the accumulator the fixed step grows by the hypot of every move. The cycle
+// is distance-driven (walkPhase), so the figure freezes mid-stride the moment
+// you stop and never moonwalks in place. Visibility is a session var (default
+// ON, never persisted — the minimap's precedent), and KeyB + the #mh-motion-btn
+// dock chip both drive the one toggle below (the pane canvas owns #mh-motion —
+// the T3 e2e pins that id — so the chip takes the -btn suffix).
+const motionCanvas = document.createElement('canvas');
+motionCanvas.id = 'mh-motion';
+motionCanvas.width = MOTION_W;
+motionCanvas.height = MOTION_H;
+hud.root.appendChild(motionCanvas);
+const motion = createMotionPane(motionCanvas);
+let motionOn = true;
+function toggleMotion(): void {
+  motionOn = !motionOn;
+  motion.setVisible(motionOn);
+  hud.setMotionVisible(motionOn); // the dock chip mirrors the session state
+}
+motion.setVisible(motionOn);
+hud.setMotionVisible(motionOn);
+/** Meters moved across the whole run — the walk cycle's driver. */
+let distanceMovedM = 0;
+/** The latest fixed-step movement frame — the pane reads it per render. */
+let lastMove: MoveInput = { forward: 0, strafe: 0, sprint: false, turn: 0 };
+/** The last cast/teleport the pose verbs remember (MOTION_*_POSE_MS windows). */
+let motionFrostAt = -Infinity;
+let motionStepAt = -Infinity;
+/** The pane's per-frame feed: the pose window's freshness rides the same
+ *  `now` the frame loop already owns; while the sim stands down (tactical
+ *  pause, overlays) the pane reads STILL — a paused player is not moving. */
+function drawMotion(now: number, simActive: boolean): void {
+  const moving = simActive && (lastMove.forward !== 0 || lastMove.strafe !== 0);
+  motion.draw({
+    moving,
+    mx: lastMove.strafe,
+    my: lastMove.forward,
+    sprint: lastMove.sprint,
+    frost: now - motionFrostAt < MOTION_FROST_POSE_MS,
+    step: now - motionStepAt < MOTION_STEP_POSE_MS,
+    headingDeg: (player.heading * 180) / Math.PI,
+    walkPhaseM: distanceMovedM,
   });
 }
 
@@ -2560,6 +2616,7 @@ function stepThrough(): void {
   // recorded path, so she walks your exact route and blinks across the same
   // glass, 6s behind you.
   player = { x: tp.x, y: tp.y, heading: tp.heading };
+  motionStepAt = performance.now(); // T11/T2 — the motion pane holds the flash-forward pose
   updateAvatar(avatar, player.x, player.y, player.heading, false, performance.now() / 1000);
   // T7/T2 — the step rings once at its arrival (single NOISE_ACTION_R ping;
   // inert where every echo is glass).
@@ -2643,6 +2700,9 @@ window.addEventListener('keydown', (e) => {
       break;
     case 'map': // T11 — the Pac-minimap's toggle (the dock chip does the same)
       toggleMinimap();
+      break;
+    case 'body': // T11/T2 — the motion pane's toggle (the dock chip does the same)
+      toggleMotion();
       break;
     case 'stepThrough':
       e.preventDefault(); // nothing else in the UI owns the step key
@@ -2835,7 +2895,14 @@ function frame(now: number): void {
         mode === 'mouse'
           ? mouseOnlyInput(input.mouseState())
           : keysToMoveInput(snap, mode, a11y().keyMap);
+      const prevX = player.x;
+      const prevY = player.y;
       player = movePlayer(player, inputFrame, floor.grid, dtMove); // T5/T3 — wading stride
+      // T11/T2 — the motion pane's cycle driver: the meters ACTUALLY moved
+      // this step (walls clamp the delta to 0, so pushing into a wall never
+      // strides the figure). lastMove feeds the pane's pose every frame.
+      distanceMovedM += Math.hypot(player.x - prevX, player.y - prevY);
+      lastMove = inputFrame;
       markVisited(); // fog of war: the cell under your feet is explored
       const inputActive =
         inputFrame.forward !== 0 || inputFrame.strafe !== 0 || inputFrame.turn !== 0;
@@ -3474,6 +3541,16 @@ function frame(now: number): void {
     drawMinimap();
   }
 
+  // T11/T2 — the motion pane repaints EVERY frame (the pose is a handful of
+  // strokes and the label flips at action speed — a throttle would lag the
+  // step hold's window past its own lifetime). The pose itself is driven by
+  // distance and state windows, so between steps the drawing is identical —
+  // no time-based cycling anywhere (reduced-flash additionally pins the pose
+  // to a frozen phase inside motionPane).
+  if (motionOn) {
+    drawMotion(now, simActive);
+  }
+
   frames++;
   if (now - fpsClock >= 250) {
     fps = Math.round((frames * 1000) / (now - fpsClock));
@@ -3634,6 +3711,10 @@ if (import.meta.env.DEV || testMode) {
     waypoints: () => waypoints.map((w) => ({ ...w })),
     // T11 — the Pac-minimap pane's session visibility (the toggle's witness).
     minimap: () => minimapOn,
+    // T11/T2 — the motion pane's session visibility + its pose feed (Task 3's
+    // e2e reads the label through the canvas; the toggle witness rides here).
+    motion: () => motionOn,
+    motionMovedM: () => distanceMovedM,
     // T3 review fix witness: every camera (front + quad sides) tracks the
     // window aspect — the side panes are w/2 × h/2, not square.
     camAspects: () => [camera.aspect, ...QUAD_SIDE_YAW.map((s) => s.cam.aspect)],

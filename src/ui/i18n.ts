@@ -79,6 +79,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // T11 — the 16th action: the Pac-minimap pane's toggle (KeyN)
     'key.map': 'Minimap',
     'pane.map': 'MAP',
+    // T11/T2 — the 17th action: the motion pane's toggle (KeyB)
+    'key.body': 'Motion',
+    'pane.motion': 'MOTION',
     'settings.close': '✕ Close',
     // M6/T1 — the Floors section: the venue side-floor card (demo pack + Play)
     'settings.floors': 'Floors',
@@ -406,6 +409,9 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // T11 — 16वीं क्रिया: पैक-मिनीमैप पैने का टॉगल (KeyN)
     'key.map': 'नक्शा',
     'pane.map': 'नक्शा',
+    // T11/T2 — 17वीं क्रिया: मोशन पैने का टॉगल (KeyB)
+    'key.body': 'गति',
+    'pane.motion': 'गति',
     'settings.close': '✕ बंद करें',
     // M6/T1 — मंज़िलें अनुभाग: वेन्यू साइड-फ़्लोर कार्ड (डेमो पैक + खेलें)
     'settings.floors': 'मंज़िलें',
@@ -679,6 +685,7 @@ export const CHIP_KEYS: readonly string[] = [
   'area.tier10',
   'keys.move',
   'pane.map', // T11 — the dock's minimap-chip label (a one-line button)
+  'pane.motion', // T11/T2 — the dock's motion-chip label (its one-line sibling)
   'tab.ask',
   'tab.hint',
   'tab.lore',

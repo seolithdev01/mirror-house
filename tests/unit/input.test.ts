@@ -138,6 +138,10 @@ describe('actionFor — reverse lookup (M5/T2)', () => {
     expect(actionFor('KeyN', DEFAULT_KEYMAP)).toBe('map');
   });
 
+  it('KeyB names the motion-pane toggle (T11/T2) — a pure dispatch pin', () => {
+    expect(actionFor('KeyB', DEFAULT_KEYMAP)).toBe('body');
+  });
+
   it('duplicate codes resolve to the LAST-defined action — KeyE is push, not turnR', () => {
     // The spelled-out semantics: DEFAULT_KEYMAP declares turnR before push, so
     // actionFor('KeyE') names push. main is the one that CONTEXTUALIZES — it

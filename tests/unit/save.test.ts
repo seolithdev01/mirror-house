@@ -414,8 +414,8 @@ describe('save: normalizeSave — perf default (M5/T4)', () => {
 });
 
 describe('DEFAULT_KEYMAP (M5/T1)', () => {
-  it('has exactly the 16 actions with the authoritative defaults', () => {
-    expect(Object.keys(DEFAULT_KEYMAP).length).toBe(16);
+  it('has exactly the 17 actions with the authoritative defaults', () => {
+    expect(Object.keys(DEFAULT_KEYMAP).length).toBe(17);
     expect(DEFAULT_KEYMAP).toEqual({
       forward: 'KeyW',
       back: 'KeyS',
@@ -433,6 +433,7 @@ describe('DEFAULT_KEYMAP (M5/T1)', () => {
       mute: 'KeyM',
       tactical: 'KeyT',
       map: 'KeyN', // T11 — the Pac-minimap's toggle joins the keymap
+      body: 'KeyB', // T11/T2 — the motion pane's toggle joins too
     });
   });
 
@@ -553,25 +554,46 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
     expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, turnR: 'KeyR', aaina: 'KeyR' }))).toBeNull(); // turnR+aaina is not the sanctioned pair
   });
 
-  // T11 migration — the FIRST keymap widening: every save stored by a pre-T11
-  // build carries the 15-action map. The gate must accept it by defaulting
-  // the new action in, or idbGet's all-or-nothing validateSave would discard
-  // the whole campaign record on first boot (the T3/T1 saves-wipe lesson).
-  it('a pre-T11 15-action map migrates: map takes its default, the stored rebinds survive', () => {
+  // T11 migration — the FIRST keymap widening: saves older than the widening
+  // carry shorter maps (pre-T1 15 actions, T1-era 16). The gate must accept
+  // them by defaulting the widening's actions in, or idbGet's all-or-nothing
+  // validateSave would discard the whole campaign record on first boot (the
+  // T3/T1 saves-wipe lesson).
+  it('a pre-T11 15-action map migrates: BOTH widening defaults fill in, the stored rebinds survive', () => {
     const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
     delete legacy.map;
+    delete legacy.body;
     legacy.forward = 'KeyP'; // a stored rebind that must ride the migration
     const out = validateSave(a11yWith(legacy));
     expect(out).not.toBeNull(); // the record is NOT discarded
-    expect(out?.a11y?.keyMap.map).toBe('KeyN'); // the widening's default fills the gap
+    expect(out?.a11y?.keyMap.map).toBe('KeyN'); // T1's widening default fills its gap
+    expect(out?.a11y?.keyMap.body).toBe('KeyB'); // T2's widening default fills its gap
     expect(out?.a11y?.keyMap.forward).toBe('KeyP'); // the rebind survives
-    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(16); // canonical full shape back
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(17); // canonical full shape back
+  });
+
+  it('a T1-era 16-action map migrates: body takes its default, map and rebinds survive', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.body;
+    legacy.map = 'KeyP'; // a T1-era rebind of the minimap toggle rides along
+    const out = validateSave(a11yWith(legacy));
+    expect(out).not.toBeNull();
+    expect(out?.a11y?.keyMap.body).toBe('KeyB'); // only the new gap defaults in
+    expect(out?.a11y?.keyMap.map).toBe('KeyP'); // the stored map binding survives
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(17);
   });
 
   it('the legacy shape with any OTHER missing action still rejects', () => {
     const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
     delete legacy.map;
+    delete legacy.body;
     delete legacy.faq; // not the widening's gap — junk is junk
+    expect(validateSave(a11yWith(legacy))).toBeNull();
+  });
+
+  it('an unknown key riding a legal widening gap still rejects', () => {
+    const legacy = { ...DEFAULT_KEYMAP, macro: 'KeyP' } as Record<string, string>;
+    delete legacy.body; // the widening gap is legal; the stowaway is not
     expect(validateSave(a11yWith(legacy))).toBeNull();
   });
 });

@@ -60,6 +60,19 @@ export const MINIMAP_SIZE_PX = 176; // square CSS px — the pane's fixed size
 export const MINIMAP_REPAINT_MS = 150; // ms between minimap redraws (frame-loop throttle)
 export const MINIMAP_PADDING_PX = 6; // px of breathing room inside the pane's plate
 
+// T11 — the motion pane (the robotic mirror): a compact portrait canvas
+// drawing a schematic back-view humanoid that mirrors the player's LIVE
+// motion — walk cycle, sprint lean, strafe tilt, the frost arm, a heading
+// compass ring — with a motion-state label under the figure. It repaints
+// every frame (the pose is cheap), but the CYCLE is distance-driven: the
+// phase advances only while you actually move, so the figure never
+// moonwalks in place and simply holds its pose when you stop.
+export const MOTION_W = 132; // CSS px — the pane's width
+export const MOTION_H = 168; // CSS px — the pane's height
+export const WALK_CYCLE_LEN = 1.6; // meters per full walk cycle (one stride pair)
+export const MOTION_FROST_POSE_MS = 900; // ms the frost arm stays raised after a cast
+export const MOTION_STEP_POSE_MS = 600; // ms the step-through pose holds after a teleport
+
 // Passages (M2/T7) — true-mirror step-through, silvered push-doors
 export const PASSAGE_RANGE = 1.4; // m — nearest-mirror range for step-through and push
 export const DOOR_SLIDE_M = 1.2; // m a silvered door slides along its wall

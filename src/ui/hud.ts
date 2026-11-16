@@ -41,6 +41,9 @@ export type HudInit = {
   /** T11 — the MAP dock chip: toggles the Pac-minimap pane (KeyN does the
    *  same; main owns the session state and mirrors it back via setMapVisible). */
   onMap(): void;
+  /** T11/T2 — the MOTION dock chip: toggles the motion pane (KeyB does the
+   *  same; main mirrors the session state back via setMotionVisible). */
+  onMotion(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -152,6 +155,9 @@ export interface Hud {
   /** T11 — the MAP dock chip's pressed state: KeyN and the chip stay in sync
    *  (standard toggle semantics — pressed = the pane is showing). */
   setMapVisible(visible: boolean): void;
+  /** T11/T2 — the MOTION dock chip's pressed state: KeyB and the chip stay
+   *  in sync (same semantics as setMapVisible). */
+  setMotionVisible(visible: boolean): void;
   /** M5/T3 — the caption bar (#mh-captions, bottom-center). main feeds it
    *  renderCaptions(el, feed, now) every frame; its fade is the reduced-flash
    *  CSS family. A polite live region: the lines read themselves. */
@@ -228,6 +234,13 @@ export function createHud(init: HudInit): Hud {
   mapBtn.type = 'button';
   mapBtn.id = 'mh-map';
   mapBtn.addEventListener('click', () => init.onMap());
+  // T11/T2 — the MOTION dock chip: the robotic mirror's chip door (KeyB is
+  // the keyboard one). Id suffix -btn because #mh-motion is the PANE canvas's
+  // id (the T3 e2e pins that); the chip is its toggle.
+  const motionBtn = document.createElement('button');
+  motionBtn.type = 'button';
+  motionBtn.id = 'mh-motion-btn';
+  motionBtn.addEventListener('click', () => init.onMotion());
   const aaina = document.createElement('button');
   aaina.type = 'button';
   aaina.id = 'mh-aaina';
@@ -365,6 +378,7 @@ export function createHud(init: HudInit): Hud {
     breath,
     anger,
     mapBtn,
+    motionBtn,
     faq,
     aaina,
     daily,
@@ -454,6 +468,8 @@ export function createHud(init: HudInit): Hud {
   // T11 — the MAP chip's live pressed state (main mirrors the pane's session
   // visibility here, so KeyN and the chip always agree).
   let mapVisible = true;
+  // T11/T2 — the MOTION chip's live pressed state (same mirror, KeyB side).
+  let motionVisible = true;
   let lastTierStats: {
     tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     floors: number;
@@ -635,6 +651,11 @@ export function createHud(init: HudInit): Hud {
     mapBtn.title = t(lang, 'pane.map');
     mapBtn.setAttribute('aria-label', t(lang, 'pane.map'));
     mapBtn.setAttribute('aria-pressed', mapVisible ? 'true' : 'false'); // same polarity setMapVisible writes
+    // T11/T2 — the MOTION chip rides the same flip, same polarity.
+    motionBtn.textContent = t(lang, 'pane.motion');
+    motionBtn.title = t(lang, 'pane.motion');
+    motionBtn.setAttribute('aria-label', t(lang, 'pane.motion'));
+    motionBtn.setAttribute('aria-pressed', motionVisible ? 'true' : 'false'); // same polarity setMotionVisible writes
     aaina.textContent = t(lang, 'btn.aaina');
     aaina.setAttribute('aria-label', t(lang, 'btn.aaina'));
     daily.textContent = t(lang, 'btn.daily');
@@ -700,6 +721,11 @@ export function createHud(init: HudInit): Hud {
       mapVisible = visible;
       mapBtn.classList.toggle('active', visible); // the pane is on — the chip says so
       mapBtn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    },
+    setMotionVisible: (visible) => {
+      motionVisible = visible;
+      motionBtn.classList.toggle('active', visible); // same polarity as setLang writes
+      motionBtn.setAttribute('aria-pressed', visible ? 'true' : 'false');
     },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;

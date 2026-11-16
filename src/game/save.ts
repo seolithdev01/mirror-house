@@ -33,11 +33,12 @@ export interface SaveData {
  *  copies; nothing mutates the default in place. */
 export type KeyMap = Readonly<Record<string, string>>;
 
-/** The 16 actions and their default codes (M5/T1, authoritative from the plan;
- *  T11 adds the 16th — `map`, KeyN, the Pac-minimap's toggle). Aaina moved
- *  from KeyQ to KeyI — her own key, Q/E stay pure turning. The one sanctioned
- *  dual: turnR and push share KeyE (push is contextual — the door claims E
- *  only while the push hint shows, via withoutKey). */
+/** The 17 actions and their default codes (M5/T1, authoritative from the plan;
+ *  T11 adds the 16th — `map`, KeyN, the Pac-minimap's toggle — and the 17th,
+ *  `body`, KeyB, the motion pane's toggle). Aaina moved from KeyQ to KeyI —
+ *  her own key, Q/E stay pure turning. The one sanctioned dual: turnR and
+ *  push share KeyE (push is contextual — the door claims E only while the
+ *  push hint shows, via withoutKey). */
 export const DEFAULT_KEYMAP: KeyMap = {
   forward: 'KeyW',
   back: 'KeyS',
@@ -55,6 +56,7 @@ export const DEFAULT_KEYMAP: KeyMap = {
   mute: 'KeyM',
   tactical: 'KeyT',
   map: 'KeyN',
+  body: 'KeyB',
 };
 
 /** The default accessibility block — nothing on unless asked for, 1× text. */
@@ -221,30 +223,37 @@ const RESERVED_CODES: readonly string[] = ['Escape', 'Tab'];
  *  only for the turnR+push pair. The result is a fresh map in
  *  DEFAULT_KEYMAP's canonical order; the validated object never shares
  *  structure with the input.
- *  T11 migration — the FIRST keymap widening since this gate existed: pre-T11
- *  builds stored the 15-action map (no `map` action). A stored or imported
- *  map binding exactly the legacy actions validates by TAKING the new action's
- *  default (KeyN) for the one gap — the strict exact-count alternative would
- *  fail every stored save's a11y block, and validateSave's all-or-nothing
- *  gate would then return null for the WHOLE record on idbGet, discarding the
- *  campaign on first boot (progress, bests, shards — the T3/T1 "saves wipe in
- *  the same commit the bound moves" lesson, applied to the keymap). Any OTHER
- *  missing action, or an extra one, is still a rejection. */
+ *  T11 migration — the FIRST keymap widening since this gate existed (T1
+ *  added `map`/KeyN, T2 adds `body`/KeyB): stored and imported maps may lag
+ *  the vocabulary by exactly the widening's actions. A map binding every
+ *  non-widening action — with any subset of {map, body} absent — validates
+ *  by TAKING each gap's default; the strict exact-count alternative would
+ *  fail every older save's a11y block, and validateSave's all-or-nothing
+ *  gate would then return null for the WHOLE record on idbGet, discarding
+ *  the campaign on first boot (progress, bests, shards — the T3/T1 "saves
+ *  wipe in the same commit the bound moves" lesson, applied to the keymap).
+ *  Any OTHER missing action, or an extra one, is still a rejection. */
+const WIDENING_ACTIONS: readonly string[] = ['map', 'body'];
+
 function validateKeyMap(raw: unknown): KeyMap | null {
   if (!isPlainObject(raw)) return null;
   const actions = Object.keys(raw);
   const known = Object.keys(DEFAULT_KEYMAP);
-  const legacy = actions.length === known.length - 1 && !Object.hasOwn(raw, 'map');
-  if (!legacy && actions.length !== known.length) return null; // extra (unknown) or missing actions
+  const missing = known.filter((a) => !Object.hasOwn(raw, a));
+  const legacy = missing.length > 0 && missing.every((a) => WIDENING_ACTIONS.includes(a));
+  if (!legacy && missing.length > 0) return null; // a non-widening gap is junk, not a legacy map
+  // unknown keys reject even alongside a legal widening gap — a junk key
+  // riding a migration is still junk (T1's exact-count caught this shape)
+  for (const a of actions) if (!known.includes(a)) return null;
   const byCode = new Map<string, string[]>();
   const out: Record<string, string> = {};
   for (const action of known) {
     // hasOwn, not truthiness: an own property is required, inherited or junk keys fail.
-    // The one gap a legacy map may leave is the widening's own action.
+    // The gaps a legacy map may leave are exactly the widening's actions.
     if (!Object.hasOwn(raw, action)) {
-      if (!(legacy && action === 'map')) return null;
+      if (!(legacy && WIDENING_ACTIONS.includes(action))) return null;
     }
-    const code: unknown = Object.hasOwn(raw, action) ? raw[action] : DEFAULT_KEYMAP.map;
+    const code: unknown = Object.hasOwn(raw, action) ? raw[action] : DEFAULT_KEYMAP[action];
     if (typeof code !== 'string' || !CODE_RE.test(code)) return null;
     // M5 final review — a hand-edited file cannot smuggle in what the capture
     // UI would refuse; the default's own ShiftLeft sprint is the one survivor.
