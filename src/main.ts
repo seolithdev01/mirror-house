@@ -269,6 +269,7 @@ import {
   panesDefault,
   shouldShowTouchUi,
 } from './ui/touchUi';
+import { createTouchDiag, parseDiagMode } from './ui/touchDiag';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game')!;
 const overheadCanvas = document.querySelector<HTMLCanvasElement>('#overhead')!;
@@ -1487,6 +1488,16 @@ window.addEventListener(
   { once: true, passive: true },
 );
 refreshTouchUi();
+
+// t12 hotfix — THE TOUCH DIAGNOSTICS: `?diag=1` mounts the live pointer
+// read-out (touchDiag.ts) — the ground-truth tool when a real phone
+// misbehaves, since desktop emulation never hit-tests. It taps window in the
+// capture phase and renders the last 10 pointer events + the mode/coarse/
+// compact header; display-only chrome (pointer-events:none). A default load
+// never carries the element — the same param-gate shape as ?test=1.
+if (parseDiagMode(window.location.search)) {
+  createTouchDiag(document.body, { mode: () => mode, coarse: hasCoarsePointer });
+}
 
 // T11/T1 — THE PAC-MINIMAP: the full maze as a Pac-Man-style guide, mounted
 // bottom-left above the keys bar (the PoD plate styling lives in index.html).

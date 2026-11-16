@@ -23,7 +23,7 @@
 // second. Unstamped (a raw copy of this file), both fall back harmlessly.
 const BUILD = '__MH_BUILD__';
 const ASSETS = ['__MH_ASSETS__'].filter((p) => p.startsWith('/assets/'));
-const CACHE = `mh-${BUILD.startsWith('__') ? 'v6' : BUILD}`;
+const CACHE = `mh-${BUILD.startsWith('__') ? 'v7' : BUILD}`;
 // M6/T4 — the demo venue pack rides the precache: a sponsored floor is an
 // opt-in side excursion, and the pack's fetch failing offline would toast
 // "venue floor unavailable" for a pack we shipped — so the shell banks it.

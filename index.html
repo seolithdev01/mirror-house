@@ -518,6 +518,31 @@
       #mh-tester-banner[hidden] {
         display: none;
       }
+      /* t12 hotfix — THE TOUCH DIAGNOSTICS (?diag=1): the ground-truth
+         read-out when a real phone misbehaves — the last 10 pointer events
+         (#id · pointerType · down/move/up/cancel · x,y · target tag) under a
+         header naming the resolved input mode, the pointer:coarse match and
+         the body.compact state. The diagnostics family's PoD plate, docked
+         top-right below the chips; pointer-events:none AND touch-action:none
+         — a read-out, never a surface. */
+      #mh-touch-diag {
+        position: fixed;
+        top: 118px;
+        right: 14px;
+        z-index: 10;
+        width: 230px;
+        font:
+          calc(11px * var(--mh-text-scale, 1)) / 1.5 ui-monospace,
+          monospace;
+        color: var(--cream);
+        background: var(--plate);
+        border: 1px solid #2ec4b6;
+        border-radius: var(--r);
+        padding: 6px 10px;
+        pointer-events: none;
+        touch-action: none;
+        white-space: pre;
+      }
       /* ============================================================
          THE HUD FRAME — #hud is the fixed inset-0 chrome layer; the PoD
          zones position inside it. The whole frame is pointer-events:none;
