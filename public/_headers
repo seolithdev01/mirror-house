@@ -11,6 +11,10 @@
   Cache-Control: public, max-age=31536000, immutable
   Cross-Origin-Resource-Policy: same-origin
 
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Cross-Origin-Resource-Policy: same-origin
+
 /sw.js
   Cache-Control: no-cache
   Cross-Origin-Resource-Policy: same-origin

@@ -1,6 +1,6 @@
 # Provenance — Mirror House
 
-Everything in this repository is original work, created for this project, or generated at runtime by its own code. **There are no third-party assets.**
+Everything in this repository is original work, created for this project, or generated at runtime by its own code — with one deliberate exception: the two self-hosted UI font families (see **Fonts** below), permissively licensed under the SIL Open Font License and committed unmodified. **There are no third-party game assets.**
 
 ## Code, art, audio — all original
 
@@ -41,6 +41,13 @@ One runtime dependency and a small toolchain. Versions are the pinned ranges fro
 
 Note: the toolchain is not "all MIT" — Playwright and TypeScript are Apache-2.0, per their own package manifests. Both are dev-only (they never ship in the game bundle); the only code that reaches your browser besides our own is `three`, which is MIT.
 
-## Font
+## Fonts
 
-The game uses your operating system's built-in UI fonts (`system-ui`, `ui-monospace` in `index.html`). No web fonts are downloaded — there are no font files to trace.
+ui-pod re-dressed the UI chrome in the design language of our sibling project People of Delhi, which means self-hosted type for the first time. Both families are licensed under the **SIL Open Font License 1.1** (free for any use, including commercial, redistribution, and bundling — no attribution required inside the product, given here as good practice) and were fetched as static woff2 subsets from Google Fonts, then committed to `public/fonts/` and precached by the service worker. **No font is loaded remotely** — the CSP allows `font-src 'self'` only.
+
+| Family | Weights | Subsets | Foundry | License | Files |
+| --- | --- | --- | --- | --- | --- |
+| **Big Shoulders Display** | 700 / 800 / 900 | latin | Tyler Finck / Etcetera Type Co (via Google Fonts) | SIL OFL 1.1 | `bsd-latin.woff2` (one variable latin file; each `@font-face` pins a weight, exactly as Google's own css2 serves it) |
+| **Mukta** | 400 / 500 / 600 / 700 / 800 | latin, latin-ext, devanagari | Indian Type Foundry (via Google Fonts) | SIL OFL 1.1 | `mukta-{weight}-{latin,latin-ext,devanagari}.woff2` (15 files; unicode-range per subset) |
+
+The `unicode-range` descriptors are copied verbatim from Google Fonts' css2 output; the woff2 binaries are unmodified copies of the files Google served (v24 of Big Shoulders Display, v17 of Mukta, fetched 2026-11-16). Mukta's devanagari subset is what renders the Hindi UI chrome in the house's own type. The dev diagnostics and feedback textarea keep the operating system's `ui-monospace` — no font files beyond the two families above.
