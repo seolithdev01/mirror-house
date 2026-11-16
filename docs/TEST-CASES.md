@@ -366,6 +366,11 @@ your campaign floor (no error screen, no broken boot).
 
 ## 8. Mobile / touch [MOB]
 
+**Note:** After any touch-input change, run MOB-1 and MOB-3 once on a real
+phone — emulation bypasses the browser's gesture recognition (pull-to-refresh,
+pinch-zoom, double-tap zoom), the exact failure class the gesture hardening
+(touch-action/overscroll) and the HUD-tap zone guard exist for.
+
 ### MOB-1 — The whole loop on a touchscreen
 
 **Steps:** On a phone or tablet, open your personal link — since T12 it

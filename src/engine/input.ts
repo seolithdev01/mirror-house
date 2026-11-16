@@ -220,6 +220,17 @@ export class InputCollector {
     };
     const pointerDown = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
+      // T12 final-review — HUD taps never claim a zone: a touch whose target
+      // is an interactive element (dock buttons, chips, settings) is chrome's
+      // press, not the play surface's — the canvas and body still claim
+      // normally. (The `typeof` guard keeps the node-env unit tests — no DOM
+      // `Element` global, no `target` on synthetic events — on the same path.)
+      if (
+        typeof Element !== 'undefined' &&
+        e.target instanceof Element &&
+        e.target.closest('button, a, input, select, textarea, label, [role="button"]')
+      )
+        return;
       const viewW = this.win?.innerWidth ?? 0;
       if (classifyZone(e.clientX, viewW) === 'stick') {
         if (this.stickActive) return; // first touch owns the zone until it lifts

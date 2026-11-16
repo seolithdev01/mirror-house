@@ -276,10 +276,23 @@
         overflow: hidden;
         background: var(--ink);
       }
+      /* t12 final-review — browser-gesture hardening on real touch hardware:
+         overscroll-behavior kills pull-to-refresh and pinch-zoom during play;
+         `manipulation` on the body keeps taps responsive (no double-tap zoom
+         delay) without giving the page panning; the canvas is `none` — the
+         game owns every touch on the play surface. */
+      html {
+        overscroll-behavior: none;
+      }
+      body {
+        touch-action: manipulation;
+        overscroll-behavior: none;
+      }
       #game {
         display: block;
         width: 100vw;
         height: 100vh;
+        touch-action: none; /* the game owns all touches on the play surface */
       }
       /* Overhead/tactical map (M3/T4) — a 2D canvas over the paused 3D stage.
          display:none unless the view mode is overhead/tactical (main.ts owns
@@ -428,6 +441,7 @@
       #hud button {
         pointer-events: auto;
         cursor: pointer;
+        touch-action: manipulation; /* t12 final-review: quick dock taps, no double-tap zoom */
         background: #ffffff14;
         color: var(--cream);
         border: 1px solid rgba(255, 255, 255, 0.16);
