@@ -2,7 +2,7 @@
 //
 // T12/T3 — the TOUCH e2e file: its own describe configured as a phone (390×844
 // viewport, hasTouch). The desktop 50/50 smoke suite stays byte-untouched —
-// this file ADDS the touch legs to the total (50 → 53 across files). The
+// this file ADDS the touch legs to the total (53 → 54 across files). The
 // T1 collector gates on `pointerType === 'touch'`, and Playwright's
 // `hasTouch` alone does not flip every pointer media query, so each test
 // boots with the DEV-only `?ui=touch` session override (T2's ratified path —
