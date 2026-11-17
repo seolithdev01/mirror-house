@@ -263,9 +263,9 @@ function* allSignals(): Generator<DeviceSignals> {
 }
 
 describe('detectMode — the two-arm boot ladder (T12b/T1)', () => {
-  it('pins the FULL truth table: touchCapable → touch, else keyboard', () => {
+  it('pins the FULL truth table: touchCapable → touch, else hybrid (the desktop arm keeps keyboard + mouse)', () => {
     for (const s of allSignals()) {
-      const expected = s.touchCapable ? 'touch' : 'keyboard';
+      const expected = s.touchCapable ? 'touch' : 'hybrid';
       expect(detectMode(s), JSON.stringify(s)).toBe(expected);
     }
   });
@@ -284,14 +284,14 @@ describe('detectMode — the two-arm boot ladder (T12b/T1)', () => {
       'touch',
     );
   });
-  it('a mouse-only kiosk (fine + hover, zero touch) → keyboard — a mouse without a keyboard is undetectable, mouse stays reachable via ⚙', () => {
+  it('a mouse-only kiosk (fine + hover, zero touch) → hybrid — a mouse without a keyboard is undetectable, and hybrid carries BOTH keyboard and mouse; pure mouse stays reachable via ⚙', () => {
     expect(detectMode({ coarse: false, touchCapable: false, fine: true, hover: true })).toBe(
-      'keyboard',
+      'hybrid',
     );
   });
-  it('no signals at all → keyboard (anything that runs a browser UI has one)', () => {
+  it('no signals at all → hybrid (anything that runs a browser UI has a keyboard; mouse look rides along)', () => {
     expect(detectMode({ coarse: false, touchCapable: false, fine: false, hover: false })).toBe(
-      'keyboard',
+      'hybrid',
     );
   });
 });
@@ -303,9 +303,9 @@ describe('defaultMode — back-compat wrapper over the ladder (T12b/T1)', () => 
     expect(defaultMode(true, 'hybrid')).toBe('hybrid');
     expect(defaultMode(false, 'touch')).toBe('touch');
   });
-  it('a NEW save (no stored mode): coarse ⇒ touch-capable, else keyboard — the ladder', () => {
+  it('a NEW save (no stored mode): coarse ⇒ touch-capable → touch, else hybrid — the T12 default', () => {
     expect(defaultMode(true)).toBe('touch'); // the wrapper maps coarse → touchCapable
-    expect(defaultMode(false)).toBe('keyboard'); // the T12 'hybrid' fallback is retired
+    expect(defaultMode(false)).toBe('hybrid');
   });
 });
 
@@ -316,11 +316,11 @@ describe('applyLockInput — the first-input lock (T12b/T1)', () => {
       mode: 'touch',
     });
   });
-  it('a non-modifier keydown locks keyboard', () => {
-    expect(applyLockInput(MODE_LOCK_OPEN, 'key-down')).toEqual({
-      locked: true,
-      mode: 'keyboard',
-    });
+  it('FRESH + keydown locks HYBRID — not keyboard: a keypress proves a keyboard, and hybrid keeps mouse look alive', () => {
+    const locked = applyLockInput(MODE_LOCK_OPEN, 'key-down');
+    expect(locked).toEqual({ locked: true, mode: 'hybrid' });
+    expect(locked.mode).not.toBe('keyboard'); // keys-only would kill mouse-look — never the lock's pick
+    expect(locked.mode).not.toBe('mouse');
   });
   it('mouse input NEVER locks — ambiguous (the keyboard stands), same state back', () => {
     expect(applyLockInput(MODE_LOCK_OPEN, 'mouse')).toBe(MODE_LOCK_OPEN);

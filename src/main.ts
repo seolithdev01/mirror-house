@@ -384,7 +384,7 @@ function migrateFromMetaV1(): SaveData | null {
 // T12b/T1 — the boot ALSO records whether this save is brand-new (nothing in
 // IDB, nothing to migrate): that is the one case the detection ladder may
 // speak for — a new save boots the ladder's pick (touch-capable → 'touch',
-// else 'keyboard'), an existing save keeps its stored mode, never wiped by a
+// else 'hybrid'), an existing save keeps its stored mode, never wiped by a
 // device hint.
 const storedSave = await idbGet();
 const migratedMeta = storedSave === null ? migrateFromMetaV1() : null;
@@ -1305,10 +1305,11 @@ input.attach(window);
 // T12b/T1 — the boot LADDER: probe the device once (matchMedia + touch
 // points), a stored mode always wins (modeLockFor's own contract), and a
 // BRAND-NEW save consults the ladder: touch-capable → 'touch', else
-// 'keyboard' (mouse is never auto-detected — a mouse without a keyboard is
-// undetectable; it stays one ⚙ tap away). The DEV-only `?ui=touch` override
-// forces the session mode for touch testing on a desktop (the live-check
-// path) without ever touching the save.
+// 'hybrid' (the desktop arm keeps keyboard move AND mouse look; pure
+// 'keyboard'/'mouse' stay one ⚙ tap away — a mouse without a keyboard is
+// undetectable, so mouse is never auto-detected). The DEV-only `?ui=touch`
+// override forces the session mode for touch testing on a desktop (the
+// live-check path) without ever touching the save.
 const deviceSignals: DeviceSignals = {
   coarse: hasCoarsePointer,
   touchCapable: navigator.maxTouchPoints > 0,
@@ -1516,10 +1517,12 @@ refreshTouchUi();
 // STARTING mode from hardware; the first modality that actually FIRES gets
 // the final word. Three listeners funnel into the pure reducer:
 //   • pointerdown with pointerType 'touch' → locks 'touch'
-//   • keydown of a NON-modifier key        → locks 'keyboard'
+//   • keydown of a NON-modifier key        → locks 'hybrid' (a keypress
+//     proves a keyboard, and hybrid keeps mouse look alive — never the
+//     keys-only 'keyboard' mode)
 //   • mousedown/mousemove                  → NEVER locks (mouse rides
 //     alongside a keyboard on every machine it can be detected on — a mouse
-//     event alone is ambiguous, so the ladder's keyboard verdict stands; a
+//     event alone is ambiguous, so the ladder's hybrid verdict stands; a
 //     mouse-only kiosk is undetectable, the honest limit)
 // A stored save booted locked (modeLockFor) — nothing here speaks for it —
 // and the lock closes itself after a ⚙ manual switch (onMode). The

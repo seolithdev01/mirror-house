@@ -43,17 +43,19 @@ export interface DeviceSignals {
  *  1. `touchCapable` → `'touch'` — phones, tablets, iPads (keyboard attached
  *     or not), Surface-class fine-primary machines with a touchscreen: the
  *     touchscreen WINS per the priority order.
- *  2. else → `'keyboard'` — everything else that runs a browser UI has a
- *     keyboard.
+ *  2. else → `'hybrid'` — the desktop arm keeps BOTH: keyboard movement AND
+ *     mouse look ("keyboard second, mouse third" means the desktop owns the
+ *     pair — hybrid IS keyboard+mouse). Pure `'keyboard'` and `'mouse'` stay
+ *     one ⚙ tap away.
  * `'mouse'` is deliberately NOT an auto-detect outcome: a mouse without a
  * keyboard is undetectable (browsers never report "pointer: mouse and
  * nothing else" as distinct hardware — every desktop also has a keyboard),
- * so the ladder never picks mouse over keyboard. Mouse stays one ⚙ tap away;
- * the honest limit is documented here and in the FAQ. `fine`/`hover` do not
- * move the shipped verdict — they are carried for future tuning.
+ * so the ladder never picks mouse over keyboard; the honest limit is
+ * documented here and in the FAQ. `fine`/`hover` do not move the shipped
+ * verdict — they are carried for future tuning.
  */
 export function detectMode(s: DeviceSignals): InputMode {
-  return s.touchCapable ? 'touch' : 'keyboard';
+  return s.touchCapable ? 'touch' : 'hybrid';
 }
 
 /**
@@ -62,8 +64,8 @@ export function detectMode(s: DeviceSignals): InputMode {
  * never wiped by a device hint. With no stored mode (a brand-new save), the
  * wrapper stands in for the full probe: `hasCoarsePointer` maps onto BOTH
  * `coarse` and `touchCapable` (a coarse primary pointer implies touch
- * hardware), so coarse → 'touch' and everything else → 'keyboard' (the T12
- * `'hybrid'` fallback is retired by the ladder). Prefer detectMode with real
+ * hardware), so coarse → 'touch' and everything else → 'hybrid' — the T12
+ * default, which the two-arm ladder preserves. Prefer detectMode with real
  * DeviceSignals — main.ts does.
  */
 export function defaultMode(hasCoarsePointer: boolean, stored?: InputMode): InputMode {
@@ -101,16 +103,17 @@ export type LockInput = 'touch-down' | 'key-down' | 'mouse';
 
 /**
  * The lock reducer (T12b/T1), pure: the first unambiguous input claims the
- * mode for the save — a tap locks `'touch'`, a keypress locks
- * `'keyboard'`. Mouse input NEVER locks: a desktop mouse rides alongside a
- * keyboard, so a mouse event alone says nothing (a mouse-only machine is
- * undetectable — the ladder's keyboard verdict stands). A landed lock is
- * terminal and idempotent: every later input returns the SAME state (same
- * reference, so callers can branch on "nothing changed").
+ * mode for the save — a tap locks `'touch'`, a keypress locks `'hybrid'`
+ * (a keypress proves a keyboard, and hybrid keeps mouse look alive — NOT
+ * the keys-only 'keyboard' mode). Mouse input NEVER locks: a desktop mouse
+ * rides alongside a keyboard, so a mouse event alone says nothing (a
+ * mouse-only machine is undetectable — the ladder's hybrid verdict stands).
+ * A landed lock is terminal and idempotent: every later input returns the
+ * SAME state (same reference, so callers can branch on "nothing changed").
  */
 export function applyLockInput(s: ModeLock, input: LockInput): ModeLock {
   if (s.locked || input === 'mouse') return s;
-  return { locked: true, mode: input === 'touch-down' ? 'touch' : 'keyboard' };
+  return { locked: true, mode: input === 'touch-down' ? 'touch' : 'hybrid' };
 }
 
 /**
@@ -134,8 +137,8 @@ const MODIFIER_CODE_RE =
 /**
  * May this KeyboardEvent.code count as the keyboard's first real input
  * (T12b/T1)? False for the modifier families above — the wiring drops those
- * before the lock sees them. Pure; codes only, like the rest of the keymap
- * layer.
+ * before the lock sees them (the first REAL key is what locks 'hybrid').
+ * Pure; codes only, like the rest of the keymap layer.
  */
 export function isModifierCode(code: string): boolean {
   return MODIFIER_CODE_RE.test(code);

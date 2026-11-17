@@ -1156,7 +1156,7 @@ test('m4: hindi chrome via ?lang=hi', async ({ page }) => {
       (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.lang(),
     ),
   ).toBe('hi');
-  await expect(page.locator('#hud button[data-mode="keyboard"]')).toContainText('कुंजियाँ');
+  await expect(page.locator('#hud button[data-mode="hybrid"]')).toContainText('दोनों');
   await expect(page.locator('#mh-floor')).toContainText('स्तर');
   await expect(page.locator('#mh-shards')).toContainText('शार्ड');
   await expect(page.locator('#overhead')).toBeHidden(); // chrome only — the game boots in focus
@@ -1169,7 +1169,7 @@ test('m4: hindi chrome via ?lang=hi', async ({ page }) => {
       (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.lang(),
     ),
   ).toBe('en');
-  await expect(page.locator('#hud button[data-mode="keyboard"]')).toHaveText('⌨ Keys');
+  await expect(page.locator('#hud button[data-mode="hybrid"]')).toHaveText('⌨+🖱 Both');
   await expect(page.locator('#mh-floor')).toHaveText('L01');
   expect(errors).toEqual([]);
 });
@@ -3262,11 +3262,12 @@ test('t11: motion pane mirrors you', async ({ page }) => {
 
 // T12b/T1 — THE DETECTION LADDER + FIRST-INPUT LOCK: a fresh save (nothing
 // in IDB) boots the ladder's pick for a desktop context — no touch hardware
-// → 'keyboard' — and the first real keypress locks it through the usual
-// debounced persist path. On reload the stored mode boots LOCKED (stored =
-// locked, never auto-locked again): a synthesized touch press cannot steal
-// the mode.
-test('t12b: fresh save boots keyboard via the ladder; a keypress locks it across reload', async ({
+// → 'hybrid' (keyboard move AND mouse look; keys-only would kill mouse-look)
+// — and the first real keypress locks 'hybrid' through the usual debounced
+// persist path (a keypress proves a keyboard; hybrid keeps the mouse alive).
+// On reload the stored mode boots LOCKED (stored = locked, never auto-locked
+// again): a synthesized touch press cannot steal the mode.
+test('t12b: fresh save boots hybrid via the ladder; a keypress locks it across reload', async ({
   page,
 }) => {
   const errors = collectErrors(page);
@@ -3277,18 +3278,18 @@ test('t12b: fresh save boots keyboard via the ladder; a keypress locks it across
       () =>
         (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.mode(),
     );
-  expect(await liveMode()).toBe('keyboard'); // the two-arm ladder: no touch → keyboard
+  expect(await liveMode()).toBe('hybrid'); // the two-arm ladder: no touch → hybrid (not keys-only)
   await page.keyboard.press('KeyW'); // the first unambiguous input locks the mode
   await page.waitForTimeout(500); // the 250 ms debounced persist lands before the reload
   await page.reload();
   await ready(page);
-  expect(await liveMode()).toBe('keyboard'); // the lock survived the reload as a stored mode
+  expect(await liveMode()).toBe('hybrid'); // the lock survived the reload as a stored mode
   await page.evaluate(() =>
     window.dispatchEvent(
       new PointerEvent('pointerdown', { pointerType: 'touch', clientX: 100, clientY: 400 }),
     ),
   );
   await page.waitForTimeout(100);
-  expect(await liveMode()).toBe('keyboard'); // stored boots locked — touch cannot steal it
+  expect(await liveMode()).toBe('hybrid'); // stored boots locked — touch cannot steal it
   expect(errors).toEqual([]);
 });
