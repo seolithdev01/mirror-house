@@ -21,16 +21,124 @@ export interface KeyboardSnapshot {
 export type InputMode = 'keyboard' | 'mouse' | 'hybrid' | 'touch';
 
 /**
- * The boot-time mode auto-select (T12/T1), pure: a stored mode always wins —
- * existing saves keep their choice, never wiped by a device hint. With no
- * stored mode (a brand-new save), a coarse-pointer device (touch screen)
- * starts on `'touch'`; everything else falls back to the long-time default
- * `'hybrid'`. main.ts calls this once at boot with
- * `matchMedia('(pointer: coarse)').matches` and the save's stored mode.
+ * The hardware probe main.ts takes once at boot (T12b/T1): the matchMedia
+ * pointer/hover signals plus `navigator.maxTouchPoints`. `fine` and `hover`
+ * ride along for completeness and future tuning — the shipped ladder reads
+ * only `touchCapable`.
+ */
+export interface DeviceSignals {
+  /** `(pointer: coarse)` — the PRIMARY pointer is a finger. */
+  coarse: boolean;
+  /** `navigator.maxTouchPoints > 0` — the device can produce touch input. */
+  touchCapable: boolean;
+  /** `(any-pointer: fine)` — some pointer is precise (mouse/trackpad/pen). */
+  fine: boolean;
+  /** `(any-hover: hover)` — some pointer can hover. */
+  hover: boolean;
+}
+
+/**
+ * The device-detection ladder (T12b/T1), pure — priority: touch → keyboard →
+ * mouse, shipped as TWO arms:
+ *  1. `touchCapable` → `'touch'` — phones, tablets, iPads (keyboard attached
+ *     or not), Surface-class fine-primary machines with a touchscreen: the
+ *     touchscreen WINS per the priority order.
+ *  2. else → `'keyboard'` — everything else that runs a browser UI has a
+ *     keyboard.
+ * `'mouse'` is deliberately NOT an auto-detect outcome: a mouse without a
+ * keyboard is undetectable (browsers never report "pointer: mouse and
+ * nothing else" as distinct hardware — every desktop also has a keyboard),
+ * so the ladder never picks mouse over keyboard. Mouse stays one ⚙ tap away;
+ * the honest limit is documented here and in the FAQ. `fine`/`hover` do not
+ * move the shipped verdict — they are carried for future tuning.
+ */
+export function detectMode(s: DeviceSignals): InputMode {
+  return s.touchCapable ? 'touch' : 'keyboard';
+}
+
+/**
+ * The T12 boot-time auto-select, kept as a back-compat wrapper over
+ * detectMode: a stored mode always wins — existing saves keep their choice,
+ * never wiped by a device hint. With no stored mode (a brand-new save), the
+ * wrapper stands in for the full probe: `hasCoarsePointer` maps onto BOTH
+ * `coarse` and `touchCapable` (a coarse primary pointer implies touch
+ * hardware), so coarse → 'touch' and everything else → 'keyboard' (the T12
+ * `'hybrid'` fallback is retired by the ladder). Prefer detectMode with real
+ * DeviceSignals — main.ts does.
  */
 export function defaultMode(hasCoarsePointer: boolean, stored?: InputMode): InputMode {
   if (stored !== undefined) return stored;
-  return hasCoarsePointer ? 'touch' : 'hybrid';
+  return detectMode({
+    coarse: hasCoarsePointer,
+    touchCapable: hasCoarsePointer,
+    fine: false,
+    hover: false,
+  });
+}
+
+// ---- T12b/T1 — THE FIRST-INPUT LOCK -----------------------------------------
+// The boot ladder picks the STARTING mode from hardware guesses; on a fresh
+// save the first modality that actually FIRES gets the final word. These
+// pure pieces (state type, reducer, boot policy, modifier gate) are the
+// whole lock — main.ts only wires listeners that funnel into applyLockInput
+// and persists the outcome through the usual save path.
+
+/** The first-input lock's state (T12b/T1): open until the first unambiguous
+ *  input fires on a fresh save; a stored save boots closed. */
+export interface ModeLock {
+  readonly locked: boolean;
+  /** The locked mode — null only while the lock is open. */
+  readonly mode: InputMode | null;
+}
+
+/** The open lock — a fresh save's boot state: nothing has spoken yet. */
+export const MODE_LOCK_OPEN: ModeLock = { locked: false, mode: null };
+
+/** What fired: a touch pointerdown, a non-modifier keydown, or mouse
+ *  activity (mousedown/mousemove — carried as an arm so the wiring names the
+ *  ambiguity instead of silently ignoring it; see applyLockInput). */
+export type LockInput = 'touch-down' | 'key-down' | 'mouse';
+
+/**
+ * The lock reducer (T12b/T1), pure: the first unambiguous input claims the
+ * mode for the save — a tap locks `'touch'`, a keypress locks
+ * `'keyboard'`. Mouse input NEVER locks: a desktop mouse rides alongside a
+ * keyboard, so a mouse event alone says nothing (a mouse-only machine is
+ * undetectable — the ladder's keyboard verdict stands). A landed lock is
+ * terminal and idempotent: every later input returns the SAME state (same
+ * reference, so callers can branch on "nothing changed").
+ */
+export function applyLockInput(s: ModeLock, input: LockInput): ModeLock {
+  if (s.locked || input === 'mouse') return s;
+  return { locked: true, mode: input === 'touch-down' ? 'touch' : 'keyboard' };
+}
+
+/**
+ * The boot policy (T12b/T1): a save with a STORED mode boots locked — the
+ * player's saved choice is final, never auto-locked again; only a fresh
+ * save (no stored mode) boots open, ready for the first real input to
+ * claim the mode. The ⚙ manual switch feeds its outcome back through here
+ * too: a switch persists the mode, and stored = locked.
+ */
+export function modeLockFor(stored: InputMode | undefined): ModeLock {
+  return stored === undefined ? MODE_LOCK_OPEN : { locked: true, mode: stored };
+}
+
+/** The modifier codes a keydown must NOT lock through (T12b/T1): Shift,
+ *  Ctrl, Alt, Meta, Caps/Num/Scroll Lock, Fn — pressing one alone says
+ *  nothing about which controls the player intends. The first REAL key
+ *  (W, H, Space, an arrow, …) is what locks 'keyboard'. */
+const MODIFIER_CODE_RE =
+  /^(Shift|Control|Alt|Meta)(Left|Right)$|^(CapsLock|NumLock|ScrollLock|Fn|FnLock)$/;
+
+/**
+ * May this KeyboardEvent.code count as the keyboard's first real input
+ * (T12b/T1)? False for the modifier families above — the wiring drops those
+ * before the lock sees them. Pure; codes only, like the rest of the keymap
+ * layer.
+ */
+export function isModifierCode(code: string): boolean {
+  return MODIFIER_CODE_RE.test(code);
 }
 
 /**

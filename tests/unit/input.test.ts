@@ -2,14 +2,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   InputCollector,
+  MODE_LOCK_OPEN,
   actionFor,
+  applyLockInput,
   capturableCode,
   defaultMode,
+  detectMode,
+  isModifierCode,
   keysToMoveInput,
   keysToMoveInput as map,
+  modeLockFor,
   mouseOnlyInput,
   rebind,
   withoutKey,
+  type DeviceSignals,
 } from '../../src/engine/input';
 import {
   KEY_TURN_PER_STEP,
@@ -245,17 +251,114 @@ describe('capturableCode — the rebind capture gate (M5/T5)', () => {
 });
 
 // ---- T12/T1 — the touch plumbing: boot auto-select + pointer tracking --------
+// ---- T12b/T1 — the detection ladder (two-arm) + the first-input lock ----------
 
-describe('defaultMode — the boot-time auto-select (T12/T1)', () => {
+/** Every DeviceSignals combination the four booleans can name — the full
+ *  16-row truth table the ladder must survive unchanged. */
+function* allSignals(): Generator<DeviceSignals> {
+  for (const coarse of [false, true])
+    for (const touchCapable of [false, true])
+      for (const fine of [false, true])
+        for (const hover of [false, true]) yield { coarse, touchCapable, fine, hover };
+}
+
+describe('detectMode — the two-arm boot ladder (T12b/T1)', () => {
+  it('pins the FULL truth table: touchCapable → touch, else keyboard', () => {
+    for (const s of allSignals()) {
+      const expected = s.touchCapable ? 'touch' : 'keyboard';
+      expect(detectMode(s), JSON.stringify(s)).toBe(expected);
+    }
+  });
+  it('a phone or tablet (coarse primary, touch) → touch', () => {
+    expect(detectMode({ coarse: true, touchCapable: true, fine: false, hover: false })).toBe(
+      'touch',
+    );
+  });
+  it('an iPad WITH a keyboard attached (coarse + fine + hover + touch) → touch', () => {
+    expect(detectMode({ coarse: true, touchCapable: true, fine: true, hover: true })).toBe(
+      'touch',
+    );
+  });
+  it('a Surface-class fine-primary machine with a touchscreen → touch (touchscreen wins)', () => {
+    expect(detectMode({ coarse: false, touchCapable: true, fine: true, hover: true })).toBe(
+      'touch',
+    );
+  });
+  it('a mouse-only kiosk (fine + hover, zero touch) → keyboard — a mouse without a keyboard is undetectable, mouse stays reachable via ⚙', () => {
+    expect(detectMode({ coarse: false, touchCapable: false, fine: true, hover: true })).toBe(
+      'keyboard',
+    );
+  });
+  it('no signals at all → keyboard (anything that runs a browser UI has one)', () => {
+    expect(detectMode({ coarse: false, touchCapable: false, fine: false, hover: false })).toBe(
+      'keyboard',
+    );
+  });
+});
+
+describe('defaultMode — back-compat wrapper over the ladder (T12b/T1)', () => {
   it('a stored mode always wins — existing saves keep their mode, no wipe', () => {
     expect(defaultMode(true, 'keyboard')).toBe('keyboard');
     expect(defaultMode(true, 'mouse')).toBe('mouse');
     expect(defaultMode(true, 'hybrid')).toBe('hybrid');
     expect(defaultMode(false, 'touch')).toBe('touch');
   });
-  it('a NEW save (no stored mode): coarse pointer → touch, fine pointer → hybrid', () => {
-    expect(defaultMode(true)).toBe('touch');
-    expect(defaultMode(false)).toBe('hybrid');
+  it('a NEW save (no stored mode): coarse ⇒ touch-capable, else keyboard — the ladder', () => {
+    expect(defaultMode(true)).toBe('touch'); // the wrapper maps coarse → touchCapable
+    expect(defaultMode(false)).toBe('keyboard'); // the T12 'hybrid' fallback is retired
+  });
+});
+
+describe('applyLockInput — the first-input lock (T12b/T1)', () => {
+  it('a touch pointerdown locks touch', () => {
+    expect(applyLockInput(MODE_LOCK_OPEN, 'touch-down')).toEqual({
+      locked: true,
+      mode: 'touch',
+    });
+  });
+  it('a non-modifier keydown locks keyboard', () => {
+    expect(applyLockInput(MODE_LOCK_OPEN, 'key-down')).toEqual({
+      locked: true,
+      mode: 'keyboard',
+    });
+  });
+  it('mouse input NEVER locks — ambiguous (the keyboard stands), same state back', () => {
+    expect(applyLockInput(MODE_LOCK_OPEN, 'mouse')).toBe(MODE_LOCK_OPEN);
+  });
+  it('idempotent: a landed lock never re-locks — the SAME state back, whatever fires next', () => {
+    const locked = applyLockInput(MODE_LOCK_OPEN, 'touch-down');
+    expect(applyLockInput(locked, 'key-down')).toBe(locked);
+    expect(applyLockInput(locked, 'touch-down')).toBe(locked);
+    expect(applyLockInput(locked, 'mouse')).toBe(locked);
+  });
+  it('a STORED mode boots locked — the lock never speaks for a saved choice', () => {
+    const stored = modeLockFor('keyboard');
+    expect(stored).toEqual({ locked: true, mode: 'keyboard' });
+    expect(applyLockInput(stored, 'touch-down')).toBe(stored);
+    expect(applyLockInput(stored, 'key-down')).toBe(stored);
+    expect(modeLockFor('touch')).toEqual({ locked: true, mode: 'touch' });
+  });
+  it('a fresh save (no stored mode) boots open', () => {
+    expect(modeLockFor(undefined)).toBe(MODE_LOCK_OPEN);
+    expect(MODE_LOCK_OPEN).toEqual({ locked: false, mode: null });
+  });
+  it('modifier keydowns say nothing — isModifierCode gates the lock wiring', () => {
+    for (const code of [
+      'ShiftLeft',
+      'ShiftRight',
+      'ControlLeft',
+      'ControlRight',
+      'AltLeft',
+      'AltRight',
+      'MetaLeft',
+      'MetaRight',
+      'CapsLock',
+      'NumLock',
+      'ScrollLock',
+    ])
+      expect(isModifierCode(code), code).toBe(true);
+    for (const code of ['KeyW', 'KeyH', 'Space', 'Enter', 'ArrowUp', 'F12', 'Digit1'])
+      expect(isModifierCode(code), code).toBe(false);
   });
 });
 

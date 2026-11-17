@@ -66,13 +66,19 @@ import {
 import { createRng, type Rng } from './engine/rng';
 import {
   actionFor,
-  defaultMode,
+  applyLockInput,
+  detectMode,
   InputCollector,
+  isModifierCode,
   keysToMoveInput,
+  modeLockFor,
   mouseOnlyInput,
   rebind,
   withoutKey,
+  type DeviceSignals,
   type InputMode,
+  type LockInput,
+  type ModeLock,
   type TouchSnapshot,
 } from './engine/input';
 import { Dir, type CellIndex } from './engine/grid';
@@ -375,10 +381,11 @@ function migrateFromMetaV1(): SaveData | null {
 // M5/T1 — normalizeSave fills the additive a11y defaults post-load: every
 // pre-M5 save (stored, exported, migrated) arrives without the block and
 // leaves this line carrying the full default one.
-// T12/T2 — the boot ALSO records whether this save is brand-new (nothing in
-// IDB, nothing to migrate): that is the one case defaultMode's auto-select
-// may speak for — a new save on a coarse-pointer device boots 'touch', an
-// existing save keeps its stored mode, never wiped by a device hint.
+// T12b/T1 — the boot ALSO records whether this save is brand-new (nothing in
+// IDB, nothing to migrate): that is the one case the detection ladder may
+// speak for — a new save boots the ladder's pick (touch-capable → 'touch',
+// else 'keyboard'), an existing save keeps its stored mode, never wiped by a
+// device hint.
 const storedSave = await idbGet();
 const migratedMeta = storedSave === null ? migrateFromMetaV1() : null;
 const isNewSave = storedSave === null && migratedMeta === null;
@@ -1295,18 +1302,33 @@ const QUAD_SIDE_YAW: readonly { cam: THREE.PerspectiveCamera; yaw: number }[] = 
 
 const input = new InputCollector();
 input.attach(window);
-// T12/T2 — the boot mode: a stored mode always wins (defaultMode's own
-// contract); a BRAND-NEW save consults the device (coarse → 'touch'). The
-// DEV-only `?ui=touch` override forces the session mode for touch testing
-// on a desktop (the live-check path) without ever touching the save.
+// T12b/T1 — the boot LADDER: probe the device once (matchMedia + touch
+// points), a stored mode always wins (modeLockFor's own contract), and a
+// BRAND-NEW save consults the ladder: touch-capable → 'touch', else
+// 'keyboard' (mouse is never auto-detected — a mouse without a keyboard is
+// undetectable; it stays one ⚙ tap away). The DEV-only `?ui=touch` override
+// forces the session mode for touch testing on a desktop (the live-check
+// path) without ever touching the save.
+const deviceSignals: DeviceSignals = {
+  coarse: hasCoarsePointer,
+  touchCapable: navigator.maxTouchPoints > 0,
+  fine: window.matchMedia('(any-pointer: fine)').matches,
+  hover: window.matchMedia('(any-hover: hover)').matches,
+};
 const modeOverride: InputMode | null =
   import.meta.env.DEV && urlParams.get('ui') === 'touch' ? 'touch' : null;
 let mode: InputMode =
-  modeOverride ?? (isNewSave ? defaultMode(hasCoarsePointer) : save.mode);
+  modeOverride ?? (isNewSave ? detectMode(deviceSignals) : save.mode);
 if (modeOverride === null && mode !== save.mode) {
-  save = { ...save, mode }; // the auto-selected touch mode sticks (T12 ratified)
+  save = { ...save, mode }; // the ladder's pick sticks (T12 ratified)
   persist();
 }
+// T12b/T1 — the lock STATE: a fresh save boots open (the first real input
+// will claim the mode); anything else — a stored mode, a migrated one, or a
+// DEV ?ui=touch session that owns its visit — boots locked, so no listener
+// ever speaks for a choice that already exists.
+let modeLock: ModeLock =
+  modeLockFor(isNewSave && modeOverride === null ? undefined : save.mode);
 const faq = buildFaqOverlay();
 // step007/T1 — the About panel: version, pitch, beta, credits, links, tagline.
 // Two doors: the ⓘ beside 🌐 (hud.ts) and the entry inside ⚙ (settings.ts);
@@ -1429,6 +1451,7 @@ const hud = createHud({
     hud.setMode(m);
     refreshTouchUi(); // T12/T2 — the overlay follows the mode (and hides again off 'touch')
     save = { ...save, mode: m };
+    modeLock = modeLockFor(m); // T12b/T1 — a manual switch is a stored mode: it locks the session too
     persist();
   },
   onFaq: () => faq.toggle(),
@@ -1488,6 +1511,40 @@ window.addEventListener(
   { once: true, passive: true },
 );
 refreshTouchUi();
+
+// T12b/T1 — THE FIRST-INPUT LOCK (fresh saves only): the ladder guessed the
+// STARTING mode from hardware; the first modality that actually FIRES gets
+// the final word. Three listeners funnel into the pure reducer:
+//   • pointerdown with pointerType 'touch' → locks 'touch'
+//   • keydown of a NON-modifier key        → locks 'keyboard'
+//   • mousedown/mousemove                  → NEVER locks (mouse rides
+//     alongside a keyboard on every machine it can be detected on — a mouse
+//     event alone is ambiguous, so the ladder's keyboard verdict stands; a
+//     mouse-only kiosk is undetectable, the honest limit)
+// A stored save booted locked (modeLockFor) — nothing here speaks for it —
+// and the lock closes itself after a ⚙ manual switch (onMode). The
+// listeners stay attached once the lock lands: applyLockInput is
+// idempotent, so every later event is a same-reference no-op (never
+// re-locks), and the outcome persists through the usual debounced path.
+function tryLock(which: LockInput): void {
+  const next = applyLockInput(modeLock, which);
+  if (next === modeLock) return; // locked already, or a mouse event — nothing claimed
+  modeLock = next;
+  if (next.mode !== null && next.mode !== mode) {
+    mode = next.mode; // the first real touch/key beats the boot ladder's guess
+    hud.setMode(mode);
+    refreshTouchUi();
+  }
+  save = { ...save, mode }; // the claim rides the existing persist() path
+  persist();
+}
+window.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'touch') tryLock('touch-down');
+});
+window.addEventListener('keydown', (e) => {
+  if (!isModifierCode(e.code)) tryLock('key-down');
+});
+window.addEventListener('mousedown', () => tryLock('mouse')); // the refused arm — never locks
 
 // t12 hotfix — THE TOUCH DIAGNOSTICS: `?diag=1` mounts the live pointer
 // read-out (touchDiag.ts) — the ground-truth tool when a real phone
