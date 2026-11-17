@@ -132,22 +132,28 @@ export function showStartScreen(opts: StartScreenOptions): StartScreenHandle {
     actions.appendChild(fresh);
   }
 
-  const stats = document.createElement('p');
-  stats.className = 'mh-start-stats';
+  // T14/t13 rider — the mini-stats line only EXISTS when there is something
+  // to name: a fresh save (no streak, purse or best) gets no `<p>` at all,
+  // not an empty one (the old path always appended the node and only filled
+  // it when a save existed — an empty paragraph riding every fresh boot).
+  const rows: HTMLElement[] = [kicker, title, tagline, actions];
   if (opts.hasSave) {
+    const stats = document.createElement('p');
+    stats.className = 'mh-start-stats';
     stats.id = 'mh-start-stats';
     stats.textContent = fill(t(opts.lang, 'start.stats'), {
       streak: opts.stats.streak,
       shards: opts.stats.shards,
       best: opts.stats.best ?? '—',
     });
+    rows.push(stats);
   }
-
   const credits = document.createElement('p');
   credits.className = 'mh-start-credits';
   credits.textContent = t(opts.lang, 'start.credits');
+  rows.push(credits);
 
-  root.append(kicker, title, tagline, actions, stats, credits);
+  root.append(...rows);
   document.body.appendChild(root);
 
   // Dialog semantics: role=dialog + aria-modal + labelled by the giant HOUSE,
