@@ -535,7 +535,8 @@ both ways; finally press `P` before your very first input on a fresh load.
 
 **Expected:** The PAUSED plate rises (the dock chip flips to RESUME,
 `aria-pressed` on) and the world freezes mid-stride: held `W` moves nobody,
-Echoes/Sentinels/decoys/water stand still, and nothing can fail you while
+Echoes/Sentinels/decoys freeze; on flood floors the water level keeps
+climbing (its clock is pause-proof too), and nothing can fail you while
 plated. The timer chip KEEPS COUNTING through the plate — the plate itself
 says why: _the clock keeps counting — the house doesn't wait_. RESUME
 releases the still-held walk at once, and `P` and the chip drive the same

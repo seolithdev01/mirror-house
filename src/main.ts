@@ -324,9 +324,22 @@ const testMode = parseTestMode(window.location.search);
 // children, nothing intercepted). Once per session (sessionStorage), and
 // skipped ENTIRELY under ?test=1 so a tester's first frame is the floor.
 const bootPlate = document.getElementById('mh-boot');
+// T13 final-review fast-follow — the poster's 1.6 s timer can OUTLAST the
+// top-level await below: a slow IDB read keeps module evaluation suspended
+// past the fade, and a dismiss firing then would call mountStartScreen while
+// `save`, `startScreen` and `campaign` are still in their temporal dead zone
+// — an uncaught ReferenceError that loses the door for the whole session.
+// So the timer only MARKS the dismissal pending; the mount itself waits for
+// `bootEvalDone`, set the moment evaluation resumes past the await chain.
+// (The declarations precede the IIFE, so they are live before any timer can
+// fire — evaluation reaches them synchronously, long before 1.6 s.)
+let startScreenPending = false; // dismissBoot fired before evaluation landed
+let bootEvalDone = false; // true once the top-level await chain has landed
 function dismissBoot(): void {
   if (bootPlate === null || !bootPlate.isConnected) return;
   bootPlate.classList.add('mh-boot-hide');
+  startScreenPending = true; // the door is owed even if evaluation still awaits
+  if (!bootEvalDone) return; // slow save: the bindings are still in TDZ — wait
   window.setTimeout(() => {
     bootPlate.remove();
     mountStartScreen(); // T13/T1 — the poster becomes the door
@@ -2568,6 +2581,15 @@ function mountStartScreen(): void {
       startScreen?.dismissStartScreen();
     },
   });
+}
+// T13 fast-follow — evaluation has LANDED here (the await chain above is
+// done): every binding mountStartScreen reads exists. Flip the gate, then
+// honour a dismissal the poster timer made while evaluation was suspended:
+// the fade already ran mid-await, so the faded plate comes down at once and
+// the existing skip path below mounts the owed door.
+bootEvalDone = true;
+if (startScreenPending && bootPlate !== null && bootPlate.isConnected) {
+  bootPlate.remove(); // the timer's fade ran mid-await — the plate's time is up
 }
 if (bootPlate !== null && bootPlate.isConnected) {
   // the poster is holding its 1.6 s — its fade's removal mounts the door
