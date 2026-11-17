@@ -27,7 +27,7 @@
 
 Dismiss = overlay removed (display:none) — the campaign behind was already built at boot (fresh: new random seed floor 1; stored: resumed) — `phase` stays `ready`, first input arms the timer as shipped.
 
-- [ ] Tests (choicesFor truth table: fresh → one primary BEGIN; stored → CONTINUE N + NEW HOUSE) → RED → implement → GREEN. **Task gate:** 1070 unit + 54 e2e + live :4199 (start screen on load, PLAY dismisses, keyboard still arms the timer). Commit `feat(t13): start screen — the poster becomes the door`.
+- [x] Tests (choicesFor truth table: fresh → one primary BEGIN; stored → CONTINUE N + NEW HOUSE) → RED → implement → GREEN. **Task gate:** 1070 unit + 54 e2e + live :4199 (start screen on load, PLAY dismisses, keyboard still arms the timer). Commit `feat(t13): start screen — the poster becomes the door`.
 
 ---
 
@@ -37,7 +37,7 @@ Dismiss = overlay removed (display:none) — the campaign behind was already bui
 
 **Semantics:** paused gates EVERYTHING simActive gated (Echoes, sentinels, decoys, water, noise, Chhaya) — **but the timer/water clock keep running** (pause-proof bests; the plate says so: "the clock keeps counting — the house doesn't wait."). Fails cannot fire while paused. Pause works in ready/running (not during fail-freeze/cleared). Dock label swaps PAUSE⇄RESUME (aria-pressed synced). KeyP toggles. The PAUSED plate has RESUME.
 
-- [ ] Tests (keymap migration 'pause' entry; count 18) → RED → implement → GREEN. **Task gate:** 1070+ unit + 54/54 e2e + live :4199 (PAUSE freezes a sprinting Echo mid-chase; RESUME releases; clock visibly keeps counting). Commit `feat(t13): pause/resume — the house doesn't wait`.
+- [x] Tests (keymap migration 'pause' entry; count 18) → RED → implement → GREEN. **Task gate:** 1070+ unit + 54/54 e2e + live :4199 (PAUSE freezes a sprinting Echo mid-chase; RESUME releases; clock visibly keeps counting). Commit `feat(t13): pause/resume — the house doesn't wait`.
 
 ---
 
@@ -45,7 +45,7 @@ Dismiss = overlay removed (display:none) — the campaign behind was already bui
 
 **Files:** `tests/e2e/session.spec.ts` (NEW: start screen visible on load → CONTINUE/BEGIN dismisses → keyboard arms timer; PAUSE button freezes a walking Echo mid-chase → RESUME releases; KeyP parity; fresh-desktop boots hybrid — the t12b ladder pin), `docs/TEST-CASES.md` (+4), `README.md` (start screen + pause), `STATE_MACHINES.md` (paused in the input-gate row + start-screen note), `docs/USE-CASES.md` (+2: UC-49 start screen, UC-50 pause/resume), FAQ +2, plan ticks; full gates + e2e total.
 
-- [ ] e2e + docs → gates. Commit `test(t13): session e2e + docs — the front door and the pause`.
+- [x] e2e + docs → gates. Commit `test(t13): session e2e + docs — the front door and the pause`.
 
 ## Plan Self-Review
 

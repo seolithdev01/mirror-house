@@ -1,7 +1,8 @@
 # Mirror House — Manual Test Suite
 
-The full beta checklist: 31 cases across smoke, campaign, views,
-accessibility, saves, audio, the venue side-floor, and mobile/touch. The
+The full beta checklist: 40 cases across smoke, campaign, views,
+accessibility, saves, audio, the venue side-floor, the panes, mobile/touch,
+and the session (the front door & the pause). The
 [5-minute smoke](TESTERS.md) alone is enough to start — this page is for the
 20–30 minute pass. Work top to bottom or cherry-pick by section; every case
 is steps + expected result.
@@ -487,6 +488,59 @@ seconds. A fresh cast raises the lantern arm (FROST), a step-through
 holds the bright flash-forward pose (STEP), and the ring's N/E/S/W
 rotates with your heading. `B` (or the MOTION chip) hides and shows the
 pane; reduced-flash freezes the figure at one pose with the label only.
+
+---
+
+## 10. Session — the front door & the pause [SES] (T13)
+
+### SES-1 — The front door gates the house
+
+**Steps:** Open the game from a bare link — no `?seed=` in the URL (your
+personal invite link minus the seed, or clear the site's storage first).
+Watch the boot poster fade. While the plate is up, hold `W` and try to
+click around the plate. Press `Tab` a couple of times, then `Esc`. Click
+**BEGIN THE DESCENT** and walk with `W`; watch the timer chip.
+
+**Expected:** The poster becomes the MIRROR/HOUSE plate and **BEGIN THE
+DESCENT** is focused at once. While it stands, nothing behind it hears you:
+`W` moves nobody, drags and taps land nowhere, and the timer chip stays `—`
+(the run clock was never armed). `Tab` cycles inside the plate only, and
+`Esc` does NOT dismiss it — there is no back out of the front door. BEGIN
+removes the plate in one beat, and the first `W` after it walks AND starts
+the timer, exactly as the game always has.
+
+### SES-2 — A stored campaign says CONTINUE — FLOOR N
+
+**Steps:** Play (or import a save) until you stand on floor 2 or deeper,
+close the tab, then open the bare site again (no `?seed=`). Read the plate;
+press `Tab`. Then click **CONTINUE — FLOOR N** and read the floor chip.
+Reload once more and take **NEW HOUSE** instead; afterwards open a seeded
+link (`?seed=YOURCODE`).
+
+**Expected:** The plate now reads **CONTINUE — FLOOR N** (your floor's
+number) with **NEW HOUSE** beside it and the mini-stats line under both
+(streak · ◆ shards · best). `Tab` cycles BEGIN's replacement and the ghost.
+CONTINUE reopens the house on the exact floor you left — the chip names it
+(`L02`…) — while NEW HOUSE starts a fresh campaign on a new random seed.
+A seeded link never plates: shared codes and the ★ Daily land straight on
+that floor, as ever.
+
+### SES-3 — Pause freezes the house; the clock doesn't wait
+
+**Steps:** Begin a run and walk a few steps (the timer must be counting),
+then hold `W` and press `P` — or click the dock's PAUSE chip. Watch the
+PAUSED plate, your position and the timer chip for a few seconds. Resume
+with **RESUME** on the plate while `W` is still held. Then try `P` again,
+both ways; finally press `P` before your very first input on a fresh load.
+
+**Expected:** The PAUSED plate rises (the dock chip flips to RESUME,
+`aria-pressed` on) and the world freezes mid-stride: held `W` moves nobody,
+Echoes/Sentinels/decoys/water stand still, and nothing can fail you while
+plated. The timer chip KEEPS COUNTING through the plate — the plate itself
+says why: _the clock keeps counting — the house doesn't wait_. RESUME
+releases the still-held walk at once, and `P` and the chip drive the same
+toggle both ways. Before the run starts there is nothing to pause: `P` is
+an honest no-op (no clock to betray yet).
 
 ---
 

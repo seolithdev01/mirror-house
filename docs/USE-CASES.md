@@ -23,6 +23,8 @@ pack author), Developer (repo maintainer).
 | UC-03 | One-time v1 migration | Legacy `localStorage` meta v1 found and IDB empty → migrated to save v2; the old copy is left untouched | `save.ts:migrateFromMetaV1` |
 | UC-04 | URL overrides | Player opens with `?seed=BASE` (campaign base), `?look=coat-glass`, `?lang=hi`, `?perf=low`, `?venue=demo…`, `?test=1` — each parameter overrides the save for the session (dev builds also honor `&floor=`) | `main.ts` boot · `seedCode.ts` |
 | UC-05 | Install & go offline | Player installs the PWA / goes offline → service worker serves the precached shell + hashed assets; venue pack JSON precached | `public/sw.js` · `main.ts` SW registration |
+| UC-49 | Use the front door (T13) | Player opens a bare URL → boot poster fades into the MIRROR/HOUSE start plate, primary button focused, world built but deaf behind it → fresh save shows BEGIN THE DESCENT; a stored campaign shows CONTINUE — FLOOR N + NEW HOUSE (fresh random seed) + the mini-stats line → the click dismisses (terminal — never re-plates) and the first input arms the run clock as always; a `?seed=` link never plates (the demo path) | `ui/startScreen.ts:choicesFor/dismissStart` · `main.ts:mountStartScreen` |
+| UC-50 | Pause the session (T13) | `P` or the `#mh-pause` dock chip → pure `pauseDecision(paused, phaseKind, startDismissed)` flips the session flag → the PAUSED plate rises and everything `simActive` gated freezes (Echoes, Sentinels, decoys, water feed, noise, Chhaya; fails cannot fire) while the timer/water clocks keep counting (pause-proof) → RESUME / `P` / the chip releases; arms only in a dismissed, running session | `floorRun.ts:pauseDecision` · `main.ts:applyPaused` · `ui/hud.ts:setPaused` |
 
 ## B. The floor loop (the spine)
 

@@ -37,6 +37,7 @@ a single value with named transitions.
 | 9   | **Aaina overlay**  | `closed` · `open{tab}`                                                   | `src/ui/aaina.ts`                                               | Diegetic panel — does **not** pause                                                                                                         |
 | 10  | **AudioEngine**    | `idle` · `running`                                                       | `src/audio/engine.ts`                                           | Starts on first gesture; `muted` is a flag, not a state                                                                                     |
 | 11  | **Campaign**       | data: `seedBase` · `floor` · `tierComplete`                              | `src/game/campaign.ts`                                          | Pure data + transitions (M4/T1, grown to 100 floors in t10/T1 — **the machine's final shape: TERMINAL at 100**, the Ground Door); the single `tierComplete` re-arms as each Dwaar is left and claims once more at the Ground |
+| 12  | **Start screen**   | `plated` · `dismissed`                                                   | `src/ui/startScreen.ts`                                         | Explicit pure machine (t13/T1); `dismissStart` is **terminal** — the door never re-plates within a session. While `plated` it owns the session (§7): capture-phase swallowers keep every input from the collector, and the pause flag stands down behind it (`pauseDecision`'s `startDismissed` term). A URL seed never plates — the seeded link is the demo path |
 
 ---
 
@@ -245,7 +246,7 @@ not a lifecycle:
 
 ## 7. Input gate — `src/ui/faq.ts` + `src/ui/feedback.ts` + `src/game/viewMode.ts`
 
-Three pauses, one gate. The FAQ overlay is two states derived from the element
+Four pauses, one gate. The FAQ overlay is two states derived from the element
 (`open` when `root.hidden === false`), toggled by the HUD button, the `H` key,
 the close button and a backdrop click. The 📮 feedback composer (step007/T2)
 is the same document-driven dialog — `trapDialog` over `root.hidden`, no
@@ -283,6 +284,26 @@ derive from wall-clock `runElapsedMs` every frame — that honesty is the
 plate's line. Wall-clock decays in the same family (fog/crack timers, the
 beat) also keep counting: the house doesn't wait. `buildFloor` clears the
 flag, so a floor never rebuilds under the plate.
+
+**The door before the gate (t13/T1) — the start screen.** The session's front
+door is NOT a fifth term here: it stands one step earlier, at the window.
+Its phase machine (§12 in the inventory — `plated` → `dismissed`, terminal)
+mounts after the boot poster fades (at once under `?test=1`, never on a URL
+seed — the seeded link is the demo path) over an already-built floor sitting
+in `ready`. While `plated`, capture-phase swallowers on `window` intercept
+every keydown (Tab spared — the focus trap owns the cycle), pointerdown and
+pointermove before the collector's bubble listeners ever run, so no key,
+stick drag or mouse-hold reaches the game: `inputActive` never fires, the
+run clock never arms, and the phase stays honestly `ready` behind the plate.
+The plate's own buttons stay alive (the first tap still counts as the audio
+gesture and the touch-mode lock), Escape cannot dismiss the gate, and
+dismissal is terminal — removal of the overlay and the swallowers in one
+beat, the world unchanged underneath, the first input after the door opens
+arming the timer exactly as shipped. The pause flag composes with this
+machine through `pauseDecision`'s `startDismissed` term: while the front
+door is plated (or on the no-screen demo path, where it counts as already
+dismissed), PAUSE is a disclosed no-op — the door owns the session, and
+`paused` only arms in a dismissed, running one.
 
 ---
 
@@ -942,8 +963,8 @@ Ground naming itself, `L100 · THE GROUND`; localized
 
 ## Verification
 
-`npm run typecheck` clean · `npm run lint` clean · **965/965** unit ·
-**48/48** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
+`npm run typecheck` clean · `npm run lint` clean · **1092/1092** unit ·
+**57/57** Playwright (15 from m3 and earlier, 4 new for m4: manifest/SW
 wiring, descend to floor 2, save round-trip resume, Hindi chrome via
 `?lang=hi`; 5 for m5: rebind forward through the settings overlay, Space
 toggles the focused ⚙ checkbox, `?perf=low` low path, export/import
@@ -987,7 +1008,13 @@ and floor 100 — the Glazier's Ground (chip `L100 · THE GROUND`,
 pedestals; a warp onto the master → caught, the reset re-arms; then the
 four pedestals captured and the Door reached → `GROUND DOOR OPENS` visible
 on the finale screen with Play again / Stay, the campaign TERMINAL at
-100).
+100; 3 for t13 (the session file): the front door gates the house (bare URL
+plates with BEGIN focused, a held key moves nobody while plated and the
+clock stays unarmed, BEGIN dismisses and the first key walks and arms), a
+stored campaign plates CONTINUE — FLOOR N + NEW HOUSE and CONTINUE resumes
+the seeded floor (chip `L02`), and the pause freezes a held walk behind the
+PAUSED plate while the timer keeps counting through it, RESUME — and KeyP —
+release it).
 
 ---
 

@@ -50,8 +50,26 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 53 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair, the T10 foundations + ground-door pair, the T11 panes entry, the T12 phone entry, the T12b controls-picker entry)', () => {
-    expect(FAQ).toHaveLength(53);
+  it('grows to 55 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair, the T10 foundations + ground-door pair, the T11 panes entry, the T12 phone entry, the T12b controls-picker entry, the T13 front-door + pause pair)', () => {
+    expect(FAQ).toHaveLength(55);
+  });
+
+  it('the T13 pair answers the front door and the pause — BEGIN/CONTINUE, the clock keeps counting', () => {
+    const door = FAQ.find((f) => /start screen/i.test(f.q));
+    expect(door, 'a start-screen entry exists').toBeDefined();
+    expect(door!.a).toContain('BEGIN THE DESCENT'); // the fresh save's verb
+    expect(door!.a).toContain('CONTINUE — FLOOR N'); // the stored campaign's verb
+    expect(door!.a).toContain('NEW HOUSE'); // the fresh-seed ghost secondary
+    expect(door!.a).toContain('Escape does not dismiss'); // the gate owns the session
+    expect(door!.a).toContain('?seed='); // the demo-path exception
+    const pause = FAQ.find((f) => /pause the game/i.test(f.q));
+    expect(pause, 'a pause entry exists').toBeDefined();
+    expect(pause!.a).toContain('P'); // the keymap's pause action
+    expect(pause!.a).toContain('PAUSE chip'); // the dock chip
+    expect(pause!.a).toContain('RESUME'); // the plate's door
+    expect(pause!.a).toContain('clock keeps counting'); // the ratified pause-proof rule
+    expect(pause!.a).toContain('Chhaya'); // the whole sim freezes, her replay included
+    expect(pause!.a).toContain('before your first input'); // arms running-only (ratified)
   });
 
   it('the T12b entry answers how the game picks controls — ladder, first-input lock, gear override', () => {
