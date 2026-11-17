@@ -32,7 +32,7 @@ a single value with named transitions.
 | 4   | **Echo mode**      | `patrol` · `chase` · `confused`                                          | `src/game/echo.ts`                                              | Pure machine, now documented                                                                                                                |
 | 5   | **Pending shards** | `pending` → `banked` \| `forfeited`                                      | `src/game/houseState.ts` + `meta.ts`                            | Lifecycle, documented                                                                                                                       |
 | 6   | **InputMode**      | `keyboard` · `mouse` · `hybrid` · `touch`                                | `src/engine/input.ts` + `main.ts` + `src/game/touch.ts`         | Configuration, not a lifecycle (t12 grew `touch` — the union and validateSave's list widened in the same commit)                              |
-| 7   | **Input gate**     | FAQ `closed` · `open` ∥ composer `closed` · `open` ∥ ViewMode `tactical` | `src/ui/faq.ts` + `src/ui/feedback.ts` + `src/game/viewMode.ts` | Three pauses gate the loop: the FAQ overlay, the 📮 feedback composer (step007/T2 — the FAQ's document-driven shape), and the tactical view |
+| 7   | **Input gate**     | FAQ `closed` · `open` ∥ composer `closed` · `open` ∥ ViewMode `tactical` ∥ session `paused` | `src/ui/faq.ts` + `src/ui/feedback.ts` + `src/game/viewMode.ts` + `src/game/floorRun.ts` (`pauseDecision`) | Four pauses gate the loop: the FAQ overlay, the 📮 feedback composer (step007/T2), the tactical view, and the t13/T2 session pause (`paused` is a session flag, not a machine — KeyP/`#mh-pause` through the pure `pauseDecision`) |
 | 8   | **ViewMode**       | `focus` · `quad` · `overhead` · `tactical`                               | `src/game/viewMode.ts`                                          | Pure machine (M3/T3); `tactical` is the pause view                                                                                          |
 | 9   | **Aaina overlay**  | `closed` · `open{tab}`                                                   | `src/ui/aaina.ts`                                               | Diegetic panel — does **not** pause                                                                                                         |
 | 10  | **AudioEngine**    | `idle` · `running`                                                       | `src/audio/engine.ts`                                           | Starts on first gesture; `muted` is a flag, not a state                                                                                     |
@@ -57,8 +57,8 @@ The master machine. Everything else derives from it.
 **Invariants.** `cleared` is terminal. A re-fail during the freeze never extends
 the freeze. `runElapsedMs` is pinned at `failedAt`/`clearedAt` once the run ends,
 so the HUD clock can never tick on a corpse. Ratified decision (M3): the wall
-clock runs under every pause (FAQ, tactical) — best times are pause-proof by
-construction.
+clock runs under every pause (FAQ, tactical — and t13/T2's session pause) —
+best times are pause-proof by construction.
 
 **Derived:** `active(p)` (ready or running) gates simulation and verbs;
 `runElapsedMs(p, now)` is the only timer source.
@@ -256,13 +256,33 @@ entered with `T` from overhead and left with `Esc` (after one Esc-clears
 waypoints press) or any `[V]` press.
 
 Together they are the input gate's second half:
-`simActive = active(phase) && faqHidden && feedbackHidden && !isTactical(view)` — and the same
+`simActive = active(phase) && faqHidden && feedbackHidden && !isTactical(view) && !paused` — and the same
 terms gate the verbs through `canAct` (frost, step-through, push). This
 is the machine that used to be implicit and unread — the reason you could
 walk the maze while reading the FAQ. Aaina's panel is deliberately outside
 this gate (§9): she is diegetic, so the floor keeps running while she talks —
 but her one dual-use key (her toggle, `I` by default since m5) is claimed per
 fixed step exactly as §6 documents for the other shared keys.
+
+**The fourth term (t13/T2) — the session pause.** `paused` is a session flag
+in main.ts, not a state machine: KeyP (the keymap's 18th action, `pause`,
+with the validateKeyMap migration entry and the rebinds-win softening) and
+the `#mh-pause` dock chip both feed the pure `pauseDecision(paused,
+phaseKind, startDismissed)` (floorRun.ts) and its verdict flips the flag.
+Resume ALWAYS wins (a paused session can never trap); pausing arms only in a
+dismissed, `running` session — `ready` has no run clock to betray (the PAUSED
+plate's honesty line, "The clock keeps counting — the house doesn't wait.",
+would be false before the first input), `failing`/`cleared` own the floor,
+and the start screen owns the session until dismissed. While the plate is up
+it freezes everything `simActive` gated — Echoes, sentinels, decoys, the
+water feed, noise, Chhaya (her replay is frame-time; main skips her update),
+and a door slide taken mid-push holds its t — and every fail path lives
+inside the sim block, so fails cannot fire while paused. The two pause-proof
+clocks keep counting through the flag: the HUD timer and the water level both
+derive from wall-clock `runElapsedMs` every frame — that honesty is the
+plate's line. Wall-clock decays in the same family (fog/crack timers, the
+beat) also keep counting: the house doesn't wait. `buildFloor` clears the
+flag, so a floor never rebuilds under the plate.
 
 ---
 

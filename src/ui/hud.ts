@@ -44,6 +44,10 @@ export type HudInit = {
   /** T11/T2 — the MOTION dock chip: toggles the motion pane (KeyB does the
    *  same; main mirrors the session state back via setMotionVisible). */
   onMotion(): void;
+  /** T13/T2 — the PAUSE dock chip: toggles the session pause (KeyP does the
+   *  same; main owns the flag and the pauseDecision policy, and mirrors the
+   *  outcome back via setPaused). */
+  onPause(): void;
 };
 export interface Hud {
   setMode(mode: InputMode): void;
@@ -158,6 +162,10 @@ export interface Hud {
   /** T11/T2 — the MOTION dock chip's pressed state: KeyB and the chip stay
    *  in sync (same semantics as setMapVisible). */
   setMotionVisible(visible: boolean): void;
+  /** T13/T2 — the session pause state: shows/hides the centered PAUSED plate
+   *  (the honesty line + RESUME), swaps the dock chip's PAUSE⇄RESUME label,
+   *  and syncs its aria-pressed. The one writer is main's applyPaused. */
+  setPaused(paused: boolean): void;
   /** M5/T3 — the caption bar (#mh-captions, bottom-center). main feeds it
    *  renderCaptions(el, feed, now) every frame; its fade is the reduced-flash
    *  CSS family. A polite live region: the lines read themselves. */
@@ -244,6 +252,14 @@ export function createHud(init: HudInit): Hud {
   motionBtn.type = 'button';
   motionBtn.id = 'mh-motion-btn';
   motionBtn.addEventListener('click', () => init.onMotion());
+  // T13/T2 — the PAUSE dock chip: the session pause/resume's second door
+  // (KeyP is the first, through the keymap's `pause` action). A toggle chip
+  // like its MAP/MOTION siblings — pressed = the session is paused; main
+  // mirrors the flag back via setPaused so the two controls never disagree.
+  const pauseBtn = document.createElement('button');
+  pauseBtn.type = 'button';
+  pauseBtn.id = 'mh-pause';
+  pauseBtn.addEventListener('click', () => init.onPause());
   const aaina = document.createElement('button');
   aaina.type = 'button';
   aaina.id = 'mh-aaina';
@@ -380,6 +396,7 @@ export function createHud(init: HudInit): Hud {
     modes,
     breath,
     anger,
+    pauseBtn, // T13/T2 — the session control leads the action group
     mapBtn,
     motionBtn,
     faq,
@@ -449,6 +466,31 @@ export function createHud(init: HudInit): Hud {
   document.body.appendChild(tier);
   trapDialog(tier, { labelledBy: 'mh-tier-title' }); // M5/T6 — self-managing
 
+  // T13/T2 — the PAUSED plate: the fail plate's PoD language promoted to the
+  // session's center — display title, the honesty line ("the clock keeps
+  // counting — the house doesn't wait" — the ratified pause-proof rule, said
+  // to the player's face), and the RESUME door. Mounted on the BODY like the
+  // tier screen (not the pointer-events:none #hud) so the button owns its
+  // clicks. NOT a modal: the HUD and dock stay live under it (the player can
+  // open ⚙ while the world holds its breath), so no trap and no backdrop —
+  // role=dialog aria-modal=false names it, KeyP and the button dismiss it.
+  const pausedPlate = document.createElement('div');
+  pausedPlate.id = 'mh-paused';
+  pausedPlate.hidden = true;
+  pausedPlate.setAttribute('role', 'dialog');
+  pausedPlate.setAttribute('aria-modal', 'false');
+  pausedPlate.setAttribute('aria-labelledby', 'mh-paused-title');
+  const pausedTitle = document.createElement('div');
+  pausedTitle.id = 'mh-paused-title';
+  const pausedNote = document.createElement('p');
+  pausedNote.id = 'mh-paused-note';
+  const pausedResume = document.createElement('button');
+  pausedResume.type = 'button';
+  pausedResume.id = 'mh-paused-resume';
+  pausedResume.addEventListener('click', () => init.onPause()); // the same toggle KeyP runs
+  pausedPlate.append(pausedTitle, pausedNote, pausedResume);
+  document.body.appendChild(pausedPlate);
+
   const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
   let hintText: string | null = null; // last shown hint (hint() early-returns on repeats)
   let toastTimer = 0; // the toast's own hide timer (re-toast restarts the clock)
@@ -473,6 +515,10 @@ export function createHud(init: HudInit): Hud {
   let mapVisible = true;
   // T11/T2 — the MOTION chip's live pressed state (same mirror, KeyB side).
   let motionVisible = true;
+  // T13/T2 — the session pause mirror: the dock chip's PAUSE⇄RESUME label and
+  // the PAUSED plate both read this one var (setPaused writes it; setLang
+  // recomposes from it, so a language flip mid-pause relocalizes the plate).
+  let paused = false;
   let lastTierStats: {
     tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     floors: number;
@@ -658,7 +704,14 @@ export function createHud(init: HudInit): Hud {
     motionBtn.textContent = t(lang, 'pane.motion');
     motionBtn.title = t(lang, 'pane.motion');
     motionBtn.setAttribute('aria-label', t(lang, 'pane.motion'));
-    motionBtn.setAttribute('aria-pressed', motionVisible ? 'true' : 'false'); // same polarity setMotionVisible writes
+    motionBtn.setAttribute('aria-pressed', motionVisible ? 'true' : 'false');
+    // T13/T2 — the PAUSE chip's label names the verb it fires NOW (PAUSE
+    // while running, RESUME while paused — the muted-button's live-label
+    // pattern), pressed = the session is paused.
+    pauseBtn.textContent = t(lang, paused ? 'btn.resume' : 'btn.pause');
+    pauseBtn.title = t(lang, paused ? 'btn.resume' : 'btn.pause');
+    pauseBtn.setAttribute('aria-label', t(lang, paused ? 'btn.resume' : 'btn.pause'));
+    pauseBtn.setAttribute('aria-pressed', paused ? 'true' : 'false'); // same polarity setPaused writes
     aaina.textContent = t(lang, 'btn.aaina');
     aaina.setAttribute('aria-label', t(lang, 'btn.aaina'));
     daily.textContent = t(lang, 'btn.daily');
@@ -729,6 +782,27 @@ export function createHud(init: HudInit): Hud {
       motionVisible = visible;
       motionBtn.classList.toggle('active', visible); // same polarity as setLang writes
       motionBtn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    },
+    // T13/T2 — the session pause mirror: the plate rises/falls and the dock
+    // chip swaps its label in one write, from main's one applyPaused. On show
+    // the RESUME door takes focus (Enter answers the plate; Tab has nowhere
+    // else it needs to go — the world is holding still). On hide the chip
+    // flips back to PAUSE and the pressed state releases.
+    setPaused: (p) => {
+      paused = p;
+      pausedPlate.hidden = !p;
+      if (p) {
+        pausedTitle.textContent = t(lang, 'overlay.paused');
+        pausedNote.textContent = t(lang, 'overlay.pausedNote');
+        pausedResume.textContent = t(lang, 'btn.resume');
+        pausedResume.setAttribute('aria-label', t(lang, 'btn.resume'));
+        pausedResume.focus();
+      }
+      pauseBtn.textContent = t(lang, p ? 'btn.resume' : 'btn.pause');
+      pauseBtn.title = t(lang, p ? 'btn.resume' : 'btn.pause');
+      pauseBtn.setAttribute('aria-label', t(lang, p ? 'btn.resume' : 'btn.pause'));
+      pauseBtn.setAttribute('aria-pressed', p ? 'true' : 'false');
+      pauseBtn.classList.toggle('active', p);
     },
     showCleared: (ms, bestMs, isBest) => {
       cleared.hidden = false;
@@ -843,6 +917,14 @@ export function createHud(init: HudInit): Hud {
         const keys = actKeysFor(liveAct);
         actTitle.textContent = t(lang, keys.title);
         actNote.textContent = t(lang, keys.note);
+      }
+      // T13/T2 — the PAUSED plate recomposes live too (a language flip
+      // mid-pause relocalizes the title, the honesty line and the door).
+      if (!pausedPlate.hidden) {
+        pausedTitle.textContent = t(lang, 'overlay.paused');
+        pausedNote.textContent = t(lang, 'overlay.pausedNote');
+        pausedResume.textContent = t(lang, 'btn.resume');
+        pausedResume.setAttribute('aria-label', t(lang, 'btn.resume'));
       }
     },
     captionBar,

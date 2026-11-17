@@ -1069,6 +1069,69 @@
         display: none;
       }
       /* ============================================================
+         T13/T2 — THE PAUSED PLATE (#mh-paused): the fail plate's PoD
+         language promoted to the session's center — the shard-banner's
+         centered-card shape dressed in the house gold, the display title
+         over the honesty line ("The clock keeps counting — the house
+         doesn't wait." — the ratified pause-proof rule, said to the
+         player's face) and the RESUME door. Mounted on the body (hud.ts),
+         so the button owns its clicks; static at all times — the reduced-
+         flash rule below rides the same banner family.
+         ============================================================ */
+      #mh-paused {
+        position: fixed;
+        top: 38%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 15;
+        max-width: min(480px, 90vw);
+        background: var(--plate-solid);
+        border: 1px solid var(--edge);
+        border-left: 5px solid var(--yellow);
+        border-radius: var(--r);
+        padding: 18px 26px 16px;
+        color: var(--cream);
+        font: calc(15px * var(--mh-text-scale, 1)) / 1.6 var(--body);
+        text-align: center;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      #mh-paused[hidden] {
+        display: none;
+      }
+      #mh-paused-title {
+        font: 900 calc(24px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--yellow);
+      }
+      #mh-paused-note {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+      /* the door out of the pause — the PoD primary, the start screen's own
+         yellow (solid, ink text, hard shadow) */
+      #mh-paused-resume {
+        margin-top: 14px;
+        background: var(--yellow);
+        border: 1px solid var(--yellow);
+        color: var(--ink);
+        border-radius: var(--r);
+        box-shadow: 0 3px #b88a00;
+        padding: 8px 18px;
+        cursor: pointer;
+        font: 800 calc(13px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+      }
+      #mh-paused-resume:hover {
+        background: #ffcb33;
+      }
+      #mh-paused-resume:focus-visible {
+        outline: 2px solid var(--yellow);
+        outline-offset: 3px;
+      }
+      /* ============================================================
          PANELS — the PoD panel: solid-ink plate, 5px accent top edge,
          backdrop blur, 180ms slide-in; headers in yellow display type.
          ============================================================ */
@@ -1681,6 +1744,7 @@
       body.mh-reduced-flash #mh-shard,
       body.mh-reduced-flash #mh-act,
       body.mh-reduced-flash #mh-fail,
+      body.mh-reduced-flash #mh-paused,
       body.mh-reduced-flash #mh-hint,
       body.mh-reduced-flash #mh-toast,
       body.mh-reduced-flash #mh-venue,
@@ -1716,6 +1780,7 @@
       body.mh-reduced-flash #mh-shard[hidden],
       body.mh-reduced-flash #mh-act[hidden],
       body.mh-reduced-flash #mh-fail[hidden],
+      body.mh-reduced-flash #mh-paused[hidden],
       body.mh-reduced-flash #mh-hint[hidden],
       body.mh-reduced-flash #mh-toast[hidden],
       body.mh-reduced-flash #mh-venue[hidden],

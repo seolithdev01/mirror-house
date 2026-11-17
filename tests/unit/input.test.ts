@@ -160,24 +160,24 @@ describe('actionFor — reverse lookup (M5/T2)', () => {
   });
 
   it('breaking the E pair changes the lookup: KeyE names turnR once push leaves', () => {
-    const km = { ...DEFAULT_KEYMAP, push: 'KeyP' };
+    const km = { ...DEFAULT_KEYMAP, push: 'KeyO' }; // T13 — KeyO is the free sample; KeyP is pause's default
     expect(actionFor('KeyE', km)).toBe('turnR');
-    expect(actionFor('KeyP', km)).toBe('push');
+    expect(actionFor('KeyO', km)).toBe('push');
   });
 
   it('a fully remapped map resolves every action', () => {
     const km: Record<string, string> = {};
     const actions = Object.keys(DEFAULT_KEYMAP);
-    for (let i = 0; i < actions.length; i++) km[actions[i]!] = `Key${String.fromCharCode(65 + i)}`; // A..O, no duals
+    for (let i = 0; i < actions.length; i++) km[actions[i]!] = `Key${String.fromCharCode(65 + i)}`; // A..R, no duals
     for (const [action, code] of Object.entries(km)) expect(actionFor(code, km)).toBe(action);
   });
 });
 
 describe('rebind — conflict guard + immutability (M5/T2)', () => {
   it('a free code rebinds and returns a NEW map; the input is untouched', () => {
-    const out = rebind(DEFAULT_KEYMAP, 'forward', 'KeyP');
+    const out = rebind(DEFAULT_KEYMAP, 'forward', 'KeyO'); // T13 — a genuinely free code
     expect(out.conflict).toBeNull();
-    expect(out.map.forward).toBe('KeyP');
+    expect(out.map.forward).toBe('KeyO');
     expect(out.map).not.toBe(DEFAULT_KEYMAP); // a copy, never the default in place
     expect(DEFAULT_KEYMAP.forward).toBe('KeyW'); // the default is readonly in spirit AND fact
     expect(Object.keys(out.map).length).toBe(Object.keys(DEFAULT_KEYMAP).length);
@@ -191,11 +191,15 @@ describe('rebind — conflict guard + immutability (M5/T2)', () => {
     expect(DEFAULT_KEYMAP.forward).toBe('KeyW');
   });
 
+  it('KeyP refuses now too — pause owns it by default (T13)', () => {
+    expect(rebind(DEFAULT_KEYMAP, 'forward', 'KeyP').conflict).toBe('pause');
+  });
+
   it('rebinding onto the E pair refuses — no new duplicates, not even a triple', () => {
     expect(rebind(DEFAULT_KEYMAP, 'frost', 'KeyE').conflict).toBe('turnR'); // first sharer named
-    const split = rebind(DEFAULT_KEYMAP, 'push', 'KeyP').map; // E pair broken, push on P
-    expect(rebind(split, 'frost', 'KeyP').conflict).toBe('push'); // P is taken now
-    expect(rebind(split, 'turnR', 'KeyP').conflict).toBe('push'); // no rebuilding a dual elsewhere
+    const split = rebind(DEFAULT_KEYMAP, 'push', 'KeyO').map; // E pair broken, push on O
+    expect(rebind(split, 'frost', 'KeyO').conflict).toBe('push'); // O is taken now
+    expect(rebind(split, 'turnR', 'KeyO').conflict).toBe('push'); // no rebuilding a dual elsewhere
   });
 
   it('rebinding an action to its own code is the sanctioned no-op (self)', () => {
@@ -205,10 +209,10 @@ describe('rebind — conflict guard + immutability (M5/T2)', () => {
   });
 
   it('moving an action OFF the shared E code is legal — the partner keeps the key', () => {
-    const out = rebind(DEFAULT_KEYMAP, 'push', 'KeyP');
+    const out = rebind(DEFAULT_KEYMAP, 'push', 'KeyO');
     expect(out.conflict).toBeNull();
     expect(out.map.turnR).toBe('KeyE'); // turnR keeps E
-    expect(out.map.push).toBe('KeyP');
+    expect(out.map.push).toBe('KeyO');
     // Rebuilding the dual elsewhere refuses too (keep simple: NO rebind creates
     // a duplicate; Reset-to-defaults is the one sanctioned way back to the
     // default E pair).

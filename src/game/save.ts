@@ -33,12 +33,13 @@ export interface SaveData {
  *  copies; nothing mutates the default in place. */
 export type KeyMap = Readonly<Record<string, string>>;
 
-/** The 17 actions and their default codes (M5/T1, authoritative from the plan;
+/** The 18 actions and their default codes (M5/T1, authoritative from the plan;
  *  T11 adds the 16th — `map`, KeyN, the Pac-minimap's toggle — and the 17th,
- *  `body`, KeyB, the motion pane's toggle). Aaina moved from KeyQ to KeyI —
- *  her own key, Q/E stay pure turning. The one sanctioned dual: turnR and
- *  push share KeyE (push is contextual — the door claims E only while the
- *  push hint shows, via withoutKey). */
+ *  `body`, KeyB, the motion pane's toggle; T13 adds the 18th — `pause`, KeyP,
+ *  the session pause/resume). Aaina moved from KeyQ to KeyI — her own key,
+ *  Q/E stay pure turning. The one sanctioned dual: turnR and push share KeyE
+ *  (push is contextual — the door claims E only while the push hint shows,
+ *  via withoutKey). */
 export const DEFAULT_KEYMAP: KeyMap = {
   forward: 'KeyW',
   back: 'KeyS',
@@ -57,6 +58,7 @@ export const DEFAULT_KEYMAP: KeyMap = {
   tactical: 'KeyT',
   map: 'KeyN',
   body: 'KeyB',
+  pause: 'KeyP',
 };
 
 /** The default accessibility block — nothing on unless asked for, 1× text. */
@@ -247,8 +249,13 @@ const RESERVED_CODES: readonly string[] = ['Escape', 'Tab'];
  *  chip still toggles the pane), and the rebind keeps its key. Consumers
  *  already tolerate absence (actionFor iterates entries; keyOf/keysToMoveInput
  *  only read non-widening actions). The migration stays idempotent — the next
- *  load re-detects the same gap and re-drops the same default. */
-const WIDENING_ACTIONS: readonly string[] = ['map', 'body'];
+ *  load re-detects the same gap and re-drops the same default.
+ *  T13/T2 — the widening list gains `pause` (KeyP, the session pause/resume):
+ *  every pre-T13 save's a11y block lacks the row, and the strict gate would
+ *  wipe the whole record on first boot without the entry. The rebinds-win
+ *  softening carries over untouched — a stored binding sitting on KeyP (the
+ *  old forward-rebind habit) keeps the key and pause ships unbound. */
+const WIDENING_ACTIONS: readonly string[] = ['map', 'body', 'pause'];
 
 function validateKeyMap(raw: unknown): KeyMap | null {
   if (!isPlainObject(raw)) return null;

@@ -86,3 +86,35 @@ export function runElapsedMs(p: GamePhase, now: number): number {
 export function isAtExit(px: number, py: number, exitCx: number, exitCy: number): boolean {
   return Math.hypot(px - exitCx, py - exitCy) <= EXIT_RADIUS;
 }
+
+// ---- T13/T2 — the pause gate ---------------------------------------------------
+
+/**
+ * The PAUSE toggle decision (T13/T2), pure — main.ts feeds every KeyP press
+ * and #mh-pause dock tap through it and applies the verdict to its session
+ * `paused` flag. Three terms, in precedence order:
+ *
+ *  1. RESUME ALWAYS WINS: a `paused` session unpauses no matter what else
+ *     holds — a paused run can never trap behind a phase change (the DEV
+ *     faucet's forced fail, a mid-freeze edge). This is the term that keeps
+ *     the plate honest: it only ever plates a world that can answer.
+ *  2. PAUSING ARMS ONLY IN `running`: the plate's honesty line — "the clock
+ *     keeps counting — the house doesn't wait" — is only TRUE once the run
+ *     clock is armed. In `ready` the clock has not started (runElapsedMs is
+ *     0), in `failing` the freeze owns the floor, in `clear`ed the run is
+ *     over — a pause request there is a disclosed no-op (KeyP and the dock
+ *     chip simply do nothing, and STATE_MACHINES.md says so).
+ *  3. THE START SCREEN GATES THE SESSION (T13/T1 interplay): while the
+ *     house's front door is plated, pause is meaningless — the caller passes
+ *     `startDismissed` and the gate holds the request until the door opens.
+ *
+ * The verdict is the WHOLE toggle policy; main owns the flag and the chrome.
+ */
+export function pauseDecision(
+  paused: boolean,
+  phaseKind: GamePhase['kind'],
+  startDismissed: boolean,
+): boolean {
+  if (paused) return false; // resume wins over everything — never a trapped plate
+  return phaseKind === 'running' && startDismissed;
+}

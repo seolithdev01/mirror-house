@@ -139,6 +139,7 @@ import {
   createFloorRun,
   failRun,
   isAtExit,
+  pauseDecision,
   runElapsedMs,
   startRun,
   tickFail,
@@ -823,6 +824,34 @@ function failFloor(reason: FailReason): void {
   );
 }
 
+// ---- T13/T2 — THE SESSION PAUSE ----------------------------------------------
+// `paused` is a SESSION flag, not a machine: it composes into the same gate
+// `simActive` and `canAct` already build (their fourth term), so every system
+// the gate held — Echoes, sentinels, decoys, the water feed, noise, Chhaya —
+// freezes with one term, and the fail paths (which live inside the sim block)
+// cannot fire while the plate is up. The two pause-proof clocks keep counting
+// THROUGH the flag: the HUD timer and the water level both derive from
+// wall-clock runElapsedMs every frame, untouched — that honesty is the plate's
+// own line, "The clock keeps counting — the house doesn't wait." The toggle's
+// whole policy is pure (floorRun.pauseDecision): resume always wins, pausing
+// arms only in a dismissed, running session, and KeyP/the dock chip are
+// disclosed no-ops everywhere else (ready has no clock to betray, failing and
+// cleared own the floor, the start screen owns the session).
+let paused = false;
+function applyPaused(next: boolean): void {
+  if (paused === next) return;
+  paused = next;
+  hud.setPaused(paused); // the plate + the dock chip mirror the one flag
+}
+/** The T13/T1 interplay term: pause is meaningless while the house's front
+ *  door is plated. No screen (the seeded demo path) counts as dismissed. */
+function startDismissed(): boolean {
+  return startScreen?.isDismissed() ?? true;
+}
+function togglePause(): void {
+  applyPaused(pauseDecision(paused, phase.kind, startDismissed()));
+}
+
 function resetFloor(now: number): void {
   // T8 — the atrium re-freezes with the attempt: a thaw is permanent FOR the
   // attempt (frost.ts), and the reset is the attempt's end.
@@ -1091,7 +1120,8 @@ function canAct(): boolean {
     active(phase) &&
     faq.root.hidden === true &&
     feedback.root.hidden === true && // step007/T2 — the composer is a pause
-    !isTactical(view)
+    !isTactical(view) &&
+    !paused // T13/T2 — the session pause gates the verbs with the same term
   );
 }
 
@@ -1490,6 +1520,8 @@ const hud = createHud({
   onMap: () => toggleMinimap(),
   // T11/T2 — the MOTION dock chip: the same toggle KeyB runs.
   onMotion: () => toggleMotion(),
+  // T13/T2 — the PAUSE dock chip: the same toggle KeyP runs.
+  onPause: () => togglePause(),
 });
 
 // T12/T2 — THE TOUCH OVERLAY: the pure-visual mirror of the collector's
@@ -2371,6 +2403,7 @@ function buildFloor(c: Campaign, pack: VenuePack | null = null): void {
   phase = createFloorRun(); // re-armed — the timer starts on the first input
   dwaarFreeWalk = false;
   descendAt = null;
+  applyPaused(false); // T13/T2 — a new floor is never plated (belt to the brace: pause only arms in running)
   markVisited(); // the spawn cell is explored from the first breath
   input.snapshotAndReset(); // nothing banked behind an overlay fires on the new floor
   hud.hideFail();
@@ -2901,6 +2934,9 @@ window.addEventListener('keydown', (e) => {
     case 'body': // T11/T2 — the motion pane's toggle (the dock chip does the same)
       toggleMotion();
       break;
+    case 'pause': // T13/T2 — the session pause/resume (the dock chip does the same)
+      togglePause();
+      break;
     case 'stepThrough':
       e.preventDefault(); // nothing else in the UI owns the step key
       stepThrough();
@@ -3075,10 +3111,16 @@ function frame(now: number): void {
   // resets for the next attempt. No simulation on the reset frame itself.
   const { phase: reArmed, shouldReset } = tickFail(phase, now);
   // One gate for the whole simulation: a live floor, no overlay in front of
-  // it, and not parked in the tactical view. The FAQ, the 📮 composer and the
-  // tactical view are pauses — movement, verbs and catch-up all respect them.
+  // it, not parked in the tactical view, and the session not paused. The FAQ,
+  // the 📮 composer, the tactical view and the PAUSED plate (T13/T2) are all
+  // pauses — movement, verbs and catch-up all respect them; every fail path
+  // lives inside this block, so a paused plate can never fail the floor.
   const simActive =
-    active(phase) && faq.root.hidden === true && feedback.root.hidden === true && !isTactical(view);
+    active(phase) &&
+    faq.root.hidden === true &&
+    feedback.root.hidden === true &&
+    !isTactical(view) &&
+    !paused;
   // T5/T3 — the flood clock: the SAME derived clock the HUD timer reads
   // (runElapsedMs — 0 before the first input, pinned at the fail/clear
   // moment), so the water freezes exactly when the timer does. Everything
@@ -3495,7 +3537,11 @@ function frame(now: number): void {
     }
     fig.group.position.set(d.x, 0, d.y);
   }
-  updateChhaya(now);
+  // Chhaya walks the recorded path on frame time — the ONE shadow update that
+  // runs outside the fixed step. T13/T2: the session pause holds her too (she
+  // freezes mid-stride wherever her replay put her; on resume the sample
+  // re-derives from the same path — she lost the pause, like every warden).
+  if (!paused) updateChhaya(now);
   // Chhaya's map radar (T4): a ping every CHHAYA_PING_MS while her sample
   // exists on a live, unpaused floor — the same liveness updateChhaya used to
   // place her this frame.
@@ -3556,9 +3602,11 @@ function frame(now: number): void {
   syncWaterVisuals(now); // T3/T3 — the pools' dim follows the ripple TTL
   syncWaterLevelVisuals(); // T5/T3 — the flood rises, the glass sinks
   // Door machine: an opening door advances on frame time, then rests open for
-  // the rest of the floor — no further hints, no further pushes.
+  // the rest of the floor — no further hints, no further pushes. T13/T2 —
+  // the slide is world motion: a pause taken mid-push holds the door at its
+  // current t until the session resumes.
   for (const [id, st] of doorStates) {
-    if (st.phase !== 'opening') continue;
+    if (st.phase !== 'opening' || paused) continue;
     const next = stepDoor(st, elapsed);
     doorStates.set(id, next);
     doorById.get(id)?.setSlide(next.t);

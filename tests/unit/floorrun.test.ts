@@ -7,6 +7,7 @@ import {
   createFloorRun,
   failRun,
   isAtExit,
+  pauseDecision,
   runElapsedMs,
   startRun,
   tickFail,
@@ -119,5 +120,37 @@ describe('GamePhase machine', () => {
   it('exit radius check', () => {
     expect(isAtExit(0, 0, 1, 0)).toBe(true);
     expect(isAtExit(0, 0, EXIT_RADIUS + 0.1, 0)).toBe(false);
+  });
+});
+
+// T13/T2 — the pause gate's pure core. A KeyP press or dock tap becomes a
+// boolean only through pauseDecision's three terms: resume ALWAYS wins (a
+// paused session can never trap behind a phase change), a fresh pause only
+// arms in `running` (the plate's honesty line — "the clock keeps counting" —
+// is only true once the run clock is armed), and the start screen must be
+// dismissed (pause is meaningless behind the house's front door).
+describe('pauseDecision — the pause/resume toggle gate (T13/T2)', () => {
+  it('resume always wins — a paused session unpauses no matter what else holds', () => {
+    expect(pauseDecision(true, 'running', true)).toBe(false);
+    expect(pauseDecision(true, 'ready', true)).toBe(false);
+    expect(pauseDecision(true, 'failing', false)).toBe(false);
+    expect(pauseDecision(true, 'cleared', false)).toBe(false);
+  });
+
+  it('pausing arms only in a dismissed, running session', () => {
+    expect(pauseDecision(false, 'running', true)).toBe(true);
+  });
+
+  it('the start screen plates the session — KeyP/dock are no-ops behind it', () => {
+    expect(pauseDecision(false, 'running', false)).toBe(false);
+  });
+
+  it('ready never pauses — the run clock is not armed, so the honesty line would lie', () => {
+    expect(pauseDecision(false, 'ready', true)).toBe(false);
+  });
+
+  it('failing and cleared never pause — the freeze and the clear own the floor', () => {
+    expect(pauseDecision(false, 'failing', true)).toBe(false);
+    expect(pauseDecision(false, 'cleared', true)).toBe(false);
   });
 });

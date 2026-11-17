@@ -281,7 +281,7 @@ describe('save: a11y field validation (M5/T1)', () => {
       reducedFlash: true,
       captions: true,
       textScale: 1.25,
-      keyMap: { ...DEFAULT_KEYMAP, aaina: 'KeyP' },
+      keyMap: { ...DEFAULT_KEYMAP, aaina: 'KeyO' }, // T13 — KeyP is pause's default now
     };
     const out = validateSave(JSON.parse(JSON.stringify({ ...good, a11y })));
     expect(out).toEqual({ ...good, a11y });
@@ -295,7 +295,7 @@ describe('save: a11y field validation (M5/T1)', () => {
     // values (the remap layer's own describe block owns those semantics).
     expect(
       validateSave(
-        withA11y({ ...flags, textScale: 1, keyMap: { ...DEFAULT_KEYMAP, aaina: 'KeyP' } }),
+        withA11y({ ...flags, textScale: 1, keyMap: { ...DEFAULT_KEYMAP, aaina: 'KeyO' } }),
       ),
     ).not.toBeNull();
     expect(validateSave(withA11y(null))).toBeNull();
@@ -419,8 +419,8 @@ describe('save: normalizeSave — perf default (M5/T4)', () => {
 });
 
 describe('DEFAULT_KEYMAP (M5/T1)', () => {
-  it('has exactly the 17 actions with the authoritative defaults', () => {
-    expect(Object.keys(DEFAULT_KEYMAP).length).toBe(17);
+  it('has exactly the 18 actions with the authoritative defaults', () => {
+    expect(Object.keys(DEFAULT_KEYMAP).length).toBe(18);
     expect(DEFAULT_KEYMAP).toEqual({
       forward: 'KeyW',
       back: 'KeyS',
@@ -439,6 +439,7 @@ describe('DEFAULT_KEYMAP (M5/T1)', () => {
       tactical: 'KeyT',
       map: 'KeyN', // T11 — the Pac-minimap's toggle joins the keymap
       body: 'KeyB', // T11/T2 — the motion pane's toggle joins too
+      pause: 'KeyP', // T13/T2 — the session pause/resume joins too
     });
   });
 
@@ -477,18 +478,18 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
   const a11yWith = (keyMap: unknown): unknown => withKeyMap({ ...flags, keyMap });
 
   it('accepts a remapped full map — every action present, codes round-trip', () => {
-    const keyMap = { ...DEFAULT_KEYMAP, forward: 'KeyP', push: 'Minus' };
+    const keyMap = { ...DEFAULT_KEYMAP, forward: 'KeyO', push: 'Minus' }; // T13 — off pause's default
     const out = validateSave(a11yWith(keyMap));
     expect(out?.a11y?.keyMap).toEqual(keyMap);
     expect(out?.a11y?.keyMap).not.toBe(keyMap); // fresh tree, never the input's
   });
 
-  it('rejects unknown actions — the 16 are the whole vocabulary', () => {
+  it('rejects unknown actions — the known actions are the whole vocabulary', () => {
     expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, macro: 'KeyP' }))).toBeNull(); // extra action
     expect(validateSave(a11yWith({ ...DEFAULT_KEYMAP, Forward: 'KeyP' }))).toBeNull(); // case is not a rename
   });
 
-  it('rejects missing actions — a valid map binds every one of the 16', () => {
+  it('rejects missing actions — a valid map binds every known action', () => {
     const partial = { ...DEFAULT_KEYMAP } as Record<string, string>;
     delete partial.frost;
     expect(validateSave(a11yWith(partial))).toBeNull();
@@ -508,7 +509,7 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
     // (capturableCode) refuses them live, and the import gate below now
     // refuses them too — see the reserved-codes test.
     for (const good of [
-      'KeyP',
+      'KeyO', // T13 — KeyP left the sample: pause's default owns it now
       'Digit1',
       'Enter',
       'NumpadMultiply',
@@ -568,24 +569,55 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
     const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
     delete legacy.map;
     delete legacy.body;
+    delete legacy.pause; // T13 — a pre-T11 save predates the pause row too
     legacy.forward = 'KeyP'; // a stored rebind that must ride the migration
     const out = validateSave(a11yWith(legacy));
     expect(out).not.toBeNull(); // the record is NOT discarded
     expect(out?.a11y?.keyMap.map).toBe('KeyN'); // T1's widening default fills its gap
     expect(out?.a11y?.keyMap.body).toBe('KeyB'); // T2's widening default fills its gap
     expect(out?.a11y?.keyMap.forward).toBe('KeyP'); // the rebind survives
-    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(17); // canonical full shape back
+    // T13 — the pause default's code (KeyP) is taken by the stored forward
+    // rebind: the rebind wins, pause ships unbound (never a duplicate)
+    expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'pause')).toBe(false);
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(17); // 15 stored + map + body
   });
 
   it('a T1-era 16-action map migrates: body takes its default, map and rebinds survive', () => {
     const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
     delete legacy.body;
+    delete legacy.pause; // T13 — a T1-era save predates the pause row too
     legacy.map = 'KeyP'; // a T1-era rebind of the minimap toggle rides along
     const out = validateSave(a11yWith(legacy));
     expect(out).not.toBeNull();
     expect(out?.a11y?.keyMap.body).toBe('KeyB'); // only the new gap defaults in
     expect(out?.a11y?.keyMap.map).toBe('KeyP'); // the stored map binding survives
-    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(17);
+    // T13 — pause's default KeyP is taken by the stored map rebind: unbound
+    expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'pause')).toBe(false);
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(17); // 16 stored + body
+  });
+
+  // T13/T2 — the SECOND keymap widening since the gate existed: `pause` joins
+  // (KeyP). Pre-T13 saves (17 actions) carry no pause row — the gate must fill
+  // it or every stored campaign wipes on first boot (the T11 lesson).
+  it('a pre-T13 17-action map migrates: pause takes KeyP, every stored binding survives', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.pause;
+    legacy.forward = 'KeyZ'; // a stored rebind that must ride the migration
+    const out = validateSave(a11yWith(legacy));
+    expect(out).not.toBeNull(); // the campaign survives the widening
+    expect(out?.a11y?.keyMap.pause).toBe('KeyP'); // the widening default fills its gap
+    expect(out?.a11y?.keyMap.forward).toBe('KeyZ'); // the rebind survives
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(18); // canonical full shape back
+  });
+
+  it('a rebind sitting on KeyP survives the T13 migration — pause ships unbound, not a wipe', () => {
+    const legacy = { ...DEFAULT_KEYMAP } as Record<string, string>;
+    delete legacy.pause;
+    legacy.mute = 'KeyP'; // a legal pre-T13 rebind onto the pause's future default
+    const out = validateSave(a11yWith(legacy));
+    expect(out).not.toBeNull(); // the save is NOT discarded
+    expect(out?.a11y?.keyMap.mute).toBe('KeyP'); // the REBIND keeps the key
+    expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'pause')).toBe(false); // the default is dropped
   });
 
   it('the legacy shape with any OTHER missing action still rejects', () => {
@@ -618,7 +650,8 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
     expect(out?.a11y?.keyMap.faq).toBe('KeyN'); // the REBIND keeps the key
     expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'map')).toBe(false); // the default is dropped
     expect(out?.a11y?.keyMap.body).toBe('KeyB'); // the uncollided gap still fills
-    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(16); // 15 stored + body
+    expect(out?.a11y?.keyMap.pause).toBe('KeyP'); // T13 — the later gap fills too
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(17); // 15 stored + body + pause
   });
 
   it('a rebind sitting on KeyB survives too — body ships unbound (T1-era shape)', () => {
@@ -654,7 +687,8 @@ describe('save: keyMap validation — known actions + code shapes (M5/T2)', () =
     expect(out?.a11y?.keyMap.mute).toBe('KeyB');
     expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'map')).toBe(false);
     expect(Object.hasOwn(out?.a11y?.keyMap ?? {}, 'body')).toBe(false);
-    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(15);
+    expect(out?.a11y?.keyMap.pause).toBe('KeyP'); // T13 — the uncollided gap still fills
+    expect(Object.keys(out?.a11y?.keyMap ?? {}).length).toBe(16); // 15 stored + pause
   });
 
   it('the softened migration is idempotent — re-validating the dropped shape re-drops the same default', () => {

@@ -91,6 +91,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // T11/T2 — the 17th action: the motion pane's toggle (KeyB)
     'key.body': 'Motion',
     'pane.motion': 'MOTION',
+    // T13/T2 — the 18th action: the session pause/resume (KeyP)
+    'key.pause': 'Pause',
+    'btn.pause': 'PAUSE',
+    'btn.resume': 'RESUME',
     'settings.close': '✕ Close',
     // M6/T1 — the Floors section: the venue side-floor card (demo pack + Play)
     'settings.floors': 'Floors',
@@ -188,6 +192,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // overlays and banners
     'overlay.failCaught': 'Caught by the glass',
     'overlay.failCollapse': 'The mirrors collapsed',
+    // T13/T2 — the PAUSED plate: the honesty line IS the pause-proof rule
+    // (the timer and the water clock keep counting while the world holds).
+    'overlay.paused': 'PAUSED',
+    'overlay.pausedNote': "The clock keeps counting — the house doesn't wait.",
     'overlay.cleared': 'Floor cleared in {s} (best {best})',
     'overlay.clearedBest': '✨ Floor cleared in {s} — new best!',
     'overlay.descend': 'descending…',
@@ -440,6 +448,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // T11/T2 — 17वीं क्रिया: मोशन पैने का टॉगल (KeyB)
     'key.body': 'गति',
     'pane.motion': 'गति',
+    // T13/T2 — 18वीं क्रिया: सत्र का विराम/फिर शुरू (KeyP)
+    'key.pause': 'विराम',
+    'btn.pause': 'विराम',
+    'btn.resume': 'फिर चलें',
     'settings.close': '✕ बंद करें',
     // M6/T1 — मंज़िलें अनुभाग: वेन्यू साइड-फ़्लोर कार्ड (डेमो पैक + खेलें)
     'settings.floors': 'मंज़िलें',
@@ -530,6 +542,10 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // परदे और पट्टियाँ — घर की आवाज़ में, पर संक्षेप में
     'overlay.failCaught': 'काँच ने आपको पकड़ लिया',
     'overlay.failCollapse': 'दर्पण ढह गए',
+    // T13/T2 — विराम पट्टिका: ईमानदार पंक्ति ही पॉज़-प्रूफ़ नियम है
+    // (विश्व रुका रहता है, पर घड़ी और पानी की घड़ी चलती रहती हैं)।
+    'overlay.paused': 'विराम',
+    'overlay.pausedNote': 'घड़ी चलती रहती है — घर इंतज़ार नहीं करता।',
     'overlay.cleared': 'मंज़िल {s} में पार (सर्वश्रेष्ठ {best})',
     'overlay.clearedBest': '✨ मंज़िल {s} में पार — नया सर्वश्रेष्ठ!',
     'overlay.descend': 'नीचे उतर रहे हैं…',

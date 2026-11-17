@@ -1092,10 +1092,16 @@ test('m5: rebind forward to P through the settings overlay', async ({ page }) =>
       ).__MIRROR_HOUSE_DEBUG__.getPlayer(),
     );
 
-  // ⚙ → Controls: click the forward row → the capture arms ("press a key…") →
-  // the next keydown (P) is taken by the rebind, never by the game
+  // ⚙ → Controls: t13/T2 widened the keymap to 18 — pause owns P by default,
+  // so the rebind must first move pause off its default (O), then claim P
+  // for forward (two rebinds through the same capture; the second proves the
+  // freed key is genuinely claimable again).
   await page.locator('#mh-settings').click();
   await expect(page.locator('#mh-settings-overlay')).toBeVisible();
+  await page.locator('.mh-key-btn[data-action="pause"]').click();
+  await expect(page.locator('.mh-key-btn[data-action="pause"]')).toHaveText(/press a key/i);
+  await page.keyboard.press('KeyO');
+  await expect(page.locator('.mh-key-btn[data-action="pause"]')).toHaveText('O');
   await page.locator('.mh-key-btn[data-action="forward"]').click();
   await expect(page.locator('.mh-key-btn[data-action="forward"]')).toHaveText(/press a key/i);
   await page.keyboard.press('KeyP');
