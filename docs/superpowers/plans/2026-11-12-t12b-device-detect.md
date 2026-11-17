@@ -29,8 +29,17 @@
 
 **Files:** Modify `src/engine/input.ts` (`DeviceSignals`, `detectMode(s)` — replaces/refines `defaultMode(hasCoarse, stored)` keeping a back-compat wrapper; `modeLocked` state + `lockMode(mode)` export consumed by main), `src/main.ts` (signals computation; fresh-save lock listeners; persist on lock), `src/game/save.ts` (no change — mode storage exists; `modeLocked` is session-level until persisted through the existing persist() call on lock), tests (`defaultMode` tests replaced by ladder truth table incl. iPad-with-keyboard / Surface / mouse-kiosk rows; lock reducer tests), e2e (+1: fresh context, keypress locks 'keyboard' persisting across reload).
 
-- [ ] Ladder truth table (pure, test-pinned): `touchCapable` → 'touch' (phones, tablets, touchscreen laptops/monitors — touchscreen wins per the priority order); `!touchCapable` → 'keyboard' (every non-touch device that runs a browser UI has a keyboard; 'mouse' stays reachable via ⚙ — a mouse-only kiosk is undetectable, documented in code + FAQ). `hover`/`fine` signals are carried in `DeviceSignals` for completeness and future tuning but the shipped ladder is the two-arm one. PIN IT.)
-- [ ] Implement + lock wiring. Gates + 53/53. Commit `feat(t12b): device detection ladder — touch, keyboard, mouse + first-input lock`.
+- [x] Ladder truth table (pure, test-pinned): `touchCapable` → 'touch' (phones, tablets, touchscreen laptops/monitors — touchscreen wins per the priority order); `!touchCapable` → 'keyboard' (every non-touch device that runs a browser UI has a keyboard; 'mouse' stays reachable via ⚙ — a mouse-only kiosk is undetectable, documented in code + FAQ). `hover`/`fine` signals are carried in `DeviceSignals` for completeness and future tuning but the shipped ladder is the two-arm one. PIN IT.)
+- [x] Implement + lock wiring. Gates + 53/53. Commit `feat(t12b): device detection ladder — touch, keyboard, mouse + first-input lock`.
+
+
+> **Ratified deviation (controller, post-review):** the desktop arm boots
+> **`hybrid`**, not keys-only `keyboard` — the user's "keyboard second, mouse
+> third" keeps BOTH on a desktop (hybrid IS keyboard+mouse; keys-only killed
+> the pointer-lock mouse look). Ladder: `touchCapable` → 'touch', else
+> 'hybrid'; the keydown lock claims 'hybrid' too. Landed `11acef2` (ladder +
+> lock) and `bb2e429` (hybrid fix); e2e 54/54 with every desktop leg passing
+> unchanged.
 
 ---
 
@@ -38,7 +47,7 @@
 
 README modes note (auto-detect ladder), FAQ +1 ("how does the game pick my controls?"), TEST-CASES +1, plan ticks, gates.
 
-- [ ] Docs → gates. Commit `docs(t12b): auto-detect ladder docs`.
+- [x] Docs → gates. Commit `docs(t12b): auto-detect ladder docs — touch, hybrid, and the gear tab`.
 
 ## Plan Self-Review
 

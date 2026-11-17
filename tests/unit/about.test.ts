@@ -50,8 +50,19 @@ describe('about — the four launch links', () => {
 });
 
 describe('faq — the beta launch pair', () => {
-  it('grows to 52 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair, the T10 foundations + ground-door pair, the T11 panes entry, the T12 phone entry)', () => {
-    expect(FAQ).toHaveLength(52);
+  it('grows to 53 entries (25 + feedback, beta, the tier-2 trio, the T3 water, the Gardens pair, the T4 carnival glass, the Carnival pair, the T5 decoy, the Flood Halls trio, the T6 furnace + Taal-rest pair, the T7 library + noise pair, the T8 atrium + thaw pair, the T9 warrens + apex pair, the T10 foundations + ground-door pair, the T11 panes entry, the T12 phone entry, the T12b controls-picker entry)', () => {
+    expect(FAQ).toHaveLength(53);
+  });
+
+  it('the T12b entry answers how the game picks controls — ladder, first-input lock, gear override', () => {
+    const e = FAQ.find((f) => /pick my controls/i.test(f.q));
+    expect(e, 'an entry about picking controls exists').toBeDefined();
+    expect(e!.a).toContain('TOUCH');
+    expect(e!.a).toContain('Both'); // the hybrid desktop arm — never keys-only
+    expect(e!.a).toContain('mouse without a keyboard'); // the honest kiosk limit
+    expect(e!.a).toContain('first touch'); // the lock's touch arm
+    expect(e!.a).toContain('first keypress'); // the lock's keyboard arm
+    expect(e!.a).toContain('Settings'); // the manual override lives in ⚙
   });
 
   it('the T12 entry answers the phone — thumb stick, drag-look, dock buttons, compact layout', () => {

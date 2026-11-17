@@ -203,11 +203,22 @@ not a lifecycle:
 
 - `hybrid` requests pointer lock on canvas click; the other modes never do.
 - Every change writes `meta.mode`; `meta.mode` is the boot value.
-- **Boot auto-select (t12):** `defaultMode(hasCoarsePointer, stored)` — a
-  stored mode ALWAYS wins (existing saves keep their choice, never wiped by
-  a device hint); a brand-new save on a coarse-pointer device boots `touch`,
-  everything else `hybrid`. The DEV-only `?ui=touch` URL override forces the
-  session mode without ever touching the save.
+- **Boot auto-select (t12b):** `detectMode(deviceSignals)` — the two-arm
+  ladder: a touch-capable device (`navigator.maxTouchPoints > 0`) boots
+  `touch`; everything else boots `hybrid` (keyboard move AND mouse look —
+  the desktop arm keeps both; pure `keyboard`/`mouse` stay one ⚙ tap away,
+  and a mouse without a keyboard is undetectable so mouse is never
+  auto-picked). A stored mode ALWAYS wins (existing saves keep their
+  choice, never wiped by a device hint). On a fresh save the
+  **first-input lock** then settles it: the first touch locks `touch`, the
+  first non-modifier keypress locks `hybrid` (a keypress proves a
+  keyboard; hybrid keeps mouse look alive), mouse events never lock
+  (ambiguous — the ladder's verdict stands); the outcome persists through
+  the usual save path, and a stored save boots locked — never auto-locked
+  again. A ⚙ manual switch persists and locks the same way. The DEV-only
+  `?ui=touch` URL override forces the session mode without ever touching
+  the save (`defaultMode(hasCoarsePointer, stored)` remains as the
+  back-compat wrapper over the ladder).
 - Pointer lock itself is browser-owned; `InputCollector` only mirrors it by
   clearing held keys on `pointerlockchange`.
 - **`touch` (t12)** — the two-zone thumb mode, no pointer lock anywhere: the

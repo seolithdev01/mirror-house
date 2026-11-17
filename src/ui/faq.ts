@@ -25,6 +25,10 @@ export const FAQ: readonly FaqEntry[] = [
     a: 'Yes — the house is built for thumbs (t12). On a touch screen a brand-new save boots straight into the TOUCH mode: drag anywhere on the left of the screen and a virtual stick appears under your thumb — push a little to walk, push to the rim to sprint — while a drag on the right turns your head, and the dock at the bottom right carries the actions as big thumb buttons (frost, the map, views, the Daily). Small screens also get the compact layout: the keys bar hides (nothing to press on a phone) and the guide panes step aside until their dock chips summon them. It is the same house underneath — the same seeds, the same saves on your device, the same rules — in the phone\u2019s browser, no install. An existing saved mode is never overwritten: switch back with the dock\u2019s mode row, and a keyboard keeps working whenever you plug one in.',
   },
   {
+    q: 'How does the game pick my controls?',
+    a: 'It asks your hardware once, at boot (t12b). A touch-capable device — a phone, a tablet, a touchscreen laptop — boots straight into the TOUCH mode; everything else boots into ⌨+🖱 Both (keyboard move and mouse look together). That is the whole ladder, and it is deliberately short: a mouse without a keyboard cannot be detected, so mouse-only is never auto-picked — pure ⌨ Keys and pure 🖱 Mouse wait one tap away in the mode row. The first thing you actually use settles it: your first touch locks TOUCH, your first keypress locks Both, and the choice saves with everything else — after that the game never auto-switches again. An existing saved mode is always honoured, never overwritten. Change your mind anytime — the buttons at top right, the dock\u2019s mode row on a phone, or ⚙ Settings — and the new choice is remembered between sessions.',
+  },
+  {
     q: 'How do the views and the map work?',
     a: 'V cycles: Focus (first person) → Quad (front, left, right and back panes at once) → Overhead (a walking 2D map of everything you have explored) → back to Focus. From the Overhead map, T is the tactical pause: the floor freezes while you plan, a click marks a cell as a waypoint (up to eight), the first Esc clears your marks and the next Esc — or any V — returns you to your eyes with the route still drawn. The run clock keeps running while you plan: best times are pause-proof.',
   },
@@ -227,7 +231,7 @@ export function buildFaqOverlay(): {
    *  button naming a dead key. */
   setCloseKey(key: string): void;
 } {
-  // M4/T6 — the heading and the close button are chrome (localized); the 52
+  // M4/T6 — the heading and the close button are chrome (localized); the 53
   // entries are content and stay English (the content pipeline owns them).
   let lang: Lang = 'en';
   let closeKey = 'H'; // the default binding until main pushes the live one

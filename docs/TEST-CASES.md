@@ -439,6 +439,24 @@ the bar short or no mirror faced does nothing harmful — the verb just
 stands down. Every dock button works by tap alone; nothing on the
 compact HUD needs a keyboard.
 
+### MOB-6 — The device picks the starting controls; the first input locks (T12b)
+
+**Steps:** With a fresh save (a private window, or clear the site's
+storage first), open the game on a phone or any touchscreen — check the
+mode chip at the top right. Open it the same way on a plain desktop and
+check the chip again. On the desktop, press a key (`W`) once and reload;
+on the phone, tap the screen once and reload. Then switch modes from the
+mode row (or ⚙) and reload once more.
+
+**Expected:** The touch-capable device boots the **👆 Touch** chip; the
+plain desktop boots **⌨+🖱 Both** — never keys-only (mouse look must
+survive the boot). The first real touch or keypress locks the pick into
+the save: after the reload the chip still reads what fired first, and no
+later touch or keypress re-picks. An existing saved mode is never
+overwritten — the reload boots exactly what was stored. A manual switch
+from the mode row or ⚙ persists the same way, the chip follows it at
+once, and the touch overlay appears/disappears with the mode.
+
 ---
 
 ## 9. Panes — minimap & motion [PANE]

@@ -321,15 +321,16 @@ test('step003: mode buttons switch input mode', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('step003: FAQ opens with 52 entries and H toggles', async ({ page }) => {
+test('step003: FAQ opens with 53 entries and H toggles', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=FAQ');
   await ready(page);
   await page.locator('#mh-faq').click();
-  // 52 since t12/T3 — the phone entry joined the t11 panes entry (the touch
-  // tier's "playable on your phone" story). The desktop suite stays at 50
-  // tests — this pin is the only line the FAQ growth has ever touched here.
-  await expect(page.locator('#mh-faq-box details')).toHaveCount(52);
+  // 53 since t12b — the controls-picker entry joined the t12 phone entry
+  // (how the ladder picks TOUCH/Both and the first input locks it). The
+  // desktop suite stays at 50 tests — this pin is the only line the FAQ
+  // growth has ever touched here.
+  await expect(page.locator('#mh-faq-box details')).toHaveCount(53);
   await page.keyboard.press('KeyH'); // closes
   await expect(page.locator('#mh-faq-overlay')).toBeHidden();
   await page.keyboard.press('KeyH'); // reopens
