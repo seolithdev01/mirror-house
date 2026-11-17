@@ -9,8 +9,9 @@
 //      shipped);
 //   2. a STORED campaign (save v2 seeded straight into IDB — the same store,
 //      version and key the app itself uses, shaped to pass the boot's
-//      validateSave gate) re-plates as CONTINUE — FLOOR N + NEW HOUSE, and
-//      CONTINUE resumes that floor (chip L02);
+//      validateSave gate) re-plates as CONTINUE — FLOOR N + NEW HOUSE;
+//      NEW HOUSE randomizes the campaign (fresh seed, chip back to L01) and
+//      CONTINUE resumes the stored floor (chip L02);
 //   3. the session pause freezes a walking session mid-run while the run
 //      clock keeps counting through the plate (the ratified pause-proof
 //      rule), RESUME releases, and KeyP drives the same toggle — the dock
@@ -164,8 +165,11 @@ test('session: start screen gates the house', async ({ page }) => {
 // T13/T3 (2) — THE STORED CAMPAIGN CONTINUES. A save v2 record seeded into
 // the app's own IDB store (floor 2 of base SESSDOOR, validateSave-clean)
 // re-plates the door as CONTINUE — FLOOR 2 with the NEW HOUSE ghost beside
-// it and the save's mini-stats line — and CONTINUE is the app's own resume:
-// the boot chain rebuilds floor 2 under the plate and the floor chip reads it.
+// it and the save's mini-stats line. NEW HOUSE is the composition pin: the
+// click randomizes the campaign (a fresh random base replaces the stored
+// one and the floor chip returns to L01). The record is re-seeded after, and
+// CONTINUE takes the app's own resume path: the boot chain rebuilds floor 2
+// under the plate and the floor chip reads it.
 test('session: stored campaign shows CONTINUE — FLOOR N', async ({ page }) => {
   const errors = collectErrors(page);
   await seedStoredCampaignAndReload(page);
@@ -177,7 +181,19 @@ test('session: stored campaign shows CONTINUE — FLOOR N', async ({ page }) => 
   await expect(page.locator('#mh-start-new')).toHaveText('NEW HOUSE'); // the ghost secondary
   await expect(page.locator('#mh-start-stats')).toBeVisible(); // a save exists — the stats line shows
 
+  // the NEW HOUSE pin: a click randomizes the campaign — the seed leaves the
+  // stored base and the floor chip returns to L01 (playAgain's fresh spine)
+  const stored = await hookOf(page);
+  await page.locator('#mh-start-new').click();
+  await expect(plate).toHaveCount(0); // the door opened onto the fresh house
+  const fresh = await hookOf(page);
+  expect(fresh.seed).not.toBe(stored.seed); // a new random base replaced SESSDOOR
+  await expect(page.locator('#mh-floor')).toHaveText('L01');
+
   // CONTINUE dismisses onto the floor the save named — the app's resume path
+  // (the record is re-seeded first: NEW HOUSE banked its fresh spine over it)
+  await seedStoredCampaignAndReload(page);
+  await expect(page.locator('#mh-start')).toBeVisible();
   await page.locator('#mh-start-play').click();
   await expect(plate).toHaveCount(0);
   const resumed = await hookOf(page);
