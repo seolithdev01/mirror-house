@@ -17,6 +17,8 @@ const PARAM_KEYS = [
   'caption.cleared',
   'venue.banner',
   'about.version', // step007/T1 — {v} is the injected APP_VERSION in both langs
+  'start.continueFloor', // T13/T1 — the door's floor number fills {n} in both langs
+  'start.stats', // T13/T1 — the mini-stats triple (streak/shards/best) in both langs
 ] as const;
 
 const tokens = (s: string): string => (s.match(/\{\w+\}/g) ?? []).sort().join(',');
@@ -302,6 +304,58 @@ describe('i18n — the T6 heat hint line', () => {
   it('hi carries its own authored line (Devanagari, never a copy of en)', () => {
     expect(STRINGS.hi['hint.heatNear']!).toMatch(/[\u0900-\u097F]/);
     expect(STRINGS.hi['hint.heatNear']).not.toBe(STRINGS.en['hint.heatNear']);
+  });
+});
+
+// T13/T1 — the start screen: the poster becomes the door. Eight chrome keys,
+// authored in both languages; the continue line keeps its {n} floor number.
+describe('i18n — the T13 start screen', () => {
+  const START_KEYS = [
+    'start.kicker',
+    'start.title',
+    'start.tagline',
+    'start.begin',
+    'start.continueFloor',
+    'start.newHouse',
+    'start.stats',
+    'start.credits',
+  ] as const;
+
+  it('all eight start keys exist in both languages', () => {
+    for (const k of START_KEYS) {
+      expect(STRINGS.en[k], k).toBeDefined();
+      expect(STRINGS.hi[k], k).toBeDefined();
+    }
+  });
+
+  it('en pins the brand composition and the door\u2019s verbs verbatim', () => {
+    expect(STRINGS.en['start.kicker']).toBe('MIRROR');
+    expect(STRINGS.en['start.title']).toBe('HOUSE');
+    expect(STRINGS.en['start.tagline']).toBe('Fog the glass. Outthink what hunts you. Descend.');
+    expect(STRINGS.en['start.begin']).toBe('BEGIN THE DESCENT');
+    expect(STRINGS.en['start.continueFloor']).toBe('CONTINUE — FLOOR {n}');
+    expect(STRINGS.en['start.newHouse']).toBe('NEW HOUSE');
+  });
+
+  it('hi carries authored Devanagari for every start key (never a copy of en)', () => {
+    for (const k of START_KEYS) {
+      expect(STRINGS.hi[k], k).toMatch(/[\u0900-\u097F]/);
+      expect(STRINGS.hi[k], k).not.toBe(STRINGS.en[k]);
+    }
+  });
+
+  it('continueFloor fills its floor number', () => {
+    expect(fill(STRINGS.en['start.continueFloor']!, { n: 7 })).toBe('CONTINUE — FLOOR 7');
+    expect(fill(STRINGS.hi['start.continueFloor']!, { n: 7 })).toContain('7');
+  });
+
+  it('the stats line fills with the mini-stats triple in both languages', () => {
+    expect(fill(STRINGS.en['start.stats']!, { streak: 3, shards: 25, best: '4.2s' })).toBe(
+      'Streak 3 · ◆ 25 · Best 4.2s',
+    );
+    expect(fill(STRINGS.hi['start.stats']!, { streak: 3, shards: 25, best: '4.2s' })).toContain(
+      'सर्वश्रेष्ठ',
+    );
   });
 });
 

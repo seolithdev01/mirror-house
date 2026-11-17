@@ -269,6 +269,7 @@ import { createMinimap } from './ui/minimap';
 import { createMotionPane } from './ui/motionPane';
 import { createOverhead, pingOpacity } from './ui/overhead';
 import { buildSettingsOverlay, keyLabel, type TextScale } from './ui/settings';
+import { showStartScreen, type StartScreenHandle } from './ui/startScreen';
 import {
   createTouchUi,
   isCompactLayout,
@@ -325,7 +326,10 @@ const bootPlate = document.getElementById('mh-boot');
 function dismissBoot(): void {
   if (bootPlate === null || !bootPlate.isConnected) return;
   bootPlate.classList.add('mh-boot-hide');
-  window.setTimeout(() => bootPlate.remove(), 360); // the 320 ms fade, then gone
+  window.setTimeout(() => {
+    bootPlate.remove();
+    mountStartScreen(); // T13/T1 — the poster becomes the door
+  }, 360); // the 320 ms fade, then gone
 }
 (function runBootPoster(): void {
   if (bootPlate === null) return;
@@ -2497,6 +2501,46 @@ function playAgain(): void {
 const bootVenueId = urlParams.get('venue');
 const bootVenuePack = bootVenueId === null ? null : await loadVenuePack(bootVenueId);
 buildFloor(campaign, bootVenuePack); // the first floor arms — chip, beacons, sealed door
+
+// T13/T1 — THE START SCREEN: the session's front door. The world is already
+// correct behind the plate (the boot above built it — fresh: a new random
+// seed at floor 1; stored: resumed from the save) and `phase` sits in
+// `ready`, so dismissal changes NOTHING about the game state — the first
+// input after the door opens arms the timer exactly as shipped. MOUNT
+// TIMING: after the boot poster's fade (dismissBoot above), or at once when
+// the poster was skipped (?test=1, seen this session, or absent). A URL
+// seed never plates: the seeded link is the demo path — a Daily jump or a
+// shared seed code drops its visitor straight onto that floor, as ever.
+let startScreen: StartScreenHandle | null = null;
+function mountStartScreen(): void {
+  if (startScreen !== null || isValidSeed(urlSeed)) return; // once, and never on the demo path
+  const bestMs = save.best[seed] ?? null;
+  startScreen = showStartScreen({
+    lang,
+    hasProgress: campaign.floor > 1 || campaign.tierComplete,
+    floorN: campaign.floor,
+    hasSave: !isNewSave, // a brand-new save has no streak, purse or best to name
+    stats: {
+      streak: save.streak.count,
+      shards: save.shards,
+      best: bestMs === null ? null : `${(bestMs / 1000).toFixed(1)}s`, // the hud's best shape
+    },
+    onBegin: () => startScreen?.dismissStartScreen(),
+    onContinue: () => startScreen?.dismissStartScreen(),
+    // NEW HOUSE: the fresh spine banks, the new floor builds under the
+    // plate, then the door opens — playAgain() is the tier screen's own
+    // new-seed path (newCampaign(randomSeed()) + merge + persist + build).
+    onNewHouse: () => {
+      playAgain();
+      startScreen?.dismissStartScreen();
+    },
+  });
+}
+if (bootPlate !== null && bootPlate.isConnected) {
+  // the poster is holding its 1.6 s — its fade's removal mounts the door
+} else {
+  mountStartScreen(); // the poster was skipped — the door plates at once
+}
 
 // step007/T3 — test mode's two surfaces, created ONLY when the flag is live,
 // so a default load never carries either element (e2e asserts the absence):

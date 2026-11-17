@@ -460,6 +460,120 @@
           transform: none;
         }
       }
+      /* ============================================================
+         T13/T1 — THE START SCREEN (#mh-start): the boot poster becomes
+         the door. The same PoD boot composition — kicker MIRROR (yellow
+         display), the giant HOUSE (cream), the tagline — promoted from
+         the aria-hidden poster to an OPAQUE ink gate at the poster's own
+         spot (left 6vw, bottom 16vh), with the session's verbs beneath
+         it: the yellow PoD primary (BEGIN / CONTINUE — FLOOR N) and,
+         when a campaign is stored, the NEW HOUSE ghost; the mini-stats
+         line and the credits footer ride below. The world is already
+         live in `ready` behind it — the plate is fully opaque ink, so
+         the reveal is the dismissal itself. Text-scale multiplies every
+         font; the box is its own scroll container (pan-y) so 150% text
+         on a phone still reads; the entrance is the poster's gated
+         fade — reduced-flash stands it still (static plate, no pulse).
+         ============================================================ */
+      #mh-start {
+        position: fixed;
+        inset: 0;
+        z-index: 40; /* the poster's tier — the poster is gone before this plates */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end; /* the composition anchors low, like the poster */
+        align-items: flex-start;
+        padding: 0 6vw 16vh;
+        overflow: auto;
+        touch-action: pan-y; /* the box is its own scroll container */
+        background: radial-gradient(ellipse at 18% 82%, #26243a 0%, var(--ink) 58%);
+        color: var(--cream);
+      }
+      #mh-start[hidden] {
+        display: none;
+      }
+      #mh-start .mh-start-kicker {
+        font: 700 calc(20px * var(--mh-text-scale, 1)) / 1 var(--display);
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      #mh-start .mh-start-title {
+        margin: 4px 0 0;
+        font: 900 calc(clamp(88px, 16vw, 210px) * var(--mh-text-scale, 1)) / 0.82 var(--display);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      #mh-start .mh-start-tagline {
+        margin: 14px 0 0;
+        font: 400 calc(18px * var(--mh-text-scale, 1)) / 1.4 var(--body);
+        color: var(--muted);
+      }
+      #mh-start .mh-start-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+      /* the door — the PoD primary: solid yellow, ink text, hard shadow */
+      #mh-start-play {
+        background: var(--yellow);
+        border: 1px solid var(--yellow);
+        color: var(--ink);
+        border-radius: var(--r);
+        box-shadow: 0 3px #b88a00;
+        padding: 12px 26px;
+        cursor: pointer;
+        font: 800 calc(20px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      #mh-start-play:hover {
+        background: #ffcb33;
+      }
+      /* NEW HOUSE — the HUD ghost: dark-alpha fill, hairline white border */
+      #mh-start-new {
+        background: #ffffff14;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        color: var(--cream);
+        border-radius: var(--r);
+        padding: 12px 20px;
+        cursor: pointer;
+        font: 800 calc(16px * var(--mh-text-scale, 1)) var(--display);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+      #mh-start-new:hover {
+        border-color: var(--yellow);
+        color: var(--yellow);
+      }
+      #mh-start-play:focus-visible,
+      #mh-start-new:focus-visible {
+        outline: 2px solid var(--yellow);
+        outline-offset: 3px;
+      }
+      #mh-start .mh-start-stats {
+        margin: 18px 0 0;
+        font: 600 calc(14px * var(--mh-text-scale, 1)) / 1.4 var(--body);
+        color: var(--cream);
+      }
+      #mh-start .mh-start-credits {
+        margin: 10px 0 0;
+        font: 400 calc(12px * var(--mh-text-scale, 1)) / 1.5 var(--body);
+        color: var(--muted);
+      }
+      /* the plate's entrance is motion too — reduced-flash plates it still */
+      body:not(.mh-reduced-flash) #mh-start {
+        animation: mh-start-in 320ms ease-out;
+      }
+      @keyframes mh-start-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
       /* dev diagnostics + the tester chip keep their monospace read-out, on
          PoD plates; the diagnostics step below the district plate, the tester
          chip steps above the keys bar. */

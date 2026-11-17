@@ -349,6 +349,20 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     // step007/T3 — tester mode's one-time banner (?test=1; the TESTER chip
     // itself is data like the diagnostics block — fps + seed, English-only).
     'tester.banner': 'TESTER MODE — diagnostics unlocked for this session',
+    // T13/T1 — the start screen: the boot poster becomes the door. The PoD
+    // boot composition speaks its language: the kicker and the giant title
+    // localize here (unlike the aria-hidden poster, whose brand marks stayed),
+    // the verbs name the two ways in, and the mini-stats line carries the
+    // save's streak, shard purse and best time ({best} is pre-formatted by
+    // main, '—' when the floor has none yet).
+    'start.kicker': 'MIRROR',
+    'start.title': 'HOUSE',
+    'start.tagline': 'Fog the glass. Outthink what hunts you. Descend.',
+    'start.begin': 'BEGIN THE DESCENT',
+    'start.continueFloor': 'CONTINUE — FLOOR {n}',
+    'start.newHouse': 'NEW HOUSE',
+    'start.stats': 'Streak {streak} · ◆ {shards} · Best {best}',
+    'start.credits': 'A free, open-source house — nothing leaves your device.',
   },
   hi: {
     // इनपुट-मोड बटन
@@ -647,6 +661,17 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'faq.title': 'मिरर हाउस — सहायता',
     // step007/T3 — टेस्टर मोड का एक बार का बैनर (?test=1)
     'tester.banner': 'टेस्टर मोड — इस सत्र के लिए डायग्नॉस्टिक्स खुले हैं',
+    // T13/T1 — स्टार्ट स्क्रीन: बूट पोस्टर दरवाज़ा बन जाता है (किकर और
+    // विशाल शीर्षक यहाँ अपनी भाषा बोलते हैं; क्रियाएँ दो प्रवेश बताती हैं;
+    // {best} को main पहले से सजा कर देता है — बिना सर्वश्रेष्ठ के '—')
+    'start.kicker': 'आईना',
+    'start.title': 'घर',
+    'start.tagline': 'काँच जमाइए। शिकारी को पछाड़िए। नीचे उतरिए।',
+    'start.begin': 'उतराई शुरू करें',
+    'start.continueFloor': 'जारी रखें — मंज़िल {n}',
+    'start.newHouse': 'नया घर',
+    'start.stats': 'लय {streak} · ◆ {shards} · सर्वश्रेष्ठ {best}',
+    'start.credits': 'एक मुफ़्त, खुला-स्रोत घर — कुछ भी आपके यंत्र से बाहर नहीं जाता।',
   },
 };
 
