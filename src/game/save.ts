@@ -254,8 +254,24 @@ const RESERVED_CODES: readonly string[] = ['Escape', 'Tab'];
  *  every pre-T13 save's a11y block lacks the row, and the strict gate would
  *  wipe the whole record on first boot without the entry. The rebinds-win
  *  softening carries over untouched — a stored binding sitting on KeyP (the
- *  old forward-rebind habit) keeps the key and pause ships unbound. */
-const WIDENING_ACTIONS: readonly string[] = ['map', 'body', 'pause'];
+ *  old forward-rebind habit) keeps the key and pause ships unbound.
+ *
+ *  ── T14 POLICY: THE WIDENING COVENANT ──────────────────────────────────────
+ *  This list is the ONLY sanctioned way to widen the keymap vocabulary. When
+ *  you add an action to DEFAULT_KEYMAP (above), you MUST, in the SAME commit:
+ *    1. add the new action's name here — every save written before your
+ *       change lacks the row, and without this entry validateKeyMap rejects
+ *       each one, so the all-or-nothing boot gate WIPES the record (campaign
+ *       progress, bests, shards) on first load of the new build;
+ *    2. update the snapshot in `tests/unit/save.test.ts`
+ *       (describe 'WIDENING_ACTIONS — the migration covenant') — it counts
+ *       DEFAULT_KEYMAP's actions against a frozen baseline + this list and
+ *       fails with "you widened the vocabulary — update WIDENING_ACTIONS and
+ *       this snapshot" when the two fall out of step. The test is the
+ *       enforcement; this comment is the reason.
+ *  Never REMOVE from this list: the entries are historical fact (which
+ *  actions post-date the migration gate), not configuration. */
+export const WIDENING_ACTIONS: readonly string[] = ['map', 'body', 'pause'];
 
 function validateKeyMap(raw: unknown): KeyMap | null {
   if (!isPlainObject(raw)) return null;

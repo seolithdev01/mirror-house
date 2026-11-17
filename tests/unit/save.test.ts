@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_A11Y,
   DEFAULT_KEYMAP,
+  WIDENING_ACTIONS,
   defaultSave,
   idbGet,
   idbPut,
@@ -461,6 +462,63 @@ describe('DEFAULT_KEYMAP (M5/T1)', () => {
     expect(
       [...Object.entries(DEFAULT_KEYMAP)].filter(([, c]) => c === 'KeyQ').map(([a]) => a),
     ).toEqual(['turnL']);
+  });
+});
+
+// T14/t11 rider — THE WIDENING COVENANT, enforced. WIDENING_ACTIONS is the
+// save migration's vocabulary ledger: every action added to DEFAULT_KEYMAP
+// AFTER the M5 migration gate shipped must appear there, or every save
+// written before the widening fails validateKeyMap and the all-or-nothing
+// boot gate WIPES the record on first load. The policy lives in a comment
+// block at the declaration (save.ts); this suite is the enforcement — a new
+// action without its ledger entry (or without this snapshot's update) fails
+// with the message that says exactly what to do.
+describe('WIDENING_ACTIONS — the migration covenant (T14)', () => {
+  /** The M5 baseline: the actions every keymap had when validateKeyMap's
+   *  migration gate shipped (M5/T2). Frozen history — never edit this list;
+   *  a vocabulary change edits WIDENING_ACTIONS and the snapshot below. */
+  const M5_BASELINE: readonly string[] = [
+    'forward',
+    'back',
+    'left',
+    'right',
+    'sprint',
+    'turnL',
+    'turnR',
+    'frost',
+    'view',
+    'aaina',
+    'push',
+    'stepThrough',
+    'faq',
+    'mute',
+    'tactical',
+  ];
+  /** The snapshot: the widening ledger as of T14 (T11 added `map` + `body`,
+   *  T13 added `pause`). Update it — WITH WIDENING_ACTIONS — when you widen. */
+  const SNAPSHOT: readonly string[] = ['map', 'body', 'pause'];
+
+  it('every keymap action is baseline or a DECLARED widening', () => {
+    const undeclared = Object.keys(DEFAULT_KEYMAP).filter(
+      (a) => !M5_BASELINE.includes(a) && !WIDENING_ACTIONS.includes(a),
+    );
+    expect(
+      undeclared,
+      'you widened the vocabulary — update WIDENING_ACTIONS and this snapshot',
+    ).toEqual([]);
+  });
+
+  it('WIDENING_ACTIONS matches the snapshot exactly', () => {
+    expect(
+      [...WIDENING_ACTIONS].sort(),
+      'you widened the vocabulary — update WIDENING_ACTIONS and this snapshot',
+    ).toEqual([...SNAPSHOT].sort());
+  });
+
+  it('every widening entry is a real action (the ledger names the vocabulary)', () => {
+    for (const a of WIDENING_ACTIONS) {
+      expect(DEFAULT_KEYMAP[a], `WIDENING_ACTIONS names "${a}" — no such action exists`).toBeDefined();
+    }
   });
 });
 
