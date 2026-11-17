@@ -1309,7 +1309,18 @@ function makeHeatShimmerCanvas(): HTMLCanvasElement {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   return canvas;
 }
-const heatShimmerGeo = new THREE.PlaneGeometry(4.4, 3.2); // covers the 75° frustum at 1 m, any aspect
+/** T14/t8 rider — the shimmer's WIDTH for the viewport aspect: the 4.4 m
+ *  build default covers the 75° frustum at 1 m up to aspect ≈ 2.9 (visible
+ *  width = 2·tan(37.5°)·aspect ≈ 1.54·aspect), so a 16:9 desktop never sees
+ *  the edges; a 32:9 ultrawide (3.56) needs ~5.5 m, and the ×2.2 factor
+ *  clears it with margin. Pure: aspect in, meters out — the e2e reads the
+ *  same number through the faucet. Reduced-flash untouched: the quad stays a
+ *  static gradient — this only sizes it, never animates it. */
+function shimmerWidthM(aspect: number): number {
+  return Math.max(4.4, aspect * 2.2);
+}
+const HEAT_SHIMMER_BASE_W = 4.4; // the geometry's built width; resize() scales past it
+const heatShimmerGeo = new THREE.PlaneGeometry(HEAT_SHIMMER_BASE_W, 3.2); // covers the 75° frustum at 1 m
 const heatShimmer = new THREE.Mesh(
   heatShimmerGeo,
   new THREE.MeshBasicMaterial({
@@ -2974,6 +2985,11 @@ function resize(): void {
   const aspect = window.innerWidth / window.innerHeight;
   camera.aspect = aspect;
   camera.updateProjectionMatrix();
+  // T14/t8 rider — the shimmer tracks the aspect too: past the build width's
+  // ~2.9 coverage the quad widens in X (one scale write, the static gradient
+  // untouched), so the Furnace's bottom haze reaches both edges of an
+  // ultrawide (32:9) instead of stranding the corners cool.
+  heatShimmer.scale.x = shimmerWidthM(aspect) / HEAT_SHIMMER_BASE_W;
   // The quad side panes are w/2 × h/2 — same aspect as the window, so they
   // track it here alongside the main camera (T3 review fix).
   for (const s of QUAD_SIDE_YAW) {
@@ -4036,6 +4052,10 @@ if (import.meta.env.DEV || testMode) {
     // T3 review fix witness: every camera (front + quad sides) tracks the
     // window aspect — the side panes are w/2 × h/2, not square.
     camAspects: () => [camera.aspect, ...QUAD_SIDE_YAW.map((s) => s.cam.aspect)],
+    // T14/t8 rider witness — the heat shimmer's live width in meters: the e2e
+    // resizes to an ultrawide viewport and reads this (≥ ~1.54·aspect covers
+    // the 75° frustum at the quad's 1 m depth; the 4.4 default is the floor).
+    shimmerW: () => heatShimmer.scale.x * HEAT_SHIMMER_BASE_W,
     avatarPresent: true,
     streak: () => save.streak.count,
     bestFor: (s: string) => save.best[s] ?? null,

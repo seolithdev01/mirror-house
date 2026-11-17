@@ -171,6 +171,10 @@ interface DebugHook {
   minimap(): boolean;
   motion(): boolean;
   motionLabel(): string;
+  // T14/t8 rider — the heat shimmer quad's live width in meters (≥ ~1.54×
+  // the viewport aspect covers the 75° frustum at the quad's 1 m depth; the
+  // 4.4 m build default is the floor). The ultrawide leg reads it.
+  shimmerW(): number;
 }
 // page.evaluate results cannot carry functions across the process boundary,
 // so the closure-backed members (look/mode/streak/best) are invoked in the
@@ -2159,6 +2163,25 @@ test('t6: floor 51 loads the furnace', async ({ page }) => {
   expect(snap.audio.scale).toEqual([0, 1, 5, 7, 8]);
   expect(snap.audio.voice).toBe('triangle');
   await expect(page.locator('#mh-floor')).toHaveText('L51 · T6');
+
+  // T14/t8 rider — the shimmer spans the viewport: at the default viewport
+  // the quad sits at its 4.4 m build floor; dragged to a 32:9 ultrawide it
+  // widens past the frustum's visible width at the quad's 1 m depth
+  // (2·tan(37.5°)·aspect ≈ 1.54·aspect) so the bottom haze still reaches both
+  // edges — then back down again on the return resize.
+  const readShimmer = () =>
+    page.evaluate(() => {
+      const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
+      return h.shimmerW();
+    });
+  expect(await readShimmer(), 'the build width covers every regular desktop aspect').toBe(4.4);
+  await page.setViewportSize({ width: 3200, height: 900 }); // 32:9 — aspect 3.56
+  const uwAspect = 3200 / 900;
+  expect(await readShimmer(), 'the ultrawide haze reaches both edges').toBeGreaterThanOrEqual(
+    1.55 * uwAspect,
+  );
+  await page.setViewportSize({ width: 1280, height: 720 }); // back to 16:9
+  expect(await readShimmer(), 'the quad returns to its build width').toBe(4.4);
   expect(errors).toEqual([]);
 });
 
