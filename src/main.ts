@@ -262,6 +262,7 @@ import {
 import { buildAainaOverlay } from './ui/aaina';
 import { buildAboutOverlay } from './ui/about';
 import { CAPTION_TTL_MS, captionFeed, renderCaptions, type CaptionEvent } from './ui/captions';
+import { anyDialogOpen } from './ui/dialog';
 import { buildFeedbackOverlay } from './ui/feedback';
 import { buildFaqOverlay } from './ui/faq';
 import { createHud } from './ui/hud';
@@ -862,6 +863,12 @@ function startDismissed(): boolean {
   return startScreen?.isDismissed() ?? true;
 }
 function togglePause(): void {
+  // T14/t13 rider — a modal owns the keyboard while it stands: KeyP/the dock
+  // chip over the FAQ, ⚙ or the 📮 composer must not raise the PAUSED plate
+  // UNDER the dialog and yank its focus. The same early-return shape the
+  // dispatch's composer guard uses; resume stays live — the plate itself is
+  // untrapped, so it is never in the dialog stack.
+  if (anyDialogOpen()) return;
   applyPaused(pauseDecision(paused, phase.kind, startDismissed()));
 }
 

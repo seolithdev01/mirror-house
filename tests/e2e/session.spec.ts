@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // T13/T3 — the SESSION e2e file: the front door and the pause, end to end on
-// the real boot chain. Three legs, one per session verb:
+// the real boot chain. Three legs, one per session verb (plus the T14 rider):
 //
 //   1. the start screen GATES the house — a bare URL plates the world (BEGIN
 //      focused), a held key moves nobody while plated, and BEGIN alone opens
@@ -15,7 +15,10 @@
 //   3. the session pause freezes a walking session mid-run while the run
 //      clock keeps counting through the plate (the ratified pause-proof
 //      rule), RESUME releases, and KeyP drives the same toggle — the dock
-//      chip and the key are one switch.
+//      chip and the key are one switch;
+//   4. T14/t13 rider — the pause STANDS DOWN while a modal (the FAQ) stands:
+//      KeyP and the dock chip refuse to plate under a dialog, and a resume
+//      returns focus to where the pause found it.
 //
 // The plate skips seeded URLs (the seeded link is the demo path), so every
 // leg boots a bare URL — `?test=1` where the boot poster's 1.6 s hold would
@@ -259,5 +262,80 @@ test('session: pause freezes and resumes', async ({ page }) => {
   await expect(pausedPlate).toBeVisible();
   await page.keyboard.press('KeyP');
   await expect(pausedPlate).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+// T14/t13 rider — THE PAUSE STANDS DOWN UNDER A MODAL, AND RESUME RETURNS
+// FOCUS. With the FAQ dialog open over a running floor, KeyP must not raise
+// the PAUSED plate beneath it (the plate's RESUME door would steal the
+// dialog's focus) and the dock chip must not flip either: togglePause
+// early-returns while any trapped dialog stands, and the chip's click runs
+// the same toggle — one guard, both doors. Closed, KeyP pauses and resumes
+// exactly as shipped — and resume returns focus to where the pause found it:
+// the dock chip after a chip-click pause, body after a keyboard pause (the
+// old behavior stranded focus on the plate's hidden button → body by
+// accident; now it is the recorded element, deliberately).
+test('session: pause stands down while a modal is open', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto('/?test=1');
+  const plate = page.locator('#mh-start');
+  await expect(plate).toBeVisible();
+  await page.locator('#mh-start-play').click();
+  await expect(plate).toHaveCount(0);
+
+  // arm the run — the pause needs a running session to have something to say
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(200);
+  await page.keyboard.up('KeyW');
+
+  // chip-click pause: the RESUME door takes focus (as shipped), and KeyP
+  // resume hands focus BACK to the chip the pause was taken from
+  await page.locator('#mh-pause').click();
+  await expect(page.locator('#mh-paused')).toBeVisible();
+  await expect(page.locator('#mh-paused-resume')).toBeFocused();
+  await page.keyboard.press('KeyP');
+  await expect(page.locator('#mh-paused')).toBeHidden();
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => document.activeElement === document.getElementById('mh-pause')),
+      'resume returns focus to the chip the pause was taken from',
+    )
+    .toBe(true);
+
+  // the FAQ over the running floor, then KeyP at it: the plate stays down,
+  // the chip stays unpressed, and the dialog keeps the keyboard
+  await page.keyboard.press('KeyH');
+  await expect(page.locator('#mh-faq-overlay')).toBeVisible();
+  await page.keyboard.press('KeyP');
+  await expect(page.locator('#mh-paused')).toBeHidden();
+  await expect(page.locator('#mh-pause')).toHaveAttribute('aria-pressed', 'false');
+  const focusInFaq = await page.evaluate(
+    () => document.getElementById('mh-faq-overlay')?.contains(document.activeElement) ?? false,
+  );
+  expect(focusInFaq, 'the FAQ keeps its focus — the plate never stole it').toBe(true);
+
+  // the dock chip's click runs the same guard — even a forced click refuses
+  await page.locator('#mh-pause').click({ force: true });
+  await expect(page.locator('#mh-paused')).toBeHidden();
+  await expect(page.locator('#mh-pause')).toHaveAttribute('aria-pressed', 'false');
+
+  // Esc closes the FAQ; KeyP now pauses (the RESUME door takes focus, as
+  // shipped) and resumes — focus lands back on body, not on the hidden plate
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mh-faq-overlay')).toBeHidden();
+  await page.keyboard.press('KeyP');
+  await expect(page.locator('#mh-paused')).toBeVisible();
+  await expect(page.locator('#mh-paused-resume')).toBeFocused();
+  await page.keyboard.press('KeyP');
+  await expect(page.locator('#mh-paused')).toBeHidden();
+  // Chrome applies the hidden-focused-button's focus reset lazily, so the
+  // read polls instead of sampling once
+  await expect
+    .poll(
+      () => page.evaluate(() => document.activeElement === document.body),
+      'resume returns focus to where the pause found it',
+    )
+    .toBe(true);
   expect(errors).toEqual([]);
 });

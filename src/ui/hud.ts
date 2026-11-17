@@ -519,6 +519,13 @@ export function createHud(init: HudInit): Hud {
   // the PAUSED plate both read this one var (setPaused writes it; setLang
   // recomposes from it, so a language flip mid-pause relocalizes the plate).
   let paused = false;
+  // T14/t13 rider — what the pause plate took focus FROM: captured when the
+  // plate rises (before the RESUME door takes it), given back when it falls —
+  // so a resume lands focus where the pause found it (a HUD chip) instead of
+  // stranding it on the plate's now-hidden button → body. Null when the
+  // pause found nothing focusable (body/canvas) — then resume also lands on
+  // body, exactly as before.
+  let pauseFocusReturn: HTMLElement | null = null;
   let lastTierStats: {
     tier: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
     floors: number;
@@ -786,17 +793,27 @@ export function createHud(init: HudInit): Hud {
     // T13/T2 — the session pause mirror: the plate rises/falls and the dock
     // chip swaps its label in one write, from main's one applyPaused. On show
     // the RESUME door takes focus (Enter answers the plate; Tab has nowhere
-    // else it needs to go — the world is holding still). On hide the chip
-    // flips back to PAUSE and the pressed state releases.
+    // else it needs to go — the world is holding still), and whatever held
+    // focus is remembered for the fall (T14/t13 rider). On hide the chip
+    // flips back to PAUSE, the pressed state releases, and focus returns to
+    // what the pause found — or to body when the pause found nothing
+    // focusable (the plate's button hides, and a hidden button cannot hold
+    // focus anyway).
     setPaused: (p) => {
       paused = p;
       pausedPlate.hidden = !p;
       if (p) {
+        const prev = document.activeElement;
+        pauseFocusReturn =
+          prev instanceof HTMLElement && !pausedPlate.contains(prev) ? prev : null;
         pausedTitle.textContent = t(lang, 'overlay.paused');
         pausedNote.textContent = t(lang, 'overlay.pausedNote');
         pausedResume.textContent = t(lang, 'btn.resume');
         pausedResume.setAttribute('aria-label', t(lang, 'btn.resume'));
         pausedResume.focus();
+      } else {
+        pauseFocusReturn?.focus();
+        pauseFocusReturn = null;
       }
       pauseBtn.textContent = t(lang, p ? 'btn.resume' : 'btn.pause');
       pauseBtn.title = t(lang, p ? 'btn.resume' : 'btn.pause');

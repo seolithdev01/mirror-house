@@ -40,6 +40,17 @@ function focusablesIn(root: HTMLElement): HTMLElement[] {
  *  topmost and the only one whose trap answers an Escape. */
 const openOrder: HTMLElement[] = [];
 
+/** T14/t13 rider — is ANY trapped dialog/modal open right now? The session
+ *  pause reads this before toggling (main.ts togglePause): a modal owns the
+ *  keyboard while it stands, so KeyP/the dock chip must not raise the PAUSED
+ *  plate under it and steal its focus. The PAUSED plate itself is NOT in the
+ *  open order (aria-modal=false, untrapped — resume must answer while it
+ *  shows), and the start screen's entry is harmless: the pause already
+ *  refuses the ready phase through pauseDecision. */
+export function anyDialogOpen(): boolean {
+  return openOrder.length > 0;
+}
+
 /** Push `root` as the topmost open dialog (idempotent — a re-open just lifts
  *  an existing entry to the top). */
 function pushOpen(root: HTMLElement): void {
