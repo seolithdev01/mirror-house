@@ -502,7 +502,9 @@ click around the plate. Press `Tab` a couple of times, then `Esc`. Click
 **BEGIN THE DESCENT** and walk with `W`; watch the timer chip.
 
 **Expected:** The poster becomes the MIRROR/HOUSE plate and **BEGIN THE
-DESCENT** is focused at once. While it stands, nothing behind it hears you:
+DESCENT** is focused at once. A fresh save (no streak/shards/best yet)
+shows **no stats line at all** — not an empty one (T14). While it stands,
+nothing behind it hears you:
 `W` moves nobody, drags and taps land nowhere, and the timer chip stays `—`
 (the run clock was never armed). `Tab` cycles inside the plate only, and
 `Esc` does NOT dismiss it — there is no back out of the front door. BEGIN
@@ -540,8 +542,13 @@ climbing (its clock is pause-proof too), and nothing can fail you while
 plated. The timer chip KEEPS COUNTING through the plate — the plate itself
 says why: _the clock keeps counting — the house doesn't wait_. RESUME
 releases the still-held walk at once, and `P` and the chip drive the same
-toggle both ways. Before the run starts there is nothing to pause: `P` is
-an honest no-op (no clock to betray yet).
+toggle both ways; resuming returns focus to whatever the pause took it
+from (the dock chip after a chip-click pause, the page after a keyboard
+one). Before the run starts there is nothing to pause: `P` is an honest
+no-op (no clock to betray yet) — and while a dialog stands (the ?, ⚙ or
+📮 overlay) `P` and the chip are no-ops too (T14): the plate never rises
+UNDER a modal, the modal keeps its focus, and the pause is taken only
+after it closes.
 
 ---
 
