@@ -21,7 +21,7 @@ The T14 polish wave closed all six accumulated review riders (implementer → re
 - **The WIDENING_ACTIONS covenant** (`2d1bc12`) — the save-wipe lesson turned into policy + enforcement: a policy comment pins the rule (keymap vocabulary may only widen) and a snapshot test mutation-fails with "you widened the vocabulary — update WIDENING_ACTIONS and this snapshot" if the next keymap change (18 actions today) ever breaks the widening migration.
 - **Docs truth** (`dc846b0` + `222d0fe`) — A11Y.md and TEST-CASES.md aligned to shipped behavior; the final review's single required fix applied: line 148's claim that the pause plate lines are captions was false (the plate announces via role=dialog/aria-labelledby + the focused RESUME button) — reworded to say exactly that.
 
-**Also running:** the second 120-minute soak (`node scripts/soak.mjs --minutes 120`, port 4180) — started 10:40, verdict lands ~12:40; recorded in spec §13.3 when it exits. First soak: 2181 cycles, flat memory.
+**Also running:** the second 120-minute soak (`node scripts/soak.mjs --minutes 120`, port 4180) — started 10:40, **PASSED at 12:40: 2193 fail-restart cycles over 120 min, heap 9.5 MB flat (Δ 0.00 MB), geometries stable at 29 after warmup, textures flat 7, draw calls flat 5, fps steady ~48 headless; recorded in spec §13.3** — the last machine gate is closed. First soak (t2 tree, 2026-11-10): 2181 cycles, flat memory.
 
 **Process:** two plan self-contradictions caught by implementers and ratified — the shimmer fix's aspect handling and the pause×modal gate's interaction with the start plate; the final review gated the wave on the one A11Y.md sentence ("fails this wave's own contract for fix 5") — fixed before merge.
 
