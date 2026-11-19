@@ -1,0 +1,9 @@
+# T15 — Pages config: the deploy reads name + output dir from here, and the
+# R2 binding below is provisioned on every `wrangler pages deploy`.
+name = "mirror-house"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-01-01"
+
+[[r2_buckets]]
+binding = "FEEDBACK"
+bucket_name = "mirror-house-feedback"
