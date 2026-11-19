@@ -1,7 +1,12 @@
 # Security Policy
 
-Mirror House is a static, client-only game: no accounts, no backend, no
-analytics. Saves live in the browser's own storage on the player's device.
+Mirror House is a client-only game with one narrow server surface: no
+accounts, no analytics, and saves that never leave the player's device. That
+one surface is the same-origin feedback POST (`functions/api/feedback.ts`):
+schema-validated by the same shared validator the browser builds payloads
+with (`src/game/feedbackNet.ts`), rate-limited to 4 reports/hour/IP, storing
+one JSON report in the **private** R2 bucket `mirror-house-feedback` — with
+no read API at all (triage is wrangler, maintainer-side only).
 
 ## Reporting a vulnerability
 
@@ -19,6 +24,7 @@ tested. You can expect an acknowledgement within a few days.
 - This repository's code, build, and CI configuration
 - The venue-pack format and its validator (`src/game/venue.ts`)
 - Save import/export (`src/game/save.ts`)
+- The feedback ingest endpoint and its private R2 bucket (`functions/api/feedback.ts`)
 
 ## What the deployment enforces
 

@@ -1,8 +1,8 @@
 # Mirror House — Manual Test Suite
 
-The full beta checklist: 40 cases across smoke, campaign, views,
+The full beta checklist: 43 cases across smoke, campaign, views,
 accessibility, saves, audio, the venue side-floor, the panes, mobile/touch,
-and the session (the front door & the pause). The
+the session (the front door & the pause), and feedback. The
 [5-minute smoke](TESTERS.md) alone is enough to start — this page is for the
 20–30 minute pass. Work top to bottom or cherry-pick by section; every case
 is steps + expected result.
@@ -306,7 +306,7 @@ position you exported (the extra floor's progress gone — the file wins).
 The junk file is refused with a "Save file rejected" toast and the current
 save is untouched.
 
-### SAV-3 — Nothing leaves the device
+### SAV-3 — Nothing leaves the device while you play
 
 **Steps:** Play a floor in your usual browser. Open the site in a private
 window or a second browser on the same machine; also check what the site
@@ -316,7 +316,9 @@ play (optional but gold).
 **Expected:** The private window starts fresh — no floors, no shards; the
 two stores never mix. Beyond the game's own files, the network tab shows
 no analytics, no accounts, no uploads: saves live in that browser's
-storage only.
+storage only. (The one upload the game can ever make is the 📮 composer's
+SEND — FBK-2 below — which fires only when you press it; a minute of
+plain play shows none.)
 
 ## 6. Audio [AUD]
 
@@ -549,6 +551,51 @@ no-op (no clock to betray yet) — and while a dialog stands (the ?, ⚙ or
 📮 overlay) `P` and the chip are no-ops too (T14): the plate never rises
 UNDER a modal, the modal keeps its focus, and the pause is taken only
 after it closes.
+
+---
+
+## 11. Feedback — the composer & SEND [FBK] (T15)
+
+### FBK-1 — The composer captures the moment
+
+**Steps:** Open 📮 (top right, or ⚙ → Feedback) from a live floor. Read the
+preview under the kind radio and the diagnostics block inside the message
+box. Close it (`Esc`) and open it again a moment later from a different
+spot on the floor.
+
+**Expected:** Every open previews a fresh screenshot of that exact moment
+(its `width×height · size · attached when you press SEND` line under the
+preview), and the message box carries the diagnostics block — version,
+seed, floor, tier, run phase, quality preset, language, accessibility
+flags, remap count, user agent, and any errors the tab recorded. Nothing
+has been sent at any point: with the devtools network tab open, opening
+and closing the composer makes no request beyond the page's own files.
+
+### FBK-2 — SEND ships the report
+
+**Steps:** In the composer, pick a kind, write a one-line title, keep or
+trim the text, and press SEND — with the devtools network tab open
+(optional but gold). Reopen the composer afterwards and check the draft.
+
+**Expected:** The status line walks Sending… → "Sent — the architects have
+it. Thank you.", and the network tab shows exactly one POST to
+`/api/feedback` carrying the note, the screenshot (base64 JPEG), and the
+technical context — nothing else leaves the page. Reports are capped at 4
+per hour per IP: a further SEND inside that hour answers 429 with the
+honest "too many reports this hour" line. Your save and session are
+untouched, and the report has no public read path — only the maintainers
+can read it.
+
+### FBK-3 — A failed send keeps your words
+
+**Steps:** Open 📮, write a line, then cut the network (devtools offline
+mode, or drop the connection) and press SEND. Watch the status line.
+Restore the network and check the two anchors below the message.
+
+**Expected:** The status line turns honest — "Not sent (…)". Your text is
+still in the box, the shot is still previewed, and both anchors (Open
+GitHub issue / Email instead) stand ready with the same text — nothing
+auto-sends and nothing is lost.
 
 ---
 

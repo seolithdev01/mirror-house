@@ -6,7 +6,8 @@
 // and one textarea whose value IS the message that will be sent: on every
 // open it is prefilled with the prompt and the diagnostics snapshot main
 // composes from live state, and the player can edit or trim every line of it
-// — privacy is absolute, nothing leaves the page until a button is pressed.
+// — nothing leaves the page until you press a button: SEND's one POST is the
+// only network exit, and the anchors hand the same text to GitHub or mail.
 // The two fallback exits are real anchors (target=_blank / mailto:) whose
 // hrefs are recomposed from the live textarea on every keystroke, so what
 // the player just read is exactly what the GitHub form (or mail client)

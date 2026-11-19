@@ -381,7 +381,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'start.continueFloor': 'CONTINUE — FLOOR {n}',
     'start.newHouse': 'NEW HOUSE',
     'start.stats': 'Streak {streak} · ◆ {shards} · Best {best}',
-    'start.credits': 'A free, open-source house — nothing leaves your device.',
+    'start.credits': 'A free, open-source house — everything stays on your device unless you send feedback.',
   },
   hi: {
     // इनपुट-मोड बटन
@@ -708,7 +708,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'start.continueFloor': 'जारी रखें — मंज़िल {n}',
     'start.newHouse': 'नया घर',
     'start.stats': 'लय {streak} · ◆ {shards} · सर्वश्रेष्ठ {best}',
-    'start.credits': 'एक मुफ़्त, खुला-स्रोत घर — कुछ भी आपके यंत्र से बाहर नहीं जाता।',
+    'start.credits': 'एक मुफ़्त, खुला-स्रोत घर — सब कुछ आपके यंत्र पर रहता है, सिवाय आपके भेजे फ़ीडबैक के।',
   },
 };
 

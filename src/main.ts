@@ -287,9 +287,10 @@ const diagnostics = document.querySelector<HTMLElement>('#diagnostics')!;
 
 // step007/T2 — the error ring: the last 10 runtime errors (window `error` +
 // `unhandledrejection`), capped and ~200 chars each inside recordError. It
-// feeds the 📮 composer's diagnostics block — nothing is sent anywhere; the
-// ring lives in memory for this tab only and dies with it. Attached before
-// the async boot below, so a boot-time failure is caught too.
+// feeds the 📮 composer's diagnostics block — it lives in memory for this tab
+// only and dies with it, and leaves only if the player presses SEND (as part
+// of the diagnostics text). Attached before the async boot below, so a
+// boot-time failure is caught too.
 let errorRing: RingError[] = [];
 window.addEventListener('error', (e) => {
   errorRing = recordError(errorRing, performance.now(), e.error ?? e.message);
@@ -1403,8 +1404,9 @@ const faq = buildFaqOverlay();
 const about = buildAboutOverlay();
 // step007/T2 — the 📮 feedback composer. On every open the textarea is
 // pre-filled with the prompt + a FRESH diagnosticsSnapshot (below) — the
-// player reads, edits or trims the whole thing before any button opens
-// GitHub or a mail client. Nothing else reads this state; nothing sends it.
+// player reads, edits or trims the whole thing before any button acts:
+// SEND POSTs the text + shot + ctx to /api/feedback; the anchors open
+// GitHub or a mail client with the same text instead.
 const feedback = buildFeedbackOverlay({
   diagnostics: diagnosticsText,
   version: APP_VERSION, // T4 — the wire payload's `v` build stamp

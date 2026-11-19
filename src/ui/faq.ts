@@ -62,7 +62,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'Where is my data stored?',
-    a: "On your device, in your browser's IndexedDB — one record holding your look, your settings, your language, shards, streak, best times and your floor in the campaign. No accounts, no servers, no telemetry — nothing leaves your machine. Ever.",
+    a: "On your device, in your browser's IndexedDB — one record holding your look, your settings, your language, shards, streak, best times and your floor in the campaign. No accounts, no telemetry — and nothing leaves your machine unless you send it: the only data that ever leaves is the feedback you explicitly send via the 📮 composer (your note, one screenshot, and the technical details listed in the form).",
   },
   {
     q: 'What do the 💾 and 📂 buttons do?',
@@ -214,7 +214,7 @@ export const FAQ: readonly FaqEntry[] = [
   },
   {
     q: 'What is the privacy policy?',
-    a: 'Short version: there is almost nothing to say — no accounts, no cookies, no analytics, no telemetry, and the game never sends anything anywhere. One IndexedDB record inside your own browser holds your look, your settings, your language, shards, streak, best times and your floor in the campaign. The 💾 export file contains that gameplay data and nothing else, because no personal data exists to export. The long version — storage, the export file’s exact contents, the content security policy — is PRIVACY.md in the repository; PROVENANCE.md lists where every byte of code, art and audio comes from.',
+    a: 'Short version: there is almost nothing to say — no accounts, no cookies, no analytics, no telemetry, and nothing leaves your device unless you send it: the only data that ever leaves is the feedback you explicitly send via the 📮 composer (your note, one screenshot, and the technical details listed in the form). One IndexedDB record inside your own browser holds your look, your settings, your language, shards, streak, best times and your floor in the campaign. The 💾 export file contains that gameplay data and nothing else, because no personal data exists to export. The long version — storage, the export file’s exact contents, the content security policy — is PRIVACY.md in the repository; PROVENANCE.md lists where every byte of code, art and audio comes from.',
   },
   {
     q: 'I found a bug.',

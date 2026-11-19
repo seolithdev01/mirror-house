@@ -6,9 +6,13 @@ and the one convention (your personal seed) that makes your reports
 reproducible without accounts or telemetry.
 
 **Privacy, up front:** the game runs entirely in your browser and your data
-stays on your device. Saves live in your browser's own storage, nothing is
-uploaded, no analytics, no accounts. Feedback is sent only when you press a
-button — you will always see the exact text first. (Details: the repo's
+stays on your device. Saves live in your browser's own storage — nothing is
+uploaded while you play, no analytics, no accounts. The one thing that ever
+leaves is what you explicitly send: pressing SEND in the 📮 composer ships
+your note, one screenshot (the moment the form opened), and the technical
+details listed in the form to the developers' private feedback store. You
+always see the exact text and the screenshot preview first, and the
+GitHub/email doors hand the same text over instead. (Details: the repo's
 [PRIVACY.md](https://github.com/seolithdev01/mirror-house/blob/main/PRIVACY.md).)
 
 ## Quick start — your personal link
@@ -70,10 +74,11 @@ rebindable in ⚙ → Controls; mouse-only play works too):
 
 ## The full manual suite
 
-When you have 20–30 minutes, the complete checklist — 31 cases across
-campaign flow, views, accessibility, saves, audio, the venue side-floor, and
-mobile/touch — lives in [TEST-CASES.md](TEST-CASES.md). Work top to bottom or
-cherry-pick; every case is steps + expected result.
+When you have 20–30 minutes, the complete checklist — 43 cases across
+smoke, campaign flow, views, accessibility, saves, audio, the venue
+side-floor, the panes, mobile/touch, the session (the front door & the
+pause), and feedback — lives in [TEST-CASES.md](TEST-CASES.md). Work top to
+bottom or cherry-pick; every case is steps + expected result.
 
 ## How to send feedback
 
@@ -84,15 +89,20 @@ Three doors, best first:
    message already carries a diagnostics block — game version, your seed and
    floor, quality preset, language, accessibility flags, and any errors the
    session recorded — precisely so you never have to guess what info we need.
-   Delete anything you would rather not share, then:
+   A live screenshot of the moment you opened the form is previewed beside
+   it. Delete anything you would rather not share, then:
+   - **SEND** posts the whole report — your text, the screenshot, and the
+     technical details — straight to the developers' private feedback store
+     (rate-limited to 4 reports per hour; no public read path — only the
+     maintainers, triaging from their own terminal, ever see it);
    - **Open GitHub issue** builds a fully prefilled issue (template, labels,
      your text + diagnostics) in
      [github.com/seolithdev01/mirror-house/issues](https://github.com/seolithdev01/mirror-house/issues)
      — needs a (free) GitHub account;
    - **Email instead** opens your mail client with the same body addressed to
      the support alias **itsupport01@seolith.com** — for testers without
-     GitHub. Either way, nothing is sent until you press the button and see
-     the final text.
+     GitHub. Any way you choose, nothing is sent until you press the button
+     and see the final text.
 2. **GitHub issues directly** — same place, minus the prefill.
 3. **Reply to your invite** — fine for anything private; we will turn it into
    an issue on your behalf.

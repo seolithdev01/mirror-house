@@ -5,8 +5,8 @@
 //  1. HOST A FLOOR — the venue-pack sponsorship. A café, studio or bookshop
 //     hosts a themed side-floor; the pitch lives on the static
 //     /host-a-floor page and the enquiry is a mailto the venue reviews in
-//     their own mail client before anything is sent. No form, no backend,
-//     no tracking: the privacy promise is unchanged.
+//     their own mail client before anything is sent. No form, no tracking:
+//     the enquiry is a mailto, not a server endpoint.
 //  2. SUPPORT — a single optional donation link, configured at BUILD time
 //     (`VITE_SUPPORT_URL`). It renders only when set AND only when it points
 //     at one of the known donation platforms over https — a typo'd or

@@ -1,4 +1,4 @@
-# Launch Kit — Mirror House beta (0.2.0-beta.1)
+# Launch Kit — Mirror House beta
 
 Paste-ready copy for announcing the beta, pitching venue pilots to local
 ventures, and the launch-day checklist. Nothing here is sent anywhere by the
@@ -132,7 +132,8 @@ fill the bracketed holes, keep it short.
 >
 > **What it costs:** nothing during the beta — pilots are free, in exchange
 > for telling me what players say. (After launch: a flat sponsor fee, never
-> player-facing — no ads, no data, the game never sends anything anywhere.)
+> player-facing — no ads, no data pulled from players; the only thing a
+> player's device ever sends is the feedback they choose to send.)
 >
 > **What it never touches:** each player's progress. A sponsored floor is a
 > side excursion — it never alters their campaign, scores, or currency, and
@@ -166,12 +167,12 @@ is the worked example):
 
 One pass, in order; every line names the artifact that proves it.
 
-- [ ] **Web is live** — `npm run build` clean on `main`; Cloudflare Pages
-      deployment of `0.2.0-beta.1` confirmed at
+- [ ] **Web is live** — `npm run build` clean on `main`; the Cloudflare
+      Pages deployment of the current beta confirmed at
       <https://mirror-house.seolith.com> (CI deploys on push to `main`; the
       action log is the witness). Open the deployed build once and clear
       floor 1 by hand.
-- [ ] **Version says beta** — `package.json` is `0.2.0-beta.1` and the
+- [ ] **Version says beta** — `package.json` is `0.2.0-beta.4` and the
       Android `versionName` matches (`versionCode 1`) — see
       [BUILD-STORES.md](BUILD-STORES.md) for the bump rule.
 - [ ] **Service worker turned** — `public/sw.js` CACHE is `mh-v5` and the
@@ -196,3 +197,48 @@ One pass, in order; every line names the artifact that proves it.
       for anyone local.
 
 - [ ] Replace the stock Capacitor **splash** PNGs (all densities, `android/app/src/main/res/drawable*/splash.png`) with the night-indigo lantern splash (`npm run icons` extension) before Play upload.
+
+## 5. Feedback triage runbook (T15)
+
+Player reports land in the **private** R2 bucket `mirror-house-feedback` —
+one self-contained JSON object per report, keyed
+`fb/<day>/<compact-time>Z-<ip-hash>-<rand>.json` (newest sort last; the
+server stamps `receivedAt`, the connection's Cloudflare datacenter and
+country, and the truncated IP hash it rate-limited on). There is no read
+API and no dashboard — triage is the terminal script:
+
+```bash
+node scripts/feedback-triage.mjs                 # list the newest 20 reports (newest first)
+node scripts/feedback-triage.mjs --limit 5       # … the newest 5
+node scripts/feedback-triage.mjs --key fb/2026-11-19/20261119T150211Z-0458fe99fe4855c2-NCW7T3E5.json
+                                                 # print one report (the screenshot's base64 shows
+                                                 # only as its length) and decode the screenshot into
+                                                 # feedback-<stamp>.jpg next to the current directory
+node scripts/feedback-triage.mjs --del <key>     # delete one report, after it is handled
+node scripts/feedback-triage.mjs --sweep-markers # list + delete every rate/ marker, count printed
+```
+
+Facts the runbook rests on:
+
+- **Rate limit:** the Function accepts at most **4 reports per hour per IP**
+  (keyed on a truncated, one-way hash of the IP — stored with the report as
+  `meta.ipHash16`, enough to count a burst, not enough to reverse). A 5th
+  POST in the same hour answers 429.
+- **The markers.** Each accepted report also drops one 0-byte object under
+  `rate/<hour>/<ip-hash>/` — those markers ARE the rate counter (the next
+  POST's list reads them as its count). They otherwise accumulate forever,
+  hence `--sweep-markers`, which lists and deletes every object under
+  `rate/` and prints the count. **Safe:** markers are only the rate counter
+  — deleting them resets nothing the player sees; the one effect is that the
+  current hour's counter restarts from zero.
+- **Private, one-way.** The bucket has no public read path and the site has
+  no read endpoint — reports leave only through this script, run from a
+  machine with `npx wrangler login` access to the bucket (or a
+  `CLOUDFLARE_API_TOKEN` with the same access).
+- Under the hood: wrangler v4 has **no `r2 object list`** (only object
+  get/put/delete), so listing and the sweep go through the same
+  api.cloudflare.com endpoint the dashboard uses, authenticated by
+  wrangler's own stored credentials; get/delete shell out to
+  `wrangler r2 object … --remote` — `--remote` is what makes them reach the
+  real bucket instead of local dev state. An expired stored token refreshes
+  itself the first time any wrangler command runs.

@@ -530,9 +530,9 @@ test('beta: ?test=1 shows the TESTER chip + banner; default and ?test=0 carry ne
 // intact below, and the two anchors still standing as the fallbacks).
 test('t15: feedback SEND posts shot+ctx to /api/feedback', async ({ page }) => {
   const errors = collectErrors(page);
-  const posts: Array<{ body: string; status: number }> = [];
+  const posts: Array<string> = [];
   await page.route('**/api/feedback', async (route) => {
-    posts.push({ body: route.request().postData() ?? '', status: 201 });
+    posts.push(route.request().postData() ?? '');
     await route.fulfill({ status: 201, contentType: 'application/json', body: '{"ok":true}' });
   });
   // the existing composer test's boot pattern: a valid ?seed= is the demo
@@ -549,7 +549,7 @@ test('t15: feedback SEND posts shot+ctx to /api/feedback', async ({ page }) => {
   await page.locator('#mh-feedback-send').click();
   await expect(page.locator('#mh-feedback-status')).toContainText(/Sent|भेज/);
   expect(posts).toHaveLength(1);
-  const parsed = JSON.parse(posts[0]!.body) as {
+  const parsed = JSON.parse(posts[0]!) as {
     kind: string;
     title: string;
     shot: { data: string; mime: string };

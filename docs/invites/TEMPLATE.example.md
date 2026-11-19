@@ -39,7 +39,7 @@ Two ways to help — pick either:
 
 - **The 15-minute smoke** — 8 quick steps:
   [docs/TESTERS.md](https://github.com/seolithdev01/mirror-house/blob/main/docs/TESTERS.md)
-- **The full suite** — 31 cases, 20–30 minutes:
+- **The full suite** — 43 cases, 20–30 minutes:
   [docs/TEST-CASES.md](https://github.com/seolithdev01/mirror-house/blob/main/docs/TEST-CASES.md)
 
 To report, the in-game **📮 button** (top right) is best: pick 🐞 Bug /
@@ -54,7 +54,8 @@ If you could send even one report — "smoke passed, 60fps, nothing weird"
 counts — **within a week**, that's the whole ask.
 
 Privacy, because it matters: the game runs entirely in your browser, saves
-live only on your device, and nothing is uploaded
+live only on your device, and the only thing that ever uploads is the
+feedback a tester chooses to SEND — text and screenshot, previewed first
 ([PRIVACY.md](https://github.com/seolithdev01/mirror-house/blob/main/PRIVACY.md)).
 
 Thank you for kicking the mirrors.

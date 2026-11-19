@@ -89,10 +89,11 @@ pack author), Developer (repo maintainer).
 | ID | Use case | Flow | Anchor |
 |----|----------|------|--------|
 | UC-39 | Read About / FAQ | ⓘ About panel (version, credits, links); FAQ panel (40+ entries, en/hi) | `about.ts` · `faq.ts` |
-| UC-40 | Send feedback | 📮 → Bug / Suggestion / Love → prefilled GitHub issue (or mailto) with the player-reviewed diagnostics block — nothing auto-sends | `feedback.ts:buildIssueUrl` |
+| UC-40 | Send feedback (the fallback doors) | 📮 → Bug / Suggestion / Love → the player-reviewed text (diagnostics block included) hands off to a prefilled GitHub issue or a mailto — nothing sends until a button is pressed; these anchors remain the fallbacks beside SEND (UC-51) | `feedback.ts:buildIssueUrl/buildMailto` |
 | UC-41 | Play a venue floor | ⚙ → Floors → ☕ demo pack → campaign-isolated side-floor (pack dressing, no bests/shards banking) | `venue.ts` |
 | UC-42 | Test with diagnostics | `?test=1` → hook + TESTER chip + banner in production builds (session-only) | `main.ts` test gate |
 | UC-43 | Play the Daily | ★ → date-derived seed, one shared house per day | `meta.ts:dailySeed` |
+| UC-51 | Report a moment — capture + send (T15) | Actor: Player. Preconditions: any booted session; a shot is capturable whenever the composer opens (synchronous canvas read). Flow: 📮 → the moment is captured and previewed → pick Bug / Suggestion / Love, title + note (the textarea already carries the diagnostics block: version, seed, floor, tier, phase, venue pack, a11y flags, remap count, UA, error ring) → press SEND → one POST to same-origin `/api/feedback` → the Function validates with the shared contract (`feedbackNet.ts:parseFeedbackPayload`), rate-limits at 4/hour/IP (truncated IP hash), stores one self-contained JSON report in the **private** R2 bucket `mirror-house-feedback` → the status line announces sent (or the server's honest error; GitHub/email anchors remain). Postconditions: the player's save and session are untouched; the report has no public read path — maintainers triage it via `scripts/feedback-triage.mjs`. The wire `ctx.tier` is 0 on a venue side-floor and 1–10 in the campaign (`main.ts:snapshot` — `venue === null ? tierOf(campaign.floor) : 0`) | `ui/feedback.ts:SEND` · `feedbackNet.ts` · `functions/api/feedback.ts` |
 
 ## H. Planned (anchored, not shipped)
 
