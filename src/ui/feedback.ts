@@ -7,18 +7,23 @@
 // open it is prefilled with the prompt and the diagnostics snapshot main
 // composes from live state, and the player can edit or trim every line of it
 // — privacy is absolute, nothing leaves the page until a button is pressed.
-// The two exits are real anchors (target=_blank / mailto:) whose hrefs are
-// recomposed from the live textarea on every keystroke, so what the player
-// just read is exactly what the GitHub form (or mail client) receives — and
-// the href itself stays inspectable before the press. Alongside the text, a
-// LIVE screenshot — the moment the form was opened — is captured on every
-// open (a synchronous canvas read; the renderer holds the last frame) and
-// previewed under the kind radio with one meta line; T4's sender attaches it
-// to the wire payload. init.snapshot() hands over the wire context the same
-// moment is taken in.
+// The two fallback exits are real anchors (target=_blank / mailto:) whose
+// hrefs are recomposed from the live textarea on every keystroke, so what
+// the player just read is exactly what the GitHub form (or mail client)
+// receives — and the href itself stays inspectable before the press.
+// Alongside the text, a LIVE screenshot — the moment the form was opened —
+// is captured on every open (a synchronous canvas read; the renderer holds
+// the last frame) and previewed under the kind radio with one meta line.
+// step007/T4 — SEND: the wire exit. One button POSTs the whole report — the
+// note, the held shot, the wire context — same-origin to /api/feedback (the
+// overlay's ONLY network call; the anchors never auto-send), a role=status
+// line announces sending → sent | failed, and SEND is disabled unless a shot
+// is held: a report always ships its moment, or it does not ship at all.
+// init.snapshot() hands over the wire context the same moment is taken in;
+// init.version stamps the build the report came from.
 
 import { buildIssueUrl, buildMailto, SUPPORT_EMAIL, type FeedbackKind } from '../game/feedback';
-import { targetShotSize, type FeedbackCtx } from '../game/feedbackNet';
+import { buildFeedbackPayload, targetShotSize, type FeedbackCtx } from '../game/feedbackNet';
 import { trapDialog } from './dialog';
 import { fill, t, type Lang } from './i18n';
 
@@ -63,6 +68,8 @@ export function buildFeedbackOverlay(init: {
   diagnostics(): string;
   /** live context for the wire payload (T4 builds the POST from this). */
   snapshot(): FeedbackCtx;
+  /** the build stamp on the wire payload (main passes APP_VERSION). */
+  version: string;
 }): FeedbackOverlay {
   let lang: Lang = 'en';
   const root = document.createElement('div');
@@ -105,14 +112,17 @@ export function buildFeedbackOverlay(init: {
 
   // The moment — captured on every open (captureShot above): a downscaled
   // JPEG preview beside one meta line ({w}×{h} · ~KB · attached on SEND).
-  // The img is decorative (alt=''); the meta line does the naming. The whole
-  // row hides until a shot exists (no-canvas contexts keep the composer).
+  // The img stays alt='' (a real alt would double the meta line in reading
+  // order) but carries the T2-review aria-label from 'feedback.shot' — the
+  // honest name assistive tech needs for the pixel block above the form.
+  // The whole row hides until a shot exists (no-canvas contexts keep the
+  // composer). currentShot === null is also SEND's gate: no moment, no send.
   let currentShot: FeedbackShot | null = null;
   const shotWrap = document.createElement('div');
   shotWrap.id = 'mh-feedback-shot-wrap';
   const shotImg = document.createElement('img');
   shotImg.id = 'mh-feedback-shot';
-  shotImg.alt = ''; // decorative preview; the meta line names it
+  shotImg.alt = ''; // decorative preview; the aria-label + meta line name it
   const shotMeta = document.createElement('span');
   shotMeta.id = 'mh-feedback-shot-meta';
   shotWrap.append(shotImg, shotMeta);
@@ -145,19 +155,32 @@ export function buildFeedbackOverlay(init: {
   const privacy = document.createElement('p');
   privacy.id = 'mh-feedback-privacy';
 
-  // The two exits — anchors, not buttons: the href is composed before the
-  // press (inspectable, right-click copyable) and target=_blank is the
-  // window.open equivalent on a user gesture, popup-blocker-proof. The mail
-  // anchor is a plain href (no target): mail clients take it from here.
+  // The actions row, in order: the second privacy line (exactly what one
+  // SEND press ships), the SEND button (T4's wire exit — see send() below),
+  // the status line announcing the verdict, then the two fallback exits —
+  // anchors, not buttons: the href is composed before the press (inspectable,
+  // right-click copyable) and target=_blank is the window.open equivalent on
+  // a user gesture, popup-blocker-proof. The mail anchor is a plain href (no
+  // target): mail clients take it from here. They stay as the no-wire path.
   const actions = document.createElement('div');
   actions.id = 'mh-feedback-actions';
+  const privacy2 = document.createElement('p');
+  privacy2.id = 'mh-feedback-privacy2';
+  const sendBtn = document.createElement('button');
+  sendBtn.type = 'button';
+  sendBtn.id = 'mh-feedback-send';
+  const statusEl = document.createElement('p');
+  statusEl.id = 'mh-feedback-status';
+  statusEl.setAttribute('role', 'status');
+  statusEl.setAttribute('aria-live', 'polite');
+  statusEl.hidden = true; // idle says nothing; renderSendState() owns this
   const github = document.createElement('a');
   github.id = 'mh-feedback-github';
   github.target = '_blank';
   github.rel = 'noopener noreferrer';
   const email = document.createElement('a');
   email.id = 'mh-feedback-email';
-  actions.append(github, email);
+  actions.append(privacy2, sendBtn, statusEl, github, email);
 
   const close = document.createElement('button');
   close.type = 'button';
@@ -225,6 +248,78 @@ export function buildFeedbackOverlay(init: {
     }
   }
 
+  // step007/T4 — the SEND state machine: idle → sending → sent | failed.
+  // lastError holds the server's error string (or the network's verdict)
+  // only while failed; renderSendState() is the single writer of the button
+  // and the status line, so a language flip re-renders both verbatim.
+  type SendState = 'idle' | 'sending' | 'sent' | 'failed';
+  let sendState: SendState = 'idle';
+  let lastError = '';
+  const renderSendState = (): void => {
+    // Honesty rule: a report always ships its shot — no held moment, no SEND.
+    sendBtn.disabled = sendState === 'sending' || currentShot === null;
+    sendBtn.textContent =
+      sendState === 'sending' ? t(lang, 'feedback.sending') : t(lang, 'feedback.send');
+    statusEl.className = sendState === 'failed' ? 'failed' : '';
+    if (sendState === 'idle') statusEl.hidden = true;
+    else {
+      statusEl.hidden = false;
+      statusEl.textContent =
+        sendState === 'sent'
+          ? t(lang, 'feedback.sent')
+          : sendState === 'sending'
+            ? t(lang, 'feedback.sending')
+            : fill(t(lang, 'feedback.failed'), { err: lastError });
+    }
+  };
+
+  /** One press ships the whole report: kind + title + the textarea verbatim
+   *  + the held shot + the wire context, POSTed same-origin to /api/feedback
+   *  — the ONLY fetch this overlay (or its anchors) ever makes. The server's
+   *  own error string lands in the status line on failure; the draft stays
+   *  intact either way. */
+  const send = async (): Promise<void> => {
+    if (sendState === 'sending' || currentShot === null) return;
+    sendState = 'sending';
+    renderSendState();
+    const payload = buildFeedbackPayload({
+      v: init.version,
+      kind: kind(),
+      title: summary.value.trim() === '' ? 'Mirror House feedback' : summary.value.trim(),
+      body: body.value,
+      shot: currentShot,
+      ctx: init.snapshot(),
+    });
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'omit',
+      });
+      if (res.ok) {
+        sendState = 'sent';
+      } else {
+        let err = `HTTP ${res.status}`;
+        try {
+          const j = (await res.json()) as { ok: boolean; error?: string };
+          if (typeof j.error === 'string') err = j.error;
+        } catch {
+          /* non-JSON body — keep the HTTP code */
+        }
+        lastError = err;
+        sendState = 'failed';
+      }
+    } catch {
+      lastError = 'no connection';
+      sendState = 'failed';
+    }
+    renderSendState();
+  };
+  sendBtn.addEventListener('click', () => {
+    void send();
+  });
+
   function relabel(): void {
     h.textContent = t(lang, 'feedback.title');
     kindLegend.textContent = t(lang, 'feedback.kind');
@@ -232,11 +327,14 @@ export function buildFeedbackOverlay(init: {
     summaryText.textContent = t(lang, 'feedback.summary');
     bodyText.textContent = t(lang, 'feedback.body');
     privacy.textContent = t(lang, 'feedback.privacyNote');
+    privacy2.textContent = t(lang, 'feedback.privacyNote2');
     github.textContent = t(lang, 'feedback.github');
     email.textContent = t(lang, 'feedback.email');
     close.textContent = t(lang, 'aria.close');
     close.setAttribute('aria-label', t(lang, 'aria.close'));
+    shotImg.setAttribute('aria-label', t(lang, 'feedback.shot')); // the T2-review rider: the orphan key names the preview
     renderShotMeta(); // the meta line re-renders the held shot in the new words
+    renderSendState(); // the button + status line re-render in the new words
     refreshHrefs(); // the empty-title fallback follows the new labels
   }
   relabel();
@@ -246,6 +344,9 @@ export function buildFeedbackOverlay(init: {
       if (root.hidden) {
         refreshBody(); // fresh diagnostics with every open
         refreshShot(); // the moment, re-held with every open
+        sendState = 'idle'; // a reopen is a fresh slate — no stale verdict
+        lastError = '';
+        renderSendState(); // (also re-arms SEND once the fresh shot is held)
         root.hidden = false;
       } else root.hidden = true;
     },

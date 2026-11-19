@@ -17,6 +17,7 @@ const PARAM_KEYS = [
   'caption.cleared',
   'venue.banner',
   'about.version', // step007/T1 — {v} is the injected APP_VERSION in both langs
+  'feedback.failed', // step007/T4 — {err} carries the server's error in both langs
   'start.continueFloor', // T13/T1 — the door's floor number fills {n} in both langs
   'start.stats', // T13/T1 — the mini-stats triple (streak/shards/best) in both langs
 ] as const;

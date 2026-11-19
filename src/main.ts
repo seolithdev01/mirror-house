@@ -1407,6 +1407,7 @@ const about = buildAboutOverlay();
 // GitHub or a mail client. Nothing else reads this state; nothing sends it.
 const feedback = buildFeedbackOverlay({
   diagnostics: diagnosticsText,
+  version: APP_VERSION, // T4 — the wire payload's `v` build stamp
   // The wire context for the same moment the shot is taken (T4 builds the
   // POST body from diagnostics + shot + this). READ-ONLY truth from live
   // state, read at open time — every let below is live right then.

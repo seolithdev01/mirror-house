@@ -145,7 +145,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'feedback.github': 'Open GitHub issue',
     'feedback.email': 'Email instead',
     'feedback.privacyNote':
-      'Nothing is sent until you press a button — review the text below (diagnostics included) first.',
+      'Nothing is sent until you press SEND — review the text below (diagnostics included) first.',
     'feedback.prompt.bug': 'What happened? What did you do, and what did you expect?',
     'feedback.prompt.suggestion': 'What would make the house better?',
     'feedback.prompt.love': 'Tell us what you loved — the floor, the music, the chase.',
@@ -153,6 +153,15 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
       'Diagnostics — attached automatically; delete anything you would rather not share:',
     'feedback.shot': 'Screenshot — the moment you opened this form',
     'feedback.shotMeta': '{w}×{h} · ~{kb} KB · attached when you press SEND',
+    // step007/T4 — SEND: the wire exit. {err} carries the server's error
+    // string (or the network's verdict); privacyNote2 narrows note 1 to
+    // exactly what one press ships — the note, the shot, the diagnostics.
+    'feedback.send': 'SEND TO THE HOUSE',
+    'feedback.sending': 'Sending…',
+    'feedback.sent': 'Sent — the architects have it. Thank you.',
+    'feedback.failed': 'Not sent ({err}). Your words are safe below — try again, or use the links.',
+    'feedback.privacyNote2':
+      'SEND posts your note, the screenshot above, and the technical details to the Mirror House developers. Nothing else ever leaves your device.',
     // chips (emoji + label + live value)
     'chip.streak': 'Streak',
     'chip.best': 'Best',
@@ -498,13 +507,21 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'feedback.github': 'GitHub इशू खोलें',
     'feedback.email': 'ईमेल करें',
     'feedback.privacyNote':
-      'बटन दबाने तक कुछ नहीं भेजा जाता — पहले नीचे का पूरा पाठ (निदान सहित) देख लीजिए।',
+      'SEND दबाने तक कुछ नहीं भेजा जाता — पहले नीचे का पूरा पाठ (निदान सहित) देख लीजिए।',
     'feedback.prompt.bug': 'क्या हुआ? आपने क्या किया, और क्या होना चाहिए था?',
     'feedback.prompt.suggestion': 'घर को और बेहतर क्या बनाएगा?',
     'feedback.prompt.love': 'बताइए क्या अच्छा लगा — मंज़िल, संगीत, शिकार।',
     'feedback.diagHeader': 'निदान — स्वतः जुड़ा है; जो साझा नहीं करना चाहते, वह मिटा दीजिए:',
     'feedback.shot': 'स्क्रीनशॉट — जिस क्षण आपने यह फ़ॉर्म खोला',
     'feedback.shotMeta': '{w}×{h} · लगभग {kb} KB · SEND दबाने पर साथ जाएगा',
+    // step007/T4 — SEND: तार का रास्ता। {err} में सर्वर की त्रुटि (या नेटवर्क का
+    // निर्णय) आता है; privacyNote2 पहली गारंटी को एक दबाव में जो जाता है, उसी तक सीमित करती है।
+    'feedback.send': 'सदन को भेजें',
+    'feedback.sending': 'भेजा जा रहा है…',
+    'feedback.sent': 'भेज दिया — वास्तुकारों तक पहुँच गया। धन्यवाद।',
+    'feedback.failed': 'नहीं भेजा गया ({err})। आपके शब्द नीचे सुरक्षित हैं — फिर कोशिश करें या लिंक इस्तेमाल करें।',
+    'feedback.privacyNote2':
+      'SEND आपका नोट, ऊपर का स्क्रीनशॉट और तकनीकी विवरण Mirror House डेवलपर्स को भेजता है। इसके अलावा कुछ भी आपके डिवाइस से बाहर नहीं जाता।',
     // चिपें — छोटे शब्द, एक ही पंक्ति
     'chip.streak': 'लय',
     'chip.best': 'सर्वश्रेष्ठ',

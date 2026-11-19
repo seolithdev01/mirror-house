@@ -522,6 +522,63 @@ test('beta: ?test=1 shows the TESTER chip + banner; default and ?test=0 carry ne
   expect(errors).toEqual([]);
 });
 
+// step007/T4 — SEND: the wire exit. The composer's SEND button POSTs the
+// whole report (kind + title + body verbatim + the held JPEG shot + the
+// wire context) to the same-origin /api/feedback — route-mocked here, 201
+// first (the status line announces the arrival), then 500 with a JSON error
+// (the honest failure: the server's own words in the status line, the draft
+// intact below, and the two anchors still standing as the fallbacks).
+test('t15: feedback SEND posts shot+ctx to /api/feedback', async ({ page }) => {
+  const errors = collectErrors(page);
+  const posts: Array<{ body: string; status: number }> = [];
+  await page.route('**/api/feedback', async (route) => {
+    posts.push({ body: route.request().postData() ?? '', status: 201 });
+    await route.fulfill({ status: 201, contentType: 'application/json', body: '{"ok":true}' });
+  });
+  // the existing composer test's boot pattern: a valid ?seed= is the demo
+  // path — the start screen never raises there, so the HUD is clickable
+  await page.goto('/?seed=SENDTST');
+  await ready(page);
+  await page.locator('#mh-feedback').click();
+  const overlay = page.locator('#mh-feedback-overlay');
+  await expect(overlay).toBeVisible();
+  await expect(page.locator('#mh-feedback-shot')).toBeVisible();
+  const src = await page.locator('#mh-feedback-shot').getAttribute('src');
+  expect(src?.startsWith('data:image/jpeg;base64,') ?? false).toBe(true);
+  await page.locator('#mh-feedback-summary').fill('e2e shot');
+  await page.locator('#mh-feedback-send').click();
+  await expect(page.locator('#mh-feedback-status')).toContainText(/Sent|भेज/);
+  expect(posts).toHaveLength(1);
+  const parsed = JSON.parse(posts[0]!.body) as {
+    kind: string;
+    title: string;
+    shot: { data: string; mime: string };
+    ctx: { floor: number; ua: string };
+  };
+  expect(parsed.kind).toBe('bug');
+  expect(parsed.title).toBe('e2e shot');
+  expect(parsed.shot.mime).toBe('image/jpeg');
+  expect(parsed.shot.data.length).toBeGreaterThan(100);
+  expect(typeof parsed.ctx.floor).toBe('number');
+
+  // the failed path: server 500 → honest failure, draft preserved, fallbacks present
+  await page.route('**/api/feedback', async (route) => {
+    await route.fulfill({ status: 500, contentType: 'application/json', body: '{"ok":false,"error":"boom"}' });
+  });
+  await page.keyboard.press('Escape');
+  await expect(overlay).toBeHidden();
+  await page.locator('#mh-feedback').click();
+  await expect(overlay).toBeVisible();
+  await page.locator('#mh-feedback-send').click();
+  await expect(page.locator('#mh-feedback-status')).toContainText(/boom/);
+  await expect(page.locator('#mh-feedback-body')).not.toHaveValue('');
+  await expect(page.locator('#mh-feedback-github')).toBeVisible();
+  // the deliberate 500 makes Chromium log its own "Failed to load resource"
+  // line — that native network note is the ONLY noise allowed through; the
+  // app itself must stay silent (no page errors, no console.error of ours)
+  expect(errors.filter((e) => !e.startsWith('Failed to load resource'))).toEqual([]);
+});
+
 test('sm: movement is paused behind the FAQ and resumes on close', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=PAUSED');
