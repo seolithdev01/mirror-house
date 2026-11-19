@@ -118,6 +118,18 @@ export function buildFeedbackPayload(input: BuildInput): FeedbackPayload {
   return { v: input.v, kind: input.kind, title: input.title, body: input.body, shot: { w: input.shot.w, h: input.shot.h, mime: 'image/jpeg', data }, ctx: input.ctx };
 }
 
+/** Fit (w, h) inside a maxW × maxW box, preserving aspect, minimum 1px: the
+ *  long side lands exactly on the cap, the short side rounds up (one pixel
+ *  of over-aspect is invisible; a zero is not — hence ceil, not round).
+ *  Pure so the capture path needs no canvas to test. */
+export function targetShotSize(w: number, h: number, maxW: number): [number, number] {
+  if (w <= maxW && h <= maxW) return [Math.max(1, w), Math.max(1, h)];
+  const s = maxW / Math.max(w, h);
+  return w >= h
+    ? [maxW, Math.max(1, Math.ceil(h * s))]
+    : [Math.max(1, Math.ceil(w * s)), maxW];
+}
+
 /** R2 object key for one report: date-scoped, sorts chronologically,
  *  unique by (time, ip-hash, rand). `iso` = the received-at instant. */
 export function feedbackStorageKey(iso: string, ipHash: string, rand: string): string {

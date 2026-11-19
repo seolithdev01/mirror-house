@@ -151,6 +151,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'feedback.prompt.love': 'Tell us what you loved — the floor, the music, the chase.',
     'feedback.diagHeader':
       'Diagnostics — attached automatically; delete anything you would rather not share:',
+    'feedback.shot': 'Screenshot — the moment you opened this form',
+    'feedback.shotMeta': '{w}×{h} · ~{kb} KB · attached when you press SEND',
     // chips (emoji + label + live value)
     'chip.streak': 'Streak',
     'chip.best': 'Best',
@@ -501,6 +503,8 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     'feedback.prompt.suggestion': 'घर को और बेहतर क्या बनाएगा?',
     'feedback.prompt.love': 'बताइए क्या अच्छा लगा — मंज़िल, संगीत, शिकार।',
     'feedback.diagHeader': 'निदान — स्वतः जुड़ा है; जो साझा नहीं करना चाहते, वह मिटा दीजिए:',
+    'feedback.shot': 'स्क्रीनशॉट — जिस क्षण आपने यह फ़ॉर्म खोला',
+    'feedback.shotMeta': '{w}×{h} · लगभग {kb} KB · SEND दबाने पर साथ जाएगा',
     // चिपें — छोटे शब्द, एक ही पंक्ति
     'chip.streak': 'लय',
     'chip.best': 'सर्वश्रेष्ठ',

@@ -6,6 +6,7 @@ import {
   feedbackRatePrefix,
   feedbackStorageKey,
   parseFeedbackPayload,
+  targetShotSize,
 } from '../../src/game/feedbackNet';
 
 const VALID = (over: Record<string, unknown> = {}) => ({
@@ -65,6 +66,20 @@ describe('buildFeedbackPayload', () => {
     });
     expect(p.shot).toEqual({ w: 640, h: 360, mime: 'image/jpeg', data: 'QUJD' });
     expect(parseFeedbackPayload(p).ok).toBe(true);
+  });
+});
+
+describe('targetShotSize', () => {
+  it('passes through at or under max', () => {
+    expect(targetShotSize(1280, 720, 1280)).toEqual([1280, 720]);
+    expect(targetShotSize(800, 600, 1280)).toEqual([800, 600]);
+  });
+  it('scales wide and tall down, rounding even', () => {
+    expect(targetShotSize(2560, 1440, 1280)).toEqual([1280, 720]);
+    expect(targetShotSize(1170, 2532, 1280)).toEqual([592, 1280]); // tall phone
+  });
+  it('never returns 0', () => {
+    expect(targetShotSize(2, 4000, 1280)).toEqual([1, 1280]);
   });
 });
 

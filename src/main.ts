@@ -169,6 +169,7 @@ import { parseLook } from './game/look';
 import { stickToMove } from './game/touch';
 import { apparentPlayer as computeApparent } from './game/distort';
 import { diagnosticsSnapshot, keymapDiffCount, recordError, type RingError } from './game/feedback';
+import type { FeedbackCtx } from './game/feedbackNet';
 import {
   DEMO_VENUE_ID,
   validateVenuePack,
@@ -1404,7 +1405,29 @@ const about = buildAboutOverlay();
 // pre-filled with the prompt + a FRESH diagnosticsSnapshot (below) — the
 // player reads, edits or trims the whole thing before any button opens
 // GitHub or a mail client. Nothing else reads this state; nothing sends it.
-const feedback = buildFeedbackOverlay({ diagnostics: diagnosticsText });
+const feedback = buildFeedbackOverlay({
+  diagnostics: diagnosticsText,
+  // The wire context for the same moment the shot is taken (T4 builds the
+  // POST body from diagnostics + shot + this). READ-ONLY truth from live
+  // state, read at open time — every let below is live right then.
+  snapshot: (): FeedbackCtx => ({
+    floor: campaign.floor,
+    tier: venue === null ? tierOf(campaign.floor) : 0,
+    mode,
+    view,
+    lang,
+    preset,
+    seed,
+    dpr: window.devicePixelRatio,
+    ua: navigator.userAgent,
+    heap:
+      (performance as unknown as { memory?: { usedJSHeapSize?: number } }).memory
+        ?.usedJSHeapSize === undefined
+        ? null
+        : (performance as unknown as { memory: { usedJSHeapSize: number } }).memory
+            .usedJSHeapSize / 1048576,
+  }),
+});
 /** The composer's diagnostics: READ-ONLY truth from live state, composed at
  *  open time — version, language, quality preset, the floor's seed + the
  *  campaign base, the phase, the venue pack (if any), the a11y flags, the
