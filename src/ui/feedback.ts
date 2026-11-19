@@ -24,7 +24,7 @@
 // init.version stamps the build the report came from.
 
 import { buildIssueUrl, buildMailto, SUPPORT_EMAIL, type FeedbackKind } from '../game/feedback';
-import { buildFeedbackPayload, targetShotSize, type FeedbackCtx } from '../game/feedbackNet';
+import { buildFeedbackPayload, FEEDBACK_LIMITS, targetShotSize, type FeedbackCtx } from '../game/feedbackNet';
 import { trapDialog } from './dialog';
 import { fill, t, type Lang } from './i18n';
 
@@ -136,7 +136,9 @@ export function buildFeedbackOverlay(init: {
   const summary = document.createElement('input');
   summary.type = 'text';
   summary.id = 'mh-feedback-summary';
-  summary.maxLength = 80;
+  // the wire's cap, pre-truncated in the control — a keystroke can never
+  // build a title the server would reject as oversized (a 400 is unwritable)
+  summary.maxLength = FEEDBACK_LIMITS.title;
   summary.addEventListener('input', refreshHrefs);
   summaryLabel.append(summaryText, summary);
 
@@ -149,6 +151,9 @@ export function buildFeedbackOverlay(init: {
   body.id = 'mh-feedback-body';
   body.rows = 12;
   body.spellcheck = false; // the diagnostics half is ids and codes, not prose
+  // same wire cap, same reason as the title's maxLength above: the browser
+  // truncates here so the player never meets the server's 400 instead
+  body.maxLength = FEEDBACK_LIMITS.body;
   body.addEventListener('input', refreshHrefs);
   bodyLabel.append(bodyText, body);
 

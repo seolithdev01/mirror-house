@@ -210,7 +210,7 @@ API and no dashboard — triage is the terminal script:
 ```bash
 node scripts/feedback-triage.mjs                 # list the newest 20 reports (newest first)
 node scripts/feedback-triage.mjs --limit 5       # … the newest 5
-node scripts/feedback-triage.mjs --key fb/2026-11-19/20261119T150211Z-0458fe99fe4855c2-NCW7T3E5.json
+node scripts/feedback-triage.mjs --key fb/2026-11-19/2026-11-19T101112Z-0458fe99fe4855c2-NCW7T3E5.json
                                                  # print one report (the screenshot's base64 shows
                                                  # only as its length) and decode the screenshot into
                                                  # feedback-<stamp>.jpg next to the current directory

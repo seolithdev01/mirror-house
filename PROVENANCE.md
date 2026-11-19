@@ -13,7 +13,7 @@ Everything in this repository is original work, created for this project, or gen
 
 The mirrors, maze, and everything they reflect are seeded procedural generation: the same seed code always builds the same floors, deterministically, on your machine.
 
-The one server component is ours too: the same-origin feedback POST (`functions/api/feedback.ts`, sharing the `src/game/feedbackNet.ts` wire contract with the client) is written for this project like every other line of code, and the reports it stores land in this project's own **private** R2 bucket — no third-party service ever sees them.
+The one server component is ours too: the same-origin feedback POST (`functions/api/feedback.ts`, sharing the `src/game/feedbackNet.ts` wire contract with the client) is written for this project like every other line of code, and the reports it stores land in this project's own **private** R2 bucket (operated by Cloudflare) — no third party ever reads them.
 
 ## Venue packs (M6)
 

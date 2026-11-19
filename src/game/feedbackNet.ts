@@ -102,7 +102,10 @@ export function parseFeedbackPayload(raw: unknown): ParseOk | ParseErr {
 }
 
 /** What the client builds: strip the `data:` prefix, hand over bare base64.
- *  The output always satisfies parseFeedbackPayload by construction. */
+ *  For a well-formed canvas data-URL the result satisfies
+ *  parseFeedbackPayload; on a malformed one (no `base64,` marker) the data
+ *  lands empty and the validator refuses it — malformed input fails closed
+ *  at the gate, never in production. */
 export interface BuildInput {
   v: string;
   kind: WireKind;
@@ -138,8 +141,9 @@ export function feedbackStorageKey(iso: string, ipHash: string, rand: string): s
   return `fb/${day}/${compact}Z-${ipHash}-${rand}.json`;
 }
 
-/** The per-hour rate bucket prefix: at most FEEDBACK_LIMITS_RATE (the
- *  Function's constant) objects may exist under it for one client hour. */
+/** The per-hour rate bucket prefix: the Function lists its markers under it
+ *  and refuses the POST once RATE_PER_HOUR (its own constant) already exist
+ *  in that client hour. */
 export function feedbackRatePrefix(hourUtc: string, ipHash: string): string {
   return `rate/${hourUtc}/${ipHash}/`;
 }

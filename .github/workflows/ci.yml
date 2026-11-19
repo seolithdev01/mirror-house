@@ -52,7 +52,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      # Deploy the exact bytes `check` built and tested — no second install or
+      # The pushed commit must ride along: `wrangler pages deploy dist` reads
+      # functions/ from the workspace and wrangler.toml from the repo root —
+      # with only the artifact in the workspace the upload ships no Functions
+      # and POST /api/feedback 404s in production while CI stays green. The
+      # dist bytes themselves still come from the artifact below: deploy
+      # exactly what `check` built and tested.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      # The exact dist bytes `check` built and tested — no second install or
       # build runs in the one job that holds the Cloudflare token.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: { name: dist, path: dist }

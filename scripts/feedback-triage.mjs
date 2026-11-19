@@ -163,7 +163,10 @@ async function main() {
     console.log('\n--- report ---');
     console.log(JSON.stringify({ ...report, shot: { ...report.shot, data: `<${shotChars} b64 chars>` } }, null, 2));
     if (shotChars === 0) fail('this record carries no shot.data — nothing to decode');
-    const stamp = (key.split('/').pop() ?? 'unknown').split('-')[0] ?? 'unknown';
+    // the full basename minus .json — key names carry dashes (the date, the
+    // ip hash), so splitting on '-' would stamp every decode `feedback-2026`
+    // and overwrite the previous decode instead of naming its own report
+    const stamp = (key.split('/').pop() ?? 'unknown').replace(/\.json$/, '');
     const file = `feedback-${stamp}.jpg`;
     writeFileSync(file, Buffer.from(report.shot.data, 'base64'));
     console.log(`\nscreenshot decoded (stored bare base64 → jpeg) → ${file}`);
