@@ -12,8 +12,9 @@
 //                 /atlas.js   → cache-first (the precached atlas script rides
 //                                 the same bank as the immutable files)
 //                 navigations → network-first, offline fallback to '/' — except
-//                                 the atlas: an offline /atlas.html serves the
-//                                 precached atlas, never the game shell
+//                                 the atlas and the privacy page: an offline
+//                                 /atlas.html or /privacy.html serves its own
+//                                 precached page, never the game shell
 //                 everything else → passthrough (no respondWith at all)
 // The build stamps both placeholders (vite.config.ts → mhPostBuild): BUILD is a
 // content hash of the shell + the hashed asset list, so every deploy opens its
@@ -54,6 +55,7 @@ const PRECACHE = [
   '/venues/demo-glasshouse-cafe.json',
   '/atlas.html', // ui-pod — the system atlas now ships on-site
   '/atlas.js',
+  '/privacy.html', // t16 — the privacy promise ships on-site too (the store listings link it)
   ...FONTS,
   ...ASSETS,
 ];
@@ -110,10 +112,16 @@ self.addEventListener('fetch', (event) => {
     // network-first: the newest shell wins while online; offline falls back
     // to the precached '/' (index.html) and the runtime-cached /assets/ —
     // final review: an ATLAS navigation serves the precached atlas.html
-    // instead, never the game shell (the atlas is its own page now)
+    // instead, never the game shell (the atlas is its own page now);
+    // t16: same for PRIVACY — an offline /privacy.html serves the precached
+    // privacy page, never the shell
     event.respondWith(
       fetch(req).catch(() =>
-        url.pathname.includes('atlas') ? caches.match('atlas.html') : caches.match('/'),
+        url.pathname.includes('atlas')
+          ? caches.match('atlas.html')
+          : url.pathname.includes('privacy')
+            ? caches.match('privacy.html')
+            : caches.match('/'),
       ),
     );
     return;

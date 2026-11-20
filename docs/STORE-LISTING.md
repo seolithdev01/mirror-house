@@ -8,16 +8,17 @@ itself — see [PRIVACY.md](../PRIVACY.md).
 
 ## Identity
 
-| Field                | Value                                                               |
-| -------------------- | ------------------------------------------------------------------- |
-| App name (en)        | Mirror House                                                        |
-| App name (hi)        | आईना घर                                                             |
-| App ID               | `com.amtocsoft.mirrorhouse`                                         |
-| Category (Play)      | **Game** — tags: **Puzzle**, **Adventure**, Casual                  |
-| Category (App Store) | Games → **Puzzle** (secondary: Adventure)                           |
-| Price                | Free · no ads · no in-app purchases                                 |
-| Privacy policy URL   | <https://github.com/seolithdev01/mirror-house/blob/main/PRIVACY.md> |
-| Contact email        | — set in Play Console before first submission (required)            |
+| Field                 | Value                                                               |
+| --------------------- | ------------------------------------------------------------------- |
+| App name (en)         | Mirror House                                                        |
+| App name (hi)         | आईना घर                                                             |
+| App ID                | `com.amtocsoft.mirrorhouse`                                         |
+| Category (Play)       | **Game** — tags: **Puzzle**, **Adventure**, Casual                  |
+| Category (App Store)  | Games → **Puzzle** (secondary: Adventure)                           |
+| Price                 | Free · no ads · no in-app purchases                                 |
+| Privacy policy URL    | <https://mirror-house.seolith.com/privacy.html>                     |
+| Privacy policy mirror | <https://github.com/seolithdev01/mirror-house/blob/main/PRIVACY.md> |
+| Contact email         | — set in Play Console before first submission (required)            |
 
 ## Short description (≤ 80 chars)
 

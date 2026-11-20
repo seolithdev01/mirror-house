@@ -3379,3 +3379,30 @@ test('t12b: fresh save boots hybrid via the ladder; a keypress locks it across r
   expect(await liveMode()).toBe('hybrid'); // stored boots locked — touch cannot steal it
   expect(errors).toEqual([]);
 });
+
+// T16/T3 — the privacy promise ships on-site: /privacy.html serves the
+// PRIVACY.md prose verbatim (the canonical short version sentence + the
+// feedback section's /api/feedback admission + the support alias the composer
+// offers), and sw.js reaches it — the page is precached and named in the
+// navigate fallback (the offline serve itself is PROD-only, like the PWA
+// wiring test above: this suite runs the DEV server).
+test('t16: privacy page serves and sw reaches it', async ({ page, request }) => {
+  const errors = collectErrors(page);
+  const res = await request.get('http://localhost:5173/privacy.html');
+  expect(res.status()).toBe(200);
+  expect(res.headers()['content-type']).toContain('text/html');
+  const html = await res.text();
+  expect(html).toContain('nothing reaches us unless you send it');
+  expect(html).toContain('api/feedback');
+  expect(html).toContain('itsupport01@seolith.com');
+
+  // the service worker banks the page and names it in the navigate fallback
+  const sw = await (await request.get('http://localhost:5173/sw.js')).text();
+  expect(sw).toContain("'/privacy.html'");
+  expect(sw).toContain("caches.match('privacy.html')");
+
+  // the page renders in a browser context with a clean console, footer home
+  await page.goto('/privacy.html');
+  await expect(page.locator('footer a[href="/"]')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
