@@ -73,7 +73,7 @@ entry):
 
 | Form section                | Answer                                                                                                                                                       |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Privacy policy**          | `https://mirror-house.seolith.com/privacy.html` (Task 3 — live once the branch merges)                                                                       |
+| **Privacy policy**          | `https://mirror-house.seolith.com/privacy` (Task 3 — live once the branch merges)                                                                       |
 | **Ads**                     | **No, my app doesn't contain ads** (the build carries no ad SDKs)                                                                                            |
 | **Advertising ID**          | **No, the app doesn't use an advertising ID** (nothing in the build generates or reads one — `package.json` ships no ad/ads-tracking dependency; trace: PRIVACY.md "no beacon, no fingerprint, no 'phone home'") |
 | **App access**              | **All functionality is available without restrictions** — no login, no gated features, no special access credentials **(verify at entry)**                   |
@@ -189,7 +189,7 @@ On the version page + **App Information** **(verify at entry)**:
 | **Keywords** (100)          | the 86-char line from [STORE-LISTING.md](STORE-LISTING.md)                                          |
 | **Support URL**             | `https://mirror-house.seolith.com`                                                                  |
 | **Marketing URL**           | `https://mirror-house.seolith.com` (same)                                                           |
-| **Privacy policy URL**      | `https://mirror-house.seolith.com/privacy.html` (Task 3)                                            |
+| **Privacy policy URL**      | `https://mirror-house.seolith.com/privacy` (Task 3)                                            |
 | Copyright                   | `© 2026 amtocsoft` **(verify at entry)**                                                            |
 | Category                    | Games → **Puzzle** (secondary: Adventure) — STORE-LISTING §Identity                                 |
 | Release notes ("What's New") | one line from [CHANGELOG.md](../CHANGELOG.md)                                                      |

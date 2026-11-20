@@ -18,7 +18,7 @@ canonical source every form answer here traces to. The console walkthrough is
 | Category (Play)       | **Game** — tags: **Puzzle**, **Adventure**, Casual                  |
 | Category (App Store)  | Games → **Puzzle** (secondary: Adventure)                           |
 | Price                 | Free · no ads · no in-app purchases                                 |
-| Privacy policy URL    | <https://mirror-house.seolith.com/privacy.html>                     |
+| Privacy policy URL    | <https://mirror-house.seolith.com/privacy>                     |
 | Privacy policy mirror | <https://github.com/seolithdev01/mirror-house/blob/main/PRIVACY.md> |
 | Contact email         | `itsupport01@seolith.com` (`SUPPORT_EMAIL`, `src/game/feedback.ts` — the 📮 composer's mailto exit; use it for Play Console contact + data-deletion requests) |
 
