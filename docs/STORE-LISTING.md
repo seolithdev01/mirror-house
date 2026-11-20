@@ -99,24 +99,28 @@ Play takes 2–8 phone screenshots per device (JPEG or 24-bit PNG, no alpha,
 the 6.1" set (1170×2532). The game is responsive, so a device render is the
 honest capture. Two tiers, by authority:
 
-**Tier 1 — real-device renders (the upload set).** The Android-emulator pass
-captures the same three scenes at 1080×1920 into
-`store-assets/screenshots/play/` (same file names) and **supersedes** the
-interim set below the moment it lands (the walkthrough is
+**Tier 1 — real-device renders (the upload set, landed 2026-11-20).** The
+Android-emulator smoke captured three scenes from the signed release build
+(`medium_phone_gapi`, API 35); `scripts/crop-emulator-shots.mjs` trimmed the
+status bar + gesture area and emitted 1080×1920 JPEG (no alpha) —
+**superseding** the interim set below (the walkthrough is
 [`STORE-SUBMISSION.md`](STORE-SUBMISSION.md)).
 
 **Tier 2 — the shipped interim set** (generated 2026-11-20 by
 `node scripts/gen-store-shots.mjs` against a PROD build via Playwright device
-emulation, `?test=1`). Every file is an exact-size PNG, header-asserted by the
-script. The iOS pair is emulation-only until a Mac refreshes it from
-TestFlight builds (see
+emulation, `?test=1`; kept as the regen path). Every file is an exact-size
+PNG, header-asserted by the script. The iOS pair is emulation-only until a
+Mac refreshes it from TestFlight builds (see
 [`store-assets/screenshots/ios/README.md`](../store-assets/screenshots/ios/README.md)).
 
 | File (`store-assets/`)                    | Size           | Scene                                        | Caption (en)                              | Caption (hi)                      |
 | ----------------------------------------- | -------------- | -------------------------------------------- | ----------------------------------------- | --------------------------------- |
-| `screenshots/play/play-01-start.png`      | 1080×1920      | the front door — BEGIN THE DESCENT plated    | _One door in. A hundred floors down._     | _एक द्वार। सौ मंज़िलें नीचे।_          |
-| `screenshots/play/play-02-maze.png`       | 1080×1920      | Focus gameplay, Pac-minimap open (gold arrow, teal beacons) | _Frost the beacons, outrun your shadow_ | _बीकन बर्फ़ करो, छाया से आगे निकलो_ |
-| `screenshots/play/play-03-pause.png`      | 1080×1920      | the PAUSED plate mid-run                     | _Pause, plan, then walk_                  | _रुको, सोचो, फिर चलो_                |
+| `screenshots/play/emulator-01-maze.jpg`   | 1080×1920      | Focus corridor — compact HUD, touch stick, dock | _Frost the beacons, outrun your shadow_ | _बीकन बर्फ़ करो, छाया से आगे निकलो_ |
+| `screenshots/play/emulator-02-map.jpg`    | 1080×1920      | Pac-minimap open (gold arrow, teal beacons, live Sentinel dots) | _The whole floor, one glance_ | _पूरा फ़्लोर, एक नज़र में_           |
+| `screenshots/play/emulator-03-feedback-sent.jpg` | 1080×1920 | the 📮 composer after a real SEND (screenshot + note + diagnostics) | _Found something? Tell the architects_ | _कुछ मिला? वास्तुकारों को बताओ_      |
+| `screenshots/play/play-01-start.png`      | 1080×1920      | (Tier 2) the front door — BEGIN THE DESCENT plated    | _One door in. A hundred floors down._     | _एक द्वार। सौ मंज़िलें नीचे।_          |
+| `screenshots/play/play-02-maze.png`       | 1080×1920      | (Tier 2) Focus gameplay, minimap open | _Frost the beacons, outrun your shadow_ | _बीकन बर्फ़ करो, छाया से आगे निकलो_ |
+| `screenshots/play/play-03-pause.png`      | 1080×1920      | (Tier 2) the PAUSED plate mid-run                     | _Pause, plan, then walk_                  | _रुको, सोचो, फिर चलो_                |
 | `screenshots/ios/ios-67-1290x2796-*.png`  | 1290×2796 (×3) | same three scenes (App Store 6.7" slot)      | (same captions)                           | (same)                            |
 | `screenshots/ios/ios-61-1170x2532-*.png`  | 1170×2532 (×3) | same three scenes (App Store 6.1" slot)      | (same captions)                           | (same)                            |
 
