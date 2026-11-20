@@ -121,10 +121,12 @@ Google Play requires the **AAB** for uploads.
 1. Play Console → Create app (`Mirror House`, Game, Free) — one-time, $25.
 2. Testing → Internal testing → create track → upload the `.aab` → add testers.
 3. Before any public track, complete the one-time console gates:
-   - **Data Safety form** — answers come straight from [`PRIVACY.md`](../PRIVACY.md):
-     no data collected, no data shared, no analytics/telemetry; saves live in
-     on-device IndexedDB; the only network fetches are the app's own bundled
-     assets. Every "do you collect" answer is _No_.
+   - **Data Safety form** — the 2026-11-20 truth table lives in
+     [`STORE-LISTING.md`](STORE-LISTING.md) (every row traces to
+     [`PRIVACY.md`](../PRIVACY.md)): overall **Yes** — the 📮 SEND composer is
+     the one user-initiated off-device flow (a screenshot + note, feedback
+     purpose, not shared, deletable on request); no ads/analytics/accounts;
+     the save stays in on-device IndexedDB.
    - **Content rating (IARC)** questionnaire — see the iOS/IARC section below;
      answers are store-agnostic.
    - Store listing (icon, screenshots, short description) — assets from the
