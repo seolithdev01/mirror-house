@@ -147,3 +147,28 @@ export function feedbackStorageKey(iso: string, ipHash: string, rand: string): s
 export function feedbackRatePrefix(hourUtc: string, ipHash: string): string {
   return `rate/${hourUtc}/${ipHash}/`;
 }
+
+/** The only origin that hosts the ingest Function. Web builds POST relative
+ *  (CSP `connect-src 'self'`), so this constant is used for nothing on the
+ *  web — it exists for the Capacitor WebView, whose document origin is a
+ *  pseudo-origin with no backend behind it. */
+export const PRODUCTION_API_ORIGIN = 'https://mirror-house.seolith.com';
+
+/** The exact pseudo-origins a Capacitor WebView serves documents from. Note
+ *  they carry NO port — `http://localhost:5173` (the dev/e2e server) is a
+ *  normal web origin and must stay relative. */
+const WEBVIEW_ORIGINS = new Set([
+  'https://localhost',
+  'http://localhost',
+  'capacitor://localhost',
+  'ionic://localhost',
+]);
+
+/** Where SEND should POST given the document origin this page was served
+ *  from. Web: relative (same-origin, CSP-clean, previews/dev/CI included).
+ *  WebView: absolute to production (the Function answers CORS preflights). */
+export function feedbackApiUrl(docOrigin: string): string {
+  return WEBVIEW_ORIGINS.has(docOrigin)
+    ? `${PRODUCTION_API_ORIGIN}/api/feedback`
+    : '/api/feedback';
+}

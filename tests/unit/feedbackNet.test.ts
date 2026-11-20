@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   FEEDBACK_LIMITS,
+  PRODUCTION_API_ORIGIN,
   buildFeedbackPayload,
+  feedbackApiUrl,
   feedbackRatePrefix,
   feedbackStorageKey,
   parseFeedbackPayload,
@@ -90,5 +92,25 @@ describe('keys', () => {
   });
   it('rate prefix is hour-scoped', () => {
     expect(feedbackRatePrefix('2026-11-19T10', 'a1b2c3d4e5f6')).toBe('rate/2026-11-19T10/a1b2c3d4e5f6/');
+  });
+});
+
+describe('feedbackApiUrl', () => {
+  it('keeps web origins relative (same-origin POST under CSP self)', () => {
+    expect(feedbackApiUrl('https://mirror-house.seolith.com')).toBe('/api/feedback');
+    expect(feedbackApiUrl('https://mirror-house-8fg.pages.dev')).toBe('/api/feedback');
+    expect(feedbackApiUrl('http://localhost:5173')).toBe('/api/feedback');
+    expect(feedbackApiUrl('http://127.0.0.1:4180')).toBe('/api/feedback');
+    expect(feedbackApiUrl('https://some-preview-44475be9.mirror-house-8fg.pages.dev')).toBe('/api/feedback');
+  });
+  it('maps the Capacitor WebView pseudo-origins to the production API', () => {
+    expect(feedbackApiUrl('https://localhost')).toBe(`${PRODUCTION_API_ORIGIN}/api/feedback`);
+    expect(feedbackApiUrl('http://localhost')).toBe(`${PRODUCTION_API_ORIGIN}/api/feedback`);
+    expect(feedbackApiUrl('capacitor://localhost')).toBe(`${PRODUCTION_API_ORIGIN}/api/feedback`);
+    expect(feedbackApiUrl('ionic://localhost')).toBe(`${PRODUCTION_API_ORIGIN}/api/feedback`);
+  });
+  it('never treats a ported localhost as the WebView', () => {
+    // the dev/e2e server has a port; the WebView pseudo-origins do not
+    expect(feedbackApiUrl('http://localhost:5173')).not.toContain(PRODUCTION_API_ORIGIN);
   });
 });

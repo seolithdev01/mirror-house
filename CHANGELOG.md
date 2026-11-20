@@ -7,6 +7,62 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t15] — 2026-11-19 — the feedback pipeline (v0.2.0-beta.4)
+
+No gameplay change — the house gets a mailbox. The 📮 composer stops being a
+form-linker and becomes a sender: one button ships the report the player just
+read, straight to the architects.
+
+- **SEND** — every open captures the moment: a live screenshot of the game
+  canvas (downscaled JPEG, previewed before the press), held beside the
+  prefilled note. SEND POSTs the whole report — note + shot + wire context —
+  to `/api/feedback`, a Cloudflare Pages Function that validates against the
+  shared wire contract (`src/game/feedbackNet.ts`), stores one JSON per
+  report in R2 (`fb/<day>/…json`), and rate-limits to 4 reports per hour per
+  IP. The GitHub/mail anchors stay as the no-wire exits; nothing is sent
+  until SEND is pressed, and SEND stays disabled until a shot is held.
+- **The privacy promise, amended** — it now says the fuller truth:
+  "nothing leaves your device unless you send it" — and when you do send,
+  exactly what the composer showed (the note, one screenshot, the technical
+  details listed in the form) is what leaves. PRIVACY.md and the FAQ's
+  privacy answer carry it.
+- **Triage** — `scripts/feedback-triage.mjs` pulls a day's reports out of
+  R2 into readable markdown: the inbox the reports land in has a reader.
+- **CI deploy checkout** — the deploy job now checks out the pushed commit:
+  `wrangler pages deploy` reads `functions/` and `wrangler.toml` from the
+  workspace, and with only the build artifact present the upload shipped no
+  Functions — POST `/api/feedback` 404'd in production while CI stayed
+  green. The dist bytes still deploy exactly what `check` built and tested.
+- Version → `0.2.0-beta.4`.
+
+## [touch-hotfix] — 2026-11-16 — the real-device gesture blanket (v0.2.0-beta.3)
+
+No gameplay change — the house finally walks on a real phone. Desktop
+emulation dispatched pointer events at the window and never hit-tested; a
+real device hit-tests, and the page's old touch posture broke under it.
+
+- **The touch-action blanket** — html/body now carry `touch-action: none`
+  (every touch's effective touch-action intersects its ancestor chain, so
+  the browser can claim no gesture anywhere on the play surface or the HUD
+  chrome): before the blanket, a touch landing outside the canvas let the
+  browser take the gesture — `pointercancel` a few pixels in killed the
+  virtual stick mid-drag. The stick passes through untouched; overlay boxes
+  are their own scroll containers (pan-y) and keep their scroll; buttons
+  keep `manipulation` and form fields keep text selection, so the tap→click
+  survives and the 📮 composer stays editable.
+- **The HUD-tap filter** — a gesture the browser consumed never synthesizes
+  the click, which is why dock taps did nothing; with the blanket in place
+  every HUD tap arrives whole, while the double-tap zoom, the iOS
+  long-press callout and the text-selection steal die on every chrome
+  surface.
+- **`?diag=1`** — the touch diagnostics overlay (`src/ui/touchDiag.ts`):
+  param-gated like `?test=1` (a default load never mounts it), it taps the
+  window in the capture phase and renders the last 10 pointer events plus a
+  mode/coarse/compact header — the ground-truth tool when a real phone
+  misbehaves, since desktop emulation never hit-tests.
+- **Service worker** — cache `mh-v7` sweeps the pre-hotfix bundle.
+- Version → `0.2.0-beta.3`.
+
 ## [ui] — 2026-11-16 — the People-of-Delhi chrome (v0.2.0-beta.2)
 
 No gameplay change — the frame around the wardens' world re-dresses in the

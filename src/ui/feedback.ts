@@ -16,7 +16,8 @@
 // is captured on every open (a synchronous canvas read; the renderer holds
 // the last frame) and previewed under the kind radio with one meta line.
 // step007/T4 — SEND: the wire exit. One button POSTs the whole report — the
-// note, the held shot, the wire context — same-origin to /api/feedback (the
+// note, the held shot, the wire context — to /api/feedback (relative on the
+// web, absolute to production from the store WebView: `feedbackApiUrl`; the
 // overlay's ONLY network call; the anchors never auto-send), a role=status
 // line announces sending → sent | failed, and SEND is disabled unless a shot
 // is held: a report always ships its moment, or it does not ship at all.
@@ -24,7 +25,7 @@
 // init.version stamps the build the report came from.
 
 import { buildIssueUrl, buildMailto, SUPPORT_EMAIL, type FeedbackKind } from '../game/feedback';
-import { buildFeedbackPayload, FEEDBACK_LIMITS, targetShotSize, type FeedbackCtx } from '../game/feedbackNet';
+import { buildFeedbackPayload, feedbackApiUrl, FEEDBACK_LIMITS, targetShotSize, type FeedbackCtx } from '../game/feedbackNet';
 import { trapDialog } from './dialog';
 import { fill, t, type Lang } from './i18n';
 
@@ -280,10 +281,11 @@ export function buildFeedbackOverlay(init: {
   };
 
   /** One press ships the whole report: kind + title + the textarea verbatim
-   *  + the held shot + the wire context, POSTed same-origin to /api/feedback
-   *  — the ONLY fetch this overlay (or its anchors) ever makes. The server's
-   *  own error string lands in the status line on failure; the draft stays
-   *  intact either way. */
+   *  + the held shot + the wire context, POSTed to /api/feedback — relative
+   *  on the web, absolute to production from the store WebView
+   *  (`feedbackApiUrl`) — the ONLY fetch this overlay (or its anchors) ever
+   *  makes. The server's own error string lands in the status line on
+   *  failure; the draft stays intact either way. */
   const send = async (): Promise<void> => {
     if (sendState === 'sending' || currentShot === null) return;
     sendState = 'sending';
@@ -297,7 +299,7 @@ export function buildFeedbackOverlay(init: {
       ctx: init.snapshot(),
     });
     try {
-      const res = await fetch('/api/feedback', {
+      const res = await fetch(feedbackApiUrl(window.location.origin), {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
