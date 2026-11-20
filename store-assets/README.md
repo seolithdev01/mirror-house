@@ -19,7 +19,7 @@ goes with these assets lives in
 | `icon-180.png` / `-transparent` | 180² | same two variants                      | iOS apple-touch scale (when a Mac build happens)  |
 | `icon-144.png` / `-transparent` | 144² | same two variants                      | xxhdpi legacy reference                           |
 | `feature-graphic-1024x500.png`  | 1024×500 | Lantern + MIRROR HOUSE + yellow plate (24-bit RGB, no alpha) | **Play Console → Feature graphic** |
-| `screenshots/play/*.png`        | 1080×1920 ×3 | Interim Playwright-device-emulation phone set (`play-01-start`, `play-02-maze`, `play-03-pause`) — **superseded by the real-emulator pass** | **Play Console → Phone screenshots** |
+| `screenshots/play/*.png`        | 1080×1920 ×3 | Interim Playwright-device-emulation phone set (`play-01-start`, `play-02-maze`, `play-03-pause`) — **superseded by the real-emulator pass**. Opaque RGBA (PNG color type 6); Google's spec prefers 24-bit no-alpha (type 2) — if this interim set ever becomes the upload set, flatten first (a one-line compositor change in `scripts/gen-store-shots.mjs`) or expect the uploader's soft warning | **Play Console → Phone screenshots** |
 | `screenshots/ios/*.png`         | 1290×2796 + 1170×2532, ×3 each | Interim emulation set for the 6.7"/6.1" App Store slots (see [`screenshots/ios/README.md`](screenshots/ios/README.md)) — refreshed from TestFlight before App Review | **App Store Connect → screenshots** |
 
 The icon run also writes the launcher set into `android/app/src/main/res/mipmap-*`

@@ -270,11 +270,12 @@ console.log('[gen-store-shots] vite build (the shots must be PROD truth)…');
 await viteBuild();
 console.log('[gen-store-shots] serving dist/ via vite preview…');
 const server = startPreview();
+let browser = null;
 try {
   await waitUntilUp(BASE, 30_000);
   await mkdir(PLAY_DIR, { recursive: true });
   await mkdir(IOS_DIR, { recursive: true });
-  const browser = await chromium.launch();
+  browser = await chromium.launch();
 
   let total = 0;
   for (const dev of DEVICES) {
@@ -300,10 +301,13 @@ try {
     }
     await context.close();
   }
-  await browser.close();
   console.log(
     `[gen-store-shots] ${DEVICES.length * SCENES.length} PNGs, ${(total / 1024).toFixed(1)} KiB total — all headers verified`,
   );
 } finally {
+  // a mid-scene throw must not leave a headless Chromium (or the preview
+  // server) lingering — the close is best-effort so the original error keeps
+  // its place as the failure reason
+  if (browser !== null) await browser.close().catch(() => {});
   server.kill();
 }

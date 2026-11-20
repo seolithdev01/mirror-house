@@ -47,10 +47,12 @@ async function fontDataUrl(file, mime) {
   return `data:${mime};base64,${(await readFile(file)).toString('base64')}`;
 }
 
-/** Read the IHDR chunk back and assert the PNG is exactly w×h, opaque-safe.
- *  Chromium encodes a fully opaque element as truecolor RGB (type 2) — the
- *  exact "24-bit PNG, no alpha" Play's asset spec asks for — and a shot with
- *  transparency as RGBA (type 6). Both are accepted; the caller logs which. */
+/** Read the IHDR chunk back and assert the feature graphic is exactly w×h AND
+ *  24-bit truecolor RGB (color type 2, no alpha) — the exact encoding Play's
+ *  feature-graphic spec asks for ("JPEG or 24-bit PNG, no alpha"). Chromium
+ *  writes a fully opaque element as type 2, so anything else here is a loud
+ *  failure, never a warning. (gen-icons' own looser RGBA assert is untouched —
+ *  the launcher set genuinely needs alpha for its transparent variants.) */
 async function assertPng(file, w, h) {
   const buf = await readFile(file);
   const type = buf[25];
@@ -58,10 +60,10 @@ async function assertPng(file, w, h) {
     buf.length > 24 &&
     buf.readUInt32BE(16) === w &&
     buf.readUInt32BE(20) === h &&
-    (type === 2 /* RGB, no alpha */ || type === 6); /* RGBA */
+    type === 2; /* truecolor RGB, no alpha channel */
   if (!ok)
     throw new Error(
-      `${file}: expected ${w}x${h} PNG (type 2 or 6), got ${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)} type ${type}`,
+      `${file}: expected ${w}x${h} 24-bit RGB PNG (color type 2, no alpha), got ${buf.readUInt32BE(16)}x${buf.readUInt32BE(20)} type ${type}${type === 6 ? ' (RGBA — flatten the alpha before writing)' : ''}`,
     );
   return { bytes: buf.length, type };
 }
