@@ -112,7 +112,7 @@ enter it exactly:
 | Full description (4000)      | the en block from [STORE-LISTING.md](STORE-LISTING.md)                     |
 | **App icon** (512², 32-bit PNG w/ alpha) | `store-assets/icon-512.png`                                    |
 | **Feature graphic** (1024×500, no alpha) | `store-assets/feature-graphic-1024x500.png`                    |
-| **Phone screenshots** (9:16) | `store-assets/screenshots/play/play-01-start.png`, `play-02-maze.png`, `play-03-pause.png` (1080×1920) — the real-emulator set preferred; the Playwright interim set is acceptable |
+| **Phone screenshots** (9:16) | `store-assets/screenshots/play/emulator-01-maze.jpg`, `emulator-02-map.jpg`, `emulator-03-feedback-sent.jpg` (1080×1920 JPEG) — the Tier-1 upload set (real renders from the emulator smoke); the Playwright interim PNGs (`play-0*.png`) are the documented fallback only |
 | Contact website              | `https://mirror-house.seolith.com`                                          |
 | Contact email                | `itsupport01@seolith.com`                                                   |
 | Contact phone                | optional — leave empty                                                       |
