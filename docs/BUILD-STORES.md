@@ -116,6 +116,79 @@ npm run android:apk          # signed APK (only if sideloading a release build)
 
 Google Play requires the **AAB** for uploads.
 
+### Release smoke on the emulator
+
+One pass of the signed release build on an emulator before any console
+upload. It proves the whole store chain at once: the artifacts install and
+boot, the touch loop plays, and the 📮 SEND — the one code path that had to
+change for the store — reaches production from inside the WebView. That last
+step is the point of the smoke: on the WebView's origin (`https://localhost`,
+Capacitor's default `androidScheme`) a relative `/api/feedback` would POST
+to localhost and die; `feedbackApiUrl` (`src/game/feedbackNet.ts`) maps the
+four WebView pseudo-origins (`https://localhost`, `http://localhost`,
+`capacitor://localhost`, `ionic://localhost`) to `PRODUCTION_API_ORIGIN`, so
+the store build's one POST lands on the same
+`https://mirror-house.seolith.com/api/feedback` the web build uses.
+
+Build (or take the artifacts the release build above produced), then
+install and launch — with the emulator tooling that is its install verb and
+launch-by-application-id; plain adb is the human equivalent:
+
+```bash
+npm run android:apk        # → android/app/build/outputs/apk/release/app-release.apk
+adb install -r android/app/build/outputs/apk/release/app-release.apk
+adb shell am start -n com.amtocsoft.mirrorhouse/.MainActivity
+```
+
+Then drive the game like a player (a screenshot at every beat is the
+evidence set; if anything misbehaves, the tooling's log verb filtered by
+`com.amtocsoft.mirrorhouse` is ground truth):
+
+1. The boot poster fades; the MIRROR/HOUSE plate rises with **BEGIN THE
+   DESCENT** focused — tap it.
+2. Walk with the two-zone touch: drag on the LEFT of the screen to walk,
+   sweep on the RIGHT to turn (the MOB-3 stick). Tap the dock's ❄ at a
+   beacon too, if you want the full loop.
+3. Tap the dock's **MAP** chip — the minimap overlay summons and the chip's
+   pressed state matches.
+4. Tap 📮 (top right), type a one-line note (`release smoke — webview
+   SEND`), press **SEND**. Expect the status line to walk Sending… →
+   **"Sent — the architects have it. Thank you."** — the production
+   Function answered 201 from inside the WebView. (A re-run inside the same
+   hour counts against the 4/hour/IP limiter; its honest 429 line means the
+   limiter is answering, not that the fix failed.)
+   **If the SEND tap proves flaky under UI automation**, the failure state
+   is still honest — the composer keeps the draft and the shot and shows
+   the real error ("Not sent (…)", the FBK-3 contract). Capture the
+   attempt, then lean on the already-green proof chain — the web SEND e2e,
+   the `feedbackApiUrl` unit contract, and the Function's CORS answers —
+   and mark STORE-2 "verified on device at next MOB pass" instead of
+   forcing the tap.
+5. Triage the report, then delete it — the smoke's report is real traffic
+   to the production bucket. The full bench is [LAUNCH.md §5](LAUNCH.md);
+   the minimum here:
+
+   ```bash
+   node scripts/feedback-triage.mjs                # the report is listed
+   node scripts/feedback-triage.mjs --key <key>    # read it (decodes the shot)
+   node scripts/feedback-triage.mjs --del <key>    # retire it
+   ```
+
+   (`--sweep-markers` clears the `rate/` markers the limiter counts — safe,
+   resets nothing the player sees.)
+6. Keep the screenshots (PNG) — the plate, a live floor, the map pane, the
+   Sent state — as the real-emulator set `store-assets/screenshots/play/`
+   wants (an emulator profile at 1080×1920 produces the console's 9:16
+   directly; the walkthrough prefers this set over the Playwright interim
+   one).
+
+The emulator is not a phone. After the smoke, install this same release
+build on a real device and run MOB-1 and MOB-3 once (the standing note at
+the top of the mobile section in [TEST-CASES.md](TEST-CASES.md)) — the
+gesture-recognition failure class that hardening targets only misbehaves
+where the browser can claim a gesture, and the emulator's WebView is not
+that surface.
+
 ### Play Console upload
 
 1. Play Console → Create app (`Mirror House`, Game, Free) — one-time, $25.

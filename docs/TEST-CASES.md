@@ -1,11 +1,11 @@
 # Mirror House — Manual Test Suite
 
-The full beta checklist: 43 cases across smoke, campaign, views,
+The full beta checklist: 47 cases across smoke, campaign, views,
 accessibility, saves, audio, the venue side-floor, the panes, mobile/touch,
-the session (the front door & the pause), and feedback. The
-[5-minute smoke](TESTERS.md) alone is enough to start — this page is for the
-20–30 minute pass. Work top to bottom or cherry-pick by section; every case
-is steps + expected result.
+the session (the front door & the pause), feedback, and the store builds.
+The [5-minute smoke](TESTERS.md) alone is enough to start — this page is for
+the 20–30 minute pass. Work top to bottom or cherry-pick by section; every
+case is steps + expected result.
 
 **Ground rules**
 
@@ -596,6 +596,79 @@ Restore the network and check the two anchors below the message.
 still in the box, the shot is still previewed, and both anchors (Open
 GitHub issue / Email instead) stand ready with the same text — nothing
 auto-sends and nothing is lost.
+
+---
+
+## 12. Store builds [STORE] (T16)
+
+Maintainer cases for the store line — they run against the signed release
+build, not the web deploy. Build and install per [BUILD-STORES.md](BUILD-STORES.md)'s
+release smoke runbook; after that, play it like a player.
+
+### STORE-1 — The signed release installs and boots to the start plate
+
+**Steps:** `npm run android:sync` then `npm run android:apk`, and install
+`android/app/build/outputs/apk/release/app-release.apk` on an emulator or a
+device (the smoke runbook's install step). Check the launcher icon, launch
+`com.amtocsoft.mirrorhouse`, watch the boot, and open the system's app info
+for the version.
+
+**Expected:** The APK installs with no signature or unknown-sources
+complaint — it is signed by the release keystore. The launcher carries the
+house glyph, not Capacitor stock. The boot plays: the ink poster fades, the
+MIRROR/HOUSE plate rises with BEGIN THE DESCENT focused (a fresh save), and
+the first input after it lands on a live floor — the full web shell
+(bundle, fonts, venue pack) shipped inside the APK. App info reads
+`0.2.0-beta.4`.
+
+### STORE-2 — SEND from the WebView reaches production (the sent state)
+
+**Steps:** On the installed release build (STORE-1), begin the descent,
+open the map pane once, then tap 📮, type a one-line note, and press SEND.
+Afterwards, on the maintainer bench, `node scripts/feedback-triage.mjs`
+should list the report (`--key <key>` reads it, `--del <key>` retires it —
+the smoke's report is real traffic to the production bucket).
+
+**Expected:** The status line walks Sending… → "Sent — the architects have
+it. Thank you." — the one POST reached the production `/api/feedback` with
+the note, the screenshot and the wire context, exactly as the web build's
+FBK-2 describes. That mapping is the fix this case proves: the WebView's
+`https://localhost` origin maps to production (`feedbackApiUrl`), where a
+relative path would have POSTed to localhost and died. The triage bench
+lists the report; nothing else in the app touches the network.
+
+**If the SEND step can't be driven** (tap automation flakes): the failure
+state is itself honest — the draft stays in the box, the shot stays
+previewed, and the status line shows the real error ("Not sent (…)"),
+nothing lost (FBK-3's contract). Verify the proof chain instead — the web
+SEND e2e (one POST, 201, full payload), the `feedbackApiUrl` unit contract,
+and the Function's CORS answers — and mark this case **verified on device
+at the next MOB pass** rather than failed.
+
+### STORE-3 — The privacy page serves, offline included
+
+**Steps:** Open `https://mirror-house.seolith.com/privacy.html` (live,
+branch merged) in a normal browser and read a section or two. Then go
+offline (devtools Offline mode, or airplane mode) and reload the same URL.
+
+**Expected:** Live: 200, carrying the same global CSP headers every page of
+the site serves, and the page is PRIVACY.md verbatim — the promise
+("nothing reaches us unless you send it") with the Devanagari hero line
+rendering in Mukta. Offline: the service worker serves the precached
+privacy page — the same page again, never the game shell.
+
+### STORE-4 — The AAB uploads to internal testing (human)
+
+**Steps:** With the Play developer account live (the [STORE-SUBMISSION.md](STORE-SUBMISSION.md)
+gate), follow its §A2: Internal testing → Create new release → upload
+`android/app/build/outputs/bundle/release/app-release.aab` → release notes
+→ review release → Start rollout to Internal testing.
+
+**Expected:** The console accepts and processes the AAB with no signing or
+format complaint (Play App Signing keeps the upload key). The release page
+shows versionCode 4 / versionName 0.2.0-beta.4, and after rollout an
+opted-in tester reaches the install through the track's opt-in URL within
+minutes to hours.
 
 ---
 

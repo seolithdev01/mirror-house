@@ -7,6 +7,45 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [t16] — 2026-11-20 — store deployment prep (v0.2.0-beta.4)
+
+No gameplay change — the house gets ready for its store doors: a signed
+Android release pipeline, the privacy promise on-site, one WebView fix so
+the store build's only POST still reaches production, and the full console
+paperwork.
+
+- **The WebView speaks to production** — `feedbackApiUrl` /
+  `PRODUCTION_API_ORIGIN` (`src/game/feedbackNet.ts`): inside the store
+  build the document origin is Capacitor's `https://localhost`, where the
+  composer's relative `/api/feedback` would POST to localhost and die. The
+  four WebView pseudo-origins (`https://localhost`, `http://localhost`,
+  `capacitor://localhost`, `ionic://localhost`) now map to the production
+  origin, so the 📮 SEND ships the report to the same Function the web
+  build uses — pinned by unit contract tests and proven end-to-end by the
+  release smoke.
+- **The signed release pipeline** — `android/app/build.gradle` loads the
+  git-ignored `android/key.properties` when present and signs
+  `buildTypes.release` with it (the official Capacitor recipe; without the
+  file, release builds stay unsigned exactly as before). `npm run
+  android:sync` / `android:aab` / `android:apk` build through a wrapper
+  that pins the proven JDK 21; `versionCode 4` / `versionName
+  0.2.0-beta.4`; artifacts `app-release.aab` and `app-release.apk`
+  (3.91 MiB). The keystore backup duty is written down where the build is
+  ([BUILD-STORES.md](docs/BUILD-STORES.md)).
+- **/privacy.html** — PRIVACY.md verbatim as a static page (the PoD chrome,
+  the Devanagari hero line, zero script), live at
+  `https://mirror-house.seolith.com/privacy.html`; the service worker
+  precaches it and an offline `/privacy.html` serves the privacy page,
+  never the shell. Both store listings' Privacy policy URL points here.
+- **The store package + the walkthroughs** — the shipped art (feature
+  graphic, three Play screenshots at 1080×1920, six iOS at both slots), the
+  Data Safety / nutrition-label truth tables (every row traced to
+  PRIVACY.md, including the Advertising ID "No" row), and click-by-click
+  console walkthroughs ([STORE-SUBMISSION.md](docs/STORE-SUBMISSION.md)).
+  BUILD-STORES.md gains the release-smoke-on-the-emulator runbook; the
+  manual suite grows four STORE cases.
+- Version stays `0.2.0-beta.4` — the store build is beta.4 as uploaded.
+
 ## [t15] — 2026-11-19 — the feedback pipeline (v0.2.0-beta.4)
 
 No gameplay change — the house gets a mailbox. The 📮 composer stops being a
