@@ -1,5 +1,14 @@
 apply plugin: 'com.android.application'
 
+// T16 — release signing loads the git-ignored android/key.properties when it
+// exists (storeFile/storePassword/keyAlias/keyPassword). Without it, release
+// builds stay unsigned — exactly as before; nothing else changes.
+def keyProps = new Properties()
+def keyPropsFile = rootProject.file('key.properties')
+if (keyPropsFile.exists()) {
+    keyPropsFile.withInputStream { keyProps.load(it) }
+}
+
 android {
     namespace = "com.amtocsoft.mirrorhouse"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +16,8 @@ android {
         applicationId "com.amtocsoft.mirrorhouse"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "0.2.0-beta.1"
+        versionCode 4
+        versionName "0.2.0-beta.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +25,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (keyPropsFile.exists()) {
+            release {
+                storeFile file(keyProps['storeFile'])
+                storePassword keyProps['storePassword']
+                keyAlias keyProps['keyAlias']
+                keyPassword keyProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (keyPropsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

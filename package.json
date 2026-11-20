@@ -15,6 +15,9 @@
     "e2e": "playwright test",
     "soak": "node scripts/soak.mjs",
     "icons": "node scripts/gen-icons.mjs",
+    "android:sync": "vite build && node scripts/gen-icons.mjs && cap sync",
+    "android:aab": "node scripts/android-build.mjs bundleRelease",
+    "android:apk": "node scripts/android-build.mjs assembleRelease",
     "cap:sync": "vite build && cap sync",
     "cap:android": "cap open android"
   },

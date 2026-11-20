@@ -7,9 +7,10 @@ identical on web and in the stores; everything store-specific lives in
 
 - App ID: `com.amtocsoft.mirrorhouse` · App name: `Mirror House` (Hindi label:
   `आईना घर`, `android/app/src/main/res/values-hi/strings.xml`)
-- Android version: `versionCode 1` / `versionName "0.2.0-beta.1"` in
-  `android/app/build.gradle`. Bump **both** on every store upload — `versionCode`
-  must increase by at least 1 each time; `versionName` is what players see.
+- Android version: `versionCode 4` / `versionName "0.2.0-beta.4"` in
+  `android/app/build.gradle` (shipped with the T16 store build). Bump **both**
+  on every store upload — `versionCode` must increase by at least 1 each time;
+  `versionName` is what players see.
 - Capacitor 8 (gradle wrapper 8.14.3, AGP 8.13.0, minSdk 24 / target 36 — the
   values live in `android/variables.gradle`).
 
@@ -38,7 +39,9 @@ them by hand.
   `error: invalid source release: 21`. Android Studio's bundled JBR (21)
   works out of the box; for command-line builds point `JAVA_HOME` at a JDK
   21. This host carries a portable Temurin 21.0.13+9 (checksum-verified from
-  the Adoptium API) at `C:\Users\raghu\.jdks\jdk21\jdk-21.0.13+9`:
+  the Adoptium API) at `C:\Users\raghu\.jdks\jdk21\jdk-21.0.13+9`. The release
+  npm scripts (`android:aab` / `android:apk`) pin this automatically through
+  `scripts/android-build.mjs`; for any other raw gradlew invocation:
 
   ```bash
   JAVA_HOME='C:\Users\raghu\.jdks\jdk21\jdk-21.0.13+9' ./gradlew assembleDebug
@@ -83,22 +86,35 @@ keytool -genkeypair -v \
 The repo already git-ignores `android/*.jks`, `android/*.keystore`, and
 `android/key.properties` — the keystore and its passwords never get committed.
 
-Wire signing via `android/key.properties` (git-ignored) with
-`storeFile`/`storePassword`/`keyAlias`/`keyPassword`, load it in
-`android/app/build.gradle`, and point `buildTypes.release.signingConfig` at it —
-the pattern is the official Capacitor docs recipe:
-<https://capacitorjs.com/docs/android/deploying-to-google-play>. (Not wired yet:
-there is no release keystore in this repo by design; add it when first needed.)
+Signing is **wired** (T16): `android/app/build.gradle` loads the git-ignored
+`android/key.properties` when it exists and points
+`buildTypes.release.signingConfig` at it — the official Capacitor docs recipe:
+<https://capacitorjs.com/docs/android/deploying-to-google-play>. Without the
+file, release builds stay unsigned, exactly as before. The four fields in
+`android/key.properties`:
 
-Then build:
-
-```bash
-cd android
-./gradlew bundleRelease      # AAB for Play → app/build/outputs/bundle/release/
-./gradlew assembleRelease    # signed APK (only if sideloading a release build)
+```properties
+storeFile=../mirror-house-release.jks
+storePassword=<set — never committed>
+keyAlias=mirrorhouse
+keyPassword=<set — never committed>
 ```
 
-Google Play requires the **AAB** (`bundleRelease`) for uploads.
+The keystore lives at `android/mirror-house-release.jks` (alias `mirrorhouse`,
+RSA 2048, 10000-day validity). **THE BACKUP DUTY:** these two git-ignored files
+are the only copies — back them both up to a password manager now; Play App
+Signing can reset a lost UPLOAD key but the store certificates chain from this
+one.
+
+Then build from the repo root (JDK 21 pinned for you by the wrapper):
+
+```bash
+npm run android:sync         # vite build + launcher icons + cap sync
+npm run android:aab          # AAB for Play → android/app/build/outputs/bundle/release/
+npm run android:apk          # signed APK (only if sideloading a release build)
+```
+
+Google Play requires the **AAB** for uploads.
 
 ### Play Console upload
 
@@ -139,6 +155,10 @@ npx cap open ios        # opens Xcode
    questionnaire — answer once, reuse everywhere. It is a puzzle game with no
    violence/user-generated content/real gambling: expected rating is the
    lowest band (E/3+) — answer honestly, the questionnaire decides.
+
+Task 5 ships the iOS asset pipeline (icons / listing assets generated from
+`store-assets/`), but `cap add ios` remains mac-gated — the native iOS project
+can only be created on a Mac.
 
 ## WebView notes (why nothing needed porting)
 
