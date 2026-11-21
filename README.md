@@ -273,7 +273,7 @@ ever pays. It pays its way two quiet ways:
   a flat sponsor fee. The pitch and the enquiry link are at
   [`/host-a-floor`](https://mirror-house.seolith.com/host-a-floor); the
   ☕ Glasshouse Café demo (⚙ → Floors) is exactly the shape of it.
-- **Donations** — [ko-fi.com/seolith](https://ko-fi.com/seolith). CI builds
+- **Donations** — [ko-fi.com/teamseolith](https://ko-fi.com/teamseolith). CI builds
   with the `VITE_SUPPORT_URL` repo variable; set it at build
   time to a GitHub Sponsors / Ko-fi / Open Collective / Liberapay / Patreon /
   Buy Me a Coffee link and a `♥ Support the house` link appears in the About

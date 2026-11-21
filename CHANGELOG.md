@@ -10,7 +10,7 @@ Versions follow the store line: `0.1.0` carried everything through M5,
 ## [support-link] — 2026-11-21 — Ko-fi tip jar live
 
 The About panel's `♥ Support the house` link and the repo's Sponsor button
-now point at [ko-fi.com/seolith](https://ko-fi.com/seolith) (repo variable
+now point at [ko-fi.com/teamseolith](https://ko-fi.com/teamseolith) (repo variable
 `VITE_SUPPORT_URL`, `ko_fi` in FUNDING.yml).
 
 ## [t16] — 2026-11-20 — store deployment prep (v0.2.0-beta.4)
