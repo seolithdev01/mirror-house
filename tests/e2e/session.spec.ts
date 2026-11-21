@@ -37,17 +37,24 @@ interface SessionHook {
 // the members are invoked in the browser and returned as a plain snapshot.
 const hookOf = (page: Page) =>
   page.evaluate(() => {
-    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: SessionHook })
-      .__MIRROR_HOUSE_DEBUG__;
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: SessionHook }).__MIRROR_HOUSE_DEBUG__;
     return { campaign: h.campaign(), seed: h.seed };
   });
 
 const player = (page: Page) =>
   page.evaluate(() => {
-    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: SessionHook })
-      .__MIRROR_HOUSE_DEBUG__;
+    const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: SessionHook }).__MIRROR_HOUSE_DEBUG__;
     return h.getPlayer();
   });
+
+// Opt-in CPU slowdown to reproduce slow CI runners locally:
+// `MH_CPU_THROTTLE=6 npm run e2e` (Chromium only). Unset, nothing changes.
+const CPU_THROTTLE = Number(process.env.MH_CPU_THROTTLE ?? 0);
+test.beforeEach(async ({ page }) => {
+  if (!(CPU_THROTTLE > 1)) return;
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE });
+});
 
 async function ready(page: Page): Promise<void> {
   await page.waitForFunction(
@@ -178,6 +185,9 @@ test('session: start screen gates the house', async ({ page }) => {
 // CONTINUE takes the app's own resume path: the boot chain rebuilds floor 2
 // under the plate and the floor chip reads it.
 test('session: stored campaign shows CONTINUE — FLOOR N', async ({ page }) => {
+  // two reloads plus a floor rebuild behind a click: a slow software-GL
+  // runner overran the default 30 s budget at the CONTINUE click
+  test.setTimeout(90_000);
   const errors = collectErrors(page);
   await seedStoredCampaignAndReload(page);
 
@@ -288,8 +298,20 @@ test('session: pause stands down while a modal is open', async ({ page }) => {
   await expect(plate).toHaveCount(0);
 
   // arm the run — the pause needs a running session to have something to say
+  // hold W until the player has really moved — on a slow runner a fixed
+  // 200 ms could end before the first step, leaving the run unarmed, and
+  // pause refuses outside a running floor
+  const start = await player(page);
   await page.keyboard.down('KeyW');
-  await page.waitForTimeout(200);
+  await expect
+    .poll(
+      async () => {
+        const p = await player(page);
+        return Math.hypot(p.x - start.x, p.y - start.y);
+      },
+      { timeout: 10000 },
+    )
+    .toBeGreaterThan(0.05);
   await page.keyboard.up('KeyW');
 
   // the FAQ over the running floor, then KeyP at it: the plate stays down,
@@ -337,8 +359,7 @@ test('session: pause stands down while a modal is open', async ({ page }) => {
   await expect(page.locator('#mh-paused')).toBeHidden();
   await expect
     .poll(
-      () =>
-        page.evaluate(() => document.activeElement === document.getElementById('mh-pause')),
+      () => page.evaluate(() => document.activeElement === document.getElementById('mh-pause')),
       'resume returns focus to the chip the pause was taken from',
     )
     .toBe(true);

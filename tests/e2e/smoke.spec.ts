@@ -563,7 +563,11 @@ test('t15: feedback SEND posts shot+ctx to /api/feedback', async ({ page }) => {
 
   // the failed path: server 500 → honest failure, draft preserved, fallbacks present
   await page.route('**/api/feedback', async (route) => {
-    await route.fulfill({ status: 500, contentType: 'application/json', body: '{"ok":false,"error":"boom"}' });
+    await route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: '{"ok":false,"error":"boom"}',
+    });
   });
   await page.keyboard.press('Escape');
   await expect(overlay).toBeHidden();
@@ -769,7 +773,19 @@ test('m2: full win flow records shards and best', async ({ page }) => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     h.warp(e.x, e.z);
   }, exit);
-  await expect(page.locator('#mh-cleared')).toBeVisible({ timeout: 5000 });
+  // the cleared banner stands only DESCEND_MS (0.8 s) before the next floor
+  // arms and hides it — a slow runner can miss that window, so wait on the
+  // banked best (which survives the descent) and read the banner's text,
+  // which is kept after it hides
+  await page.waitForFunction(
+    (s: string) =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.bestFor(
+        s,
+      ) !== null,
+    'M2WIN:1',
+    { timeout: 15000 },
+  );
+  await expect(page.locator('#mh-cleared')).toContainText('Floor cleared');
   const after = await page.evaluate((s: string) => {
     const h = (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__;
     return { shards: h.shards(), best: h.bestFor(s), pending: h.house().pendingShards };
@@ -3288,9 +3304,8 @@ test('t11: minimap guides by default', async ({ page }) => {
   await page.goto('/?seed=PANES-MAP');
   await ready(page);
   const minimapOn = () =>
-    page.evaluate(
-      () =>
-        (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.minimap(),
+    page.evaluate(() =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.minimap(),
     );
   // the pane canvas mounts visible on load (the guide is the point)
   await expect(page.locator('#mh-minimap')).toBeVisible();
@@ -3360,13 +3375,54 @@ test('t12b: fresh save boots hybrid via the ladder; a keypress locks it across r
   await page.goto('/?seed=LOCKKBD');
   await ready(page);
   const liveMode = () =>
-    page.evaluate(
-      () =>
-        (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.mode(),
+    page.evaluate(() =>
+      (window as unknown as { __MIRROR_HOUSE_DEBUG__: DebugHook }).__MIRROR_HOUSE_DEBUG__.mode(),
     );
   expect(await liveMode()).toBe('hybrid'); // the two-arm ladder: no touch → hybrid (not keys-only)
   await page.keyboard.press('KeyW'); // the first unambiguous input locks the mode
-  await page.waitForTimeout(500); // the 250 ms debounced persist lands before the reload
+  // the lock persists on a 250 ms debounce — wait until the record is really
+  // in IndexedDB (a fixed sleep lost that race on a slow runner: the reload
+  // booted as a fresh save and the touch below claimed the mode)
+  // (expect.poll, not waitForFunction: page.evaluate awaits the Promise,
+  // waitForFunction would take the Promise object itself as truthy)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            new Promise<boolean>((resolve) => {
+              // never let this probe create the database: an open on a missing DB
+              // makes an empty v1 with no store, and the game's own writes then fail
+              const req = indexedDB.open('mirror-house');
+              req.onupgradeneeded = () => req.transaction?.abort();
+              req.onerror = () => resolve(false);
+              req.onsuccess = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains('save')) {
+                  db.close();
+                  resolve(false);
+                  return;
+                }
+                try {
+                  const get = db.transaction('save', 'readonly').objectStore('save').get('main');
+                  get.onsuccess = () => {
+                    db.close();
+                    resolve((get.result as { mode?: string } | undefined)?.mode === 'hybrid');
+                  };
+                  get.onerror = () => {
+                    db.close();
+                    resolve(false);
+                  };
+                } catch {
+                  db.close();
+                  resolve(false);
+                }
+              };
+            }),
+        ),
+      { timeout: 10000, intervals: [100] },
+    )
+    .toBe(true);
   await page.reload();
   await ready(page);
   expect(await liveMode()).toBe('hybrid'); // the lock survived the reload as a stored mode
