@@ -142,12 +142,12 @@ Four fully playable ways to walk — switch anytime with the buttons at the top 
 
 **New here? The game reads your hardware once and picks for you:** a touch-capable device (phone, tablet, touchscreen) boots straight into 👆 Touch, every other device boots into ⌨+🖱 Both — keyboard move and mouse look together. The first thing you actually touch or press settles the pick and saves it; after that nothing auto-switches, and an existing saved mode is always honoured. A mouse-only machine can't be detected, so pure 🖱 Mouse and pure ⌨ Keys wait one tap away in the mode row — change anytime.
 
-| HUD button | Mode             | How it works                                                                                                               |
-| ---------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| ⌨ Keys     | Keyboard only    | `W`/`S` or `↑`/`↓` walk, `←`/`→` or `Q`/`E` turn, `Shift` sprint. No mouse needed.                                         |
-| 🖱 Mouse    | Mouse only       | Hold the **left button** to walk, hold the **right button** to sprint, steer by moving the cursor left or right of center. |
-| ⌨+🖱 Both   | Hybrid (default on a mouse device) | `WASD` move and strafe, mouse to look (click the view to capture the pointer), `Q`/`E` also turn, `Shift` sprint.          |
-| 👆 Touch    | Touch (default on a touch screen) | Left of the screen is a **virtual stick** under your thumb (push farther to walk faster, to the rim to sprint), drag the right side to **look**, and the dock's big thumb buttons fire the actions. See the phone section just below. |
+| HUD button | Mode                               | How it works                                                                                                                                                                                                                          |
+| ---------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ⌨ Keys     | Keyboard only                      | `W`/`S` or `↑`/`↓` walk, `←`/`→` or `Q`/`E` turn, `Shift` sprint. No mouse needed.                                                                                                                                                    |
+| 🖱 Mouse    | Mouse only                         | Hold the **left button** to walk, hold the **right button** to sprint, steer by moving the cursor left or right of center.                                                                                                            |
+| ⌨+🖱 Both   | Hybrid (default on a mouse device) | `WASD` move and strafe, mouse to look (click the view to capture the pointer), `Q`/`E` also turn, `Shift` sprint.                                                                                                                     |
+| 👆 Touch   | Touch (default on a touch screen)  | Left of the screen is a **virtual stick** under your thumb (push farther to walk faster, to the rim to sprint), drag the right side to **look**, and the dock's big thumb buttons fire the actions. See the phone section just below. |
 
 ### Mirror House on your phone — playable on touch
 
@@ -273,7 +273,8 @@ ever pays. It pays its way two quiet ways:
   a flat sponsor fee. The pitch and the enquiry link are at
   [`/host-a-floor`](https://mirror-house.seolith.com/host-a-floor); the
   ☕ Glasshouse Café demo (⚙ → Floors) is exactly the shape of it.
-- **Donations** (when an account exists). Set `VITE_SUPPORT_URL` at build
+- **Donations** — [ko-fi.com/seolith](https://ko-fi.com/seolith). CI builds
+  with the `VITE_SUPPORT_URL` repo variable; set it at build
   time to a GitHub Sponsors / Ko-fi / Open Collective / Liberapay / Patreon /
   Buy Me a Coffee link and a `♥ Support the house` link appears in the About
   panel; anything else is refused by `safeSupportUrl`

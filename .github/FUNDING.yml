@@ -1,5 +1,5 @@
-# The repo's Sponsor button. Today it points at the venue-floor sponsorship
-# page; add `github: <login>` / `ko_fi: <handle>` here once a donation
-# account exists (and set VITE_SUPPORT_URL in the build to surface the same
-# link in the game's About panel).
+# The repo's Sponsor button: the Ko-fi tip jar (also the game's About-panel
+# link, via the VITE_SUPPORT_URL repo variable) and the venue-floor
+# sponsorship page.
+ko_fi: seolith
 custom: ['https://mirror-house.seolith.com/host-a-floor']

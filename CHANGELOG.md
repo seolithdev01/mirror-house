@@ -7,6 +7,12 @@ and the arc from first brief to blueprint is
 Versions follow the store line: `0.1.0` carried everything through M5,
 `0.2.0-beta.1` is the public beta.
 
+## [support-link] — 2026-11-21 — Ko-fi tip jar live
+
+The About panel's `♥ Support the house` link and the repo's Sponsor button
+now point at [ko-fi.com/seolith](https://ko-fi.com/seolith) (repo variable
+`VITE_SUPPORT_URL`, `ko_fi` in FUNDING.yml).
+
 ## [t16] — 2026-11-20 — store deployment prep (v0.2.0-beta.4)
 
 No gameplay change — the house gets ready for its store doors: a signed
@@ -27,9 +33,9 @@ paperwork.
   git-ignored `android/key.properties` when present and signs
   `buildTypes.release` with it (the official Capacitor recipe; without the
   file, release builds stay unsigned exactly as before). `npm run
-  android:sync` / `android:aab` / `android:apk` build through a wrapper
+android:sync` / `android:aab` / `android:apk` build through a wrapper
   that pins the proven JDK 21; `versionCode 4` / `versionName
-  0.2.0-beta.4`; artifacts `app-release.aab` and `app-release.apk`
+0.2.0-beta.4`; artifacts `app-release.aab` and `app-release.apk`
   (3.91 MiB). The keystore backup duty is written down where the build is
   ([BUILD-STORES.md](docs/BUILD-STORES.md)).
 - **/privacy.html** — PRIVACY.md verbatim as a static page (the PoD chrome,
@@ -244,13 +250,13 @@ The campaign runs to one hundred — the finale tier, where the house runs out o
   steps), NOT a Dwaar: `isFinale(floor)` is the one new predicate, clearing
   the Ground claims **✦ Truth-Shard X** (the campaign's last shard), and the
   tier screen is REPLACED by the finale — `ACT III COMPLETE — THE GROUND
-  DOOR OPENS`, the full-campaign stats (one hundred floors and banked shards,
+DOOR OPENS`, the full-campaign stats (one hundred floors and banked shards,
   Truth-Shard X folded into the middle clause), `One hundred floors. One
-  door. You walked out.` (en/hi) beneath them, Play again / Stay riding the
+door. You walked out.` (en/hi) beneath them, Play again / Stay riding the
   same buttons. No descend arms below — the finale screen is the end of the
   house.
 - **Close-out** — §4.6 row 10 delivered, §2.3 marked **`THE 100-FLOOR SPEC IS
-  COMPLETE`** (all ten tiers delivered 2026-11-08 → 12; Act III closed at the
+COMPLETE`** (all ten tiers delivered 2026-11-08 → 12; Act III closed at the
   Ground Door) and §13.1's scope note refreshed to t10 (the full 1→100 spine,
   terminal at 100). §4.4's delivered note gains the hunt's end (the
   Foundations rest the wheel; Chhaya walks all ten tiers). README gains the
@@ -320,7 +326,7 @@ The campaign runs to ninety — the apex tier, where all four Sentinels hunt tog
   re-localizes whichever banner is visible. The interstitial cascade grows
   downward once more: **Dwaar VIII joins the 1.8 s claim banner** and the
   full screen moves to **Dwaar IX's tier close** (`✦ Truth-Shard IX claimed
-  — Tier IX complete`, ninety floors and banked shards counted, ↻ Play
+— Tier IX complete`, ninety floors and banked shards counted, ↻ Play
   again / Stay) — the campaign's terminal screen. Iron dressing: the
   iron/steel palette (void `0x0a0c0e`, warden-steel glass `0x5a9a9a`,
   iron-red rose, slate-steel walls — the LAST tier-one stand-in retires;
@@ -413,7 +419,7 @@ The campaign runs to eighty — Act II's last tier, where every mirror arrives i
   thawed panes ice-teal (cold-fogged draw nothing). Interstitial cascade
   grows once more: **Dwaar VII joins the 1.8 s claim banner** and the full
   screen moves down to **Dwaar VIII's tier close** (`✦ Truth-Shard VIII
-  claimed — Tier VIII complete`, eighty floors and banked shards counted,
+claimed — Tier VIII complete`, eighty floors and banked shards counted,
   ↻ Play again / Stay) — the campaign's terminal screen, the house's end
   until Act III exists. New tester hook fields: `mirrors().frozen`/`.thawed`
   counts, `mirrorState(id)` (the MirrorVisual read-out) and
@@ -450,7 +456,7 @@ The campaign runs to seventy — the listening tier, where the Echoes go blind a
   in the same commit as the ramp (**the binding held a sixth time**; 71 is
   the first rejection, round-trips pinned at 65 and 70).
 - **The noise economy** — `src/game/noise.ts` (pure): `NoiseEvent
-  {x, y, r, at}` pings in a TTL ring (`emit` appends and drops — 1200 ms
+{x, y, r, at}` pings in a TTL ring (`emit` appends and drops — 1200 ms
   time-to-hear, 24-event cap drop-oldest; `hears` is the boundary-inclusive
   radius check; `loudestAt` returns the NEAREST audible ping as the chase
   target). `main.ts` feeds the ring while the sim is live: **a sprint rings
@@ -595,7 +601,7 @@ The campaign runs to fifty and the second act begins — the drowned tier, where
   rejection).
 - **ACT II opens (spec §2.3)** — the first floor-41 build of a session raises
   the act banner (`ACT II — THE DECEPTION — The house has begun copying
-  you.`, en+hi) for 3 s, once per session (rebuilds of 41 stay quiet). The
+you.`, en+hi) for 3 s, once per session (rebuilds of 41 stay quiet). The
   interstitial cascade grows: Dwaar IV joins Dwaar I/II/III's 1.8 s claim
   banner, and the full screen moves down to **Dwaar V's tier close**
   (`✦ Truth-Shard V claimed — Tier V complete`, floors and banked shards
@@ -666,7 +672,7 @@ The campaign runs to forty and the first act ends — the funhouse tier, where t
   lesson; 41 is the first rejection).
 - **Act I closes (spec §2.3)** — Dwaar III's clear now cascades to Dwaar
   I/II's interstitial banner (`✦ Truth-Shard III claimed — the house
-  deepens…`, en+hi), and **Dwaar IV's clear raises the act-completion
+deepens…`, en+hi), and **Dwaar IV's clear raises the act-completion
   screen**: the tier-complete overlay re-styled as the act close —
   `ACT I COMPLETE — The Trap`, the forty floors and banked shards counted,
   `Act II: The Deception — the house will start copying you…` for the note
