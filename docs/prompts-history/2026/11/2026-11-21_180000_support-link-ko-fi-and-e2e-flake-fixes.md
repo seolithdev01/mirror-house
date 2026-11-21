@@ -1,10 +1,10 @@
 # support-link — Ko-fi tip jar live, four slow-runner e2e flakes fixed
 
-|                |                                                                      |
-| -------------- | -------------------------------------------------------------------- |
-| **Step**       | support-link                                                         |
-| **Local time** | 2026-11-21 ~18:00                                                    |
-| **Status**     | Ko-fi link live on `bd9b7d3`; e2e hardening verified locally (60/60) |
+|                |                                                                 |
+| -------------- | --------------------------------------------------------------- |
+| **Step**       | support-link                                                    |
+| **Local time** | 2026-11-21 ~18:00                                               |
+| **Status**     | Ko-fi link live on `bd9b7d3`; CI green on `8334df9` (60/60 e2e) |
 
 ## Requests (verbatim)
 
@@ -73,6 +73,13 @@ the next run passed. Causes, from the CI logs and the code:
   and 60/60 at 6×. The two session failures did not reproduce locally even
   at 15×, so those fixes rest on the CI logs.
 
+**Then CI failed three other tests** (`9a49eab`: session pause-freezes,
+m5 warp-caught restart, t2 sentinel taal) in an 8.9-min run. Recent e2e
+jobs had swung 300–560 s and failed only on the slow ones: two Playwright
+workers shared GitHub's 4-vCPU runner with the Vite dev server and
+software WebGL. `playwright.config.ts` now runs `workers: 1` on CI.
+CI on `8334df9`: check, e2e (60 passed, none flaky, 6.3 min), deploy green.
+
 ## Open items (need the owner)
 
 1. **Token expiry** — the CI deploy token expires 2027-11-12.
@@ -81,6 +88,6 @@ the next run passed. Causes, from the CI logs and the code:
 
 ## Artifacts
 
-- Commits `8ae3310`, `bd9b7d3` (support link) and the e2e hardening commit
+- Commits `8ae3310`, `bd9b7d3` (support link); `f6f97ee` (e2e hardening); `8334df9` (one CI worker)
 - [.github/FUNDING.yml](../../../../.github/FUNDING.yml) · [.github/workflows/ci.yml](../../../../.github/workflows/ci.yml)
 - [tests/e2e/smoke.spec.ts](../../../../tests/e2e/smoke.spec.ts) · [tests/e2e/session.spec.ts](../../../../tests/e2e/session.spec.ts)
